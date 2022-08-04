@@ -62,7 +62,7 @@ public class Polynomial {
     public Polynomial add(Polynomial that) {
         double[] result = new double[Math.max(this.coeff.length, that.coeff.length)];
         for (int i = 0; i < result.length; i++) {
-            result[i] += this.coeff(result.length - 1 - i) + that.coeff(result.length - 1 - i);
+            result[i] = this.coeff(result.length - 1 - i) + that.coeff(result.length - 1 - i);
         }
         return new Polynomial(result.length != 0 && result[0] == 0.0, result);
     }
@@ -70,7 +70,7 @@ public class Polynomial {
     public Polynomial subtract(Polynomial that) {
         double[] result = new double[Math.max(this.coeff.length, that.coeff.length)];
         for (int i = 0; i < result.length; i++) {
-            result[i] += this.coeff(result.length - 1 - i) - that.coeff(result.length - 1 - i);
+            result[i] = this.coeff(result.length - 1 - i) - that.coeff(result.length - 1 - i);
         }
         return new Polynomial(result.length != 0 && result[0] == 0.0, result);
     }
