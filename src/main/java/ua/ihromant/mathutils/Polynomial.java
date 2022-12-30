@@ -205,10 +205,10 @@ public class Polynomial {
         }
         if (discr < 0) {
             double[] result = new double[3];
-            double coeff = 2 * Math.sqrt(-p / 3);
-            double acos = Math.acos(-Math.signum(q) * Math.sqrt(-right / left));
+            double coeff = Math.sqrt(-p / 3);
+            double acos = Math.acos((1.5 * q) / (p * coeff));
             for (int i = 0; i < 3; i++) {
-                result[i] = coeff * Math.cos((acos - 2 * Math.PI * i) / 3);
+                result[i] = 2 * coeff * Math.cos((acos - 2 * Math.PI * i) / 3);
             }
             return result;
         }
