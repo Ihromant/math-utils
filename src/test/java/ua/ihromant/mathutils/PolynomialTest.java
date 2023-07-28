@@ -81,7 +81,7 @@ public class PolynomialTest {
     }
 
     private static double generate() {
-        return 100 * ThreadLocalRandom.current().nextDouble() - 50;
+        return 1000 * ThreadLocalRandom.current().nextDouble() - 500;
     }
 
     @Test
