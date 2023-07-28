@@ -13,7 +13,7 @@ import java.io.OutputStreamWriter;
 
 public class DesargueTest {
     private static final int HALF = 100;
-    private static Point SHIFT = Point.of(HALF, HALF);
+    private static final Point SHIFT = Point.of(HALF, HALF);
     @Test
     public void generateDesargues() throws IOException {
         for (Triple<Rational> slopes : new TriplesIterator<>(Rational.LATEX_SLOPES)) {
@@ -34,7 +34,7 @@ public class DesargueTest {
                     for (int tl = 5; tl < HALF / t.max(); tl++) {
                         Point tpl = Point.of(t.denom() * tl, t.numer() * tl);
                         Rational ftsl = fpl.sub(tpl).slope();
-                        Rational stsl = spl.sub(fpl).slope();
+                        Rational stsl = spl.sub(tpl).slope();
                         if (!checkSlope(ftsl) || !checkSlope(stsl) || ftsl.equals(stsl)) {
                             continue;
                         }
@@ -49,7 +49,7 @@ public class DesargueTest {
                                 for (int tr = 5; tr < HALF / t.max(); tr++) {
                                     Point tpr = Point.of(-t.denom() * tr, -t.numer() * tr);
                                     Rational ftsr = fpr.sub(tpr).slope();
-                                    Rational stsr = spr.sub(fpr).slope();
+                                    Rational stsr = spr.sub(tpr).slope();
                                     if (!checkSlope(ftsr) || !checkSlope(stsr) || ftsl.equals(ftsr) || stsl.equals(stsr) || ftsr.equals(stsr)) {
                                         continue;
                                     }
@@ -76,6 +76,7 @@ public class DesargueTest {
                                             SHIFT.add(fsi), SHIFT.add(fti), SHIFT.add(sti));
                                     drawImage(SHIFT.add(fpl), SHIFT.add(spl), SHIFT.add(tpl), SHIFT.add(fpr), SHIFT.add(spr), SHIFT.add(tpr),
                                             SHIFT.add(fsi), SHIFT.add(fti), SHIFT.add(sti));
+                                    //return;
                                 }
                             }
                         }
@@ -95,46 +96,55 @@ public class DesargueTest {
         try (FileOutputStream fos = new FileOutputStream(new File("/tmp/img", fName + ".txt"));
              OutputStreamWriter osw = new OutputStreamWriter(fos);
              BufferedWriter bw = new BufferedWriter(osw)) {
-//            gr.setColor(Color.BLACK);
-//            drawLine(gr, fpl, fsi);
-//            drawLine(gr, spl, fsi);
-//            drawLine(gr, fpl, fti);
-//            drawLine(gr, tpl, fti);
-//            drawLine(gr, spl, sti);
-//            drawLine(gr, tpl, sti);
-//
-//            gr.setColor(Color.BLACK);
-//            drawLine(gr, fpr, fsi);
-//            drawLine(gr, spr, fsi);
-//            drawLine(gr, fpr, fti);
-//            drawLine(gr, tpr, fti);
-//            drawLine(gr, spr, sti);
-//            drawLine(gr, tpr, sti);
-//
-//            gr.setColor(Color.BLUE);
-//            drawLine(gr, fpr, fpl);
-//            drawLine(gr, spr, spl);
-//            drawLine(gr, tpr, tpl);
-//
-//            gr.setColor(Color.RED);
-//            drawLine(gr, fsi, fti);
-//            drawLine(gr, fsi, sti);
-//            drawLine(gr, fti, sti);
-//
-//            gr.setColor(Color.GREEN);
-//            drawLine(gr, fpl, spl);
-//            drawLine(gr, fpl, tpl);
-//            drawLine(gr, spl, tpl);
-//
-//            gr.setColor(Color.ORANGE);
-//            drawLine(gr, fpr, spr);
-//            drawLine(gr, fpr, tpr);
-//            drawLine(gr, spr, tpr);
+            bw.write("\\begin{picture}(" + (2 * HALF) + "," + (2 * HALF) + ")(0,0)\n");
+            bw.write("\\linethickness{1pt}\n");
+            drawLine(bw, fpl, fsi);
+            drawLine(bw, spl, fsi);
+            drawLine(bw, fpl, fti);
+            drawLine(bw, tpl, fti);
+            drawLine(bw, spl, sti);
+            drawLine(bw, tpl, sti);
+
+            drawLine(bw, fpr, fsi);
+            drawLine(bw, spr, fsi);
+            drawLine(bw, fpr, fti);
+            drawLine(bw, tpr, fti);
+            drawLine(bw, spr, sti);
+            drawLine(bw, tpr, sti);
+
+            drawLine(bw, fpr, fpl);
+            drawLine(bw, spr, spl);
+            drawLine(bw, tpr, tpl);
+
+            drawLine(bw, fsi, fti);
+            drawLine(bw, fsi, sti);
+            drawLine(bw, fti, sti);
+
+            drawLine(bw, fpl, spl);
+            drawLine(bw, fpl, tpl);
+            drawLine(bw, spl, tpl);
+
+            drawLine(bw, fpr, spr);
+            drawLine(bw, fpr, tpr);
+            drawLine(bw, spr, tpr);
+
+            bw.write("\\end{picture}");
         }
     }
 
     private static void drawLine(Graphics gr, Point first, Point second) {
         gr.drawLine(first.x().numer(), first.y().numer(), second.x().numer(), second.y().numer());
+    }
+
+    private static void drawLine(BufferedWriter wr, Point first, Point second) throws IOException {
+        int dx = second.x().numer() - first.x().numer();
+        int dy = second.y().numer() - first.y().numer();
+        int gcd = Rational.gcd(Math.abs(dx), Math.abs(dy));
+        int nX = dx / gcd;
+        int nY = dy / gcd;
+        wr.write("\\put(" + first.x() + "," + first.y() + ")" +
+                "{\\color{" + "black" + "}" +
+                "\\line(" + nX + "," + nY + "){" + Math.max(Math.abs(dx), Math.abs(dy)) + "}}\n");
     }
 
     private static void drawImage(Point fpl, Point spl, Point tpl, Point fpr, Point spr, Point tpr,

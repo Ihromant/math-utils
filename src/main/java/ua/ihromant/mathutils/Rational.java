@@ -6,7 +6,7 @@ import java.util.stream.Stream;
 public record Rational(int numer, int denom) {
     public static Rational ZERO = new Rational(0, 1);
 
-    private static int gcd(int a, int b) {
+    public static int gcd(int a, int b) {
         return b == 0 ? a : gcd(b, a % b);
     }
 
