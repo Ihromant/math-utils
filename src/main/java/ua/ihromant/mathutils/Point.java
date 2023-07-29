@@ -17,6 +17,11 @@ public record Point(Rational x, Rational y) {
         return y.div(x);
     }
 
+    public Point mul(int c) {
+        Rational mult = Rational.of(c);
+        return new Point(x.mul(mult), y.mul(mult));
+    }
+
     @Override
     public String toString() {
         return "(" + x + "," + y + ")";

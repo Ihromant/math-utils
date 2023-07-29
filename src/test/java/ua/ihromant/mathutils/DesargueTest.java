@@ -12,10 +12,12 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 
 public class DesargueTest {
-    private static final int HALF = 100;
+    private static final int HALF = 12;
+    private static final int MUL = 10;
     private static final Point SHIFT = Point.of(HALF, HALF);
     @Test
     public void generateDesargues() throws IOException {
+        int counter = 0;
         for (Triple<Rational> slopes : new TriplesIterator<>(Rational.LATEX_SLOPES)) {
             Rational f = slopes.f();
             Rational s = slopes.s();
@@ -23,30 +25,30 @@ public class DesargueTest {
             if (f.equals(s) || f.equals(t) || s.equals(t)) {
                 continue;
             }
-            for (int fl = 5; fl < HALF / f.max(); fl++) {
-                for (int sl = 10; sl < HALF / s.max(); sl++) {
+            for (int fl = 1; fl < HALF / f.max(); fl++) {
+                for (int sl = 1; sl < HALF / s.max(); sl++) {
                     Point fpl = Point.of(f.denom() * fl, f.numer() * fl);
                     Point spl = Point.of(s.denom() * sl, s.numer() * sl);
                     Rational fssl = fpl.sub(spl).slope();
                     if (!checkSlope(fssl)) {
                         continue;
                     }
-                    for (int tl = 5; tl < HALF / t.max(); tl++) {
+                    for (int tl = 1; tl < HALF / t.max(); tl++) {
                         Point tpl = Point.of(t.denom() * tl, t.numer() * tl);
                         Rational ftsl = fpl.sub(tpl).slope();
                         Rational stsl = spl.sub(tpl).slope();
                         if (!checkSlope(ftsl) || !checkSlope(stsl) || ftsl.equals(stsl)) {
                             continue;
                         }
-                        for (int fr = 5; fr < HALF / f.max(); fr++) {
-                            for (int sr = 10; sr < HALF / s.max(); sr++) {
+                        for (int fr = 1; fr < HALF / f.max(); fr++) {
+                            for (int sr = 1; sr < HALF / s.max(); sr++) {
                                 Point fpr = Point.of(-f.denom() * fr, -f.numer() * fr);
                                 Point spr = Point.of(-s.denom() * sr, -s.numer() * sr);
                                 Rational fssr = fpr.sub(spr).slope();
                                 if (!checkSlope(fssr) || fssl.equals(fssr)) {
                                     continue;
                                 }
-                                for (int tr = 5; tr < HALF / t.max(); tr++) {
+                                for (int tr = 1; tr < HALF / t.max(); tr++) {
                                     Point tpr = Point.of(-t.denom() * tr, -t.numer() * tr);
                                     Rational ftsr = fpr.sub(tpr).slope();
                                     Rational stsr = spr.sub(tpr).slope();
@@ -76,7 +78,7 @@ public class DesargueTest {
                                             SHIFT.add(fsi), SHIFT.add(fti), SHIFT.add(sti));
                                     drawImage(SHIFT.add(fpl), SHIFT.add(spl), SHIFT.add(tpl), SHIFT.add(fpr), SHIFT.add(spr), SHIFT.add(tpr),
                                             SHIFT.add(fsi), SHIFT.add(fti), SHIFT.add(sti));
-                                    //return;
+                                    counter++;
                                 }
                             }
                         }
@@ -84,6 +86,7 @@ public class DesargueTest {
                 }
             }
         }
+        System.out.println(counter);
     }
 
     private static String sName(Point p) {
@@ -96,7 +99,7 @@ public class DesargueTest {
         try (FileOutputStream fos = new FileOutputStream(new File("/tmp/img", fName + ".txt"));
              OutputStreamWriter osw = new OutputStreamWriter(fos);
              BufferedWriter bw = new BufferedWriter(osw)) {
-            bw.write("\\begin{picture}(" + (2 * HALF) + "," + (2 * HALF) + ")(0,0)\n");
+            bw.write("\\begin{picture}(" + (2 * HALF * MUL) + "," + (2 * HALF * MUL) + ")(0,0)\n");
             bw.write("\\linethickness{1pt}\n");
             drawLine(bw, fpl, fsi);
             drawLine(bw, spl, fsi);
@@ -133,10 +136,14 @@ public class DesargueTest {
     }
 
     private static void drawLine(Graphics gr, Point first, Point second) {
+        first = first.mul(MUL);
+        second = second.mul(MUL);
         gr.drawLine(first.x().numer(), first.y().numer(), second.x().numer(), second.y().numer());
     }
 
     private static void drawLine(BufferedWriter wr, Point first, Point second) throws IOException {
+        first = first.mul(MUL);
+        second = second.mul(MUL);
         int dx = second.x().numer() - first.x().numer();
         int dy = second.y().numer() - first.y().numer();
         int gcd = Rational.gcd(Math.abs(dx), Math.abs(dy));
@@ -150,7 +157,7 @@ public class DesargueTest {
     private static void drawImage(Point fpl, Point spl, Point tpl, Point fpr, Point spr, Point tpr,
                                   Point fsi, Point fti, Point sti) throws IOException {
         String fName = sName(fpl) + "_" + sName(spl) + "_" + sName(tpl) + "_" + sName(fpr) + "_" + sName(spr) + "_" + sName(tpr);
-        BufferedImage img = new BufferedImage(2 * HALF, 2 * HALF, BufferedImage.TYPE_INT_ARGB);
+        BufferedImage img = new BufferedImage(2 * HALF * MUL, 2 * HALF * MUL, BufferedImage.TYPE_INT_ARGB);
         Graphics gr = img.getGraphics();
         gr.setColor(Color.BLACK);
         drawLine(gr, fpl, fsi);

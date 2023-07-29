@@ -23,7 +23,7 @@ public class TriplesIterator<T> implements Iterable<Triple<T>> {
 
             @Override
             public Triple<T> next() {
-                return new Triple<T>(list.get(counter / size / size), list.get((counter / size) % size), list.get(counter++ % size));
+                return new Triple<>(list.get(counter / size / size), list.get((counter / size) % size), list.get(counter++ % size));
             }
         };
     }
