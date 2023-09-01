@@ -53,4 +53,12 @@ public class PiCalculationTest {
         System.out.println(IntStream.range(0, doubles.size()).mapToObj(idx -> "[" + 0.01 * (idx + 104) + ", " + doubles.get(idx) + "]")
                 .collect(Collectors.joining(", ", "[", "]")));
     }
+
+    @Test
+    public void tabulatePolygonPi() {
+        for (int i = 3; i < 1000; i++) {
+            double pi = 2 * i * Math.cos(Math.PI * (i - 1) / (2 * i));
+            System.out.println(i + ": " + pi);
+        }
+    }
 }
