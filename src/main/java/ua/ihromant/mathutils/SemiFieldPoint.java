@@ -1,13 +1,15 @@
 package ua.ihromant.mathutils;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class SemiFieldPoint {
     private static final SemiFieldPoint[][] CACHE = IntStream.range(0, SemiField.SIZE)
             .mapToObj(i -> IntStream.range(0, SemiField.SIZE).mapToObj(j -> new SemiFieldPoint(i, j))
                     .toArray(SemiFieldPoint[]::new))
             .toArray(SemiFieldPoint[][]::new);
-    public static final SemiFieldPoint ZERO = CACHE[SemiField.ZERO][SemiField.ZERO];
+    private static final SemiFieldPoint ZERO = CACHE[SemiField.ZERO][SemiField.ZERO];
 
     private final int x;
     private final int y;
@@ -15,6 +17,10 @@ public class SemiFieldPoint {
     private SemiFieldPoint(int x, int y) {
         this.x = x;
         this.y = y;
+    }
+
+    public static Stream<SemiFieldPoint> nonZeroPoints() {
+        return Arrays.stream(CACHE).flatMap(Arrays::stream).filter(p -> !p.equals(ZERO));
     }
 
     public static SemiFieldPoint of(int x, int y) {
@@ -61,5 +67,9 @@ public class SemiFieldPoint {
         int ioc = from.indexOf(',');
         int iorb = from.indexOf(')');
         return of(SemiField.parse(from.substring(iolb + 1, ioc)), SemiField.parse(from.substring(ioc + 1, iorb)));
+    }
+
+    public Integer multiplier(SemiFieldPoint that) {
+        return IntStream.range(0, SemiField.SIZE).filter(i -> this.equals(that.mul(i))).boxed().findAny().orElse(null);
     }
 }

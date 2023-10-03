@@ -6,6 +6,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -79,6 +80,55 @@ public class SemiFieldTest {
     }
 
     @Test
+    public void testParallelReflexive() {
+        assertNotNull(SemiFieldPoint.parse("(0,0)"));
+        assertTrue(SemiFieldPoint.nonZeroPoints().noneMatch(p -> "(0,0)".equals(p.toString())));
+        SemiFieldPoint.nonZeroPoints().forEach(p -> parallel(p, p));
+    }
+
+    @Test
+    public void testParallelSymmetric() {
+        SemiFieldPoint.nonZeroPoints().forEach(p1 -> SemiFieldPoint.nonZeroPoints().forEach(p2 ->
+                assertEquals(parallel(p1, p2), parallel(p2, p1))));
+    }
+
+    @Test
+    public void testParallelTransitive() {
+        SemiFieldPoint.nonZeroPoints().forEach(p1 -> SemiFieldPoint.nonZeroPoints().forEach(p2 ->
+                SemiFieldPoint.nonZeroPoints().forEach(p3 -> {
+                    if (parallel(p1, p2) && parallel(p2, p3)) {
+                        assertTrue(parallel(p1, p3));
+                    }
+                })));
+    }
+
+    @Test
+    public void testMultipliersReflexive() {
+        SemiFieldPoint.nonZeroPoints().forEach(p -> assertEquals(SemiField.ONE, p.multiplier(p)));
+    }
+
+    //@Test
+    public void testMultipliersSymmetric() {
+        SemiFieldPoint.nonZeroPoints().forEach(p1 -> SemiFieldPoint.nonZeroPoints().forEach(p2 ->
+                assertFalse(p1.multiplier(p2) != null ^ p2.multiplier(p1) != null,
+                        "p1: " + p1 + ", p2: " + p2
+                                + ", p1 to p2 multiplier: "
+                                + Optional.ofNullable(p1.multiplier(p2)).map(SemiField::toString).orElse(null)
+                                + ", p2 to p1 multiplier: "
+                                + Optional.ofNullable(p2.multiplier(p1)).map(SemiField::toString).orElse(null))));
+    }
+
+    //@Test
+    public void testMultipliersTransitive() {
+        SemiFieldPoint.nonZeroPoints().forEach(p1 -> SemiFieldPoint.nonZeroPoints().forEach(p2 ->
+                SemiFieldPoint.nonZeroPoints().forEach(p3 -> {
+                    if (p1.multiplier(p2) != null && p2.multiplier(p3) != null) {
+                        assertNotNull(p1.multiplier(p3));
+                    }
+                })));
+    }
+
+    @Test
     public void testLine() {
         for (List<SemiFieldPoint> l : LINES) {
             Set<SemiFieldPoint> line = new HashSet<>(l);
@@ -118,14 +168,32 @@ public class SemiFieldTest {
         assertEquals(a1.sub(a2).neg(), a1a2);
         assertEquals(c1.sub(c2).neg(), c1c2);
         assertTrue(parallel(a1, b1));
+//        assertEquals("1+i", SemiField.toString(a1.multiplier(b1)));
+//        assertEquals("-1+i-j", SemiField.toString(b1.multiplier(a1)));
         assertTrue(parallel(a1, c1));
+//        assertEquals("1-j", SemiField.toString(a1.multiplier(c1)));
+//        assertEquals("-i", SemiField.toString(c1.multiplier(a1)));
         assertTrue(parallel(c1, b1));
+//        assertEquals("i-j", SemiField.toString(c1.multiplier(b1)));
+//        assertEquals("1-i", SemiField.toString(b1.multiplier(c1)));
         assertTrue(parallel(a2, b2));
+//        assertEquals("i-j", SemiField.toString(a2.multiplier(b2)));
+//        assertEquals("1-i", SemiField.toString(b2.multiplier(a2)));
         assertTrue(parallel(a2, c2));
+//        assertEquals("i-j", SemiField.toString(a2.multiplier(c2)));
+//        assertEquals("1-i", SemiField.toString(c2.multiplier(a2)));
         assertTrue(parallel(b2, c2));
+//        assertEquals("i-j", SemiField.toString(b2.multiplier(c2)));
+//        assertEquals("1-i", SemiField.toString(c2.multiplier(b2)));
         assertTrue(parallel(a1b2, b1c2));
+//        assertEquals("i-j", SemiField.toString(a1b2.multiplier(b1c2)));
+//        assertEquals("1-i", SemiField.toString(b1c2.multiplier(a1b2)));
         assertTrue(parallel(b1a2, c1b2));
+//        assertEquals("i-j", SemiField.toString(b1a2.multiplier(c1b2)));
+//        assertEquals("1-i", SemiField.toString(c1b2.multiplier(b1a2)));
         assertFalse(parallel(a1a2, c1c2)); // Parallel Pappus doesn't hold
+//        assertNull(a1a2.multiplier(c1c2));
+//        assertNull(c1c2.multiplier(a1a2));
     }
 
     @Test
