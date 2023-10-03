@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 public enum NearField {
     ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K;
 
-    private static NearField[][] ADDITION_TABLE = {
+    private final static NearField[][] ADDITION_TABLE = {
             // 0     1    -1     i    -i     j    -j     k    -k
             {ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K}, // 0
             {PL_1, MI_1, ZERO, PL_J, PL_K, MI_K, MI_I, MI_J, PL_I}, // 1
@@ -16,7 +16,7 @@ public enum NearField {
             {MI_K, PL_I, PL_J, MI_J, MI_1, MI_I, PL_1, ZERO, PL_K}  // -k
     };
 
-    private static NearField[][] MULTIPLICATION_TABLE = {
+    private final static NearField[][] MULTIPLICATION_TABLE = {
             // 0     1    -1     i    -i     j    -j     k    -k
             {ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO}, // 0
             {ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K}, // 1
@@ -29,7 +29,7 @@ public enum NearField {
             {ZERO, MI_K, PL_K, MI_J, PL_J, PL_I, MI_I, PL_1, MI_1}  // -k
     };
 
-    private static NearField[] NEGATIONS =
+    private final static NearField[] NEGATIONS =
             {ZERO, MI_1, PL_1, MI_I, PL_I, MI_J, PL_J, MI_K, PL_K};
 
     public NearField add(NearField that) {
