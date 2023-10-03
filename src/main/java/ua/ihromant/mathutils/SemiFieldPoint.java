@@ -1,11 +1,8 @@
 package ua.ihromant.mathutils;
 
-import java.util.Arrays;
-import java.util.Map;
-import java.util.function.Function;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class SemiFieldPoint {
     private static final SemiFieldPoint[][] CACHE = IntStream.range(0, SemiField.SIZE)
@@ -16,7 +13,7 @@ public class SemiFieldPoint {
     private final int x;
     private final int y;
 
-    private Map<SemiFieldPoint, Integer> line;
+    private Set<SemiFieldPoint> line;
 
     private SemiFieldPoint(int x, int y) {
         this.x = x;
@@ -25,10 +22,6 @@ public class SemiFieldPoint {
 
     public static SemiFieldPoint of(int x, int y) {
         return CACHE[x][y];
-    }
-
-    public static Stream<SemiFieldPoint> points() {
-        return Arrays.stream(CACHE).flatMap(Arrays::stream);
     }
 
     public SemiFieldPoint add(SemiFieldPoint that) {
@@ -43,13 +36,16 @@ public class SemiFieldPoint {
         return SemiFieldPoint.of(SemiField.mul(this.x, scalar), SemiField.mul(this.y, scalar));
     }
 
-    public Map<SemiFieldPoint, Integer> line() {
+    public Set<SemiFieldPoint> line() {
         if (line == null) {
             line = IntStream.range(0, SemiField.SIZE).filter(i -> i != SemiField.ZERO)
-                    .filter(i -> this.mul(i) != CACHE[SemiField.ZERO][SemiField.ZERO]).boxed()
-                    .collect(Collectors.toMap(this::mul, Function.identity(), (a, b) -> a));
+                    .mapToObj(this::mul).collect(Collectors.toSet());
         }
         return line;
+    }
+
+    public boolean parallel(SemiFieldPoint that) {
+        return SemiField.sub(SemiField.mul(that.x, this.y), SemiField.mul(this.x, that.y)) == SemiField.ZERO;
     }
 
     @Override

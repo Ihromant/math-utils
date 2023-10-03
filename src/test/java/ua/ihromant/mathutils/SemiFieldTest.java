@@ -2,10 +2,10 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -17,17 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SemiFieldTest {
     private static final int NON_ZERO = SemiField.SIZE - 1;
 
-    static {
-        Map<Set<SemiFieldPoint>, List<SemiFieldPoint>> lineToPoint = SemiFieldPoint.points()
-                .collect(Collectors.groupingBy(p -> p.line().keySet()));
-//        System.out.println(lineToPoint.size());
-//        lineToPoint.forEach((key, value) -> System.out.println(key.size() + " " + value.size() + " " + value + " " + key));
-    }
-
-    private static List<Set<SemiFieldPoint>> LINES = Stream.concat(
-            Stream.of(SemiFieldPoint.of(SemiField.ZERO, SemiField.ONE).line().keySet()),
-            IntStream.range(0, SemiField.SIZE).filter(i -> i != SemiField.ZERO)
-                    .mapToObj(nf -> SemiFieldPoint.of(SemiField.ONE, nf).line().keySet())).toList();
+    private static final List<ArrayList<SemiFieldPoint>> LINES = Stream.concat(
+            Stream.of(new ArrayList<>(SemiFieldPoint.of(SemiField.ZERO, SemiField.ONE).line())),
+            IntStream.range(0, SemiField.SIZE).mapToObj(nf -> new ArrayList<>(SemiFieldPoint.of(SemiField.ONE, nf).line()))).toList();
 
     private static final List<Triple> TRIPLES = StreamSupport.stream(distinct().spliterator(), false).toList();
 
@@ -38,32 +30,32 @@ public class SemiFieldTest {
                 if (i == j) {
                     continue;
                 }
-                Set<SemiFieldPoint> line1 = LINES.get(i);
-                Set<SemiFieldPoint> line2 = LINES.get(j);
+                List<SemiFieldPoint> line1 = LINES.get(i);
+                List<SemiFieldPoint> line2 = LINES.get(j);
                 for (int k = 0; k < TRIPLES.size(); k++) {
                     for (int l = 0; l < TRIPLES.size(); l++) {
                         Triple t1 = TRIPLES.get(k);
                         Triple t2 = TRIPLES.get(l);
-//                        SemiFieldPoint a1 = line1[t1.a()];
-//                        SemiFieldPoint b1 = line1[t1.b()];
-//                        SemiFieldPoint c1 = line1[t1.c()];
-//                        SemiFieldPoint a2 = line2[t2.a()];
-//                        SemiFieldPoint b2 = line2[t2.b()];
-//                        SemiFieldPoint c2 = line2[t2.c()];
-//                        SemiFieldPoint a1b2 = b2.sub(a1);
-//                        SemiFieldPoint b1c2 = c2.sub(b1);
-//                        SemiFieldPoint b1a2 = a2.sub(b1);
-//                        SemiFieldPoint c1b2 = b2.sub(c1);
-//                        SemiFieldPoint a1a2 = a2.sub(a1);
-//                        SemiFieldPoint c1c2 = c2.sub(c1);
-//                        if (a1b2.parallel(b1c2) && b1a2.parallel(c1b2) && !a1a2.parallel(c1c2)) {
-//                            System.out.println("a1: " + a1 + ", " + "b1: " + b1 + ", " +
-//                                    "c1: " + c1 + ", " + "a2: " + a2 + ", " +
-//                                    "b2: " + b2 + ", " + "c2: " + c2 + ", " +
-//                                    "a1b2: " + a1b2 + ", " + "b1c2: " + b1c2 + ", " +
-//                                    "b1a2: " + b1a2 + ", " + "c1b2: " + c1b2 + ", " +
-//                                    "a1a2: " + a1a2 + ", " + "c1c2: " + c1c2);
-//                        }
+                        SemiFieldPoint a1 = line1.get(t1.a());
+                        SemiFieldPoint b1 = line1.get(t1.b());
+                        SemiFieldPoint c1 = line1.get(t1.c());
+                        SemiFieldPoint a2 = line2.get(t2.a());
+                        SemiFieldPoint b2 = line2.get(t2.b());
+                        SemiFieldPoint c2 = line2.get(t2.c());
+                        SemiFieldPoint a1b2 = b2.sub(a1);
+                        SemiFieldPoint b1c2 = c2.sub(b1);
+                        SemiFieldPoint b1a2 = a2.sub(b1);
+                        SemiFieldPoint c1b2 = b2.sub(c1);
+                        SemiFieldPoint a1a2 = a2.sub(a1);
+                        SemiFieldPoint c1c2 = c2.sub(c1);
+                        if (a1b2.parallel(b1c2) && b1a2.parallel(c1b2) && !a1a2.parallel(c1c2)) {
+                            System.out.println("a1: " + a1 + ", " + "b1: " + b1 + ", " +
+                                    "c1: " + c1 + ", " + "a2: " + a2 + ", " +
+                                    "b2: " + b2 + ", " + "c2: " + c2 + ", " +
+                                    "a1b2: " + a1b2 + ", " + "b1c2: " + b1c2 + ", " +
+                                    "b1a2: " + b1a2 + ", " + "c1b2: " + c1b2 + ", " +
+                                    "a1a2: " + a1a2 + ", " + "c1c2: " + c1c2);
+                        }
                     }
                 }
             }
@@ -81,9 +73,9 @@ public class SemiFieldTest {
         assertEquals("-1-i+j", SemiField.toString(x2));
         assertEquals("-1-i+j", SemiField.toString(y2));
 
-        assertFalse(SemiFieldPoint.of(x1, y1).line().keySet().containsAll(SemiFieldPoint.of(x2, y2).line().keySet()));
-        Set<SemiFieldPoint> l = new HashSet<>(SemiFieldPoint.of(x2, y2).line().keySet());
-        l.removeAll(SemiFieldPoint.of(x1, y1).line().keySet());
+        assertFalse(SemiFieldPoint.of(x1, y1).line().containsAll(SemiFieldPoint.of(x2, y2).line()));
+        Set<SemiFieldPoint> l = new HashSet<>(SemiFieldPoint.of(x2, y2).line());
+        l.removeAll(SemiFieldPoint.of(x1, y1).line());
         System.out.println(l);
     }
 
@@ -95,7 +87,7 @@ public class SemiFieldTest {
 
     @Test
     public void testUniquePoints() {
-        assertEquals(LINES.size() * NON_ZERO, LINES.stream().flatMap(Set::stream).collect(Collectors.toSet()).size());
+        assertEquals(LINES.size() * NON_ZERO, LINES.stream().flatMap(List::stream).collect(Collectors.toSet()).size());
     }
 
     @Test // a + b = b + a
