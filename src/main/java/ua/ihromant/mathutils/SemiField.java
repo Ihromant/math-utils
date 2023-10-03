@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import java.util.stream.IntStream;
+
 public class SemiField {
     public static final int SIZE = SemiFieldGen.SIZE;
     public static final int ZERO = SemiFieldGen.ZR;
@@ -67,6 +69,8 @@ public class SemiField {
 
     private static final int[] NEGATION_TABLE = {26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0};
 
+    private static final int[] INVERSE_TABLE = { 3, 15, 14,  0,  4, 16, 18, 17, 20, 19, 21, 25, 24, 13,  2,  1,  5,  7,  6,  9,  8, 10, 22, 26, 12, 11, 23};
+
     public static int add(int a, int b) {
         return ADDITION_TABLE[a][b];
     }
@@ -83,7 +87,18 @@ public class SemiField {
         return add(a, neg(b));
     }
 
+    public static int inv(int a) {
+        if (a == ZERO) {
+            throw new IllegalArgumentException();
+        }
+        return INVERSE_TABLE[a];
+    }
+
     public static String toString(int a) {
         return SemiFieldGen.toString(a);
+    }
+
+    public static int parse(String from) {
+        return IntStream.range(0, SIZE).filter(i -> from.equals(toString(i))).findAny().orElseThrow();
     }
 }

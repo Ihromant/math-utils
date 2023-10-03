@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -135,7 +136,19 @@ public class SemiFieldGen {
         });
     }
 
+    private static void generateInverseTable() {
+        System.out.println(ONE);
+        System.out.println(IntStream.range(0, SIZE).mapToObj(i -> {
+            int[] n = toBase(i);
+            int r = Arrays.equals(n, ZERO) ? ZR : IntStream.range(0, SIZE).filter(j -> {
+                    int[] inv = toBase(j);
+                    return Arrays.equals(toBase(ONE), mul(n, inv));
+                }).findAny().orElseThrow();
+            return String.format("%2d", r);
+        }).collect(Collectors.joining(", ", "{", "}")));
+    }
+
     public static void main(String[] args) {
-        generateMultiplicationTable();
+        generateInverseTable();
     }
 }

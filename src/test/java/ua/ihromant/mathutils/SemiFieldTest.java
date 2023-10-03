@@ -2,10 +2,10 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -15,15 +15,27 @@ import java.util.stream.StreamSupport;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SemiFieldTest {
-    private static final int NON_ZERO = SemiField.SIZE - 1;
+    private static final List<List<SemiFieldPoint>> LINES = Stream.concat(
+            Stream.of(line(SemiFieldPoint.of(SemiField.ZERO, SemiField.ONE)).toList()),
+            IntStream.range(0, SemiField.SIZE).mapToObj(nf -> line(SemiFieldPoint.of(SemiField.ONE, nf)).toList())).toList();
 
-    private static final List<ArrayList<SemiFieldPoint>> LINES = Stream.concat(
-            Stream.of(new ArrayList<>(SemiFieldPoint.of(SemiField.ZERO, SemiField.ONE).line())),
-            IntStream.range(0, SemiField.SIZE).mapToObj(nf -> new ArrayList<>(SemiFieldPoint.of(SemiField.ONE, nf).line()))).toList();
+    private static final Map<SemiFieldPoint, Integer> POINT_TO_LINE = IntStream.range(0, LINES.size())
+            .boxed().flatMap(line -> IntStream.range(0, LINES.get(line).size())
+                    .filter(pos -> pos != SemiField.ZERO)
+                    .mapToObj(pos -> new LinePos(line, pos)))
+            .collect(Collectors.toMap(lp -> LINES.get(lp.line()).get(lp.pos()), LinePos::line));
+
+    private record LinePos(int line, int pos) {
+
+    }
+
+    private static Stream<SemiFieldPoint> line(SemiFieldPoint point) {
+        return IntStream.range(0, SemiField.SIZE).mapToObj(point::mul);
+    }
 
     private static final List<Triple> TRIPLES = StreamSupport.stream(distinct().spliterator(), false).toList();
 
-    @Test
+    //@Test uncomment to generate
     public void testPappus() {
         for (int i = 0; i < LINES.size(); i++) {
             for (int j = 0; j < LINES.size(); j++) {
@@ -48,7 +60,7 @@ public class SemiFieldTest {
                         SemiFieldPoint c1b2 = b2.sub(c1);
                         SemiFieldPoint a1a2 = a2.sub(a1);
                         SemiFieldPoint c1c2 = c2.sub(c1);
-                        if (a1b2.parallel(b1c2) && b1a2.parallel(c1b2) && !a1a2.parallel(c1c2)) {
+                        if (parallel(a1b2, b1c2) && parallel(b1a2, c1b2) && !parallel(a1a2, c1c2)) {
                             System.out.println("a1: " + a1 + ", " + "b1: " + b1 + ", " +
                                     "c1: " + c1 + ", " + "a2: " + a2 + ", " +
                                     "b2: " + b2 + ", " + "c2: " + c2 + ", " +
@@ -62,21 +74,58 @@ public class SemiFieldTest {
         }
     }
 
+    private static boolean parallel(SemiFieldPoint p1, SemiFieldPoint p2) {
+        return POINT_TO_LINE.get(p1).intValue() == POINT_TO_LINE.get(p2).intValue();
+    }
+
     @Test
     public void testLine() {
-        int x1 = 9;
-        int y1 = 21;
-        int x2 = 2;
-        int y2 = 2;
-        assertEquals("-i-j", SemiField.toString(x1));
-        assertEquals("1-j", SemiField.toString(y1));
-        assertEquals("-1-i+j", SemiField.toString(x2));
-        assertEquals("-1-i+j", SemiField.toString(y2));
+        for (List<SemiFieldPoint> l : LINES) {
+            Set<SemiFieldPoint> line = new HashSet<>(l);
+            assertEquals(SemiField.SIZE, line.size());
+            for (Triple t : TRIPLES) {
+                SemiFieldPoint a = l.get(t.a());
+                SemiFieldPoint b = l.get(t.b());
+                SemiFieldPoint c = l.get(t.c());
+                assertTrue(parallel(b, a));
+                assertTrue(parallel(c, a));
+                assertTrue(parallel(c, b));
+                assertTrue(parallel(a.sub(b), a.sub(c)));
+                assertTrue(parallel(a.sub(b), b.sub(c)));
+                assertTrue(parallel(a.sub(c), b.sub(c)));
+            }
+        }
+    }
 
-        assertFalse(SemiFieldPoint.of(x1, y1).line().containsAll(SemiFieldPoint.of(x2, y2).line()));
-        Set<SemiFieldPoint> l = new HashSet<>(SemiFieldPoint.of(x2, y2).line());
-        l.removeAll(SemiFieldPoint.of(x1, y1).line());
-        System.out.println(l);
+    @Test
+    public void testDiscoveredCase() {
+        SemiFieldPoint a1 = SemiFieldPoint.parse("(0,j)");
+        SemiFieldPoint b1 = SemiFieldPoint.parse("(0,-1+j)");
+        SemiFieldPoint c1 = SemiFieldPoint.parse("(0,-1-i)");
+        SemiFieldPoint a2 = SemiFieldPoint.parse("(i-j,-1+j)");
+        SemiFieldPoint b2 = SemiFieldPoint.parse("(i+j,-1-i)");
+        SemiFieldPoint c2 = SemiFieldPoint.parse("(1-i-j,-j)");
+        SemiFieldPoint a1b2 = SemiFieldPoint.parse("(i+j,-1-i-j)");
+        SemiFieldPoint b1c2 = SemiFieldPoint.parse("(1-i-j,1+j)");
+        SemiFieldPoint b1a2 = SemiFieldPoint.parse("(i-j,0)");
+        SemiFieldPoint c1b2 = SemiFieldPoint.parse("(i+j,0)");
+        SemiFieldPoint a1a2 = SemiFieldPoint.parse("(i-j,-1)");
+        SemiFieldPoint c1c2 = SemiFieldPoint.parse("(1-i-j,1+i-j)");
+        assertEquals(a1.sub(b2).neg(), a1b2);
+        assertEquals(b1.sub(c2).neg(), b1c2);
+        assertEquals(b1.sub(a2).neg(), b1a2);
+        assertEquals(c1.sub(b2).neg(), c1b2);
+        assertEquals(a1.sub(a2).neg(), a1a2);
+        assertEquals(c1.sub(c2).neg(), c1c2);
+        assertTrue(parallel(a1, b1));
+        assertTrue(parallel(a1, c1));
+        assertTrue(parallel(c1, b1));
+        assertTrue(parallel(a2, b2));
+        assertTrue(parallel(a2, c2));
+        assertTrue(parallel(b2, c2));
+        assertTrue(parallel(a1b2, b1c2));
+        assertTrue(parallel(b1a2, c1b2));
+        assertFalse(parallel(a1a2, c1c2)); // Parallel Pappus doesn't hold
     }
 
     @Test
@@ -87,7 +136,14 @@ public class SemiFieldTest {
 
     @Test
     public void testUniquePoints() {
-        assertEquals(LINES.size() * NON_ZERO, LINES.stream().flatMap(List::stream).collect(Collectors.toSet()).size());
+        assertEquals(LINES.size(), SemiField.SIZE + 1);
+        assertEquals(LINES.stream().mapToInt(List::size).sum(), SemiField.SIZE * SemiField.SIZE + SemiField.SIZE);
+        assertEquals(SemiField.SIZE * SemiField.SIZE, LINES.stream().flatMap(List::stream).collect(Collectors.toSet()).size());
+    }
+
+    @Test
+    public void testZero() {
+        assertEquals(13, SemiField.ZERO);
     }
 
     @Test // a + b = b + a
@@ -170,10 +226,11 @@ public class SemiFieldTest {
 
             private int calculateNext(int curr) {
                 while (true) {
-                    int a = curr / NON_ZERO / NON_ZERO;
-                    int b = curr / NON_ZERO % NON_ZERO;
-                    int c = curr % NON_ZERO;
-                    if (c != b && b != a && c != a) {
+                    int a = curr / SemiField.SIZE / SemiField.SIZE;
+                    int b = curr / SemiField.SIZE % SemiField.SIZE;
+                    int c = curr % SemiField.SIZE;
+                    if (c != b && b != a && c != a
+                            && a != SemiField.ZERO && b != SemiField.ZERO && c != SemiField.ZERO) {
                         break;
                     } else {
                         curr++;
@@ -184,14 +241,14 @@ public class SemiFieldTest {
 
             @Override
             public boolean hasNext() {
-                return idx < NON_ZERO * NON_ZERO * NON_ZERO;
+                return idx < SemiField.SIZE * SemiField.SIZE * SemiField.SIZE;
             }
 
             @Override
             public Triple next() {
                 int res = idx;
                 idx = calculateNext(idx + 1);
-                return new Triple(res / NON_ZERO / NON_ZERO, res / NON_ZERO % NON_ZERO, res % NON_ZERO);
+                return new Triple(res / SemiField.SIZE / SemiField.SIZE, res / SemiField.SIZE % SemiField.SIZE, res % SemiField.SIZE);
             }
         };
     }

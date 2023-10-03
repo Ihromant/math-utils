@@ -1,7 +1,5 @@
 package ua.ihromant.mathutils;
 
-import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class SemiFieldPoint {
@@ -9,11 +7,10 @@ public class SemiFieldPoint {
             .mapToObj(i -> IntStream.range(0, SemiField.SIZE).mapToObj(j -> new SemiFieldPoint(i, j))
                     .toArray(SemiFieldPoint[]::new))
             .toArray(SemiFieldPoint[][]::new);
+    public static final SemiFieldPoint ZERO = CACHE[SemiField.ZERO][SemiField.ZERO];
 
     private final int x;
     private final int y;
-
-    private Set<SemiFieldPoint> line;
 
     private SemiFieldPoint(int x, int y) {
         this.x = x;
@@ -33,19 +30,11 @@ public class SemiFieldPoint {
     }
 
     public SemiFieldPoint mul(int scalar) {
-        return SemiFieldPoint.of(SemiField.mul(this.x, scalar), SemiField.mul(this.y, scalar));
+        return SemiFieldPoint.of(SemiField.mul(scalar, this.x), SemiField.mul(scalar, this.y));
     }
 
-    public Set<SemiFieldPoint> line() {
-        if (line == null) {
-            line = IntStream.range(0, SemiField.SIZE).filter(i -> i != SemiField.ZERO)
-                    .mapToObj(this::mul).collect(Collectors.toSet());
-        }
-        return line;
-    }
-
-    public boolean parallel(SemiFieldPoint that) {
-        return SemiField.sub(SemiField.mul(that.x, this.y), SemiField.mul(this.x, that.y)) == SemiField.ZERO;
+    public SemiFieldPoint neg() {
+        return of(SemiField.neg(this.x), SemiField.neg(this.y));
     }
 
     @Override
@@ -65,5 +54,12 @@ public class SemiFieldPoint {
         int result = x;
         result = 31 * result + y;
         return result;
+    }
+
+    public static SemiFieldPoint parse(String from) {
+        int iolb = from.indexOf('(');
+        int ioc = from.indexOf(',');
+        int iorb = from.indexOf(')');
+        return of(SemiField.parse(from.substring(iolb + 1, ioc)), SemiField.parse(from.substring(ioc + 1, iorb)));
     }
 }
