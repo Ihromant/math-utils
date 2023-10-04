@@ -129,6 +129,30 @@ public class SemiFieldTest {
     }
 
     @Test
+    public void testAltParallelReflexive() {
+        assertNotNull(SemiFieldPoint.parse("(0,0)"));
+        assertTrue(SemiFieldPoint.nonZeroPoints().noneMatch(p -> "(0,0)".equals(p.toString())));
+        SemiFieldPoint.nonZeroPoints().forEach(p -> p.wrongParallel(p));
+    }
+
+    @Test
+    public void testAltParallelSymmetric() {
+        SemiFieldPoint.nonZeroPoints().forEach(p1 -> SemiFieldPoint.nonZeroPoints().forEach(p2 ->
+                assertEquals(p1.wrongParallel(p2), p2.wrongParallel(p1))));
+    }
+
+    //@Test
+    public void testAltParallelTransitive() {
+        SemiFieldPoint.nonZeroPoints().forEach(p1 -> SemiFieldPoint.nonZeroPoints().forEach(p2 ->
+                SemiFieldPoint.nonZeroPoints().forEach(p3 -> {
+                    if (p1.wrongParallel(p2) && p2.wrongParallel(p3)) {
+                        assertTrue(p1.wrongParallel(p3), p1 + " " + p2 + " " + p3);
+                    }
+                })));
+    }
+
+
+    @Test
     public void testLine() {
         for (List<SemiFieldPoint> l : LINES) {
             Set<SemiFieldPoint> line = new HashSet<>(l);

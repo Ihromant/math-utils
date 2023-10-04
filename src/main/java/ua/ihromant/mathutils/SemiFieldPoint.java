@@ -72,4 +72,8 @@ public class SemiFieldPoint {
     public Integer multiplier(SemiFieldPoint that) {
         return IntStream.range(0, SemiField.SIZE).filter(i -> this.equals(that.mul(i))).boxed().findAny().orElse(null);
     }
+
+    public boolean wrongParallel(SemiFieldPoint that) {
+        return SemiField.mul(that.x, this.y) == SemiField.mul(this.x, that.y);
+    }
 }
