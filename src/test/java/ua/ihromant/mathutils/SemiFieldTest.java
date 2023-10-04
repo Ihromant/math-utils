@@ -148,6 +148,37 @@ public class SemiFieldTest {
     }
 
     @Test
+    public void testHorVerDiscoveredCase() {
+        SemiFieldPoint a1 = SemiFieldPoint.parse("(0,-1+i+j)");
+        SemiFieldPoint b1 = SemiFieldPoint.parse("(0,1+i+j)");
+        SemiFieldPoint c1 = SemiFieldPoint.parse("(0,1+i)");
+        SemiFieldPoint a2 = SemiFieldPoint.parse("(-1-i-j,0)");
+        SemiFieldPoint b2 = SemiFieldPoint.parse("(-1-i,0)");
+        SemiFieldPoint c2 = SemiFieldPoint.parse("(i,0)");
+        SemiFieldPoint a1b2 = SemiFieldPoint.parse("(-1-i,1-i-j)");
+        SemiFieldPoint b1c2 = SemiFieldPoint.parse("(i,-1-i-j)");
+        SemiFieldPoint b1a2 = SemiFieldPoint.parse("(-1-i-j,-1-i-j)");
+        SemiFieldPoint c1b2 = SemiFieldPoint.parse("(-1-i,-1-i)");
+        SemiFieldPoint a1a2 = SemiFieldPoint.parse("(-1-i-j,1-i-j)");
+        SemiFieldPoint c1c2 = SemiFieldPoint.parse("(i,-1-i)");
+        assertEquals(a1.sub(b2).neg(), a1b2);
+        assertEquals(b1.sub(c2).neg(), b1c2);
+        assertEquals(b1.sub(a2).neg(), b1a2);
+        assertEquals(c1.sub(b2).neg(), c1b2);
+        assertEquals(a1.sub(a2).neg(), a1a2);
+        assertEquals(c1.sub(c2).neg(), c1c2);
+        assertTrue(parallel(a1, b1));
+        assertTrue(parallel(a1, c1));
+        assertTrue(parallel(c1, b1));
+        assertTrue(parallel(a2, b2));
+        assertTrue(parallel(a2, c2));
+        assertTrue(parallel(b2, c2));
+        assertTrue(parallel(a1b2, b1c2));
+        assertTrue(parallel(b1a2, c1b2));
+        assertFalse(parallel(a1a2, c1c2)); // Parallel Pappus doesn't hold
+    }
+
+    @Test
     public void testDiscoveredCase() {
         SemiFieldPoint a1 = SemiFieldPoint.parse("(0,j)");
         SemiFieldPoint b1 = SemiFieldPoint.parse("(0,-1+j)");
@@ -168,32 +199,14 @@ public class SemiFieldTest {
         assertEquals(a1.sub(a2).neg(), a1a2);
         assertEquals(c1.sub(c2).neg(), c1c2);
         assertTrue(parallel(a1, b1));
-//        assertEquals("1+i", SemiField.toString(a1.multiplier(b1)));
-//        assertEquals("-1+i-j", SemiField.toString(b1.multiplier(a1)));
         assertTrue(parallel(a1, c1));
-//        assertEquals("1-j", SemiField.toString(a1.multiplier(c1)));
-//        assertEquals("-i", SemiField.toString(c1.multiplier(a1)));
         assertTrue(parallel(c1, b1));
-//        assertEquals("i-j", SemiField.toString(c1.multiplier(b1)));
-//        assertEquals("1-i", SemiField.toString(b1.multiplier(c1)));
         assertTrue(parallel(a2, b2));
-//        assertEquals("i-j", SemiField.toString(a2.multiplier(b2)));
-//        assertEquals("1-i", SemiField.toString(b2.multiplier(a2)));
         assertTrue(parallel(a2, c2));
-//        assertEquals("i-j", SemiField.toString(a2.multiplier(c2)));
-//        assertEquals("1-i", SemiField.toString(c2.multiplier(a2)));
         assertTrue(parallel(b2, c2));
-//        assertEquals("i-j", SemiField.toString(b2.multiplier(c2)));
-//        assertEquals("1-i", SemiField.toString(c2.multiplier(b2)));
         assertTrue(parallel(a1b2, b1c2));
-//        assertEquals("i-j", SemiField.toString(a1b2.multiplier(b1c2)));
-//        assertEquals("1-i", SemiField.toString(b1c2.multiplier(a1b2)));
         assertTrue(parallel(b1a2, c1b2));
-//        assertEquals("i-j", SemiField.toString(b1a2.multiplier(c1b2)));
-//        assertEquals("1-i", SemiField.toString(c1b2.multiplier(b1a2)));
         assertFalse(parallel(a1a2, c1c2)); // Parallel Pappus doesn't hold
-//        assertNull(a1a2.multiplier(c1c2));
-//        assertNull(c1c2.multiplier(a1a2));
     }
 
     @Test
