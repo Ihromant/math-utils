@@ -118,6 +118,42 @@ public class HallPointTest {
     }
 
     @Test
+    public void testPlayfair() {
+        Iterable<Integer> space = () -> IntStream.range(0, HallPoint.SIZE).iterator();
+        for (int o : space) {
+            for (int x : space) {
+                for (int y : space) {
+                    Iterable<Integer> aLine = () -> HallPoint.closure(x, y).stream().iterator();
+                    outerB: for (int a : aLine) {
+                        if (!HallPoint.collinear(o, a, x)) {
+                            Iterable<Integer> bLine = () -> HallPoint.closure(o, y).stream().iterator();
+                            Iterable<Integer> cLine = () -> HallPoint.closure(o, y).stream().iterator();
+                            for (int b : bLine) {
+                                outer: for (int c : cLine) {
+                                    Iterable<Integer> tLine = () -> HallPoint.closure(c, a).stream().iterator();
+                                    if (b == c) {
+                                        for (int t : tLine) {
+                                            assertFalse(HallPoint.collinear(o, t, x), o + " " + x + " " + y + " " + a);
+                                        }
+                                    } else {
+                                        for (int t : tLine) {
+                                            if (HallPoint.collinear(o, t, x)) {
+                                                continue outer;
+                                            }
+                                        }
+                                        fail(o + " " + x + " " + y + " " + a);
+                                    }
+                                }
+                                break outerB;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     public void testRegularityBreak() {
         int o = HallPoint.parse("(-1,-1,-1,-1)");
         int a = HallPoint.parse("(-1,-1,-1,0)");
