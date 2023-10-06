@@ -2,6 +2,11 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -62,6 +67,56 @@ public class HallPointTest {
                         assertTrue(HallPoint.collinear(x, b, y));
                     }
                 }))));
+    }
+
+    @Test
+    public void testSingleClosure() {
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> assertEquals(1, HallPoint.closure(x).cardinality()));
+    }
+
+    @Test
+    public void testTwoPointClosure() {
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).filter(y -> x != y)
+                .forEach(y -> assertEquals(3, HallPoint.closure(x, y).cardinality())));
+    }
+
+    @Test
+    public void testThreePointClosure() {
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).filter(y -> x != y)
+                .forEach(y -> IntStream.range(0, HallPoint.SIZE).filter(z -> !HallPoint.collinear(x, z, y))
+                        .forEach(z -> assertEquals(9, HallPoint.closure(x, y, z).cardinality()))));
+    }
+
+    //@Test long-running test
+    public void testFourPointClosure() {
+        Set<Integer> cardinalities = new HashSet<>(List.of(1, 3, 9, 27, 81));
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y ->
+                IntStream.range(0, HallPoint.SIZE).forEach(z -> IntStream.range(0, HallPoint.SIZE).forEach(v ->
+                        assertTrue(cardinalities.contains(HallPoint.closure(x, y, z, v).cardinality()), x + " " + y + " " + z + " " + v)))));
+    }
+
+    public void testRegularityBreak() {
+        int o =
+    }
+
+    @Test
+    public void printFourPointClosure() {
+        int x = 0;
+        int y = 1;
+        int z = 3;
+        int v = 27;
+        BitSet base = new BitSet(HallPoint.SIZE);
+        base.set(x);
+        base.set(y);
+        base.set(z);
+        base.set(v);
+        BitSet next = HallPoint.next(base);
+        while (next.cardinality() > base.cardinality()) {
+            System.out.println(base.cardinality() + " " + base.stream().mapToObj(HallPoint::toString).collect(Collectors.joining(",", "{", "}")));
+            base = next;
+            next = HallPoint.next(base);
+        }
+        System.out.println(next.cardinality() + " " + next.stream().mapToObj(HallPoint::toString).collect(Collectors.joining(",", "{", "}")));
     }
 
     @Test

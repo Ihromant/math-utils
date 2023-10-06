@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import java.util.BitSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -81,6 +82,25 @@ public class HallPoint {
     public static String toString(int p) {
         int[] crd = toCoordinates(p);
         return IntStream.of(crd).mapToObj(Integer::toString).collect(Collectors.joining(",", "(", ")"));
+    }
+
+    public static BitSet closure(int... points) {
+        BitSet base = new BitSet(SIZE);
+        for (int point : points) {
+            base.set(point);
+        }
+        BitSet next = next(base);
+        while (next.cardinality() > base.cardinality()) {
+            base = next;
+            next = next(base);
+        }
+        return base;
+    }
+
+    public static BitSet next(BitSet base) {
+        BitSet next = (BitSet) base.clone();
+        base.stream().forEach(x -> base.stream().forEach(y -> next.set(add(x, y))));
+        return next;
     }
 
     public static void main(String[] args) {
