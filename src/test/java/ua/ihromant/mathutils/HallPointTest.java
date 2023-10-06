@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -100,16 +101,12 @@ public class HallPointTest {
                             assertEquals(9, firstStep.cardinality()); //testing of claim 2.4
                         })));
         assertEquals(1170, planes.size());
-        planes.forEach(p1 -> {
-            int counter = 0;
-            for (BitSet p2 : planes) {
-                BitSet clone = (BitSet) p1.clone();
-                if (!clone.intersects(p2)) {
-                    counter++;
-                }
-            }
-            assertEquals(296, counter);
-        });
+        planes.forEach(p1 -> assertEquals(Map.of(0, 296L, 1, 729L, 3, 144L, 9, 1L),
+                planes.stream().collect(Collectors.groupingBy(p2 -> {
+                    BitSet clone = (BitSet) p1.clone();
+                    clone.and(p2);
+                    return clone.cardinality();
+                }, Collectors.counting()))));
     }
 
     //@Test long-running test
