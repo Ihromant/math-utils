@@ -68,7 +68,7 @@ public class HallPoint {
     }
 
     public static boolean collinear(int x, int y, int z) {
-        return add(x, y) == z || x == z || y == z;
+        return x == y || y == z || add(x, z) == y;
     }
 
     public static int parse(String point) {

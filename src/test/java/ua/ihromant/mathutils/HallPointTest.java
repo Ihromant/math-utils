@@ -37,20 +37,50 @@ public class HallPointTest {
     }
 
     @Test
+    public void checkLinealIdentity() {
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y -> {
+            if (HallPoint.collinear(x, y, x)) {
+                assertEquals(x, y);
+            }
+        }));
+    }
+
+    @Test
+    public void checkLinealReflexivity() {
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y -> {
+            assertTrue(HallPoint.collinear(x, x, y));
+            assertTrue(HallPoint.collinear(x, y, y));
+        }));
+    }
+
+    @Test
+    public void checkLinearExchange() {
+        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y ->
+                IntStream.range(0, HallPoint.SIZE).forEach(a -> IntStream.range(0, HallPoint.SIZE).forEach(b -> {
+                    if (HallPoint.collinear(a, x, b) && HallPoint.collinear(a, y, b) && x != y) {
+                        assertTrue(HallPoint.collinear(x, a, y));
+                        assertTrue(HallPoint.collinear(x, b, y));
+                    }
+                }))));
+    }
+
+    @Test
     public void findRegularityBreak() {
+        long time = System.currentTimeMillis();
         for (int o = 0; o < HallPoint.SIZE; o++) {
             for (int a = 0; a < HallPoint.SIZE; a++) {
-                if (o == a) {
-                    continue;
-                }
+//                if (o == a) {
+//                    continue;
+//                }
                 for (int u = 0; u < HallPoint.SIZE; u++) {
-                    if (u == a || u == o) {
-                        continue;
-                    }
+//                    if (u == a || u == o) {
+//                        continue;
+//                    }
+                    System.out.println(o + " " + a + " " + u);
                     outer: for (int y = 0; y < HallPoint.SIZE; y++) {
-                        if (y == o || y == a || y == u) {
-                            continue;
-                        }
+//                        if (y == o || y == a || y == u) {
+//                            continue;
+//                        }
                         int x = HallPoint.add(o, a);
                         int z = HallPoint.add(y, x);
                         for (int v = 0; v < HallPoint.SIZE; v++) {
@@ -65,11 +95,12 @@ public class HallPointTest {
                                 }
                             }
                         }
-                        System.out.println(o + " " + a + " " + u + " " + y);
+                        System.out.println(o + " " + a + " " + u + " " + y + " spent " + (System.currentTimeMillis() - time));
                         return;
                     }
                 }
             }
         }
+        System.out.println("Not found " + (System.currentTimeMillis() - time));
     }
 }
