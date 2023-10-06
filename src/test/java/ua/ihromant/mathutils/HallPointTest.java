@@ -88,6 +88,16 @@ public class HallPointTest {
                             BitSet plane = HallPoint.closure(x, y, z);
                             assertEquals(9, plane.cardinality());
                             planes.add(plane);
+                            int a = HallPoint.add(x, z);
+                            int b = HallPoint.add(x, y);
+                            BitSet firstStep = new BitSet();
+                            firstStep.set(a);
+                            firstStep.set(b);
+                            firstStep.set(x);
+                            firstStep.set(y);
+                            firstStep.set(z);
+                            firstStep = HallPoint.next(firstStep);
+                            assertEquals(9, firstStep.cardinality());
                         })));
         assertEquals(1170, planes.size());
         planes.forEach(p -> System.out.println(p.stream().mapToObj(HallPoint::toString).collect(Collectors.joining(",", "{", "}"))));
