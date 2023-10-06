@@ -9,8 +9,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class HallPointTest {
     @Test
@@ -82,9 +81,16 @@ public class HallPointTest {
 
     @Test
     public void testThreePointClosure() {
+        Set<BitSet> planes = new HashSet<>();
         IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).filter(y -> x != y)
                 .forEach(y -> IntStream.range(0, HallPoint.SIZE).filter(z -> !HallPoint.collinear(x, z, y))
-                        .forEach(z -> assertEquals(9, HallPoint.closure(x, y, z).cardinality()))));
+                        .forEach(z -> {
+                            BitSet plane = HallPoint.closure(x, y, z);
+                            assertEquals(9, plane.cardinality());
+                            planes.add(plane);
+                        })));
+        assertEquals(1170, planes.size());
+        planes.forEach(p -> System.out.println(p.stream().mapToObj(HallPoint::toString).collect(Collectors.joining(",", "{", "}"))));
     }
 
     //@Test long-running test
@@ -95,8 +101,111 @@ public class HallPointTest {
                         assertTrue(cardinalities.contains(HallPoint.closure(x, y, z, v).cardinality()), x + " " + y + " " + z + " " + v)))));
     }
 
+    @Test
     public void testRegularityBreak() {
-        int o =
+        int o = HallPoint.parse("(-1,-1,-1,-1)");
+        int a = HallPoint.parse("(-1,-1,-1,0)");
+        int b = HallPoint.parse("(-1,-1,0,-1)");
+        int u = HallPoint.parse("(-1,0,-1,-1)");
+        int v = HallPoint.parse("(-1,-1,-1,-1)");
+        int x = HallPoint.parse("(-1,-1,-1,0)");
+        int y = HallPoint.parse("(0,1,1,-1)");
+        int z = HallPoint.parse("(-1,0,0,1)");;
+        assertTrue(HallPoint.collinear(o, v, u));
+        assertTrue(HallPoint.collinear(a, x, v));
+        assertTrue(HallPoint.collinear(b, y, u));
+        assertTrue(HallPoint.collinear(x, z, y));
+        Iterable<Integer> sLine = () -> HallPoint.closure(o, a).stream().iterator();
+        Iterable<Integer> tLine = () -> HallPoint.closure(o, b).stream().iterator();
+        Iterable<Integer> wLine = () -> HallPoint.closure(o, u).stream().iterator();
+        for (int s : sLine) {
+            for (int t : tLine) {
+                for (int w : wLine) {
+                    Iterable<Integer> cLine = () -> HallPoint.closure(s, t).stream().iterator();
+                    for (int c : cLine) {
+                        assertFalse(HallPoint.collinear(c, z, w));
+                    }
+                }
+            }
+        }
+    }
+
+    // @Test fails
+    public void testSmallRegularityBreak() {
+        int o = HallPoint.parse("(-1,-1,-1,-1)");
+        int a = HallPoint.parse("(-1,-1,-1,0)");
+        int u = HallPoint.parse("(-1,0,-1,-1)");
+        int x = HallPoint.parse("(-1,-1,-1,0)");
+        int y = HallPoint.parse("(0,1,1,-1)");
+        int z = HallPoint.parse("(-1,0,0,1)");;
+        assertTrue(HallPoint.collinear(o, x, a));
+        assertTrue(HallPoint.collinear(x, z, y));
+        Iterable<Integer> sLine = () -> HallPoint.closure(o, a).stream().iterator();
+        Iterable<Integer> tLine = () -> HallPoint.closure(o, y).stream().iterator();
+        Iterable<Integer> vLine = () -> HallPoint.closure(o, u).stream().iterator();
+        for (int s : sLine) {
+            for (int t : tLine) {
+                for (int v : vLine) {
+                    Iterable<Integer> cLine = () -> HallPoint.closure(s, t).stream().iterator();
+                    for (int c : cLine) {
+                        assertFalse(HallPoint.collinear(c, z, v));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void findFullRegularityBreak() {
+        Iterable<Integer> oSet = () -> IntStream.range(0, HallPoint.SIZE).iterator();
+        Iterable<Integer> aSet = () -> IntStream.range(0, HallPoint.SIZE).iterator();
+        Iterable<Integer> bSet = () -> IntStream.range(0, HallPoint.SIZE).iterator();
+        Iterable<Integer> uSet = () -> IntStream.range(0, HallPoint.SIZE).iterator();
+        for (int o : oSet) {
+            for (int a : aSet) {
+                if (o == a) {
+                    continue;
+                }
+                for (int b : bSet) {
+                    if (HallPoint.collinear(o, b, a)) {
+                        continue;
+                    }
+                    for (int u : uSet) {
+                        if (HallPoint.closure(o, a, b).get(u)) {
+                            continue;
+                        }
+                        Iterable<Integer> vLine = () -> HallPoint.closure(o, u).stream().iterator();
+                        Iterable<Integer> yLine = () -> HallPoint.closure(u, b).stream().iterator();
+                        for (int v : vLine) {
+                            for (int y : yLine) {
+                                Iterable<Integer> xLine = () -> HallPoint.closure(v, a).stream().iterator();
+                                for (int x : xLine) {
+                                    Iterable<Integer> zLine = () -> HallPoint.closure(x, y).stream().iterator();
+                                    outer: for (int z : zLine) {
+                                        Iterable<Integer> sLine = () -> HallPoint.closure(o, a).stream().iterator();
+                                        Iterable<Integer> tLine = () -> HallPoint.closure(o, b).stream().iterator();
+                                        Iterable<Integer> wLine = () -> HallPoint.closure(o, u).stream().iterator();
+                                        for (int s : sLine) {
+                                            for (int t : tLine) {
+                                                for (int w : wLine) {
+                                                    Iterable<Integer> cLine = () -> HallPoint.closure(s, t).stream().iterator();
+                                                    for (int c : cLine) {
+                                                        if (HallPoint.collinear(c, z, w)) {
+                                                            continue outer;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        fail(o + " " + a + " " + b + " " + u + " " + v + " " + x + " " + y + " " + z);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @Test
