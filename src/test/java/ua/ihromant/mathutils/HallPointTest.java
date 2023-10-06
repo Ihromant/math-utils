@@ -76,8 +76,8 @@ public class HallPointTest {
 //                    if (u == a || u == o) {
 //                        continue;
 //                    }
-                    System.out.println(o + " " + a + " " + u);
                     outer: for (int y = 0; y < HallPoint.SIZE; y++) {
+                        System.out.println(o + " " + a + " " + u + " " + y);
 //                        if (y == o || y == a || y == u) {
 //                            continue;
 //                        }
@@ -89,7 +89,7 @@ public class HallPointTest {
                                     for (int c = 0; c < HallPoint.SIZE; c++) {
                                         if (HallPoint.collinear(o, v, u) && HallPoint.collinear(o, s, a) && HallPoint.collinear(o, t, y)
                                                 && HallPoint.collinear(s, c, t) && HallPoint.collinear(v, z, c)) {
-                                            break outer;
+                                            continue outer;
                                         }
                                     }
                                 }
