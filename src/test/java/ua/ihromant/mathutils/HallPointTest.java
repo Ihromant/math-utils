@@ -100,7 +100,16 @@ public class HallPointTest {
                             assertEquals(9, firstStep.cardinality()); //testing of claim 2.4
                         })));
         assertEquals(1170, planes.size());
-        planes.forEach(p -> System.out.println(p.stream().mapToObj(HallPoint::toString).collect(Collectors.joining(",", "{", "}"))));
+        planes.forEach(p1 -> {
+            int counter = 0;
+            for (BitSet p2 : planes) {
+                BitSet clone = (BitSet) p1.clone();
+                if (!clone.intersects(p2)) {
+                    counter++;
+                }
+            }
+            assertEquals(296, counter);
+        });
     }
 
     //@Test long-running test
