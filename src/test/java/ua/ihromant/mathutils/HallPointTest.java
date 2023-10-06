@@ -97,7 +97,7 @@ public class HallPointTest {
                             firstStep.set(y);
                             firstStep.set(z);
                             firstStep = HallPoint.next(firstStep);
-                            assertEquals(9, firstStep.cardinality());
+                            assertEquals(9, firstStep.cardinality()); //testing of claim 2.4
                         })));
         assertEquals(1170, planes.size());
         planes.forEach(p -> System.out.println(p.stream().mapToObj(HallPoint::toString).collect(Collectors.joining(",", "{", "}"))));
