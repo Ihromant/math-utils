@@ -68,8 +68,8 @@ public class HallPoint {
         return OPERATION_TABLE[a][b];
     }
 
-    public static boolean collinear(int x, int y, int z) {
-        return x == y || y == z || add(x, z) == y;
+    public static boolean collinear(int begin, int point, int end) {
+        return begin == point || point == end || add(begin, end) == point;
     }
 
     public static int parse(String point) {
