@@ -84,7 +84,7 @@ public class HallPoint {
         return IntStream.of(crd).mapToObj(Integer::toString).collect(Collectors.joining(",", "(", ")"));
     }
 
-    public static BitSet closure(int... points) {
+    public static BitSet hull(int... points) {
         BitSet base = new BitSet(SIZE);
         for (int point : points) {
             base.set(point);

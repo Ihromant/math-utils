@@ -13,140 +13,216 @@ import java.util.stream.IntStream;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class HallPointTest {
+    private static final Iterable<Integer> space = () -> IntStream.range(0, HallPoint.SIZE).iterator();
+
+    private static Iterable<Integer> line(int a, int b) {
+        return () -> HallPoint.hull(a, b).stream().iterator();
+    }
+
     @Test
     public void testCorrectness() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y -> {
-            int z = HallPoint.add(x, y);
-            assertEquals(x, HallPoint.add(y, z));
-            assertEquals(y, HallPoint.add(x, z));
-        }));
+        for (int x : space) {
+            for (int y : space) {
+                int z = HallPoint.add(x, y);
+                assertEquals(x, HallPoint.add(y, z));
+                assertEquals(y, HallPoint.add(x, z));
+            }
+        }
     }
 
     @Test
     public void testReflexivity() {
-        IntStream.range(0, HallPoint.SIZE).forEach(i -> assertEquals(i, HallPoint.add(i, i)));
+        for (int x : space) {
+            assertEquals(x, HallPoint.add(x, x));
+        }
     }
 
     @Test
     public void testSymmetric() {
-        IntStream.range(0, HallPoint.SIZE).forEach(i -> IntStream.range(0, HallPoint.SIZE).forEach(j ->
-                assertEquals(HallPoint.add(i, j), HallPoint.add(j, i))));
+        for (int x : space) {
+            for (int y : space) {
+                assertEquals(HallPoint.add(x, y), HallPoint.add(y, x));
+            }
+        }
     }
 
     @Test
     public void testDistributive() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y ->
-                IntStream.range(0, HallPoint.SIZE).forEach(z ->
-                        assertEquals(HallPoint.add(x, HallPoint.add(y, z)),
-                                HallPoint.add(HallPoint.add(x, y), HallPoint.add(x, z))))));
+        int counter = 0;
+        for (int x : space) {
+            for (int y : space) {
+                for (int z : space) {
+                    assertEquals(HallPoint.add(x, HallPoint.add(y, z)),
+                            HallPoint.add(HallPoint.add(x, y), HallPoint.add(x, z)));
+                    counter++;
+                }
+            }
+        }
+        assertEquals(HallPoint.SIZE * HallPoint.SIZE * HallPoint.SIZE, counter);
     }
 
     @Test
     public void checkLinealIdentity() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y -> {
-            if (HallPoint.collinear(x, y, x)) {
+        for (int x : space) {
+            for (int y : space) {
+                if (!HallPoint.collinear(x, y, x)) {
+                    continue;
+                }
                 assertEquals(x, y);
             }
-        }));
+        }
     }
 
     @Test
     public void checkLinealReflexivity() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y -> {
-            assertTrue(HallPoint.collinear(x, x, y));
-            assertTrue(HallPoint.collinear(x, y, y));
-        }));
+        for (int x : space) {
+            for (int y : space) {
+                assertTrue(HallPoint.collinear(x, x, y));
+                assertTrue(HallPoint.collinear(x, y, y));
+            }
+        }
     }
 
     @Test
     public void checkLinearExchange() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y ->
-                IntStream.range(0, HallPoint.SIZE).forEach(a -> IntStream.range(0, HallPoint.SIZE).forEach(b -> {
-                    if (HallPoint.collinear(a, x, b) && HallPoint.collinear(a, y, b) && x != y) {
+        for (int x : space) {
+            for (int y : space) {
+                for (int a : space) {
+                    for (int b : space) {
+                        if (!HallPoint.collinear(a, x, b) || !HallPoint.collinear(a, y, b) || x == y) {
+                            continue;
+                        }
                         assertTrue(HallPoint.collinear(x, a, y));
                         assertTrue(HallPoint.collinear(x, b, y));
                     }
-                }))));
+                }
+            }
+        }
     }
 
     @Test
-    public void testSingleClosure() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> assertEquals(1, HallPoint.closure(x).cardinality()));
-    }
-
-    @Test
-    public void testTwoPointClosure() {
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).filter(y -> x != y)
-                .forEach(y -> assertEquals(3, HallPoint.closure(x, y).cardinality())));
+    public void testSmallHulls() {
+        for (int x : space) {
+            assertEquals(1, HallPoint.hull(x).cardinality());
+            for (int y : space) {
+                BitSet line = HallPoint.hull(x, y);
+                if (x == y) {
+                    assertEquals(1, line.cardinality());
+                } else {
+                    assertEquals(3, line.cardinality());
+                }
+                for (int z : space) {
+                    assertEquals(line.get(z), HallPoint.collinear(x, z, y));
+                }
+            }
+        }
     }
 
     @Test
     public void testThreePointClosure() {
         Set<BitSet> planes = new HashSet<>();
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).filter(y -> x != y)
-                .forEach(y -> IntStream.range(0, HallPoint.SIZE).filter(z -> !HallPoint.collinear(x, z, y))
-                        .forEach(z -> {
-                            BitSet plane = HallPoint.closure(x, y, z);
-                            assertEquals(9, plane.cardinality());
-                            planes.add(plane);
-                            int a = HallPoint.add(x, z);
-                            int b = HallPoint.add(x, y);
-                            BitSet firstStep = new BitSet();
-                            firstStep.set(a);
-                            firstStep.set(b);
-                            firstStep.set(x);
-                            firstStep.set(y);
-                            firstStep.set(z);
-                            firstStep = HallPoint.next(firstStep);
-                            assertEquals(9, firstStep.cardinality()); //testing of claim 2.4
-                        })));
+        for (int x : space) {
+            for (int y : space) {
+                if (x == y) {
+                    continue;
+                }
+                for (int z : space) {
+                    if (HallPoint.collinear(x, z, y)) {
+                        continue;
+                    }
+                    BitSet plane = HallPoint.hull(x, y, z);
+                    assertEquals(9, plane.cardinality());
+                    planes.add(plane);
+                    int a = HallPoint.add(x, z);
+                    int b = HallPoint.add(x, y);
+                    BitSet firstStep = new BitSet();
+                    firstStep.set(a);
+                    firstStep.set(b);
+                    firstStep.set(x);
+                    firstStep.set(y);
+                    firstStep.set(z);
+                    firstStep = HallPoint.next(firstStep);
+                    assertEquals(9, firstStep.cardinality()); //testing of claim 2.4
+                }
+            }
+        }
         assertEquals(1170, planes.size());
-        planes.forEach(p1 -> assertEquals(Map.of(0, 296L, 1, 729L, 3, 144L, 9, 1L),
-                planes.stream().collect(Collectors.groupingBy(p2 -> {
-                    BitSet clone = (BitSet) p1.clone();
-                    clone.and(p2);
-                    return clone.cardinality();
-                }, Collectors.counting()))));
+        for (BitSet p : planes) {
+            assertEquals(Map.of(0, 296L, 1, 729L, 3, 144L, 9, 1L),
+                    planes.stream().collect(Collectors.groupingBy(p1 -> {
+                        BitSet clone = (BitSet) p.clone();
+                        clone.and(p1);
+                        return clone.cardinality();
+                    }, Collectors.counting())));
+        }
     }
 
     //@Test long-running test
     public void testFourPointClosure() {
         Set<Integer> cardinalities = new HashSet<>(List.of(1, 3, 9, 27, 81));
-        IntStream.range(0, HallPoint.SIZE).forEach(x -> IntStream.range(0, HallPoint.SIZE).forEach(y ->
-                IntStream.range(0, HallPoint.SIZE).forEach(z -> IntStream.range(0, HallPoint.SIZE).forEach(v ->
-                        assertTrue(cardinalities.contains(HallPoint.closure(x, y, z, v).cardinality()), x + " " + y + " " + z + " " + v)))));
+        for (int x : space) {
+            for (int y : space) {
+                for (int z : space) {
+                    for (int v : space) {
+                        assertTrue(cardinalities.contains(HallPoint.hull(x, y, z, v).cardinality()));
+                    }
+                }
+            }
+        }
     }
 
     @Test
     public void testPlayfair() {
-        Iterable<Integer> space = () -> IntStream.range(0, HallPoint.SIZE).iterator();
-        for (int o : space) {
+        for (int o : space) { // linear form
             for (int x : space) {
+                BitSet ox = HallPoint.hull(o, x);
                 for (int y : space) {
-                    Iterable<Integer> aLine = () -> HallPoint.closure(x, y).stream().iterator();
-                    outerB: for (int a : aLine) {
-                        if (!HallPoint.collinear(o, a, x)) {
-                            Iterable<Integer> bLine = () -> HallPoint.closure(o, y).stream().iterator();
-                            Iterable<Integer> cLine = () -> HallPoint.closure(o, y).stream().iterator();
-                            for (int b : bLine) {
-                                outer: for (int c : cLine) {
-                                    Iterable<Integer> tLine = () -> HallPoint.closure(c, a).stream().iterator();
-                                    if (b == c) {
-                                        for (int t : tLine) {
-                                            assertFalse(HallPoint.collinear(o, t, x), o + " " + x + " " + y + " " + a);
-                                        }
-                                    } else {
-                                        for (int t : tLine) {
-                                            if (HallPoint.collinear(o, t, x)) {
-                                                continue outer;
-                                            }
-                                        }
-                                        fail(o + " " + x + " " + y + " " + a);
-                                    }
-                                }
+                    outerB: for (int a : line(x, y)) {
+                        if (ox.get(a)) {
+                            continue;
+                        }
+                        for (int b : line(o, y)) {
+                            boolean forEach = true;
+                            for (int c : line(o, y)) {
+                                BitSet ac = HallPoint.hull(a, c);
+                                forEach = forEach && (b != c == ac.intersects(ox));
+                            }
+                            if (forEach) {
                                 break outerB;
                             }
                         }
+                        fail();
+                    }
+                }
+            }
+        }
+        for (int o : space) { // collinear form
+            for (int x : space) {
+                for (int y : space) {
+                    outerB: for (int a : space) {
+                        if (!HallPoint.collinear(x, a, y) || HallPoint.collinear(o, a, x)) {
+                            continue;
+                        }
+                        for (int b : space) {
+                            if (!HallPoint.collinear(o, b, y)) {
+                                continue;
+                            }
+                            boolean forEach = true;
+                            for (int c : space) {
+                                if (!HallPoint.collinear(o, c, y)) {
+                                    continue;
+                                }
+                                if (c != b) {
+                                    forEach = forEach && IntStream.range(0, HallPoint.SIZE).anyMatch(t -> HallPoint.collinear(c, t, a) && HallPoint.collinear(o, t, x));
+                                } else {
+                                    forEach = forEach && IntStream.range(0, HallPoint.SIZE).noneMatch(t -> HallPoint.collinear(c, t, a) && HallPoint.collinear(o, t, x));
+                                }
+                            }
+                            if (forEach) {
+                                break outerB;
+                            }
+                        }
+                        fail();
                     }
                 }
             }
@@ -167,13 +243,13 @@ public class HallPointTest {
         assertTrue(HallPoint.collinear(a, x, v));
         assertTrue(HallPoint.collinear(b, y, u));
         assertTrue(HallPoint.collinear(x, z, y));
-        Iterable<Integer> sLine = () -> HallPoint.closure(o, a).stream().iterator();
-        Iterable<Integer> tLine = () -> HallPoint.closure(o, b).stream().iterator();
-        Iterable<Integer> wLine = () -> HallPoint.closure(o, u).stream().iterator();
+        Iterable<Integer> sLine = () -> HallPoint.hull(o, a).stream().iterator();
+        Iterable<Integer> tLine = () -> HallPoint.hull(o, b).stream().iterator();
+        Iterable<Integer> wLine = () -> HallPoint.hull(o, u).stream().iterator();
         for (int s : sLine) {
             for (int t : tLine) {
                 for (int w : wLine) {
-                    Iterable<Integer> cLine = () -> HallPoint.closure(s, t).stream().iterator();
+                    Iterable<Integer> cLine = () -> HallPoint.hull(s, t).stream().iterator();
                     for (int c : cLine) {
                         assertFalse(HallPoint.collinear(c, z, w));
                     }
@@ -192,13 +268,13 @@ public class HallPointTest {
         int z = HallPoint.parse("(-1,0,0,1)");;
         assertTrue(HallPoint.collinear(o, x, a));
         assertTrue(HallPoint.collinear(x, z, y));
-        Iterable<Integer> sLine = () -> HallPoint.closure(o, a).stream().iterator();
-        Iterable<Integer> tLine = () -> HallPoint.closure(o, y).stream().iterator();
-        Iterable<Integer> vLine = () -> HallPoint.closure(o, u).stream().iterator();
+        Iterable<Integer> sLine = () -> HallPoint.hull(o, a).stream().iterator();
+        Iterable<Integer> tLine = () -> HallPoint.hull(o, y).stream().iterator();
+        Iterable<Integer> vLine = () -> HallPoint.hull(o, u).stream().iterator();
         for (int s : sLine) {
             for (int t : tLine) {
                 for (int v : vLine) {
-                    Iterable<Integer> cLine = () -> HallPoint.closure(s, t).stream().iterator();
+                    Iterable<Integer> cLine = () -> HallPoint.hull(s, t).stream().iterator();
                     for (int c : cLine) {
                         assertFalse(HallPoint.collinear(c, z, v));
                     }
@@ -223,24 +299,24 @@ public class HallPointTest {
                         continue;
                     }
                     for (int u : uSet) {
-                        if (HallPoint.closure(o, a, b).get(u)) {
+                        if (HallPoint.hull(o, a, b).get(u)) {
                             continue;
                         }
-                        Iterable<Integer> vLine = () -> HallPoint.closure(o, u).stream().iterator();
-                        Iterable<Integer> yLine = () -> HallPoint.closure(u, b).stream().iterator();
+                        Iterable<Integer> vLine = () -> HallPoint.hull(o, u).stream().iterator();
+                        Iterable<Integer> yLine = () -> HallPoint.hull(u, b).stream().iterator();
                         for (int v : vLine) {
                             for (int y : yLine) {
-                                Iterable<Integer> xLine = () -> HallPoint.closure(v, a).stream().iterator();
+                                Iterable<Integer> xLine = () -> HallPoint.hull(v, a).stream().iterator();
                                 for (int x : xLine) {
-                                    Iterable<Integer> zLine = () -> HallPoint.closure(x, y).stream().iterator();
+                                    Iterable<Integer> zLine = () -> HallPoint.hull(x, y).stream().iterator();
                                     outer: for (int z : zLine) {
-                                        Iterable<Integer> sLine = () -> HallPoint.closure(o, a).stream().iterator();
-                                        Iterable<Integer> tLine = () -> HallPoint.closure(o, b).stream().iterator();
-                                        Iterable<Integer> wLine = () -> HallPoint.closure(o, u).stream().iterator();
+                                        Iterable<Integer> sLine = () -> HallPoint.hull(o, a).stream().iterator();
+                                        Iterable<Integer> tLine = () -> HallPoint.hull(o, b).stream().iterator();
+                                        Iterable<Integer> wLine = () -> HallPoint.hull(o, u).stream().iterator();
                                         for (int s : sLine) {
                                             for (int t : tLine) {
                                                 for (int w : wLine) {
-                                                    Iterable<Integer> cLine = () -> HallPoint.closure(s, t).stream().iterator();
+                                                    Iterable<Integer> cLine = () -> HallPoint.hull(s, t).stream().iterator();
                                                     for (int c : cLine) {
                                                         if (HallPoint.collinear(c, z, w)) {
                                                             continue outer;
@@ -249,7 +325,8 @@ public class HallPointTest {
                                                 }
                                             }
                                         }
-                                        fail(o + " " + a + " " + b + " " + u + " " + v + " " + x + " " + y + " " + z);
+                                        System.out.println(o + " " + a + " " + b + " " + u + " " + v + " " + x + " " + y + " " + z); // fail
+                                        return;
                                     }
                                 }
                             }
