@@ -192,4 +192,98 @@ public class TaoPointTest {
         }
         System.out.println(next.cardinality() + " " + next.stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(",", "{", "}")));
     }
+
+    @Test
+    public void testRegularityBreak() {
+        int o = TaoPoint.parse("(-1,-1,-1)");
+        int a = TaoPoint.parse("(-1,-1,-1)");
+        int b = TaoPoint.parse("(-1,0,-1)");
+        int u = TaoPoint.parse("(0,-1,-1)");
+        int v = TaoPoint.parse("(-1,-1,-1)");
+        int x = TaoPoint.parse("(-1,-1,-1)");
+        int y = TaoPoint.parse("(1,1,-1)");
+        int z = TaoPoint.parse("(0,0,-1)");
+        assertTrue(TaoPoint.collinear(o, v, u));
+        assertTrue(TaoPoint.collinear(a, x, v));
+        assertTrue(TaoPoint.collinear(b, y, u));
+        assertTrue(TaoPoint.collinear(x, z, y));
+        Iterable<Integer> sLine = () -> TaoPoint.hull(o, a).stream().iterator();
+        Iterable<Integer> tLine = () -> TaoPoint.hull(o, b).stream().iterator();
+        Iterable<Integer> wLine = () -> TaoPoint.hull(o, u).stream().iterator();
+        for (int s : sLine) {
+            for (int t : tLine) {
+                for (int w : wLine) {
+                    Iterable<Integer> cLine = () -> TaoPoint.hull(s, t).stream().iterator();
+                    for (int c : cLine) {
+                        assertFalse(TaoPoint.collinear(c, z, w));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void findFullRegularityBreak() {
+        for (int o : space) {
+            for (int a : space) {
+                for (int b : space) {
+                    for (int u : space) {
+                        for (int v : line(o, u)) {
+                            for (int y : line(u, b)) {
+                                for (int x : line(v, a)) {
+                                    outer: for (int z : line(x, y)) {
+                                        for (int s : line(o, a)) {
+                                            for (int t : line(o, b)) {
+                                                for (int w : line(o, u)) {
+                                                    for (int c : line(s, t)) {
+                                                        if (TaoPoint.collinear(c, z, w)) {
+                                                            continue outer;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                        System.out.println("Fails with: " + o + " " + a + " " + b + " " + u + " " + v + " " + x + " " + y + " " + z); // fail
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        fail();
+    }
+
+    @Test // long-running test
+    public void testSmallRegularity() {
+        long time = System.currentTimeMillis();
+        for (int o : space) {
+            System.out.println(o);
+            for (int a : space) {
+                for (int u : space) {
+                    for (int y : space) {
+                        for (int x : line(o, a)) {
+                            outer: for (int z : line(y, x)) {
+                                for (int v : line(o, u)) {
+                                    for (int s : line(o, a)) {
+                                        for (int t : line(o, y)) {
+                                            for (int c : line(s, t)) {
+                                                if (TaoPoint.collinear(v, z, c)) {
+                                                    continue outer;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                fail(o + " " + a + " " + u + " " + y + " " + x + " " + z);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Satisfies. Time elapsed: " + (System.currentTimeMillis() - time));
+    }
 }
