@@ -3,6 +3,8 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -160,17 +162,17 @@ public class TaoPointTest {
 
     @Test
     public void testThreePointClosure() {
+        Map<Integer, Integer> frequencies = new HashMap<>();
         for (int x : space) {
             for (int y : space) {
                 for (int z : space) {
-                    BitSet plane = TaoPoint.hull(x, y, z);
-                    if (plane.cardinality() == TaoPoint.SIZE) {
-                        return;
-                    }
+                    BitSet hull = TaoPoint.hull(x, y, z);
+                    frequencies.compute(hull.cardinality(), (k, v) -> v == null ? 1 : v + 1);
                 }
             }
         }
-        fail();
+        assertEquals(Map.of(1, 27, 3, 2808, 9, 5184, 27, 11664), frequencies);
+        assertEquals(TaoPoint.SIZE * TaoPoint.SIZE * TaoPoint.SIZE, frequencies.values().stream().mapToInt(Integer::intValue).sum());
     }
 
     @Test
