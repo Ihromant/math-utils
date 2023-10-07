@@ -302,7 +302,7 @@ public class HallPointTest {
     }
 
     @Test
-    public void printFourPointClosure() {
+    public void printFourPointHull() {
         int x = 0;
         int y = 1;
         int z = 3;
