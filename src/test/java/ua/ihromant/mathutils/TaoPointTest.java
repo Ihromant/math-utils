@@ -46,6 +46,21 @@ public class TaoPointTest {
     }
 
     @Test
+    public void testFailsDistributive() { // difference to Hall Triple System
+        int counter = 0;
+        for (int x : space) {
+            for (int y : space) {
+                for (int z : space) {
+                    if (TaoPoint.add(x, TaoPoint.add(y, z)) != TaoPoint.add(TaoPoint.add(x, y), TaoPoint.add(x, z))) {
+                        counter++;
+                    }
+                }
+            }
+        }
+        assertEquals(11664, counter);
+    }
+
+    @Test
     public void checkLinealIdentity() {
         for (int x : space) {
             for (int y : space) {
