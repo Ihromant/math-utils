@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -7,14 +8,14 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-public class TriNearPointTest {
+public class VeblenPointTest {
     @Test
     public void testCorrectness() {
-        assertEquals(91, TriNearPoint.POINTS.length);
-        assertEquals(91, TriNearPoint.LINES.size());
-        TriNearPoint.LINES.forEach((k, v) -> assertEquals(10, v.size()));
-        assertEquals(91, TriNearPoint.LOOKUP.size());
-        TriNearPoint.LOOKUP.forEach((p1, map) -> {
+        assertEquals(91, VeblenPoint.POINTS.size());
+        assertEquals(91, VeblenPoint.LINES.size());
+        VeblenPoint.LINES.forEach(l -> assertEquals(10, l.size()));
+        assertEquals(91, VeblenPoint.LOOKUP.size());
+        VeblenPoint.LOOKUP.forEach((p1, map) -> {
             assertEquals(91, map.size());
             map.forEach((p2, line) -> {
                 assertEquals(p1.equals(p2) ? 1 : 10, line.size());
@@ -22,13 +23,13 @@ public class TriNearPointTest {
                 assertTrue(line.contains(p2));
             });
         });
-        assertEquals(91, TriNearPoint.BEAMS.size());
-        TriNearPoint.BEAMS.forEach((p, beam) -> {
+        assertEquals(91, VeblenPoint.BEAMS.size());
+        VeblenPoint.BEAMS.forEach((p, beam) -> {
             assertEquals(10, beam.size());
             beam.forEach(line -> assertTrue(line.contains(p)));
         });
-        for (Set<TriNearPoint> l1 : TriNearPoint.LINES.values()) {
-            for (Set<TriNearPoint> l2 : TriNearPoint.LINES.values()) {
+        for (Set<VeblenPoint> l1 : VeblenPoint.LINES) {
+            for (Set<VeblenPoint> l2 : VeblenPoint.LINES) {
                 if (l1.equals(l2)) {
                     assertEquals(10, l1.stream().filter(l2::contains).count());
                 } else {
@@ -40,44 +41,46 @@ public class TriNearPointTest {
 
     @Test
     public void testSmallDesargue() {
-        for (TriNearPoint o : TriNearPoint.POINTS) {
+        for (VeblenPoint o : VeblenPoint.POINTS) {
             System.out.println(o);
-            for (Set<TriNearPoint> l0 : TriNearPoint.BEAMS.get(o)) {
-                for (Set<TriNearPoint> l1 : TriNearPoint.BEAMS.get(o)) {
+            exit: for (Set<VeblenPoint> l0 : VeblenPoint.BEAMS.get(o)) {
+                for (Set<VeblenPoint> l1 : VeblenPoint.BEAMS.get(o)) {
                     if (l1.equals(l0)) {
                         continue;
                     }
-                    for (Set<TriNearPoint> l2 : TriNearPoint.BEAMS.get(o)) {
+                    for (Set<VeblenPoint> l2 : VeblenPoint.BEAMS.get(o)) {
                         if (l2.equals(l0) || l2.equals(l1)) {
                             continue;
                         }
-                        for (Set<TriNearPoint> l3 : TriNearPoint.BEAMS.get(o)) {
+                        for (Set<VeblenPoint> l3 : VeblenPoint.BEAMS.get(o)) {
                             if (l3.equals(l0) || l3.equals(l1) || l3.equals(l2)) {
                                 continue;
                             }
-                            for (TriNearPoint x : l0) {
+                            for (VeblenPoint x : l0) {
                                 if (x.equals(o)) {
                                     continue;
                                 }
-                                for (TriNearPoint y : l0) {
+                                for (VeblenPoint y : l0) {
                                     if (y.equals(x) || y.equals(o)) {
                                         continue;
                                     }
-                                    assertTrue(TriNearPoint.collinear(o, x, y));
-                                    for (TriNearPoint a1 : l1) {
+                                    assertTrue(VeblenPoint.collinear(o, x, y));
+                                    for (VeblenPoint a1 : l1) {
                                         if (a1.equals(o)) {
                                             continue;
                                         }
-                                        for (TriNearPoint a2 : l1) {
+                                        for (VeblenPoint a2 : l1) {
                                             if (a2.equals(a1) || a2.equals(o)) {
                                                 continue;
                                             }
-                                            TriNearPoint b1 = intersection(TriNearPoint.line(x, a1), l2);
-                                            TriNearPoint b2 = intersection(TriNearPoint.line(x, a2), l2);
-                                            TriNearPoint c1 = intersection(TriNearPoint.line(y, a1), l3);
-                                            TriNearPoint c2 = intersection(TriNearPoint.line(y, a2), l3);
-                                            TriNearPoint toCheck = intersection(TriNearPoint.line(b1, c1), TriNearPoint.line(b2, c2));
-                                            assertTrue(TriNearPoint.collinear(o, x, y, toCheck));
+                                            VeblenPoint b1 = intersection(VeblenPoint.line(x, a1), l2);
+                                            VeblenPoint b2 = intersection(VeblenPoint.line(x, a2), l2);
+                                            VeblenPoint c1 = intersection(VeblenPoint.line(y, a1), l3);
+                                            VeblenPoint c2 = intersection(VeblenPoint.line(y, a2), l3);
+                                            VeblenPoint toCheck = intersection(VeblenPoint.line(b1, c1), VeblenPoint.line(b2, c2));
+                                            if (!VeblenPoint.collinear(o, x, y, toCheck)) {
+                                                continue exit;
+                                            }
                                         }
                                     }
                                 }
@@ -85,51 +88,53 @@ public class TriNearPointTest {
                         }
                     }
                 }
+                return;
             }
         }
+        Assertions.fail();
     }
 
     @Test
     public void testDesargues() {
-        for (TriNearPoint o : TriNearPoint.POINTS) {
+        for (VeblenPoint o : VeblenPoint.POINTS) {
             System.out.println(o);
-            for (Set<TriNearPoint> l1 : TriNearPoint.BEAMS.get(o)) {
-                for (Set<TriNearPoint> l2 : TriNearPoint.BEAMS.get(o)) {
+            for (Set<VeblenPoint> l1 : VeblenPoint.BEAMS.get(o)) {
+                for (Set<VeblenPoint> l2 : VeblenPoint.BEAMS.get(o)) {
                     if (l2.equals(l1)) {
                         continue;
                     }
-                    for (Set<TriNearPoint> l3 : TriNearPoint.BEAMS.get(o)) {
+                    for (Set<VeblenPoint> l3 : VeblenPoint.BEAMS.get(o)) {
                         if (l3.equals(l1) || l3.equals(l2)) {
                             continue;
                         }
-                        for (TriNearPoint a1 : l1) {
+                        for (VeblenPoint a1 : l1) {
                             if (a1.equals(o)) {
                                 continue;
                             }
-                            for (TriNearPoint a2 : l1) {
+                            for (VeblenPoint a2 : l1) {
                                 if (a2.equals(o) || a1.equals(a2)) {
                                     continue;
                                 }
-                                for (TriNearPoint b1 : l2) {
+                                for (VeblenPoint b1 : l2) {
                                     if (b1.equals(o)) {
                                         continue;
                                     }
-                                    for (TriNearPoint b2 : l2) {
+                                    for (VeblenPoint b2 : l2) {
                                         if (b2.equals(o) || b1.equals(b2)) {
                                             continue;
                                         }
-                                        for (TriNearPoint c1 : l3) {
+                                        for (VeblenPoint c1 : l3) {
                                             if (c1.equals(o)) {
                                                 continue;
                                             }
-                                            for (TriNearPoint c2 : l3) {
+                                            for (VeblenPoint c2 : l3) {
                                                 if (c2.equals(o) || c1.equals(c2)) {
                                                     continue;
                                                 }
-                                                TriNearPoint i1 = intersection(TriNearPoint.line(a1, b1), TriNearPoint.line(a2, b2));
-                                                TriNearPoint i2 = intersection(TriNearPoint.line(a1, c1), TriNearPoint.line(a2, c2));
-                                                TriNearPoint i3 = intersection(TriNearPoint.line(c1, b1), TriNearPoint.line(c2, b2));
-                                                assertTrue(TriNearPoint.collinear(i1, i2, i3));
+                                                VeblenPoint i1 = intersection(VeblenPoint.line(a1, b1), VeblenPoint.line(a2, b2));
+                                                VeblenPoint i2 = intersection(VeblenPoint.line(a1, c1), VeblenPoint.line(a2, c2));
+                                                VeblenPoint i3 = intersection(VeblenPoint.line(c1, b1), VeblenPoint.line(c2, b2));
+                                                assertTrue(VeblenPoint.collinear(i1, i2, i3), o + "" + a1 + a2 + b1 + b2 + c1 + c2 + i1 + i2 + i3);
                                             }
                                         }
                                     }
@@ -144,41 +149,41 @@ public class TriNearPointTest {
 
     @Test
     public void testPascalian() {
-        for (Set<TriNearPoint> l1 : TriNearPoint.LINES.values()) {
-            for (Set<TriNearPoint> l2 : TriNearPoint.LINES.values()) {
-                for (TriNearPoint a1 : l1) {
-                    for (TriNearPoint b1 : l1) {
+        for (Set<VeblenPoint> l1 : VeblenPoint.LINES) {
+            for (Set<VeblenPoint> l2 : VeblenPoint.LINES) {
+                for (VeblenPoint a1 : l1) {
+                    for (VeblenPoint b1 : l1) {
                         if (a1.equals(b1)) {
                             continue;
                         }
-                        for (TriNearPoint c1 : l1) {
-                            for (TriNearPoint a2 : l2) {
+                        for (VeblenPoint c1 : l1) {
+                            for (VeblenPoint a2 : l2) {
                                 if (a2.equals(a1) || a2.equals(b1) || a2.equals(c1)) {
                                     continue;
                                 }
-                                for (TriNearPoint b2 : l2) {
+                                for (VeblenPoint b2 : l2) {
                                     if (b2.equals(a1) || b2.equals(b1) || b2.equals(c1) || b2.equals(a2)) {
                                         continue;
                                     }
-                                    for (TriNearPoint c2 : l2) {
+                                    for (VeblenPoint c2 : l2) {
                                         if (c2.equals(a1) || c2.equals(b1) || c2.equals(c1) || c2.equals(a2) || c2.equals(b2)) {
                                             continue;
                                         }
-                                        TriNearPoint i1 = intersection(TriNearPoint.line(a1, c2), TriNearPoint.line(c1, a2));
-                                        TriNearPoint i2 = intersection(TriNearPoint.line(a1, b2), TriNearPoint.line(b1, a2));
+                                        VeblenPoint i1 = intersection(VeblenPoint.line(a1, c2), VeblenPoint.line(c1, a2));
+                                        VeblenPoint i2 = intersection(VeblenPoint.line(a1, b2), VeblenPoint.line(b1, a2));
                                         if (i1.equals(i2)) {
                                             continue;
                                         }
-                                        TriNearPoint i3 = intersection(TriNearPoint.line(b1, c2), TriNearPoint.line(c1, b2));
-                                        assertTrue(TriNearPoint.collinear(a1, b1, c1));
-                                        assertTrue(TriNearPoint.collinear(a2, b2, c2));
-                                        assertTrue(TriNearPoint.collinear(a1, c2, i1));
-                                        assertTrue(TriNearPoint.collinear(a2, c1, i1));
-                                        assertTrue(TriNearPoint.collinear(a1, b2, i2));
-                                        assertTrue(TriNearPoint.collinear(a2, b1, i2));
-                                        assertTrue(TriNearPoint.collinear(b1, c2, i3));
-                                        assertTrue(TriNearPoint.collinear(b2, c1, i3));
-                                        assertTrue(TriNearPoint.collinear(i1, i2, i3),
+                                        VeblenPoint i3 = intersection(VeblenPoint.line(b1, c2), VeblenPoint.line(c1, b2));
+                                        assertTrue(VeblenPoint.collinear(a1, b1, c1));
+                                        assertTrue(VeblenPoint.collinear(a2, b2, c2));
+                                        assertTrue(VeblenPoint.collinear(a1, c2, i1));
+                                        assertTrue(VeblenPoint.collinear(a2, c1, i1));
+                                        assertTrue(VeblenPoint.collinear(a1, b2, i2));
+                                        assertTrue(VeblenPoint.collinear(a2, b1, i2));
+                                        assertTrue(VeblenPoint.collinear(b1, c2, i3));
+                                        assertTrue(VeblenPoint.collinear(b2, c1, i3));
+                                        assertTrue(VeblenPoint.collinear(i1, i2, i3),
                                                 a1 + " " + b1 + " " + c1 + " "
                                                         + a2 + " " + b2 + " " + c2 + " "
                                                         + i1 + " " + i2 + " " + i3);
@@ -192,7 +197,7 @@ public class TriNearPointTest {
         }
     }
 
-    private static TriNearPoint intersection(Set<TriNearPoint> l1, Set<TriNearPoint> l2) {
+    private static VeblenPoint intersection(Set<VeblenPoint> l1, Set<VeblenPoint> l2) {
         return l1.stream().filter(l2::contains).findAny().orElseThrow();
     }
 }
