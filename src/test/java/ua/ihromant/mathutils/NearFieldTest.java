@@ -14,7 +14,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NearFieldTest {
     private static final int NON_ZERO = NearField.values().length - 1;
 
-    private static List<List<NearPoint>> LINES = Stream.concat(
+    private static final List<List<NearPoint>> LINES = Stream.concat(
                     Stream.of(Arrays.stream(NearField.values()).skip(1)
                             .map(nf -> new NearPoint(NearField.ZERO, nf)).collect(Collectors.toList())),
                     Arrays.stream(NearField.values()).map(nf -> Arrays.stream(NearField.values()).skip(1)
@@ -32,10 +32,8 @@ public class NearFieldTest {
                 }
                 List<NearPoint> line1 = LINES.get(i);
                 List<NearPoint> line2 = LINES.get(j);
-                for (int k = 0; k < TRIPLES.size(); k++) {
-                    for (int l = 0; l < TRIPLES.size(); l++) {
-                        Triple t1 = TRIPLES.get(k);
-                        Triple t2 = TRIPLES.get(l);
+                for (Triple t1 : TRIPLES) {
+                    for (Triple t2 : TRIPLES) {
                         NearPoint a1 = line1.get(t1.a());
                         NearPoint b1 = line1.get(t1.b());
                         NearPoint c1 = line1.get(t1.c());

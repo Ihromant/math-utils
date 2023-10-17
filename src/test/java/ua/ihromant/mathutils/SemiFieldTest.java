@@ -45,10 +45,8 @@ public class SemiFieldTest {
                 }
                 List<SemiFieldPoint> line1 = LINES.get(i);
                 List<SemiFieldPoint> line2 = LINES.get(j);
-                for (int k = 0; k < TRIPLES.size(); k++) {
-                    for (int l = 0; l < TRIPLES.size(); l++) {
-                        Triple t1 = TRIPLES.get(k);
-                        Triple t2 = TRIPLES.get(l);
+                for (Triple t1 : TRIPLES) {
+                    for (Triple t2 : TRIPLES) {
                         SemiFieldPoint a1 = line1.get(t1.a());
                         SemiFieldPoint b1 = line1.get(t1.b());
                         SemiFieldPoint c1 = line1.get(t1.c());

@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 public enum NearField {
     ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K;
 
-    private final static NearField[][] ADDITION_TABLE = {
+    private static final NearField[][] ADDITION_TABLE = {
             // 0     1    -1     i    -i     j    -j     k    -k
             {ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K}, // 0
             {PL_1, MI_1, ZERO, PL_J, PL_K, MI_K, MI_I, MI_J, PL_I}, // 1
@@ -16,7 +16,7 @@ public enum NearField {
             {MI_K, PL_I, PL_J, MI_J, MI_1, MI_I, PL_1, ZERO, PL_K}  // -k
     };
 
-    private final static NearField[][] MULTIPLICATION_TABLE = {
+    private static final NearField[][] MULTIPLICATION_TABLE = {
             // 0     1    -1     i    -i     j    -j     k    -k
             {ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO}, // 0
             {ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K}, // 1
@@ -29,8 +29,11 @@ public enum NearField {
             {ZERO, MI_K, PL_K, MI_J, PL_J, PL_I, MI_I, PL_1, MI_1}  // -k
     };
 
-    private final static NearField[] NEGATIONS =
+    private static final NearField[] NEGATIONS =
             {ZERO, MI_1, PL_1, MI_I, PL_I, MI_J, PL_J, MI_K, PL_K};
+
+    private static final NearField[] INVERSIONS =
+            {ZERO, PL_1, MI_1, MI_I, PL_I, MI_J, PL_J, MI_K, PL_K};
 
     public NearField add(NearField that) {
         return ADDITION_TABLE[this.ordinal()][that.ordinal()];
@@ -48,8 +51,23 @@ public enum NearField {
         return this.add(that.neg());
     }
 
+    public NearField inv() {
+        if (this == ZERO) {
+            throw new IllegalArgumentException();
+        }
+        return INVERSIONS[ordinal()];
+    }
+
     public NearPoint mul(NearPoint p) {
         return new NearPoint(this.mul(p.x()), this.mul(p.y()));
+    }
+
+    public static NearField add(NearField... vals) {
+        NearField res = NearField.ZERO;
+        for (NearField v : vals) {
+            res = res.add(v);
+        }
+        return res;
     }
 
     @Override

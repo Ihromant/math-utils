@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public record Rational(int numer, int denom) {
-    public static Rational ZERO = new Rational(0, 1);
+    public static final Rational ZERO = new Rational(0, 1);
 
     public static int gcd(int a, int b) {
         return b == 0 ? a : gcd(b, a % b);
@@ -79,7 +79,7 @@ public record Rational(int numer, int denom) {
             Rational.of(5, 6),
             Rational.of(6, 5));
 
-    public static List<Rational> LATEX_SLOPES = Stream.concat(SIMPLE_SLOPES.stream(),
+    public static final List<Rational> LATEX_SLOPES = Stream.concat(SIMPLE_SLOPES.stream(),
             SIMPLE_SLOPES.stream().map(Rational::neg)).toList();
 
     public int max() {

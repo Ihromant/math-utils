@@ -96,7 +96,7 @@ public class PolynomialTest {
         }
     }
 
-    // long running, uncomment just to check correctness
+    // long-running, uncomment just to check correctness
     //@Test
     public void quickCheckQuartic() {
         for (int i = 0; i < 1000000; i++) {
