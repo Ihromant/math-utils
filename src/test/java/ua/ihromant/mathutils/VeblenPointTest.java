@@ -168,6 +168,9 @@ public class VeblenPointTest {
                                         Set<VeblenPoint> xyLine = VeblenPoint.line(x, y);
                                         Set<VeblenPoint> uvLine = VeblenPoint.line(u, v);
                                         Set<VeblenPoint> axLine = VeblenPoint.line(a, x);
+                                        if (xyLine.equals(uvLine) || uvLine.equals(abLine) || xyLine.equals(abLine)) {
+                                            continue;
+                                        }
                                         Set<VeblenPoint> byLine = VeblenPoint.line(b, y);
                                         Set<VeblenPoint> xbLine = VeblenPoint.line(x, b);
                                         Set<VeblenPoint> ycLine = VeblenPoint.line(y, c);
