@@ -168,9 +168,6 @@ public class VeblenPointTest {
                                         Set<VeblenPoint> xyLine = VeblenPoint.line(x, y);
                                         Set<VeblenPoint> uvLine = VeblenPoint.line(u, v);
                                         Set<VeblenPoint> axLine = VeblenPoint.line(a, x);
-                                        if (xyLine.equals(uvLine) || uvLine.equals(abLine) || xyLine.equals(abLine)) {
-                                            continue;
-                                        }
                                         Set<VeblenPoint> byLine = VeblenPoint.line(b, y);
                                         Set<VeblenPoint> xbLine = VeblenPoint.line(x, b);
                                         Set<VeblenPoint> ycLine = VeblenPoint.line(y, c);
@@ -178,15 +175,14 @@ public class VeblenPointTest {
                                         Set<VeblenPoint> bvLine = VeblenPoint.line(b, v);
                                         Set<VeblenPoint> ubLine = VeblenPoint.line(u, b);
                                         Set<VeblenPoint> vcLine = VeblenPoint.line(v, c);
-                                        if (droppedLine.contains(intersection(xyLine, abLine))
-                                                && droppedLine.contains(intersection(abLine, uvLine))
-                                                && droppedLine.contains(intersection(xyLine, uvLine))) {
+                                        if (parallel(xyLine, abLine, droppedLine)
+                                                && parallel(abLine, uvLine, droppedLine)) {
                                             // [A1, A3, A9, G0, F0, E0, D0, C0, B0, A0]A2A5A12B3A4A6
-                                            //assertTrue(droppedLine.contains(intersection(xyLine, uvLine)), "" + droppedLine + a + b + c + x + y + u + v);
-                                            if (droppedLine.contains(intersection(axLine, byLine))
-                                                && droppedLine.contains(intersection(xbLine, ycLine))
-                                                && droppedLine.contains(intersection(auLine, bvLine))
-                                                && !droppedLine.contains(intersection(ubLine, vcLine))) {
+                                            assertTrue(parallel(xyLine, uvLine, droppedLine));
+                                            if (parallel(axLine, byLine, droppedLine)
+                                                && parallel(xbLine, ycLine, droppedLine)
+                                                && parallel(auLine, bvLine, droppedLine)
+                                                && !parallel(ubLine, vcLine, droppedLine)) {
                                                 continue exit;
                                             }
                                         }
@@ -200,6 +196,10 @@ public class VeblenPointTest {
             System.out.println("Successful: " + droppedLine);
         }
         fail();
+    }
+
+    public boolean parallel(Set<VeblenPoint> first, Set<VeblenPoint> second, Set<VeblenPoint> dropped) {
+        return first.equals(second) || dropped.contains(intersection(first, second));
     }
 
     //@Test
