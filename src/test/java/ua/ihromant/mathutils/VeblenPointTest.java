@@ -3,75 +3,85 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
+import java.util.BitSet;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class VeblenPointTest {
     @Test
     public void testCorrectness() {
-        assertEquals(91, VeblenPoint.POINTS.size());
-        assertEquals(91, VeblenPoint.LINES.size());
-        VeblenPoint.LINES.forEach(l -> assertEquals(10, l.size()));
-        assertEquals(91, VeblenPoint.LOOKUP.size());
-        VeblenPoint.LOOKUP.forEach((p1, map) -> {
-            assertEquals(91, map.size());
-            map.forEach((p2, line) -> {
-                assertEquals(p1.equals(p2) ? 1 : 10, line.size());
-                assertTrue(line.contains(p1));
-                assertTrue(line.contains(p2));
-            });
-        });
-        assertEquals(91, VeblenPoint.BEAMS.size());
-        VeblenPoint.BEAMS.forEach((p, beam) -> {
-            assertEquals(10, beam.size());
-            beam.forEach(line -> assertTrue(line.contains(p)));
-        });
-        for (Set<VeblenPoint> l1 : VeblenPoint.LINES) {
-            for (Set<VeblenPoint> l2 : VeblenPoint.LINES) {
-                if (l1.equals(l2)) {
-                    assertEquals(10, l1.stream().filter(l2::contains).count());
-                } else {
-                    assertEquals(1, l1.stream().filter(l2::contains).count());
+        for (int p : VeblenPoint.points()) {
+            assertEquals(10, VeblenPoint.point(p).cardinality());
+        }
+        for (int l : VeblenPoint.lines()) {
+            assertEquals(10, VeblenPoint.line(l).cardinality());
+        }
+        for (int p1 : VeblenPoint.points()) {
+            for (int p2 : VeblenPoint.points()) {
+                if (p1 != p2) {
+                    BitSet line = VeblenPoint.line(VeblenPoint.line(p1, p2));
+                    assertTrue(line.get(p1));
+                    assertTrue(line.get(p2));
                 }
+            }
+        }
+        for (int l1 : VeblenPoint.lines()) {
+            for (int l2 : VeblenPoint.lines()) {
+                if (l1 != l2) {
+                    BitSet intersection = VeblenPoint.point(VeblenPoint.intersection(l1, l2));
+                    assertTrue(intersection.get(l1));
+                    assertTrue(intersection.get(l2));
+                }
+            }
+        }
+        for (int p : VeblenPoint.points()) {
+            for (int l : VeblenPoint.lines(p)) {
+                assertTrue(VeblenPoint.line(l).get(p));
+            }
+        }
+        for (int l : VeblenPoint.lines()) {
+            for (int p : VeblenPoint.points(l)) {
+                assertTrue(VeblenPoint.point(p).get(l));
             }
         }
     }
 
     @Test
     public void testParallelTransitivity() {
-        exit: for (Set<VeblenPoint> droppedLine : VeblenPoint.LINES) {
+        exit: for (int dl : VeblenPoint.lines()) {
+            BitSet droppedLine = VeblenPoint.line(dl);
             System.out.println(droppedLine);
-            for (VeblenPoint a : VeblenPoint.POINTS) {
-                if (droppedLine.contains(a)) {
+            for (int a : VeblenPoint.points()) {
+                if (droppedLine.get(a)) {
                     continue;
                 }
-                for (VeblenPoint b : VeblenPoint.POINTS) {
-                    if (droppedLine.contains(b) || a.equals(b)) {
+                for (int b : VeblenPoint.points()) {
+                    if (droppedLine.get(b) || a == b) {
                         continue;
                     }
-                    Set<VeblenPoint> abLine = VeblenPoint.line(a, b);
-                    for (VeblenPoint u : VeblenPoint.POINTS) {
-                        if (droppedLine.contains(u) || abLine.contains(u)) {
+                    int ab = VeblenPoint.line(a, b);
+                    BitSet abLine = VeblenPoint.line(ab);
+                    for (int u : VeblenPoint.points()) {
+                        if (droppedLine.get(u) || abLine.get(u)) {
                             continue;
                         }
-                        for (VeblenPoint v : VeblenPoint.POINTS) {
-                            if (droppedLine.contains(v) || abLine.contains(v) || u.equals(v)) {
+                        for (int v : VeblenPoint.points()) {
+                            if (droppedLine.get(v) || abLine.get(v) || u == v) {
                                 continue;
                             }
-                            for (VeblenPoint x : VeblenPoint.POINTS) {
-                                if (droppedLine.contains(x) || abLine.contains(x) || u.equals(x) || v.equals(x)) {
+                            for (int x : VeblenPoint.points()) {
+                                if (droppedLine.get(x) || abLine.get(x) || u == x || v == x) {
                                     continue;
                                 }
-                                for (VeblenPoint y : VeblenPoint.POINTS) {
-                                    if (droppedLine.contains(y) || abLine.contains(y) || u.equals(y) || v.equals(y) || x.equals(y)) {
+                                for (int y : VeblenPoint.points()) {
+                                    if (droppedLine.get(y) || abLine.get(y) || u == y || v == y || x == y) {
                                         continue;
                                     }
-                                    Set<VeblenPoint> xyLine = VeblenPoint.line(x, y);
-                                    Set<VeblenPoint> uvLine = VeblenPoint.line(u, v);
-                                    if (droppedLine.contains(intersection(abLine, xyLine))
-                                        && droppedLine.contains(intersection(abLine, uvLine))
-                                        && !droppedLine.contains(intersection(uvLine, xyLine))) {
+                                    int xyLine = VeblenPoint.line(x, y);
+                                    int uvLine = VeblenPoint.line(u, v);
+                                    if (parallel(ab, xyLine, droppedLine)
+                                        && parallel(ab, uvLine, droppedLine)
+                                        && !parallel(uvLine, xyLine, droppedLine)) {
                                         continue exit;
                                     }
                                 }
@@ -89,18 +99,20 @@ public class VeblenPointTest {
     public void testPlayfair() {
         int max = 0;
         int min = Integer.MAX_VALUE;
-        for (Set<VeblenPoint> dropped : VeblenPoint.LINES) {
-            for (Set<VeblenPoint> line : VeblenPoint.LINES) {
-                if (line.equals(dropped)) {
+        for (int dr : VeblenPoint.lines()) {
+            for (int l : VeblenPoint.lines()) {
+                if (l == dr) {
                     continue;
                 }
-                for (VeblenPoint p : VeblenPoint.POINTS) {
-                    if (dropped.contains(p) || line.contains(p)) {
+                BitSet dropped = VeblenPoint.line(dr);
+                BitSet line = VeblenPoint.line(l);
+                for (int p : VeblenPoint.points()) {
+                    if (dropped.get(p) || line.get(p)) {
                         continue;
                     }
                     int counter = 0;
-                    for (Set<VeblenPoint> parallel : VeblenPoint.BEAMS.get(p)) {
-                        if (dropped.contains(intersection(parallel, line))) {
+                    for (int parallel : VeblenPoint.lines(p)) {
+                        if (dropped.get(VeblenPoint.intersection(parallel, l))) {
                             counter++;
                         }
                     }
@@ -114,70 +126,53 @@ public class VeblenPointTest {
     }
 
     @Test
-    public void decomposeParallelity() {
-        Set<VeblenPoint> dropped = VeblenPoint.line(VeblenPoint.parse("A1"), VeblenPoint.parse("A3"));
-        VeblenPoint a = VeblenPoint.parse("A2");
-        VeblenPoint b = VeblenPoint.parse("A5");
-        VeblenPoint x = VeblenPoint.parse("A12");
-        VeblenPoint y = VeblenPoint.parse("B3");
-        VeblenPoint u = VeblenPoint.parse("A4");
-        VeblenPoint v = VeblenPoint.parse("A6");
-        VeblenPoint abxy = intersection(VeblenPoint.line(a, b), VeblenPoint.line(x, y));
-        VeblenPoint abuv = intersection(VeblenPoint.line(a, b), VeblenPoint.line(u, v));
-        VeblenPoint xyuv = intersection(VeblenPoint.line(x, y), VeblenPoint.line(u, v));
-        assertTrue(dropped.contains(abuv));
-        assertTrue(dropped.contains(abxy));
-        assertFalse(dropped.contains(xyuv));
-        System.out.println(abxy + " " +  abuv + " " + xyuv);
-    }
-
-    @Test
     public void testDoubling() {
-        exit: for (Set<VeblenPoint> droppedLine : VeblenPoint.LINES) {
+        exit: for (int dl : VeblenPoint.lines()) {
+            BitSet droppedLine = VeblenPoint.line(dl);
             System.out.println(droppedLine);
-            for (VeblenPoint a : VeblenPoint.POINTS) {
-                if (droppedLine.contains(a)) {
+            for (int a : VeblenPoint.points()) {
+                if (droppedLine.get(a)) {
                     continue;
                 }
-                for (VeblenPoint b : VeblenPoint.POINTS) {
-                    if (droppedLine.contains(b) || a.equals(b)) {
+                for (int b : VeblenPoint.points()) {
+                    if (droppedLine.get(b) || a == b) {
                         continue;
                     }
-                    Set<VeblenPoint> abLine = VeblenPoint.line(a, b);
-                    for (VeblenPoint c : abLine) {
-                        if (droppedLine.contains(c) || a.equals(c) || b.equals(c)) {
+                    int ab = VeblenPoint.line(a, b);
+                    BitSet abLine = VeblenPoint.line(ab);
+                    for (int c : VeblenPoint.points(ab)) {
+                        if (droppedLine.get(c) || a == c || b == c) {
                             continue;
                         }
-                        assertSame(abLine, VeblenPoint.line(a, c));
-                        for (VeblenPoint u : VeblenPoint.POINTS) {
-                            if (droppedLine.contains(u) || abLine.contains(u)) {
+                        assertEquals(ab, VeblenPoint.line(a, c));
+                        for (int u : VeblenPoint.points()) {
+                            if (droppedLine.get(u) || abLine.get(u)) {
                                 continue;
                             }
-                            for (VeblenPoint v : VeblenPoint.POINTS) {
-                                if (droppedLine.contains(v) || abLine.contains(v) || u.equals(v)) {
+                            for (int v : VeblenPoint.points()) {
+                                if (droppedLine.get(v) || abLine.get(v) || u == v) {
                                     continue;
                                 }
-                                for (VeblenPoint x : VeblenPoint.POINTS) {
-                                    if (droppedLine.contains(x) || abLine.contains(x) || u.equals(x) || v.equals(x)) {
+                                for (int x : VeblenPoint.points()) {
+                                    if (droppedLine.get(x) || abLine.get(x) || u == x || v == x) {
                                         continue;
                                     }
-                                    for (VeblenPoint y : VeblenPoint.POINTS) {
-                                        if (droppedLine.contains(y) || abLine.contains(y) || u.equals(y) || v.equals(y) || x.equals(y)) {
+                                    for (int y : VeblenPoint.points()) {
+                                        if (droppedLine.get(y) || abLine.get(y) || u == y || v == y || x == y) {
                                             continue;
                                         }
-                                        Set<VeblenPoint> xyLine = VeblenPoint.line(x, y);
-                                        Set<VeblenPoint> uvLine = VeblenPoint.line(u, v);
-                                        Set<VeblenPoint> axLine = VeblenPoint.line(a, x);
-                                        Set<VeblenPoint> byLine = VeblenPoint.line(b, y);
-                                        Set<VeblenPoint> xbLine = VeblenPoint.line(x, b);
-                                        Set<VeblenPoint> ycLine = VeblenPoint.line(y, c);
-                                        Set<VeblenPoint> auLine = VeblenPoint.line(a, u);
-                                        Set<VeblenPoint> bvLine = VeblenPoint.line(b, v);
-                                        Set<VeblenPoint> ubLine = VeblenPoint.line(u, b);
-                                        Set<VeblenPoint> vcLine = VeblenPoint.line(v, c);
-                                        if (parallel(xyLine, abLine, droppedLine)
-                                                && parallel(abLine, uvLine, droppedLine)) {
-                                            // [A1, A3, A9, G0, F0, E0, D0, C0, B0, A0]A2A5A12B3A4A6
+                                        int xyLine = VeblenPoint.line(x, y);
+                                        int uvLine = VeblenPoint.line(u, v);
+                                        int axLine = VeblenPoint.line(a, x);
+                                        int byLine = VeblenPoint.line(b, y);
+                                        int xbLine = VeblenPoint.line(x, b);
+                                        int ycLine = VeblenPoint.line(y, c);
+                                        int auLine = VeblenPoint.line(a, u);
+                                        int bvLine = VeblenPoint.line(b, v);
+                                        int ubLine = VeblenPoint.line(u, b);
+                                        int vcLine = VeblenPoint.line(v, c);
+                                        if (parallel(xyLine, ab, droppedLine)
+                                                && parallel(ab, uvLine, droppedLine)) {
                                             assertTrue(parallel(xyLine, uvLine, droppedLine));
                                             if (parallel(axLine, byLine, droppedLine)
                                                 && parallel(xbLine, ycLine, droppedLine)
@@ -194,53 +189,54 @@ public class VeblenPointTest {
                 }
             }
             System.out.println("Successful: " + droppedLine);
+            return;
         }
         fail();
     }
 
-    public boolean parallel(Set<VeblenPoint> first, Set<VeblenPoint> second, Set<VeblenPoint> dropped) {
-        return first.equals(second) || dropped.contains(intersection(first, second));
+    public boolean parallel(int first, int second, BitSet dropped) {
+        return first == second || dropped.get(VeblenPoint.intersection(first, second));
     }
 
     //@Test
     public void testSmallDesargue() {
-        for (VeblenPoint o : VeblenPoint.POINTS) {
+        for (int o : VeblenPoint.points()) {
             System.out.println(o);
-            exit: for (Set<VeblenPoint> l0 : VeblenPoint.BEAMS.get(o)) {
-                for (Set<VeblenPoint> l1 : VeblenPoint.BEAMS.get(o)) {
-                    if (l1.equals(l0)) {
+            exit: for (int l0 : VeblenPoint.lines(o)) {
+                for (int l1 : VeblenPoint.lines(o)) {
+                    if (l1 == l0) {
                         continue;
                     }
-                    for (Set<VeblenPoint> l2 : VeblenPoint.BEAMS.get(o)) {
-                        if (l2.equals(l0) || l2.equals(l1)) {
+                    for (int l2 : VeblenPoint.lines(o)) {
+                        if (l2 == l0 || l2 == l1) {
                             continue;
                         }
-                        for (Set<VeblenPoint> l3 : VeblenPoint.BEAMS.get(o)) {
-                            if (l3.equals(l0) || l3.equals(l1) || l3.equals(l2)) {
+                        for (int l3 : VeblenPoint.lines(o)) {
+                            if (l3 == l0 || l3 == l1 || l3 == l2) {
                                 continue;
                             }
-                            for (VeblenPoint x : l0) {
-                                if (x.equals(o)) {
+                            for (int x : VeblenPoint.points(l0)) {
+                                if (x == o) {
                                     continue;
                                 }
-                                for (VeblenPoint y : l0) {
-                                    if (y.equals(x) || y.equals(o)) {
+                                for (int y : VeblenPoint.points(l0)) {
+                                    if (y == x || y == o) {
                                         continue;
                                     }
                                     assertTrue(VeblenPoint.collinear(o, x, y));
-                                    for (VeblenPoint a1 : l1) {
-                                        if (a1.equals(o)) {
+                                    for (int a1 : VeblenPoint.points(l1)) {
+                                        if (a1 == o) {
                                             continue;
                                         }
-                                        for (VeblenPoint a2 : l1) {
-                                            if (a2.equals(a1) || a2.equals(o)) {
+                                        for (int a2 : VeblenPoint.points(l1)) {
+                                            if (a2 == a1 || a2 == o) {
                                                 continue;
                                             }
-                                            VeblenPoint b1 = intersection(VeblenPoint.line(x, a1), l2);
-                                            VeblenPoint b2 = intersection(VeblenPoint.line(x, a2), l2);
-                                            VeblenPoint c1 = intersection(VeblenPoint.line(y, a1), l3);
-                                            VeblenPoint c2 = intersection(VeblenPoint.line(y, a2), l3);
-                                            VeblenPoint toCheck = intersection(VeblenPoint.line(b1, c1), VeblenPoint.line(b2, c2));
+                                            int b1 = VeblenPoint.intersection(VeblenPoint.line(x, a1), l2);
+                                            int b2 = VeblenPoint.intersection(VeblenPoint.line(x, a2), l2);
+                                            int c1 = VeblenPoint.intersection(VeblenPoint.line(y, a1), l3);
+                                            int c2 = VeblenPoint.intersection(VeblenPoint.line(y, a2), l3);
+                                            int toCheck = VeblenPoint.intersection(VeblenPoint.line(b1, c1), VeblenPoint.line(b2, c2));
                                             if (!VeblenPoint.collinear(o, x, y, toCheck)) {
                                                 continue exit;
                                             }
@@ -259,44 +255,44 @@ public class VeblenPointTest {
 
     //@Test
     public void testDesargues() {
-        for (VeblenPoint o : VeblenPoint.POINTS) {
+        for (int o : VeblenPoint.points()) {
             System.out.println(o);
-            for (Set<VeblenPoint> l1 : VeblenPoint.BEAMS.get(o)) {
-                for (Set<VeblenPoint> l2 : VeblenPoint.BEAMS.get(o)) {
-                    if (l2.equals(l1)) {
+            for (int l1 : VeblenPoint.lines(o)) {
+                for (int l2 : VeblenPoint.lines(o)) {
+                    if (l2 == l1) {
                         continue;
                     }
-                    for (Set<VeblenPoint> l3 : VeblenPoint.BEAMS.get(o)) {
-                        if (l3.equals(l1) || l3.equals(l2)) {
+                    for (int l3 : VeblenPoint.lines(o)) {
+                        if (l3 == l1 || l3 == l2) {
                             continue;
                         }
-                        for (VeblenPoint a1 : l1) {
-                            if (a1.equals(o)) {
+                        for (int a1 : VeblenPoint.points(l1)) {
+                            if (a1 == o) {
                                 continue;
                             }
-                            for (VeblenPoint a2 : l1) {
-                                if (a2.equals(o) || a1.equals(a2)) {
+                            for (int a2 : VeblenPoint.points(l1)) {
+                                if (a2 == o || a1 == a2) {
                                     continue;
                                 }
-                                for (VeblenPoint b1 : l2) {
-                                    if (b1.equals(o)) {
+                                for (int b1 : VeblenPoint.points(l2)) {
+                                    if (b1 == o) {
                                         continue;
                                     }
-                                    for (VeblenPoint b2 : l2) {
-                                        if (b2.equals(o) || b1.equals(b2)) {
+                                    for (int b2 : VeblenPoint.points(l2)) {
+                                        if (b2 == o || b1 ==b2) {
                                             continue;
                                         }
-                                        for (VeblenPoint c1 : l3) {
-                                            if (c1.equals(o)) {
+                                        for (int c1 : VeblenPoint.points(l3)) {
+                                            if (c1 == o) {
                                                 continue;
                                             }
-                                            for (VeblenPoint c2 : l3) {
-                                                if (c2.equals(o) || c1.equals(c2)) {
+                                            for (int c2 : VeblenPoint.points(l3)) {
+                                                if (c2 == o || c1 == c2) {
                                                     continue;
                                                 }
-                                                VeblenPoint i1 = intersection(VeblenPoint.line(a1, b1), VeblenPoint.line(a2, b2));
-                                                VeblenPoint i2 = intersection(VeblenPoint.line(a1, c1), VeblenPoint.line(a2, c2));
-                                                VeblenPoint i3 = intersection(VeblenPoint.line(c1, b1), VeblenPoint.line(c2, b2));
+                                                int i1 = VeblenPoint.intersection(VeblenPoint.line(a1, b1), VeblenPoint.line(a2, b2));
+                                                int i2 = VeblenPoint.intersection(VeblenPoint.line(a1, c1), VeblenPoint.line(a2, c2));
+                                                int i3 = VeblenPoint.intersection(VeblenPoint.line(c1, b1), VeblenPoint.line(c2, b2));
                                                 assertTrue(VeblenPoint.collinear(i1, i2, i3), o + "" + a1 + a2 + b1 + b2 + c1 + c2 + i1 + i2 + i3);
                                             }
                                         }
@@ -312,32 +308,32 @@ public class VeblenPointTest {
 
     //@Test
     public void testPascalian() {
-        for (Set<VeblenPoint> l1 : VeblenPoint.LINES) {
-            for (Set<VeblenPoint> l2 : VeblenPoint.LINES) {
-                for (VeblenPoint a1 : l1) {
-                    for (VeblenPoint b1 : l1) {
-                        if (a1.equals(b1)) {
+        for (int l1 : VeblenPoint.lines()) {
+            for (int l2 : VeblenPoint.lines()) {
+                for (int a1 : VeblenPoint.points(l1)) {
+                    for (int b1 : VeblenPoint.points(l1)) {
+                        if (a1 == b1) {
                             continue;
                         }
-                        for (VeblenPoint c1 : l1) {
-                            for (VeblenPoint a2 : l2) {
-                                if (a2.equals(a1) || a2.equals(b1) || a2.equals(c1)) {
+                        for (int c1 : VeblenPoint.points(l1)) {
+                            for (int a2 : VeblenPoint.points(l2)) {
+                                if (a2 == a1 || a2 == b1 || a2 == c1) {
                                     continue;
                                 }
-                                for (VeblenPoint b2 : l2) {
-                                    if (b2.equals(a1) || b2.equals(b1) || b2.equals(c1) || b2.equals(a2)) {
+                                for (int b2 : VeblenPoint.points(l2)) {
+                                    if (b2 == a1 || b2 == b1 || b2 == c1 || b2 == a2) {
                                         continue;
                                     }
-                                    for (VeblenPoint c2 : l2) {
-                                        if (c2.equals(a1) || c2.equals(b1) || c2.equals(c1) || c2.equals(a2) || c2.equals(b2)) {
+                                    for (int c2 : VeblenPoint.points(l2)) {
+                                        if (c2 == a1 || c2 == b1 || c2 == c1 || c2 == a2 || c2 == b2) {
                                             continue;
                                         }
-                                        VeblenPoint i1 = intersection(VeblenPoint.line(a1, c2), VeblenPoint.line(c1, a2));
-                                        VeblenPoint i2 = intersection(VeblenPoint.line(a1, b2), VeblenPoint.line(b1, a2));
-                                        if (i1.equals(i2)) {
+                                        int i1 = VeblenPoint.intersection(VeblenPoint.line(a1, c2), VeblenPoint.line(c1, a2));
+                                        int i2 = VeblenPoint.intersection(VeblenPoint.line(a1, b2), VeblenPoint.line(b1, a2));
+                                        if (i1 == i2) {
                                             continue;
                                         }
-                                        VeblenPoint i3 = intersection(VeblenPoint.line(b1, c2), VeblenPoint.line(c1, b2));
+                                        int i3 = VeblenPoint.intersection(VeblenPoint.line(b1, c2), VeblenPoint.line(c1, b2));
                                         assertTrue(VeblenPoint.collinear(a1, b1, c1));
                                         assertTrue(VeblenPoint.collinear(a2, b2, c2));
                                         assertTrue(VeblenPoint.collinear(a1, c2, i1));
@@ -358,9 +354,5 @@ public class VeblenPointTest {
                 }
             }
         }
-    }
-
-    private static VeblenPoint intersection(Set<VeblenPoint> l1, Set<VeblenPoint> l2) {
-        return l1.stream().filter(l2::contains).findAny().orElseThrow();
     }
 }
