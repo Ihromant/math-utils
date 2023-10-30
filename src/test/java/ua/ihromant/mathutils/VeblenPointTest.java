@@ -86,6 +86,34 @@ public class VeblenPointTest {
     }
 
     @Test
+    public void testPlayfair() {
+        int max = 0;
+        int min = Integer.MAX_VALUE;
+        for (Set<VeblenPoint> dropped : VeblenPoint.LINES) {
+            for (Set<VeblenPoint> line : VeblenPoint.LINES) {
+                if (line.equals(dropped)) {
+                    continue;
+                }
+                for (VeblenPoint p : VeblenPoint.POINTS) {
+                    if (dropped.contains(p) || line.contains(p)) {
+                        continue;
+                    }
+                    int counter = 0;
+                    for (Set<VeblenPoint> parallel : VeblenPoint.BEAMS.get(p)) {
+                        if (dropped.contains(intersection(parallel, line))) {
+                            counter++;
+                        }
+                    }
+                    assertEquals(1, counter);
+                    max = Math.max(max, counter);
+                    min = Math.min(min, counter);
+                }
+            }
+        }
+        System.out.println(min + " " + max);
+    }
+
+    @Test
     public void decomposeParallelity() {
         Set<VeblenPoint> dropped = VeblenPoint.line(VeblenPoint.parse("A1"), VeblenPoint.parse("A3"));
         VeblenPoint a = VeblenPoint.parse("A2");
