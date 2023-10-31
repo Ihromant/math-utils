@@ -125,7 +125,7 @@ public class NearFieldTest {
                                         assertTrue(intersection(b1a1Line, b2a2Line).isEmpty());
                                         assertTrue(intersection(c1b1Line, c2b2Line).isEmpty());
                                         assertFalse(intersection(c1a1Line, c2a2Line).isEmpty());
-                                        System.out.println("a1=" + a1 + ",a2=" + a2 + ",b1=" + b1 + ",b2=" + b2 + ",c1=" + c1 + "c2=" + c2
+                                        fail("a1=" + a1 + ",a2=" + a2 + ",b1=" + b1 + ",b2=" + b2 + ",c1=" + c1 + "c2=" + c2
                                                 + ",a1a2=" + a2a1Line + ",b1b2=" + b2b1Line
                                                 + ",c1c2=" + c2c1Line + ",a1b1=" + b1a1Line
                                                 + ",a2b2=" + b2a2Line + ",c1b1=" + c1b1Line
