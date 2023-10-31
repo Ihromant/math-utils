@@ -13,9 +13,9 @@ public class FiveFieldPointTest {
 
     private static BitSet getDropped() {
         BitSet result = new BitSet();
-        result.set(30); // infinity
+        result.set(FiveFieldPoint.fieldCardinality() * FiveFieldPoint.fieldCardinality() + FiveFieldPoint.fieldCardinality()); // infinity
         result.set(0); // horizontal
-        result.set(25); // vertical
+        result.set(FiveFieldPoint.fieldCardinality() * FiveFieldPoint.fieldCardinality()); // vertical
         return result;
     }
 
