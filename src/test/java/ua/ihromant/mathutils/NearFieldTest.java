@@ -21,8 +21,7 @@ public class NearFieldTest {
                     Stream.of(Arrays.stream(NearField.values()).skip(1)
                             .map(nf -> new NearPoint(NearField.ZERO, nf)).collect(Collectors.toList())),
                     Arrays.stream(NearField.values()).map(nf -> Arrays.stream(NearField.values()).skip(1)
-                            .map(cf -> cf.mul(new NearPoint(NearField.PL_1, nf))).collect(Collectors.toList())))
-            .peek(System.out::println).toList();
+                            .map(cf -> cf.mul(new NearPoint(NearField.PL_1, nf))).collect(Collectors.toList()))).toList();
 
     private static final List<Triple> TRIPLES = StreamSupport.stream(distinct().spliterator(), false).toList();
 
