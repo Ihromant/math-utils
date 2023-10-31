@@ -48,7 +48,7 @@ public class VeblenPointTest {
 
     @Test
     public void testParallelTransitivity() {
-        exit: for (int dl : VeblenPoint.lines()) {
+        for (int dl : VeblenPoint.lines()) {
             BitSet droppedLine = VeblenPoint.line(dl);
             System.out.println(droppedLine);
             for (int a : VeblenPoint.points()) {
@@ -82,7 +82,7 @@ public class VeblenPointTest {
                                     if (parallel(ab, xyLine, droppedLine)
                                         && parallel(ab, uvLine, droppedLine)
                                         && !parallel(uvLine, xyLine, droppedLine)) {
-                                        continue exit;
+                                        fail();
                                     }
                                 }
                             }
@@ -92,7 +92,6 @@ public class VeblenPointTest {
             }
             System.out.println("Successful: " + droppedLine);
         }
-        fail();
     }
 
     @Test
@@ -129,7 +128,7 @@ public class VeblenPointTest {
     public void testDoubling() {
         exit: for (int dl : VeblenPoint.lines()) {
             BitSet droppedLine = VeblenPoint.line(dl);
-            System.out.println(droppedLine);
+            System.out.println(VeblenPoint.lineToString(dl));
             for (int a : VeblenPoint.points()) {
                 if (droppedLine.get(a)) {
                     continue;
@@ -178,6 +177,16 @@ public class VeblenPointTest {
                                                 && parallel(xbLine, ycLine, droppedLine)
                                                 && parallel(auLine, bvLine, droppedLine)
                                                 && !parallel(ubLine, vcLine, droppedLine)) {
+                                                System.out.println("a=" + VeblenPoint.pointToString(a) + ",b=" + VeblenPoint.pointToString(b)
+                                                        + ",c=" + VeblenPoint.pointToString(c) + ",x=" + VeblenPoint.pointToString(x)
+                                                        + ",y=" + VeblenPoint.pointToString(y) + ",u=" + VeblenPoint.pointToString(u)
+                                                        + ",v=" + VeblenPoint.pointToString(v) + ",ab=" + VeblenPoint.lineToString(ab)
+                                                        + ",xy=" + VeblenPoint.lineToString(xyLine) + ",uv=" + VeblenPoint.lineToString(uvLine)
+                                                        + ",ax=" + VeblenPoint.lineToString(axLine) + ",by=" + VeblenPoint.lineToString(byLine)
+                                                        + ",bx=" + VeblenPoint.lineToString(xbLine) + ",cy=" + VeblenPoint.lineToString(ycLine)
+                                                        + ",au=" + VeblenPoint.lineToString(auLine) + ",bv=" + VeblenPoint.lineToString(bvLine)
+                                                        + ",ub=" + VeblenPoint.lineToString(ubLine) + ",vc=" + VeblenPoint.lineToString(vcLine)
+                                                        + ",intersection ub and vc =" + VeblenPoint.pointToString(VeblenPoint.intersection(ubLine, vcLine)));
                                                 continue exit;
                                             }
                                         }

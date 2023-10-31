@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -145,7 +146,11 @@ public record VeblenPoint(String l, int cff) {
         return from(letter, (base + add) % SHIFT);
     }
 
-    public static String toString(int i) {
+    public static String pointToString(int i) {
         return String.valueOf((char) ('A' + i / SHIFT)) + (i % SHIFT);
+    }
+
+    public static String lineToString(int i) {
+        return line(i).stream().mapToObj(VeblenPoint::pointToString).collect(Collectors.joining(",", "[", "]"));
     }
 }
