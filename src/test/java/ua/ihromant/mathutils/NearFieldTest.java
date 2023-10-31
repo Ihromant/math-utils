@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -256,6 +257,154 @@ public class NearFieldTest {
                 return new Triple(res / NON_ZERO / NON_ZERO, res / NON_ZERO % NON_ZERO, res % NON_ZERO);
             }
         };
+    }
+
+    @Test
+    public void testProjectiveCorrectness() {
+        for (int l : NearPoint.lines()) {
+            assertEquals(10, NearPoint.line(l).cardinality());
+        }
+        for (int p : NearPoint.points()) {
+            assertEquals(10, NearPoint.point(p).cardinality());
+        }
+        for (int p1 : NearPoint.points()) {
+            for (int p2 : NearPoint.points()) {
+                if (p1 != p2) {
+                    BitSet line = NearPoint.line(NearPoint.line(p1, p2));
+                    assertTrue(line.get(p1));
+                    assertTrue(line.get(p2));
+                }
+            }
+        }
+        for (int l1 : NearPoint.lines()) {
+            for (int l2 : NearPoint.lines()) {
+                if (l1 != l2) {
+                    BitSet intersection = NearPoint.point(NearPoint.intersection(l1, l2));
+                    assertTrue(intersection.get(l1));
+                    assertTrue(intersection.get(l2));
+                }
+            }
+        }
+        for (int p : NearPoint.points()) {
+            for (int l : NearPoint.lines(p)) {
+                assertTrue(NearPoint.line(l).get(p));
+            }
+        }
+        for (int l : NearPoint.lines()) {
+            for (int p : NearPoint.points(l)) {
+                assertTrue(NearPoint.point(p).get(l));
+            }
+        }
+    }
+
+    @Test
+    public void testPlayfair() {
+        int max = 0;
+        int min = Integer.MAX_VALUE;
+        for (int dr : NearPoint.lines()) {
+            for (int l : NearPoint.lines()) {
+                if (l == dr) {
+                    continue;
+                }
+                BitSet dropped = NearPoint.line(dr);
+                BitSet line = NearPoint.line(l);
+                for (int p : NearPoint.points()) {
+                    if (dropped.get(p) || line.get(p)) {
+                        continue;
+                    }
+                    int counter = 0;
+                    for (int parallel : NearPoint.lines(p)) {
+                        if (dropped.get(NearPoint.intersection(parallel, l))) {
+                            counter++;
+                        }
+                    }
+                    assertEquals(1, counter);
+                    max = Math.max(max, counter);
+                    min = Math.min(min, counter);
+                }
+            }
+        }
+        System.out.println(min + " " + max);
+    }
+
+    @Test
+    public void testDoubling() {
+        exit: for (int dl : NearPoint.lines()) {
+            BitSet droppedLine = NearPoint.line(dl);
+            System.out.println(NearPoint.lineToString(dl));
+            for (int a : NearPoint.points()) {
+                if (droppedLine.get(a)) {
+                    continue;
+                }
+                for (int b : NearPoint.points()) {
+                    if (droppedLine.get(b) || a == b) {
+                        continue;
+                    }
+                    int ab = NearPoint.line(a, b);
+                    BitSet abLine = NearPoint.line(ab);
+                    for (int c : NearPoint.points(ab)) {
+                        if (droppedLine.get(c) || a == c || b == c) {
+                            continue;
+                        }
+                        assertEquals(ab, NearPoint.line(a, c));
+                        for (int u : NearPoint.points()) {
+                            if (droppedLine.get(u) || abLine.get(u)) {
+                                continue;
+                            }
+                            for (int v : NearPoint.points()) {
+                                if (droppedLine.get(v) || abLine.get(v) || u == v) {
+                                    continue;
+                                }
+                                for (int x : NearPoint.points()) {
+                                    if (droppedLine.get(x) || abLine.get(x) || u == x || v == x) {
+                                        continue;
+                                    }
+                                    for (int y : NearPoint.points()) {
+                                        if (droppedLine.get(y) || abLine.get(y) || u == y || v == y || x == y) {
+                                            continue;
+                                        }
+                                        int xyLine = NearPoint.line(x, y);
+                                        int uvLine = NearPoint.line(u, v);
+                                        int axLine = NearPoint.line(a, x);
+                                        int byLine = NearPoint.line(b, y);
+                                        int xbLine = NearPoint.line(x, b);
+                                        int ycLine = NearPoint.line(y, c);
+                                        int auLine = NearPoint.line(a, u);
+                                        int bvLine = NearPoint.line(b, v);
+                                        int ubLine = NearPoint.line(u, b);
+                                        int vcLine = NearPoint.line(v, c);
+                                        if (NearPoint.parallel(xyLine, ab, dl)
+                                                && NearPoint.parallel(ab, uvLine, dl)) {
+                                            assertTrue(NearPoint.parallel(xyLine, uvLine, dl), NearPoint.lineToString(xyLine)
+                                                    + " " + NearPoint.lineToString(ab) + " " + NearPoint.lineToString(uvLine) + " " + NearPoint.lineToString(dl));
+                                            if (NearPoint.parallel(axLine, byLine, dl)
+                                                    && NearPoint.parallel(xbLine, ycLine, dl)
+                                                    && NearPoint.parallel(auLine, bvLine, dl)
+                                                    && !NearPoint.parallel(ubLine, vcLine, dl)) {
+                                                System.out.println("a=" + NearPoint.pointToString(a) + ",b=" + NearPoint.pointToString(b)
+                                                        + ",c=" + NearPoint.pointToString(c) + ",x=" + NearPoint.pointToString(x)
+                                                        + ",y=" + NearPoint.pointToString(y) + ",u=" + NearPoint.pointToString(u)
+                                                        + ",v=" + NearPoint.pointToString(v) + ",ab=" + NearPoint.lineToString(ab)
+                                                        + ",xy=" + NearPoint.lineToString(xyLine) + ",uv=" + NearPoint.lineToString(uvLine)
+                                                        + ",ax=" + NearPoint.lineToString(axLine) + ",by=" + NearPoint.lineToString(byLine)
+                                                        + ",bx=" + NearPoint.lineToString(xbLine) + ",cy=" + NearPoint.lineToString(ycLine)
+                                                        + ",au=" + NearPoint.lineToString(auLine) + ",bv=" + NearPoint.lineToString(bvLine)
+                                                        + ",ub=" + NearPoint.lineToString(ubLine) + ",vc=" + NearPoint.lineToString(vcLine)
+                                                        + ",intersection ub and vc =" + NearPoint.pointToString(NearPoint.intersection(ubLine, vcLine)));
+                                                continue exit;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            System.out.println("Doubling: " + NearPoint.lineToString(dl));
+            return;
+        }
+        fail();
     }
 
     private static List<NearPoint> line(NearPoint from) {

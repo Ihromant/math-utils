@@ -69,6 +69,21 @@ public record VeblenPoint(String l, int cff) {
         return result;
     }
 
+    private static BitSet[] generateBeams() {
+        BitSet[] result = new BitSet[COUNT];
+        for (int p1 : points()) {
+            BitSet beam = new BitSet();
+            result[p1] = beam;
+            for (int p2 : points()) {
+                if (p1 == p2) {
+                    continue;
+                }
+                beam.set(line(p1, p2));
+            }
+        }
+        return result;
+    }
+
     public static BitSet line(int line) {
         return LINES[line];
     }
@@ -99,21 +114,6 @@ public record VeblenPoint(String l, int cff) {
 
     public static Iterable<Integer> points(int line) {
         return () -> LINES[line].stream().boxed().iterator();
-    }
-
-    private static BitSet[] generateBeams() {
-        BitSet[] result = new BitSet[COUNT];
-        for (int p1 : points()) {
-            BitSet beam = new BitSet();
-            result[p1] = beam;
-            for (int p2 : points()) {
-                if (p1 == p2) {
-                    continue;
-                }
-                beam.set(line(p1, p2));
-            }
-        }
-        return result;
     }
 
     public static boolean collinear(int... points) {

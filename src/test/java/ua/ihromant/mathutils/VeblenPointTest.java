@@ -197,7 +197,7 @@ public class VeblenPointTest {
                     }
                 }
             }
-            System.out.println("Successful: " + droppedLine);
+            System.out.println("Doubling: " + VeblenPoint.lineToString(dl));
             return;
         }
         fail();
