@@ -14,6 +14,9 @@ import static org.junit.jupiter.api.Assertions.*;
 public class NearFieldTest {
     private static final int NON_ZERO = NearField.values().length - 1;
 
+    private static final NearPoint[] POINTS = Arrays.stream(NearField.values())
+            .flatMap(i -> Arrays.stream(NearField.values()).map(j -> new NearPoint(i, j))).toArray(NearPoint[]::new);
+
     private static final List<List<NearPoint>> LINES = Stream.concat(
                     Stream.of(Arrays.stream(NearField.values()).skip(1)
                             .map(nf -> new NearPoint(NearField.ZERO, nf)).collect(Collectors.toList())),
@@ -53,6 +56,84 @@ public class NearFieldTest {
                                     "a1b2: " + a1b2 + ", " + "b1c2: " + b1c2 + ", " +
                                     "b1a2: " + b1a2 + ", " + "c1b2: " + c1b2 + ", " +
                                     "a1a2: " + a1a2 + ", " + "c1c2: " + c1c2);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testParallelity() {
+        for (NearPoint p1 : POINTS) {
+            assertTrue(p1.parallel(p1));
+            for (NearPoint p2 : POINTS) {
+                assertEquals(p1.parallel(p2), p2.parallel(p1));
+                for (NearPoint p3 : POINTS) {
+                    if (p1.parallel(p2) && p2.parallel(p3)) {
+                        assertTrue(p1.parallel(p3));
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testThales() {
+        for (NearPoint a1 : POINTS) {
+            for (NearPoint a2 : POINTS) {
+                if (a1.equals(a2)) {
+                    continue;
+                }
+                List<NearPoint> a2a1Line = shift(a1, line(a2.sub(a1)));
+                for (NearPoint b1 : POINTS) {
+                    if (b1.equals(a1) || b1.equals(a2)) {
+                        continue;
+                    }
+                    for (NearPoint b2 : POINTS) {
+                        NearPoint b2b1 = b2.sub(b1);
+                        if (b2.equals(b1) || b2.equals(a1) || b2.equals(a2) || !b2b1.parallel(a2.sub(a1))) {
+                            continue;
+                        }
+                        List<NearPoint> b2b1Line = shift(b1, line(b2.sub(b1)));
+                        if (!intersection(a2a1Line, b2b1Line).isEmpty()) {
+                            continue;
+                        }
+                        for (NearPoint c1 : POINTS) {
+                            if (c1.equals(b2) || c1.equals(b1) || c1.equals(a1) || c1.equals(a2)) {
+                                continue;
+                            }
+                            for (NearPoint c2 : POINTS) {
+                                if (c1.equals(c2) || c2.equals(b2) || c2.equals(b1) || c2.equals(a1) || c2.equals(a2) || !b2b1.parallel(c2.sub(c1))) {
+                                    continue;
+                                }
+                                List<NearPoint> c2c1Line = shift(c1, line(c2.sub(c1)));
+                                if (!intersection(c2c1Line, a2a1Line).isEmpty() || !intersection(c2c1Line, b2b1Line).isEmpty()) {
+                                    continue;
+                                }
+                                if (b1.sub(a1).parallel(b2.sub(a2)) && c1.sub(b1).parallel(c2.sub(b2))) {
+                                    if (!c1.sub(a1).parallel(c2.sub(a2))) {
+                                        List<NearPoint> b1a1Line = shift(a1, line(b1.sub(a1)));
+                                        List<NearPoint> b2a2Line = shift(a2, line(b2.sub(a2)));
+                                        List<NearPoint> c1b1Line = shift(b1, line(c1.sub(b1)));
+                                        List<NearPoint> c2b2Line = shift(b2, line(c2.sub(b2)));
+                                        List<NearPoint> c1a1Line = shift(a1, line(c1.sub(a1)));
+                                        List<NearPoint> c2a2Line = shift(a2, line(c2.sub(a2)));
+                                        assertTrue(intersection(a2a1Line, b2b1Line).isEmpty());
+                                        assertTrue(intersection(a2a1Line, c2c1Line).isEmpty());
+                                        assertTrue(intersection(c2c1Line, b2b1Line).isEmpty());
+                                        assertTrue(intersection(b1a1Line, b2a2Line).isEmpty());
+                                        assertTrue(intersection(c1b1Line, c2b2Line).isEmpty());
+                                        assertFalse(intersection(c1a1Line, c2a2Line).isEmpty());
+                                        System.out.println("a1=" + a1 + ",a2=" + a2 + ",b1=" + b1 + ",b2=" + b2 + ",c1=" + c1 + "c2=" + c2
+                                                + ",a1a2=" + a2a1Line + ",b1b2=" + b2b1Line
+                                                + ",c1c2=" + c2c1Line + ",a1b1=" + b1a1Line
+                                                + ",a2b2=" + b2a2Line + ",c1b1=" + c1b1Line
+                                                + ",c2b2=" + c2b2Line + ",c1a1=" + c1a1Line
+                                                + ",c2a2=" + c2a2Line);
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -176,5 +257,17 @@ public class NearFieldTest {
                 return new Triple(res / NON_ZERO / NON_ZERO, res / NON_ZERO % NON_ZERO, res % NON_ZERO);
             }
         };
+    }
+
+    private static List<NearPoint> line(NearPoint from) {
+        return LINES.stream().filter(l -> l.contains(from)).findAny().orElseThrow();
+    }
+
+    private static List<NearPoint> shift(NearPoint v, List<NearPoint> line) {
+        return line.stream().map(p -> p.add(v)).collect(Collectors.toList());
+    }
+
+    private static List<NearPoint> intersection(List<NearPoint> l1, List<NearPoint> l2) {
+        return l1.stream().filter(l2::contains).collect(Collectors.toList());
     }
 }

@@ -7,6 +7,10 @@ public record NearPoint(NearField x, NearField y) {
         return new NearPoint(this.x.sub(that.x), this.y.sub(that.y));
     }
 
+    public NearPoint add(NearPoint that) {
+        return new NearPoint(this.x.add(that.x), this.y.add(that.y));
+    }
+
     public boolean parallel(NearPoint that) {
         return Arrays.stream(NearField.values()).skip(1).anyMatch(nf -> this.equals(nf.mul(that)));
     }
