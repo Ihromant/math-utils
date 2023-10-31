@@ -1,21 +1,19 @@
 package ua.ihromant.mathutils;
 
-import java.util.Arrays;
 import java.util.BitSet;
-import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public record NearPoint(NearField x, NearField y) {
-    private static final NearField[] FIELD = NearField.values();
+public class FiveFieldPoint {
+    private static final int[] FIELD = IntStream.range(0, 5).toArray();
     private static final int COUNT = FIELD.length * FIELD.length + FIELD.length + 1;
 
-    private static final List<List<NearPoint>> RAYS = Stream.concat(
-            Stream.of(Arrays.stream(NearField.values()).skip(1)
-                    .map(nf -> new NearPoint(NearField.ZERO, nf)).collect(Collectors.toList())),
-            Arrays.stream(NearField.values()).map(nf -> Arrays.stream(NearField.values()).skip(1)
-                    .map(cf -> cf.mul(new NearPoint(NearField.PL_1, nf))).collect(Collectors.toList()))).toList();
+    private static final int[][] RAYS = Stream.concat(
+            Stream.of(IntStream.of(FIELD).skip(1)
+                    .map(y -> fromCrd(0, y)).toArray()),
+            IntStream.of(FIELD).mapToObj(y -> IntStream.of(FIELD).skip(1)
+                    .map(cf -> mulPoint(fromCrd(1, y), cf)).toArray())).toArray(int[][]::new);
 
     private static final BitSet[] LINES = generateLines();
 
@@ -27,12 +25,12 @@ public record NearPoint(NearField x, NearField y) {
     private static BitSet[] generateLines() {
         BitSet[] lines = new BitSet[COUNT];
         for (int i = 0; i < FIELD.length; i++) {
-            NearPoint start = new NearPoint(NearField.ZERO, FIELD[i]);
+            int start = fromCrd(0, FIELD[i]);
             for (int j = 0; j < FIELD.length; j++) {
                 int lineIdx = i * FIELD.length + j;
                 BitSet line = new BitSet();
-                line.set(start.idx());
-                RAYS.get(j + 1).forEach(p -> line.set(p.add(start).idx()));
+                line.set(start);
+                IntStream.of(RAYS[j + 1]).forEach(p -> line.set(addPoints(p, start)));
                 line.set(FIELD.length * FIELD.length + j);
                 lines[lineIdx] = line;
             }
@@ -40,9 +38,9 @@ public record NearPoint(NearField x, NearField y) {
         for (int i = 0; i < FIELD.length; i++) {
             int lineIdx = FIELD.length * FIELD.length + i;
             BitSet line = new BitSet();
-            NearPoint start = new NearPoint(FIELD[i], NearField.ZERO);
-            line.set(start.idx());
-            RAYS.get(0).forEach(p -> line.set(p.add(start).idx()));
+            int start = fromCrd(FIELD[i], 0);
+            line.set(start);
+            IntStream.of(RAYS[0]).forEach(p -> line.set(addPoints(p, start)));
             line.set(FIELD.length * FIELD.length + FIELD.length); // 90
             lines[lineIdx] = line;
         }
@@ -115,6 +113,10 @@ public record NearPoint(NearField x, NearField y) {
         return () -> IntStream.range(0, COUNT).boxed().iterator();
     }
 
+    public static Iterable<Integer> lines(BitSet filter) {
+        return () -> IntStream.range(0, COUNT).filter(l -> !filter.get(l)).boxed().iterator();
+    }
+
     public static Iterable<Integer> lines(int point) {
         return () -> POINTS[point].stream().boxed().iterator();
     }
@@ -131,65 +133,76 @@ public record NearPoint(NearField x, NearField y) {
         return () -> IntStream.range(0, COUNT).boxed().iterator();
     }
 
+    public static Iterable<Integer> points(BitSet filter) {
+        return () -> IntStream.range(0, COUNT).filter(p -> !filter.get(p)).boxed().iterator();
+    }
+
     public static Iterable<Integer> points(int line) {
         return () -> LINES[line].stream().boxed().iterator();
     }
 
-    public static boolean collinear(int... points) {
-        if (points.length == 0) {
-            return true;
+    private static int mulPoint(int point, int cff) {
+        int x = mulField(x(point), cff);
+        int y = mulField(y(point), cff);
+        return fromCrd(x, y);
+    }
+
+    private static int addPoints(int p1, int p2) {
+        int x1 = x(p1);
+        int y1 = y(p1);
+        int x2 = x(p2);
+        int y2 = y(p2);
+        return fromCrd(addField(x1, x2), addField(y1, y2));
+    }
+
+    public static int fieldCardinality() {
+        return FIELD.length;
+    }
+
+    public static int planeCardinality() {
+        return COUNT;
+    }
+
+    public static int fromCrd(int x, int y) {
+        return x * FIELD.length + y;
+    }
+
+    private static int x(int point) {
+        return point / FIELD.length;
+    }
+
+    private static int y(int point) {
+        return point % FIELD.length;
+    }
+
+    private static int mulField(int a, int b) {
+        return (a * b) % FIELD.length;
+    }
+
+    private static int addField(int a, int b) {
+        return (a + b) % FIELD.length;
+    }
+
+    private static String simpleToString(int point) {
+        return "(" + x(point) + "," + y(point) + ")";
+    }
+
+    public static String pointToString(int point) {
+        if (point < FIELD.length * FIELD.length) {
+            return simpleToString(point);
         }
-        int first = points[0];
-        for (int i = 1; i < points.length; i++) {
-            int second = points[i];
-            if (first != second) {
-                BitSet line = LINES[LOOKUP[first][second]];
-                return Arrays.stream(points).allMatch(line::get);
-            }
+        if (point < FIELD.length * FIELD.length + FIELD.length) {
+            return "∞" + simpleToString(fromCrd(1, FIELD[point - FIELD.length * FIELD.length]));
         }
-        return true;
-    }
-
-    public NearPoint sub(NearPoint that) {
-        return new NearPoint(this.x.sub(that.x), this.y.sub(that.y));
-    }
-
-    public NearPoint add(NearPoint that) {
-        return new NearPoint(this.x.add(that.x), this.y.add(that.y));
-    }
-
-    public boolean parallel(NearPoint that) {
-        return Arrays.stream(NearField.values()).skip(1).anyMatch(nf -> this.equals(nf.mul(that)));
-    }
-
-    public static boolean parallel(int first, int second, int droppedLine) {
-        return first == second || LINES[droppedLine].get(NearPoint.intersection(first, second));
-    }
-
-    private int idx() {
-        return x.ordinal() * FIELD.length + y.ordinal();
-    }
-
-    private static NearPoint byIdx(int idx) {
-        return new NearPoint(FIELD[idx / FIELD.length], FIELD[idx % FIELD.length]);
-    }
-
-    public static String pointToString(int idx) {
-        if (idx < FIELD.length * FIELD.length) {
-            return byIdx(idx).toString();
-        }
-        if (idx < FIELD.length * FIELD.length + FIELD.length) {
-            return "∞" + new NearPoint(NearField.PL_1, FIELD[idx - FIELD.length * FIELD.length]);
-        }
-        return "∞" + new NearPoint(NearField.ZERO, NearField.PL_1);
+        return "∞" + simpleToString(fromCrd(0, 1));
     }
 
     public static String lineToString(int i) {
-        return line(i).stream().mapToObj(NearPoint::pointToString).collect(Collectors.joining(",", "[", "]"));
+        return line(i).stream().mapToObj(FiveFieldPoint::pointToString).collect(Collectors.joining(",", "[", "]"));
     }
 
-    @Override
-    public String toString() {
-        return "(" + x + "," + y + ")";
+    public static String lineToString(int i, BitSet filter) {
+        return line(i).stream().filter(p -> !filter.get(p)).mapToObj(FiveFieldPoint::pointToString).collect(Collectors.joining(",", "[", "]"));
     }
 }
+
