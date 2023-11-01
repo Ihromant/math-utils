@@ -9,19 +9,14 @@ public class BibdPoint {
     private static final int COUNT = 13;
     private static final int[] first = {0, 2, 7};
     private static final int[] second = {0, 1, 4};
-    private static final BitSet[] LINES = Stream.concat(IntStream.range(0, COUNT).mapToObj(i -> {
-        BitSet res = new BitSet();
-        res.set((i + first[0]) % COUNT);
-        res.set((i + first[1]) % COUNT);
-        res.set((i + first[2]) % COUNT);
-        return res;
-    }), IntStream.range(0, COUNT).mapToObj(i -> {
-        BitSet res = new BitSet();
-        res.set((i + second[0]) % COUNT);
-        res.set((i + second[1]) % COUNT);
-        res.set((i + second[2]) % COUNT);
-        return res;
-    })).toArray(BitSet[]::new);
+    private static final BitSet[] LINES = Stream.of(first, second)
+            .flatMap(arr -> IntStream.range(0, COUNT).mapToObj(i -> {
+                BitSet res = new BitSet();
+                res.set((i + arr[0]) % COUNT);
+                res.set((i + arr[1]) % COUNT);
+                res.set((i + arr[2]) % COUNT);
+                return res;
+            })).toArray(BitSet[]::new);
 
     private static final int[][] LOOKUP = generateLookup();
 
