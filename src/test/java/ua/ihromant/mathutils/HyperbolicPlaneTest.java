@@ -10,6 +10,99 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HyperbolicPlaneTest {
     @Test
+    public void test25PointPlanes() {
+        HyperbolicPlane p1 = new HyperbolicPlane("00000000111111122222223333344445555666778899aabbil",
+                "134567ce34578cd34568de468bh679f78ag79b9aabcddecejm",
+                "298dfbhkea6g9kf7c9afkg5cgfihdgifchi8ejjcjdfhgfghkn",
+                "iaolgmjnmbohnljonblhmjjdlknmeklnekmkinlimimonooloo");
+        assertEquals(25, p1.pointCount());
+        assertEquals(50, p1.lineCount());
+        testCorrectness(p1, of(4), 8);
+        testPlayfairIndex(p1, of(4));
+        testHyperbolicIndex(p1, 1, 2);
+
+        HyperbolicPlane p2 = new HyperbolicPlane("0000000011111112222222333334444555566667778889abil",
+                "13457bce34589cd3456ade489eh6acf7bdg79ab9ab9abdecjm",
+                "2689gdfka76fekg798fckh5cfgidghichfi8chjjdfgjehfgkn",
+                "iloahnjmbmohlnjobngmljjdknmeklnekmlkinmnilmliooooo");
+        assertEquals(25, p2.pointCount());
+        assertEquals(50, p2.lineCount());
+        testCorrectness(p2, of(4), 8);
+        testPlayfairIndex(p2, of(4));
+        testHyperbolicIndex(p2, 0, 2);
+
+        HyperbolicPlane p3 = new HyperbolicPlane("0000000011111112222222333334444555566667778889abil",
+                "13457bde34589ce3456acd489eh6acf7bdg79ab9ab9abcdejm",
+                "2689gcfka76fdkg798fehk5cgfidhgicfhi8hcjjfdejgfghkn",
+                "iloahmjnbmohnljobngljmjdkmneknleklmkminlniimlooooo");
+        assertEquals(25, p3.pointCount());
+        assertEquals(50, p3.lineCount());
+        testCorrectness(p3, of(4), 8);
+        testPlayfairIndex(p3, of(4));
+        testHyperbolicIndex(p3, 0, 2);
+
+        HyperbolicPlane p4 = new HyperbolicPlane("000000001111111222222333334444555566667778899abcde",
+                "123468cj23479af3458bg456ah57bi78bd89ce9adabacghiff",
+                "5ad97fek6be8gdl7ch9em89fcn6gdkfickgjdlhmeekblhijjg",
+                "oignbhmlkjhcinmlfjdonmeikoajlonlgmomhnkoijnfolmnok");
+        assertEquals(25, p4.pointCount());
+        assertEquals(50, p4.lineCount());
+        testCorrectness(p4, of(4), 8);
+        testPlayfairIndex(p4, of(4));
+        testHyperbolicIndex(p4, 0, 2);
+
+        HyperbolicPlane p5 = new HyperbolicPlane("000000001111111222222333333444445555566666777889al",
+                "124789bh2589ace39abde47abcf8bcde79cdf78adg89b9cabm",
+                "365egifj46fhjgi5gikhf6ihjegjikfggkjehfhekiadcbdcdn",
+                "dcaolmnk7bolmnk8olmnj9nolmknolmhmnolilmnojkjheifgo");
+        assertEquals(25, p5.pointCount());
+        assertEquals(50, p5.lineCount());
+        testCorrectness(p5, of(4), 8);
+        testPlayfairIndex(p5, of(4));
+        testHyperbolicIndex(p5, 0, 2);
+
+        HyperbolicPlane p6 = new HyperbolicPlane("000000001111111222222333333444455566667777889aacee",
+                "12459bdf24569cg3458bh4568bi59bh9ac78ab89cgaddbedfl",
+                "3786cihjd78haek96kfgja7fgclgkdiimfi9djebkjcjffhmgn",
+                "oanegklmifbmljnecolmnjdkhnmlmeojnhnoglmhloiknokoio");
+        assertEquals(25, p6.pointCount());
+        assertEquals(50, p6.lineCount());
+        testCorrectness(p6, of(4), 8);
+        testPlayfairIndex(p6, of(4));
+        testHyperbolicIndex(p6, 0, 2);
+
+        HyperbolicPlane p7 = new HyperbolicPlane("000000001111111222222233333444455556677889abcdefgh",
+                "13456789345678a34567894679c67ad68be9aab9bdecijkijk",
+                "2fbcdgiadg9jcfbaehficb5b8eg89ch7adfchdfgefghmlllmn",
+                "onklehjmmlikehnjnmgkdloilhkmjfinkgjolomnokijnnmooo");
+        assertEquals(25, p7.pointCount());
+        assertEquals(50, p7.lineCount());
+        testCorrectness(p7, of(4), 8);
+        testPlayfairIndex(p7, of(4));
+        testHyperbolicIndex(p7, 0, 2);
+
+        HyperbolicPlane p8 = new HyperbolicPlane("0000000011111112222222333333344445555666677778889a",
+                "147adgjm4569chi4569bdf45689ae9bcf9ach89abbcdeabicd",
+                "258behkn78ebfkl87caekgdb7cfglgkehefgjfildfighegjdj",
+                "369cfiloadgjmnonlohimjimjhoknmojlkinoknmhnkomolmln");
+        assertEquals(25, p8.pointCount());
+        assertEquals(50, p8.lineCount());
+        testCorrectness(p8, of(4), 8);
+        testPlayfairIndex(p8, of(4));
+        testHyperbolicIndex(p8, 0, 2);
+
+        HyperbolicPlane p9 = new HyperbolicPlane("0000000011111112222222333333344445555666677778889a",
+                "147adgjm4569cef4569bcd45689ae9bdf9abe89acbcdiabcfd",
+                "258behkn78bhkil87jafghhc7jbigcekggfihelhdheglgkfij",
+                "369cfiloadgjmnoikoemnlmlfndokolnjmnjomnkinjomlohkm");
+        assertEquals(25, p9.pointCount());
+        assertEquals(50, p9.lineCount());
+        testCorrectness(p9, of(4), 8);
+        testPlayfairIndex(p9, of(4));
+        testHyperbolicIndex(p9, 0, 2);
+    }
+
+    @Test
     public void testPlanesCorrectness() {
         HyperbolicPlane triPoints = new HyperbolicPlane(new int[]{0, 2, 7}, new int[]{0, 1, 4});
         HyperbolicPlane otherTriPoints = new HyperbolicPlane(new int[]{0, 8, 10}, new int[]{0, 1, 6}, new int[]{0, 3, 7});
