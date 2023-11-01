@@ -27,6 +27,20 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
+    public HyperbolicPlane(int pointCount, int[]... base) {
+        this.pointCount = pointCount;
+        this.lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
+            BitSet res = new BitSet();
+            for (int shift : arr) {
+                res.set((idx + shift) % pointCount);
+            }
+            return res;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        this.lookup = generateLookup();
+        this.points = generateBeams();
+        this.intersections = generateIntersections();
+    }
+
     public HyperbolicPlane(String... design) {
         this.pointCount = Arrays.stream(design).flatMap(s -> s.chars().boxed()).collect(Collectors.toSet()).size();
         this.lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {

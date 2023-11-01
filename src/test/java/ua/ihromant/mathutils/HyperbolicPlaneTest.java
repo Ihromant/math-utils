@@ -10,6 +10,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HyperbolicPlaneTest {
     @Test
+    public void hyperbolicPlaneExample() {
+        HyperbolicPlane p = new HyperbolicPlane(217, new int[]{0,1,37,67,88,92,149}, new int[]{0,15,18,65,78,121,137}, new int[]{0,8,53,79,85,102,107},
+                new int[]{0,11,86,100,120,144,190}, new int[]{0,29,64,165,198,205,207}, new int[]{0,31,62,93,124,155,186});
+        assertEquals(217, p.pointCount());
+        assertEquals(1116, p.lineCount());
+        testCorrectness(p, of(7), 36);
+        testPlayfairIndex(p, of(29));
+        testHyperbolicIndex(p, 2, 5);
+        checkPlane(p);
+    }
+
+    @Test
     public void test25PointPlanes() {
         HyperbolicPlane p1 = new HyperbolicPlane("00000000111111122222223333344445555666778899aabbil",
                 "134567ce34578cd34568de468bh679f78ag79b9aabcddecejm",
@@ -20,6 +32,7 @@ public class HyperbolicPlaneTest {
         testCorrectness(p1, of(4), 8);
         testPlayfairIndex(p1, of(4));
         testHyperbolicIndex(p1, 1, 2);
+        checkPlane(p1);
 
         HyperbolicPlane p2 = new HyperbolicPlane("0000000011111112222222333334444555566667778889abil",
                 "13457bce34589cd3456ade489eh6acf7bdg79ab9ab9abdecjm",
@@ -111,6 +124,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane fivePoints = new HyperbolicPlane(new int[]{0, 19, 24, 33, 39}, new int[]{0, 1, 4, 11, 29});
         HyperbolicPlane otherFivePoints = new HyperbolicPlane(new int[]{0, 16, 17, 31, 35}, new int[]{0, 3, 11, 32, 39});
         HyperbolicPlane triFour = new HyperbolicPlane(new int[]{0, 9, 13}, new int[]{0, 1, 3, 8});
+        HyperbolicPlane sixPoints = new HyperbolicPlane(new int[]{0, 1, 3, 7, 25, 38}, new int[]{0, 16, 21, 36, 48, 62}, new int[]{0, 30, 40, 63, 74, 82});
         assertEquals(13, triPoints.pointCount());
         assertEquals(26, triPoints.lineCount());
         testCorrectness(triPoints, of(3), 6);
@@ -153,6 +167,12 @@ public class HyperbolicPlaneTest {
         testCorrectness(triFour, of(3, 4), 7);
         testPlayfairIndex(triFour, of(3, 4));
         testHyperbolicIndex(triFour, 0, 2);
+
+        assertEquals(91, sixPoints.pointCount());
+        assertEquals(273, sixPoints.lineCount());
+        testCorrectness(sixPoints, of(6), 18);
+        testPlayfairIndex(sixPoints, of(12));
+        testHyperbolicIndex(sixPoints, 1, 4);
     }
 
     @Test
@@ -163,6 +183,9 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane fp4 = new HyperbolicPlane(new int[]{0, 17, 18, 33, 57}, new int[]{0, 2, 9, 38, 51}, new int[]{0, 20, 26, 31, 34});
         HyperbolicPlane fp5 = new HyperbolicPlane(new int[]{0, 16, 52, 57, 58}, new int[]{0, 12, 23, 30, 40}, new int[]{0, 14, 22, 46, 48});
         HyperbolicPlane fp6 = new HyperbolicPlane(new int[]{0, 13, 19, 21, 43, 53}, new int[]{0, 1, 12, 17, 26}, new int[]{0, 3, 7, 36, 51});
+        HyperbolicPlane fp7 = new HyperbolicPlane(new int[]{0, 14, 26, 51, 60}, new int[]{0, 15, 31, 55, 59}, new int[]{0, 10, 23, 52, 58},
+                new int[]{0, 3, 36, 56, 57}, new int[]{0, 7, 18, 45, 50}, new int[]{0, 8, 30, 47, 49});
+        HyperbolicPlane fp8 = new HyperbolicPlane(new int[]{0, 1, 5, 12, 26}, new int[]{0, 2, 10, 40, 64}, new int[]{0, 3, 18, 47, 53}, new int[]{0, 9, 32, 48, 68});
 
         assertEquals(61, fp1.pointCount());
         assertEquals(183, fp1.lineCount());
@@ -199,6 +222,18 @@ public class HyperbolicPlaneTest {
         testCorrectness(fp6, of(5, 6), 16);
         testPlayfairIndex(fp6, of(10, 11));
         testHyperbolicIndex(fp6, 0, 4);
+
+        assertEquals(121, fp7.pointCount());
+        assertEquals(726, fp7.lineCount());
+        testCorrectness(fp7, of(5), 30);
+        testPlayfairIndex(fp7, of(25));
+        testHyperbolicIndex(fp7, 0, 3);
+
+        assertEquals(81, fp8.pointCount());
+        assertEquals(324, fp8.lineCount());
+        testCorrectness(fp8, of(5), 20);
+        testPlayfairIndex(fp8, of(15));
+        testHyperbolicIndex(fp8, 0, 3);
     }
 
     private static BitSet of(int... values) {
