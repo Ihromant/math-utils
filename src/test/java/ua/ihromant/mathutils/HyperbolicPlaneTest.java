@@ -21,44 +21,44 @@ public class HyperbolicPlaneTest {
         assertEquals(13, triPoints.pointCount());
         assertEquals(26, triPoints.lineCount());
         testCorrectness(triPoints, of(3), 6);
-        testHyperbolicity(triPoints, of(3));
-        testOurHyperbolicity(triPoints, 0, 1);
+        testPlayfairIndex(triPoints, of(3));
+        testHyperbolicIndex(triPoints, 0, 1);
 
         assertEquals(19, otherTriPoints.pointCount());
         assertEquals(57, otherTriPoints.lineCount());
         testCorrectness(otherTriPoints, of(3), 9);
-        testHyperbolicity(otherTriPoints, of(6));
-        testOurHyperbolicity(otherTriPoints, 0, 1);
+        testPlayfairIndex(otherTriPoints, of(6));
+        testHyperbolicIndex(otherTriPoints, 0, 1);
 
         assertEquals(37, fourPoints.pointCount());
         assertEquals(111, fourPoints.lineCount());
         testCorrectness(fourPoints, of(4), 12);
-        testHyperbolicity(fourPoints, of(8));
-        testOurHyperbolicity(fourPoints, 0, 2);
+        testPlayfairIndex(fourPoints, of(8));
+        testHyperbolicIndex(fourPoints, 0, 2);
 
         assertEquals(49, otherFourPoints.pointCount());
         assertEquals(196, otherFourPoints.lineCount());
         testCorrectness(otherFourPoints, of(4), 16);
-        testHyperbolicity(otherFourPoints, of(12));
-        testOurHyperbolicity(otherFourPoints, 0, 2);
+        testPlayfairIndex(otherFourPoints, of(12));
+        testHyperbolicIndex(otherFourPoints, 0, 2);
 
         assertEquals(41, fivePoints.pointCount());
         assertEquals(82, fivePoints.lineCount());
         testCorrectness(fivePoints, of(5), 10);
-        testHyperbolicity(fivePoints, of(5));
-        testOurHyperbolicity(fivePoints, 1, 3);
+        testPlayfairIndex(fivePoints, of(5));
+        testHyperbolicIndex(fivePoints, 1, 3);
 
         assertEquals(61, otherFivePoints.pointCount());
         assertEquals(183, otherFivePoints.lineCount());
         testCorrectness(otherFivePoints, of(5), 15);
-        testHyperbolicity(otherFivePoints, of(10));
-        testOurHyperbolicity(otherFivePoints, 0, 3);
+        testPlayfairIndex(otherFivePoints, of(10));
+        testHyperbolicIndex(otherFivePoints, 0, 3);
 
         assertEquals(19, triFour.pointCount());
         assertEquals(38, triFour.lineCount());
         testCorrectness(triFour, of(3, 4), 7);
-        testHyperbolicity(triFour, of(3, 4));
-        testOurHyperbolicity(triFour, 0, 2);
+        testPlayfairIndex(triFour, of(3, 4));
+        testHyperbolicIndex(triFour, 0, 2);
     }
 
     private static BitSet of(int... values) {
@@ -93,9 +93,19 @@ public class HyperbolicPlaneTest {
                 assertTrue(plane.point(p).get(l));
             }
         }
+//        for (int x : plane.points()) {
+//            for (int y : plane.points()) {
+//                for (int z : plane.points()) {
+//                    if (plane.collinear(x, y, z)) {
+//                        continue;
+//                    }
+//                    assertEquals(plane.pointCount(), plane.hull(x, y, z).cardinality());
+//                }
+//            }
+//        }
     }
 
-    private void testHyperbolicity(HyperbolicPlane plane, BitSet hyperbolicNumber) {
+    private void testPlayfairIndex(HyperbolicPlane plane, BitSet hyperbolicNumber) {
         for (int l : plane.lines()) {
             BitSet line = plane.line(l);
             for (int p : plane.points()) {
@@ -113,7 +123,7 @@ public class HyperbolicPlaneTest {
         }
     }
 
-    private void testOurHyperbolicity(HyperbolicPlane plane, int minHyperbolicNumber, int maxHyperbolicNumber) {
+    private void testHyperbolicIndex(HyperbolicPlane plane, int minIdx, int maxIdx) {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
         for (int o : plane.points()) {
@@ -147,7 +157,7 @@ public class HyperbolicPlaneTest {
                 }
             }
         }
-        assertEquals(min, minHyperbolicNumber);
-        assertEquals(max, maxHyperbolicNumber);
+        assertEquals(min, minIdx);
+        assertEquals(max, maxIdx);
     }
 }

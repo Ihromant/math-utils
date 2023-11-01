@@ -68,29 +68,7 @@ public class BibdPointTest {
     @Test
     public void findQuadruples() {
         int SIZE = 41;
-        Map<Quadruple, BitSet> sets = new HashMap<>();
-        for (int i = 1; i < SIZE; i++) {
-            for (int j = i + 1; j < SIZE; j++) {
-                for (int k = j + 1; k < SIZE; k++) {
-                    for (int l = k + 1; l < SIZE; l++) {
-                        BitSet bs = new BitSet();
-                        bs.set(diff(0, i, SIZE));
-                        bs.set(diff(0, j, SIZE));
-                        bs.set(diff(0, k, SIZE));
-                        bs.set(diff(0, l, SIZE));
-                        bs.set(diff(i, k, SIZE));
-                        bs.set(diff(i, j, SIZE));
-                        bs.set(diff(j, k, SIZE));
-                        bs.set(diff(i, l, SIZE));
-                        bs.set(diff(j, l, SIZE));
-                        bs.set(diff(k, l, SIZE));
-                        if (bs.cardinality() == SIZE / 4) {
-                            sets.put(new Quadruple(i, j, k, l), bs);
-                        }
-                    }
-                }
-            }
-        }
+        Map<Quadruple, BitSet> sets = getQuadruples(SIZE);
         System.out.println(sets.size());
         List<Map.Entry<Quadruple, BitSet>> entries = new ArrayList<>(sets.entrySet());
         for (int a = 0; a < entries.size(); a++) {
@@ -107,30 +85,8 @@ public class BibdPointTest {
 
     @Test
     public void findQuadruples2() {
-        int SIZE = 61;
-        Map<Quadruple, BitSet> sets = new HashMap<>();
-        for (int i = 1; i < SIZE; i++) {
-            for (int j = i + 1; j < SIZE; j++) {
-                for (int k = j + 1; k < SIZE; k++) {
-                    for (int l = k + 1; l < SIZE; l++) {
-                        BitSet bs = new BitSet();
-                        bs.set(diff(0, i, SIZE));
-                        bs.set(diff(0, j, SIZE));
-                        bs.set(diff(0, k, SIZE));
-                        bs.set(diff(0, l, SIZE));
-                        bs.set(diff(i, k, SIZE));
-                        bs.set(diff(i, j, SIZE));
-                        bs.set(diff(j, k, SIZE));
-                        bs.set(diff(i, l, SIZE));
-                        bs.set(diff(j, l, SIZE));
-                        bs.set(diff(k, l, SIZE));
-                        if (bs.cardinality() == SIZE / 6) {
-                            sets.put(new Quadruple(i, j, k, l), bs);
-                        }
-                    }
-                }
-            }
-        }
+        int size = 61;
+        Map<Quadruple, BitSet> sets = getQuadruples(size);
         System.out.println(sets.size());
         List<Map.Entry<Quadruple, BitSet>> entries = new ArrayList<>(sets.entrySet());
         for (int a = 0; a < entries.size(); a++) {
@@ -152,26 +108,37 @@ public class BibdPointTest {
         }
     }
 
-    @Test
-    public void findTriples() {
-        int SIZE = 49;
-        Map<Triple, BitSet> sets = new HashMap<>();
+    private static Map<Quadruple, BitSet> getQuadruples(int SIZE) {
+        Map<Quadruple, BitSet> sets = new HashMap<>();
         for (int i = 1; i < SIZE; i++) {
             for (int j = i + 1; j < SIZE; j++) {
                 for (int k = j + 1; k < SIZE; k++) {
-                    BitSet bs = new BitSet();
-                    bs.set(diff(0, i, SIZE));
-                    bs.set(diff(0, j, SIZE));
-                    bs.set(diff(0, k, SIZE));
-                    bs.set(diff(i, k, SIZE));
-                    bs.set(diff(i, j, SIZE));
-                    bs.set(diff(j, k, SIZE));
-                    if (bs.cardinality() == SIZE / 8) {
-                        sets.put(new Triple(i, j, k), bs);
+                    for (int l = k + 1; l < SIZE; l++) {
+                        BitSet bs = new BitSet();
+                        bs.set(diff(0, i, SIZE));
+                        bs.set(diff(0, j, SIZE));
+                        bs.set(diff(0, k, SIZE));
+                        bs.set(diff(0, l, SIZE));
+                        bs.set(diff(i, k, SIZE));
+                        bs.set(diff(i, j, SIZE));
+                        bs.set(diff(j, k, SIZE));
+                        bs.set(diff(i, l, SIZE));
+                        bs.set(diff(j, l, SIZE));
+                        bs.set(diff(k, l, SIZE));
+                        if (bs.cardinality() == 10) {
+                            sets.put(new Quadruple(i, j, k, l), bs);
+                        }
                     }
                 }
             }
         }
+        return sets;
+    }
+
+    @Test
+    public void findTriples() {
+        int SIZE = 49;
+        Map<Triple, BitSet> sets = getTriples(SIZE);
         System.out.println(sets.size());
         List<Map.Entry<Triple, BitSet>> entries = new ArrayList<>(sets.entrySet());
         for (int a = 0; a < entries.size(); a++) {
@@ -199,9 +166,65 @@ public class BibdPointTest {
         }
     }
 
+    private static Map<Triple, BitSet> getTriples(int size) {
+        Map<Triple, BitSet> sets = new HashMap<>();
+        for (int i = 1; i < size; i++) {
+            for (int j = i + 1; j < size; j++) {
+                for (int k = j + 1; k < size; k++) {
+                    BitSet bs = new BitSet();
+                    bs.set(diff(0, i, size));
+                    bs.set(diff(0, j, size));
+                    bs.set(diff(0, k, size));
+                    bs.set(diff(i, k, size));
+                    bs.set(diff(i, j, size));
+                    bs.set(diff(j, k, size));
+                    if (bs.cardinality() == 6) {
+                        sets.put(new Triple(i, j, k), bs);
+                    }
+                }
+            }
+        }
+        return sets;
+    }
+
     @Test
-    public void findQuintuples1() {
-        int size = 91;
+    public void findQuintuples3() {
+        int size = 151;
+        Map<Quintuple, BitSet> sets = getQuintuples(size);
+        System.out.println(sets.size());
+        List<Map.Entry<Quintuple, BitSet>> entries = new ArrayList<>(sets.entrySet());
+        for (int a = 0; a < entries.size(); a++) {
+            System.out.println(a);
+            BitSet aSet = entries.get(a).getValue();
+            for (int b = a + 1; b < entries.size(); b++) {
+                BitSet bSet = entries.get(b).getValue();
+                if (aSet.intersects(bSet)) {
+                    continue;
+                }
+                for (int c = b + 1; c < entries.size(); c++) {
+                    BitSet cSet = entries.get(c).getValue();
+                    if (aSet.intersects(cSet) || bSet.intersects(cSet)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < entries.size(); d++) {
+                        BitSet dSet = entries.get(d).getValue();
+                        if (aSet.intersects(dSet) || bSet.intersects(dSet) || cSet.intersects(dSet)) {
+                            continue;
+                        }
+                        for (int e = d + 1; e < entries.size(); e++) {
+                            BitSet eSet = entries.get(e).getValue();
+                            if (aSet.intersects(eSet) || bSet.intersects(eSet) || cSet.intersects(eSet) || dSet.intersects(eSet)) {
+                                continue;
+                            }
+                            System.out.println(entries.get(a) + " " + entries.get(b) + " " + entries.get(c) + " " + entries.get(d) + " " + entries.get(e));
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static Map<Quintuple, BitSet> getQuintuples(int size) {
         Map<Quintuple, BitSet> sets = new HashMap<>();
         for (int i = 1; i < size; i++) {
             for (int j = i + 1; j < size; j++) {
@@ -224,7 +247,7 @@ public class BibdPointTest {
                             bs.set(diff(j, m, size));
                             bs.set(diff(k, m, size));
                             bs.set(diff(l, m, size));
-                            if (bs.cardinality() == size / 6) {
+                            if (bs.cardinality() == size / 10) {
                                 sets.put(new Quintuple(i, j, k, l, m), bs);
                             }
                         }
@@ -232,25 +255,7 @@ public class BibdPointTest {
                 }
             }
         }
-        System.out.println(sets.size());
-        List<Map.Entry<Quintuple, BitSet>> entries = new ArrayList<>(sets.entrySet());
-        for (int a = 0; a < entries.size(); a++) {
-            System.out.println(a);
-            BitSet aSet = entries.get(a).getValue();
-            for (int b = a + 1; b < entries.size(); b++) {
-                BitSet bSet = entries.get(b).getValue();
-                if (aSet.intersects(bSet)) {
-                    continue;
-                }
-                for (int c = b + 1; c < entries.size(); c++) {
-                    BitSet cSet = entries.get(c).getValue();
-                    if (aSet.intersects(cSet) || bSet.intersects(cSet)) {
-                        continue;
-                    }
-                    System.out.println(entries.get(a) + " " + entries.get(b) + " " + entries.get(c));
-                }
-            }
-        }
+        return sets;
     }
 
     @Test
@@ -329,7 +334,7 @@ public class BibdPointTest {
 
     @Test
     public void findSextuples() {
-        int size = 85;
+        int size = 127;
         Map<Sextuple, BitSet> sets = new HashMap<>();
         for (int i = 1; i < size; i++) {
             for (int j = i + 1; j < size; j++) {
@@ -359,7 +364,7 @@ public class BibdPointTest {
                                 bs.set(diff(k, n, size));
                                 bs.set(diff(l, n, size));
                                 bs.set(diff(m, n, size));
-                                if (bs.cardinality() == size / 4) {
+                                if (bs.cardinality() == size / 6) {
                                     sets.put(new Sextuple(i, j, k, l, m, n), bs);
                                 }
                             }
@@ -378,7 +383,13 @@ public class BibdPointTest {
                 if (aSet.intersects(bSet)) {
                     continue;
                 }
-                System.out.println(entries.get(a) + " " + entries.get(b));
+                for (int c = b + 1; c < entries.size(); c++) {
+                    BitSet cSet = entries.get(c).getValue();
+                    if (aSet.intersects(cSet) || bSet.intersects(cSet)) {
+                        continue;
+                    }
+                    System.out.println(entries.get(a) + " " + entries.get(b) + " " + entries.get(c));
+                }
             }
         }
     }

@@ -134,4 +134,23 @@ public class HyperbolicPlane {
     public String lineToString(int line) {
         return lines[line].toString();
     }
+
+    public BitSet hull(int... points) {
+        BitSet base = new BitSet();
+        for (int point : points) {
+            base.set(point);
+        }
+        BitSet next = next(base);
+        while (next.cardinality() > base.cardinality()) {
+            base = next;
+            next = next(base);
+        }
+        return base;
+    }
+
+    public BitSet next(BitSet base) {
+        BitSet next = (BitSet) base.clone();
+        base.stream().forEach(x -> base.stream().filter(y -> x != y).forEach(y -> next.or(lines[line(x, y)])));
+        return next;
+    }
 }
