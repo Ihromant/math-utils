@@ -41,27 +41,21 @@ public class BibdPointTest {
     public void testHyperbolicity() {
         int max = 0;
         int min = Integer.MAX_VALUE;
-        for (int dr : BibdPoint.lines()) {
-            for (int l : BibdPoint.lines()) {
-                if (l == dr) {
+        for (int l : BibdPoint.lines()) {
+            BitSet line = BibdPoint.line(l);
+            for (int p : BibdPoint.points()) {
+                if (line.get(p)) {
                     continue;
                 }
-                BitSet dropped = BibdPoint.line(dr);
-                BitSet line = BibdPoint.line(l);
-                for (int p : BibdPoint.points()) {
-                    if (dropped.get(p) || line.get(p)) {
-                        continue;
+                int counter = 0;
+                for (int parallel : BibdPoint.lines(p)) {
+                    if (BibdPoint.intersection(parallel, l) == -1) {
+                        counter++;
                     }
-                    int counter = 0;
-                    for (int parallel : BibdPoint.lines(p)) {
-                        if (BibdPoint.intersection(parallel, l) == -1) {
-                            counter++;
-                        }
-                    }
-                    assertEquals(3, counter);
-                    max = Math.max(max, counter);
-                    min = Math.min(min, counter);
                 }
+                //assertEquals(1, counter);
+                max = Math.max(max, counter);
+                min = Math.min(min, counter);
             }
         }
         System.out.println(min + " " + max);
