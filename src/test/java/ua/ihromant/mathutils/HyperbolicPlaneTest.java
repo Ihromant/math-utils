@@ -14,6 +14,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane triPoints = new HyperbolicPlane(new int[]{0, 2, 7}, new int[]{0, 1, 4});
         HyperbolicPlane otherTriPoints = new HyperbolicPlane(new int[]{0, 8, 10}, new int[]{0, 1, 6}, new int[]{0, 3, 7});
         HyperbolicPlane fourPoints = new HyperbolicPlane(new int[]{0, 18, 27, 33}, new int[]{0, 7, 24, 36}, new int[]{0, 3, 5, 26});
+        HyperbolicPlane otherFourPoints = new HyperbolicPlane(new int[]{0, 33, 34, 39}, new int[]{0, 17, 25, 28}, new int[]{0, 2, 9, 22}, new int[]{0, 19, 23, 37});
         HyperbolicPlane fivePoints = new HyperbolicPlane(new int[]{0, 19, 24, 33, 39}, new int[]{0, 1, 4, 11, 29});
         HyperbolicPlane otherFivePoints = new HyperbolicPlane(new int[]{0, 17, 18, 21, 45}, new int[]{0, 2, 9, 38, 48}, new int[]{0, 5, 11, 19, 31});
         HyperbolicPlane triFour = new HyperbolicPlane(new int[]{0, 9, 13}, new int[]{0, 1, 3, 8});
@@ -22,26 +23,37 @@ public class HyperbolicPlaneTest {
         testCorrectness(triPoints, of(3), 6);
         testHyperbolicity(triPoints, of(3));
         testOurHyperbolicity(triPoints, 0, 1);
+
         assertEquals(19, otherTriPoints.pointCount());
         assertEquals(57, otherTriPoints.lineCount());
         testCorrectness(otherTriPoints, of(3), 9);
         testHyperbolicity(otherTriPoints, of(6));
         testOurHyperbolicity(otherTriPoints, 0, 1);
+
         assertEquals(37, fourPoints.pointCount());
         assertEquals(111, fourPoints.lineCount());
         testCorrectness(fourPoints, of(4), 12);
         testHyperbolicity(fourPoints, of(8));
         testOurHyperbolicity(fourPoints, 0, 2);
+
+        assertEquals(49, otherFourPoints.pointCount());
+        assertEquals(196, otherFourPoints.lineCount());
+        testCorrectness(otherFourPoints, of(4), 16);
+        testHyperbolicity(otherFourPoints, of(12));
+        testOurHyperbolicity(otherFourPoints, 0, 2);
+
         assertEquals(41, fivePoints.pointCount());
         assertEquals(82, fivePoints.lineCount());
         testCorrectness(fivePoints, of(5), 10);
         testHyperbolicity(fivePoints, of(5));
         testOurHyperbolicity(fivePoints, 1, 3);
+
         assertEquals(61, otherFivePoints.pointCount());
         assertEquals(183, otherFivePoints.lineCount());
         testCorrectness(otherFivePoints, of(5), 15);
         testHyperbolicity(otherFivePoints, of(10));
         testOurHyperbolicity(otherFivePoints, 0, 3);
+
         assertEquals(19, triFour.pointCount());
         assertEquals(38, triFour.lineCount());
         testCorrectness(triFour, of(3, 4), 7);

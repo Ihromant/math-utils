@@ -154,7 +154,7 @@ public class BibdPointTest {
 
     @Test
     public void findTriples() {
-        int SIZE = 37;
+        int SIZE = 49;
         Map<Triple, BitSet> sets = new HashMap<>();
         for (int i = 1; i < SIZE; i++) {
             for (int j = i + 1; j < SIZE; j++) {
@@ -166,21 +166,33 @@ public class BibdPointTest {
                     bs.set(diff(i, k, SIZE));
                     bs.set(diff(i, j, SIZE));
                     bs.set(diff(j, k, SIZE));
-                    if (bs.cardinality() == SIZE / 6) {
+                    if (bs.cardinality() == SIZE / 8) {
                         sets.put(new Triple(i, j, k), bs);
                     }
                 }
             }
         }
-        for (Map.Entry<Triple, BitSet> a1 : sets.entrySet()) {
-            for (Map.Entry<Triple, BitSet> a2 : sets.entrySet()) {
-                for (Map.Entry<Triple, BitSet> a3 : sets.entrySet()) {
-                    BitSet bs = new BitSet();
-                    bs.or(a1.getValue());
-                    bs.or(a2.getValue());
-                    bs.or(a3.getValue());
-                    if (bs.cardinality() == SIZE / 2) {
-                        System.out.println(a1 + " " + a2 + " " + a3);
+        System.out.println(sets.size());
+        List<Map.Entry<Triple, BitSet>> entries = new ArrayList<>(sets.entrySet());
+        for (int a = 0; a < entries.size(); a++) {
+            System.out.println(a);
+            BitSet aSet = entries.get(a).getValue();
+            for (int b = a + 1; b < entries.size(); b++) {
+                BitSet bSet = entries.get(b).getValue();
+                if (aSet.intersects(bSet)) {
+                    continue;
+                }
+                for (int c = b + 1; c < entries.size(); c++) {
+                    BitSet cSet = entries.get(c).getValue();
+                    if (aSet.intersects(cSet) || bSet.intersects(cSet)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < entries.size(); d++) {
+                        BitSet dSet = entries.get(d).getValue();
+                        if (aSet.intersects(dSet) || bSet.intersects(dSet) || cSet.intersects(dSet)) {
+                            continue;
+                        }
+                        System.out.println(entries.get(a) + " " + entries.get(b) + " " + entries.get(c) + " " + entries.get(d));
                     }
                 }
             }
