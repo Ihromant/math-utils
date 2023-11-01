@@ -76,6 +76,14 @@ public class HyperbolicPlane {
         return result;
     }
 
+    public int pointCount() {
+        return pointCount;
+    }
+
+    public int lineCount() {
+        return lines.length;
+    }
+
     public BitSet line(int line) {
         return lines[line];
     }
@@ -106,6 +114,21 @@ public class HyperbolicPlane {
 
     public Iterable<Integer> points(int line) {
         return () -> lines[line].stream().boxed().iterator();
+    }
+
+    public boolean collinear(int... points) {
+        if (points.length == 0) {
+            return true;
+        }
+        int first = points[0];
+        for (int i = 1; i < points.length; i++) {
+            int second = points[i];
+            if (first != second) {
+                BitSet line = lines[line(first, second)];
+                return Arrays.stream(points).allMatch(line::get);
+            }
+        }
+        return true;
     }
 
     public String lineToString(int line) {
