@@ -140,6 +140,10 @@ public class HyperbolicPlaneTest {
                 assertTrue(plane.point(p).get(l));
             }
         }
+        if (perLine.cardinality() == 1) { // Theorem 8.3.1
+            assertEquals(beamCount * (perLine.stream().findAny().orElseThrow() - 1), plane.pointCount() - 1);
+            assertEquals(plane.pointCount() * beamCount, plane.lineCount() * perLine.stream().findAny().orElseThrow());
+        }
     }
 
     private void checkPlane(HyperbolicPlane plane) {
