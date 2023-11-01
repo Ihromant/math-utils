@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.BitSet;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -11,37 +12,55 @@ public class HyperbolicPlaneTest {
     @Test
     public void testPlanesCorrectness() {
         HyperbolicPlane triPoints = new HyperbolicPlane(new int[]{0, 2, 7}, new int[]{0, 1, 4});
+        HyperbolicPlane otherTriPoints = new HyperbolicPlane(new int[]{0, 8, 10}, new int[]{0, 1, 6}, new int[]{0, 3, 7});
         HyperbolicPlane fourPoints = new HyperbolicPlane(new int[]{0, 18, 27, 33}, new int[]{0, 7, 24, 36}, new int[]{0, 3, 5, 26});
         HyperbolicPlane fivePoints = new HyperbolicPlane(new int[]{0, 19, 24, 33, 39}, new int[]{0, 1, 4, 11, 29});
         HyperbolicPlane otherFivePoints = new HyperbolicPlane(new int[]{0, 17, 18, 21, 45}, new int[]{0, 2, 9, 38, 48}, new int[]{0, 5, 11, 19, 31});
+        HyperbolicPlane triFour = new HyperbolicPlane(new int[]{0, 9, 13}, new int[]{0, 1, 3, 8});
         assertEquals(13, triPoints.pointCount());
         assertEquals(26, triPoints.lineCount());
-        testCorrectness(triPoints, 3, 6);
-        testHyperbolicity(triPoints, 3);
+        testCorrectness(triPoints, of(3), 6);
+        testHyperbolicity(triPoints, of(3));
         testOurHyperbolicity(triPoints, 0, 1);
+        assertEquals(19, otherTriPoints.pointCount());
+        assertEquals(57, otherTriPoints.lineCount());
+        testCorrectness(otherTriPoints, of(3), 9);
+        testHyperbolicity(otherTriPoints, of(6));
+        testOurHyperbolicity(otherTriPoints, 0, 1);
         assertEquals(37, fourPoints.pointCount());
         assertEquals(111, fourPoints.lineCount());
-        testCorrectness(fourPoints, 4, 12);
-        testHyperbolicity(fourPoints, 8);
+        testCorrectness(fourPoints, of(4), 12);
+        testHyperbolicity(fourPoints, of(8));
         testOurHyperbolicity(fourPoints, 0, 2);
         assertEquals(41, fivePoints.pointCount());
         assertEquals(82, fivePoints.lineCount());
-        testCorrectness(fivePoints, 5, 10);
-        testHyperbolicity(fivePoints, 5);
+        testCorrectness(fivePoints, of(5), 10);
+        testHyperbolicity(fivePoints, of(5));
         testOurHyperbolicity(fivePoints, 1, 3);
         assertEquals(61, otherFivePoints.pointCount());
         assertEquals(183, otherFivePoints.lineCount());
-        testCorrectness(otherFivePoints, 5, 15);
-        testHyperbolicity(otherFivePoints, 10);
+        testCorrectness(otherFivePoints, of(5), 15);
+        testHyperbolicity(otherFivePoints, of(10));
         testOurHyperbolicity(otherFivePoints, 0, 3);
+        assertEquals(19, triFour.pointCount());
+        assertEquals(38, triFour.lineCount());
+        testCorrectness(triFour, of(3, 4), 7);
+        testHyperbolicity(triFour, of(3, 4));
+        testOurHyperbolicity(triFour, 0, 2);
     }
 
-    private void testCorrectness(HyperbolicPlane plane, int perLine, int beamCount) {
+    private static BitSet of(int... values) {
+        BitSet bs = new BitSet();
+        IntStream.of(values).forEach(bs::set);
+        return bs;
+    }
+
+    private void testCorrectness(HyperbolicPlane plane, BitSet perLine, int beamCount) {
         for (int p : plane.points()) {
             assertEquals(beamCount, plane.point(p).cardinality());
         }
         for (int l : plane.lines()) {
-            assertEquals(perLine, plane.line(l).cardinality());
+            assertTrue(perLine.get(plane.line(l).cardinality()));
         }
         for (int p1 : plane.points()) {
             for (int p2 : plane.points()) {
@@ -64,7 +83,7 @@ public class HyperbolicPlaneTest {
         }
     }
 
-    private void testHyperbolicity(HyperbolicPlane plane, int hyperbolicNumber) {
+    private void testHyperbolicity(HyperbolicPlane plane, BitSet hyperbolicNumber) {
         for (int l : plane.lines()) {
             BitSet line = plane.line(l);
             for (int p : plane.points()) {
@@ -77,7 +96,7 @@ public class HyperbolicPlaneTest {
                         counter++;
                     }
                 }
-                assertEquals(hyperbolicNumber, counter);
+                assertTrue(hyperbolicNumber.get(counter));
             }
         }
     }

@@ -13,7 +13,7 @@ public class HyperbolicPlane {
     private final int[][] intersections;
 
     public HyperbolicPlane(int[]... base) {
-        this.pointCount = base[0].length * (base[0].length - 1) * base.length + 1;
+        this.pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;
         this.lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int shift : arr) {

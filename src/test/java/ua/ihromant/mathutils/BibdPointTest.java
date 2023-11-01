@@ -242,6 +242,50 @@ public class BibdPointTest {
     }
 
     @Test
+    public void findMutant() {
+        int SIZE = 19;
+        Map<Tuple, BitSet> tuples = new HashMap<>();
+        for (int i = 1; i < SIZE; i++) {
+            for (int j = i + 1; j < SIZE; j++) {
+                BitSet bs = new BitSet();
+                bs.set(diff(0, i, SIZE));
+                bs.set(diff(0, j, SIZE));
+                bs.set(diff(i, j, SIZE));
+                if (bs.cardinality() == 3) {
+                    tuples.put(new Tuple(i, j), bs);
+                }
+            }
+        }
+        Map<Triple, BitSet> triples = new HashMap<>();
+        for (int i = 1; i < SIZE; i++) {
+            for (int j = i + 1; j < SIZE; j++) {
+                for (int k = j + 1; k < SIZE; k++) {
+                    BitSet bs = new BitSet();
+                    bs.set(diff(0, i, SIZE));
+                    bs.set(diff(0, j, SIZE));
+                    bs.set(diff(0, k, SIZE));
+                    bs.set(diff(i, k, SIZE));
+                    bs.set(diff(i, j, SIZE));
+                    bs.set(diff(j, k, SIZE));
+                    if (bs.cardinality() == 6) {
+                        triples.put(new Triple(i, j, k), bs);
+                    }
+                }
+            }
+        }
+        for (Map.Entry<Tuple, BitSet> a1 : tuples.entrySet()) {
+            for (Map.Entry<Triple, BitSet> a2 : triples.entrySet()) {
+                BitSet bs = new BitSet();
+                bs.or(a1.getValue());
+                bs.or(a2.getValue());
+                if (bs.cardinality() == SIZE / 2) {
+                    System.out.println(a1 + " " + a2);
+                }
+            }
+        }
+    }
+
+    @Test
     public void findTuples() {
         int SIZE = 19;
         Map<Tuple, BitSet> sets = new HashMap<>();
@@ -267,6 +311,62 @@ public class BibdPointTest {
                         System.out.println(a1 + " " + a2 + " " + a3);
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    public void findSextuples() {
+        int size = 85;
+        Map<Sextuple, BitSet> sets = new HashMap<>();
+        for (int i = 1; i < size; i++) {
+            for (int j = i + 1; j < size; j++) {
+                for (int k = j + 1; k < size; k++) {
+                    for (int l = k + 1; l < size; l++) {
+                        for (int m = l + 1; m < size; m++) {
+                            for (int n = m + 1; n < size; n++) {
+                                BitSet bs = new BitSet();
+                                bs.set(diff(0, i, size));
+                                bs.set(diff(0, j, size));
+                                bs.set(diff(0, k, size));
+                                bs.set(diff(0, l, size));
+                                bs.set(diff(0, m, size));
+                                bs.set(diff(0, n, size));
+                                bs.set(diff(i, k, size));
+                                bs.set(diff(i, j, size));
+                                bs.set(diff(j, k, size));
+                                bs.set(diff(i, l, size));
+                                bs.set(diff(j, l, size));
+                                bs.set(diff(k, l, size));
+                                bs.set(diff(i, m, size));
+                                bs.set(diff(j, m, size));
+                                bs.set(diff(k, m, size));
+                                bs.set(diff(l, m, size));
+                                bs.set(diff(i, n, size));
+                                bs.set(diff(j, n, size));
+                                bs.set(diff(k, n, size));
+                                bs.set(diff(l, n, size));
+                                bs.set(diff(m, n, size));
+                                if (bs.cardinality() == size / 4) {
+                                    sets.put(new Sextuple(i, j, k, l, m, n), bs);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println(sets.size());
+        List<Map.Entry<Sextuple, BitSet>> entries = new ArrayList<>(sets.entrySet());
+        for (int a = 0; a < entries.size(); a++) {
+            System.out.println(a);
+            BitSet aSet = entries.get(a).getValue();
+            for (int b = a + 1; b < entries.size(); b++) {
+                BitSet bSet = entries.get(b).getValue();
+                if (aSet.intersects(bSet)) {
+                    continue;
+                }
+                System.out.println(entries.get(a) + " " + entries.get(b));
             }
         }
     }
