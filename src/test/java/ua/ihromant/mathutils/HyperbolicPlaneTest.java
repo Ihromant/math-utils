@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 
 import java.util.BitSet;
 import java.util.stream.IntStream;
@@ -19,6 +20,21 @@ public class HyperbolicPlaneTest {
         testPlayfairIndex(p, of(29));
         testHyperbolicIndex(p, 2, 5);
         // very long-running test checkPlane(p);
+    }
+
+    @Test
+    public void checkNotPlane() {
+        HyperbolicPlane p = new HyperbolicPlane("00000001111112222223333444455556666",
+                "13579bd3478bc3478bc789a789a789a789a",
+                "2468ace569ade65a9edbcdecbeddebcedcb");
+        assertEquals(15, p.pointCount());
+        assertEquals(35, p.lineCount());
+        testCorrectness(p, of(3), 7);
+        try {
+            checkPlane(p); // it's model of 3-dimensional projective space
+        } catch (AssertionFailedError e) {
+            // ok
+        }
     }
 
     @Test
