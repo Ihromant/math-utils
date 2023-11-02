@@ -40,6 +40,7 @@ public class HyperbolicPlaneTest {
         }
     }
 
+    // ((k^2+(a-1)*k-a+1)*(k^2+(a-1)*k - a)) - k^4 + k^3 - (2a-1)k^3 + (2a-1)k^2 - (a^2 - 2a + 1)k^2 + (a^2-2a+1)k
     @Test
     public void findValuesForPlayfairIndex() {
         for (int pl = 2; pl <= 10; pl++) {
