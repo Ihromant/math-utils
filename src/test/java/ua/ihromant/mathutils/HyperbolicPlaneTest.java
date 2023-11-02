@@ -29,6 +29,7 @@ public class HyperbolicPlaneTest {
         assertEquals(15, p.pointCount());
         assertEquals(35, p.lineCount());
         testCorrectness(p, of(3), 7);
+        testHyperbolicIndex(p, 0, 0);
         try {
             checkPlane(p); // it's model of 3-dimensional projective space
             fail();
