@@ -41,6 +41,19 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
+    public void findValuesForPlayfairIndex() {
+        for (int pl = 2; pl <= 10; pl++) {
+            int p = pl * (pl - 1);
+            for (int k = 3; k <= p; k++) {
+                int v = k * k - k + pl * k - pl + 1;
+                if (p % k == 0) {
+                    System.out.println("pl=" + pl + ",k=" + k + ",v=" + v);
+                }
+            }
+        }
+    }
+
+    @Test
     public void nonStandard() {
         HyperbolicPlane p = new HyperbolicPlane(Stream.of(new int[]{0, 16, 32, 48, 64, 80}, new int[]{1, 17, 33, 49, 65, 81},
                 new int[]{0, 2, 6, 26, 56, 1}, new int[]{0, 8, 22, 35, 73, 77},
