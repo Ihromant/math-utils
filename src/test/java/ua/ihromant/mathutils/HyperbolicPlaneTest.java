@@ -6,8 +6,7 @@ import org.opentest4j.AssertionFailedError;
 import java.util.BitSet;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class HyperbolicPlaneTest {
     @Test
@@ -32,6 +31,7 @@ public class HyperbolicPlaneTest {
         testCorrectness(p, of(3), 7);
         try {
             checkPlane(p); // it's model of 3-dimensional projective space
+            fail();
         } catch (AssertionFailedError e) {
             // ok
         }
