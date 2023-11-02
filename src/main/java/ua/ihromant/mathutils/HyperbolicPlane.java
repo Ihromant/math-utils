@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -12,6 +13,14 @@ public class HyperbolicPlane {
     private final int[][] lookup;
     private final BitSet[] points;
     private final int[][] intersections;
+
+    public HyperbolicPlane(BitSet[] lines) {
+        this.pointCount = Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality();
+        this.lines = lines;
+        this.lookup = generateLookup();
+        this.points = generateBeams();
+        this.intersections = generateIntersections();
+    }
 
     public HyperbolicPlane(int[]... base) {
         this.pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;

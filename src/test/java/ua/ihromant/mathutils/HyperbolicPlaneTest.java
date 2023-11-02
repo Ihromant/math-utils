@@ -4,7 +4,9 @@ import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
 import java.util.BitSet;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -36,6 +38,26 @@ public class HyperbolicPlaneTest {
         } catch (AssertionFailedError e) {
             // ok
         }
+    }
+
+    @Test
+    public void nonStandard() {
+        HyperbolicPlane p = new HyperbolicPlane(Stream.of(new int[]{0, 16, 32, 48, 64, 80}, new int[]{1, 17, 33, 49, 65, 81},
+                new int[]{0, 2, 6, 26, 56, 1}, new int[]{0, 8, 22, 35, 73, 77},
+                new int[]{0, 10, 38, 3, 49, 85}, new int[]{0, 18, 52, 9, 15, 81},
+                new int[]{0, 12, 17, 19, 37, 45}, new int[]{0, 36, 23, 57, 67, 79})
+                .flatMap(arr -> IntStream.range(0, 48).mapToObj(idx -> {
+                    BitSet bs = new BitSet();
+                    for (int i : arr) {
+                        bs.set((i + 2 * idx) % 96);
+                    }
+                    return bs;
+                })).collect(Collectors.toSet()).toArray(BitSet[]::new));
+        assertEquals(96, p.pointCount());
+        assertEquals(304, p.lineCount());
+        testCorrectness(p, of(6), 19);
+        testPlayfairIndex(p, of(13));
+        testHyperbolicIndex(p, 1, 4);
     }
 
     @Test
