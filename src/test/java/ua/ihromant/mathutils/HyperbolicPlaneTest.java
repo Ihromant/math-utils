@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -38,6 +39,52 @@ public class HyperbolicPlaneTest {
         } catch (AssertionFailedError e) {
             // ok
         }
+    }
+
+    @Test
+    public void testCyclic() {
+        CyclicGroup cg1 = new CyclicGroup(new int[]{11, 11});
+        int[][][] cycles = new int[][][]{
+                {{0, 0}, {0, 3}, {0, 4}, {1, 1}, {1, 7}, {4, 6}},
+                {{0, 0}, {0, 2}, {2, 5}, {4, 7}, {6, 4}, {8, 0}},
+                {{0, 0}, {1, 5}, {2, 0}, {4, 1}, {6, 0}, {7, 2}},
+                {{0, 0}, {1, 0}, {3, 9}, {4, 8}, {6, 1}, {9, 5}}
+        };
+        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg1.cardinality()).mapToObj(idx -> {
+            BitSet res = new BitSet();
+            for (int[] numb : base) {
+                res.set(cg1.add(cg1.fromArr(numb), idx));
+            }
+            return res;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane p1 = new HyperbolicPlane(lines);
+        assertEquals(121, p1.pointCount());
+        assertEquals(484, p1.lineCount());
+        testCorrectness(p1, of(6), 24);
+        testPlayfairIndex(p1, of(18));
+        testHyperbolicIndex(p1, 1, 4);
+
+        CyclicGroup cg = new CyclicGroup(new int[]{7, 37});
+        int[][] microBase = new int[][] {{1, 1}, {2, 10}, {4, 26}};
+        cycles = Stream.concat(Stream.<int[][]>of(new int[][]{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}, {6, 0}}),
+                Arrays.stream(microBase).flatMap(arr -> Stream.of(
+                        new int[][]{{0, 0}, cg.arrMul(arr, new int[]{0, 1}), cg.arrMul(arr, new int[]{0, 6}), cg.arrMul(arr, new int[]{1, 4}),
+                                cg.arrMul(arr, new int[]{2, 19}), cg.arrMul(arr, new int[]{3, 25}), cg.arrMul(arr, new int[]{6, 25})},
+                        new int[][]{{0, 0}, cg.arrMul(arr, new int[]{0, 4}), cg.arrMul(arr, new int[]{1, 25}), cg.arrMul(arr, new int[]{1, 34}),
+                                cg.arrMul(arr, new int[]{2, 24}), cg.arrMul(arr, new int[]{2, 35}), cg.arrMul(arr, new int[]{4, 10})}))).toArray(int[][][]::new);
+        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg.cardinality()).mapToObj(idx -> {
+            BitSet res = new BitSet();
+            for (int[] numb : base) {
+                res.set(cg.add(cg.fromArr(numb), idx));
+            }
+            return res;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        p1 = new HyperbolicPlane(lines);
+        assertEquals(259, p1.pointCount());
+        assertEquals(1591, p1.lineCount());
+        testCorrectness(p1, of(7), 43); // this fails, example is broken
+        testPlayfairIndex(p1, of(18));
+        testHyperbolicIndex(p1, 1, 4);
     }
 
     @Test
