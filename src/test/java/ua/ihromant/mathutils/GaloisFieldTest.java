@@ -6,6 +6,7 @@ import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 public class GaloisFieldTest {
     @Test
@@ -40,6 +41,12 @@ public class GaloisFieldTest {
         testField(fd);
         fd = new GaloisField(64);
         testField(fd);
+        try {
+            new GaloisField(12);
+            fail();
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
     }
 
     private void testField(GaloisField field) {
@@ -52,7 +59,7 @@ public class GaloisFieldTest {
         field.elements().forEach(a -> field.elements()  // a * b = b * a
                 .forEach(b -> assertEquals(field.mul(a, b), field.mul(b, a))));
         field.elements().forEach(a -> field.elements().forEach(b -> field.elements() // (a * b) * c = a * (b * c)
-                .forEach(c -> assertEquals(field.add(a, field.add(b, c)), field.add(field.add(a, b), c)))));
+                .forEach(c -> assertEquals(field.mul(a, field.mul(b, c)), field.mul(field.mul(a, b), c)))));
         field.elements().forEach(a -> field.elements().forEach(b -> field.elements() // (a + b) * c = a * c + b * c
                 .forEach(c -> assertEquals(field.mul(field.add(a, b), c), field.add(field.mul(a, c), field.mul(b, c))))));
         field.elements().forEach(a -> field.elements().forEach(b -> field.elements() // // a * (b + c) = a * b + a * c
