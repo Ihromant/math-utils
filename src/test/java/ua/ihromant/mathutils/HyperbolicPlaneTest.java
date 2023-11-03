@@ -89,6 +89,15 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testPrimePower() {
+        GaloisField fd1 = new GaloisField(121);
+        int x = fd1.solve(new int[]{1, 3, 8});
+        HyperbolicPlane p3 = new HyperbolicPlane(fd1.cardinality(), new int[]{0, 1, x, fd1.power(x, 10)});
+        assertEquals(121, p3.pointCount());
+        assertEquals(1210, p3.lineCount());
+        testCorrectness(p3, of(4), 40);
+        testPlayfairIndex(p3, of(36));
+        testHyperbolicIndex(p3, 0, 2);
+
         GaloisField fd = new GaloisField(421);
         int c1 = 1;
         int c2 = 4;
@@ -132,22 +141,41 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void nonStandard() {
+        int count = 96;
         HyperbolicPlane p = new HyperbolicPlane(Stream.of(new int[]{0, 16, 32, 48, 64, 80}, new int[]{1, 17, 33, 49, 65, 81},
                 new int[]{0, 2, 6, 26, 56, 1}, new int[]{0, 8, 22, 35, 73, 77},
                 new int[]{0, 10, 38, 3, 49, 85}, new int[]{0, 18, 52, 9, 15, 81},
                 new int[]{0, 12, 17, 19, 37, 45}, new int[]{0, 36, 23, 57, 67, 79})
-                .flatMap(arr -> IntStream.range(0, 48).mapToObj(idx -> {
+                .flatMap(arr -> IntStream.range(0, count / 2).mapToObj(idx -> {
                     BitSet bs = new BitSet();
                     for (int i : arr) {
-                        bs.set((i + 2 * idx) % 96);
+                        bs.set((i + 2 * idx) % count);
                     }
                     return bs;
                 })).collect(Collectors.toSet()).toArray(BitSet[]::new));
-        assertEquals(96, p.pointCount());
+        assertEquals(count, p.pointCount());
         assertEquals(304, p.lineCount());
         testCorrectness(p, of(6), 19);
         testPlayfairIndex(p, of(13));
         testHyperbolicIndex(p, 1, 4);
+
+        int count1 = 106;
+        BitSet[] lines = Stream.of(new int[]{0, 2, 6, 22, 76, 1}, new int[]{0, 26, 60, 47, 71, 103},
+                        new int[]{0, 10, 38, 50, 73, 79}, new int[]{0, 8, 57, 61, 75, 95},
+                        new int[]{0, 14, 58, 17, 33, 97}, new int[]{0, 5, 15, 51, 59, 99}, new int[]{0, 18, 42, 25, 27, 55})
+                .flatMap(arr -> IntStream.range(0, count1 / 2).mapToObj(idx -> {
+                    BitSet result = new BitSet();
+                    for (int i : arr) {
+                        result.set((i + 2 * idx) % count1);
+                    }
+                    return result;
+                })).toArray(BitSet[]::new);
+        HyperbolicPlane p1 = new HyperbolicPlane(lines);
+        assertEquals(count1, p1.pointCount());
+        assertEquals(371, p1.lineCount());
+        testCorrectness(p1, of(6), 21);
+        testPlayfairIndex(p1, of(15));
+        testHyperbolicIndex(p1, 0, 4);
     }
 
     @Test

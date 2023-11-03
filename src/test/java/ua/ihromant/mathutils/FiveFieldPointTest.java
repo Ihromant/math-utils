@@ -130,6 +130,6 @@ public class FiveFieldPointTest {
             }
         }
         assertEquals(0, min);
-        assertEquals(3, max);
+        assertEquals(2, max);
     }
 }

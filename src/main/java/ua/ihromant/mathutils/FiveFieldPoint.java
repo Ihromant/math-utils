@@ -7,7 +7,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class FiveFieldPoint {
-    private static final int SIZE = 19;
+    private static final int SIZE = 5;
     private static final int[] FIELD = IntStream.range(0, SIZE).toArray();
     private static final int COUNT = FIELD.length * FIELD.length + FIELD.length + 1;
 
