@@ -22,6 +22,28 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
+    public HyperbolicPlane(int v, int[] base) {
+        this.pointCount = v;
+        int k = base.length;
+        int t = (v - 1) / k / (k - 1);
+        int m = (v - 1) / 2 / t;
+        GaloisField pf = new GaloisField(v);
+        int prim = pf.primitives().findAny().orElseThrow();
+        this.lines = IntStream.range(0, t).boxed().flatMap(idx -> {
+            int[] block = Arrays.stream(base).map(j -> pf.mul(j, pf.power(prim, idx * m))).toArray();
+            return pf.elements().mapToObj(i -> {
+                BitSet res = new BitSet();
+                for (int shift : block) {
+                    res.set(pf.add(i, shift));
+                }
+                return res;
+            });
+        }).toArray(BitSet[]::new);
+        this.lookup = generateLookup();
+        this.points = generateBeams();
+        this.intersections = generateIntersections();
+    }
+
     public HyperbolicPlane(int[]... base) {
         this.pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;
         this.lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {

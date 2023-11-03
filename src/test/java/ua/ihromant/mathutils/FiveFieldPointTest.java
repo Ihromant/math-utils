@@ -3,7 +3,6 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.BitSet;
-import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -124,11 +123,6 @@ public class FiveFieldPointTest {
                                 counter++;
                             }
                         }
-                        if (counter == 0) {
-                            System.out.println(FiveFieldPoint.lineToString(ox) + " " + FiveFieldPoint.pointToString(o) + " " + FiveFieldPoint.pointToString(x) + " " + FiveFieldPoint.pointToString(y) + " " + FiveFieldPoint.pointToString(p) + " "
-                                    + FiveFieldPoint.lineToString(oy) + " " + StreamSupport.stream(FiveFieldPoint.points(oy).spliterator(), false)
-                                    .map(u -> "u=" + FiveFieldPoint.pointToString(u) + ", ou " + FiveFieldPoint.lineToString(FiveFieldPoint.line(p, u)) + " int " + FiveFieldPoint.pointToString(FiveFieldPoint.intersection(FiveFieldPoint.line(p, u), ox))).collect(Collectors.joining(",")));
-                        }
                         min = Math.min(min, counter);
                         max = Math.max(max, counter);
                     }
@@ -136,6 +130,6 @@ public class FiveFieldPointTest {
             }
         }
         assertEquals(0, min);
-        assertEquals(2, max);
+        assertEquals(3, max);
     }
 }

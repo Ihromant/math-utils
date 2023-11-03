@@ -40,6 +40,16 @@ public class HyperbolicPlaneTest {
         }
     }
 
+    @Test
+    public void testPrimePower() {
+        HyperbolicPlane p1 = new HyperbolicPlane(181, new int[]{0, 1, 3, 19});
+        assertEquals(181, p1.pointCount());
+        assertEquals(2715, p1.lineCount());
+        testCorrectness(p1, of(4), 60);
+        testPlayfairIndex(p1, of(56));
+        testHyperbolicIndex(p1, 0, 2);
+    }
+
     // ((k^2+(a-1)*k-a+1)*(k^2+(a-1)*k - a)) - k^4 + k^3 - (2a-1)k^3 + (2a-1)k^2 - (a^2 - 2a + 1)k^2 + (a^2-2a+1)k
     @Test
     public void findValuesForPlayfairIndex() {
