@@ -220,8 +220,8 @@ public class GaloisField {
         return result;
     }
 
-    public int solve(int[] polynomial) {
-        return IntStream.range(0, cardinality).filter(i -> evalPolynomial(polynomial, i) == 0).findAny().orElseThrow();
+    public IntStream solve(int[] polynomial) {
+        return IntStream.range(0, cardinality).filter(i -> evalPolynomial(polynomial, i) == 0);
     }
 
     public IntStream oneCubeRoots() {

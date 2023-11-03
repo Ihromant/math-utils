@@ -90,7 +90,7 @@ public class HyperbolicPlaneTest {
     @Test
     public void testPrimePower() {
         GaloisField fd1 = new GaloisField(121);
-        int x = fd1.solve(new int[]{1, 3, 8});
+        int x = fd1.solve(new int[]{1, 3, 8}).findAny().orElseThrow();
         HyperbolicPlane p3 = new HyperbolicPlane(fd1.cardinality(), new int[]{0, 1, x, fd1.power(x, 10)});
         assertEquals(121, p3.pointCount());
         assertEquals(1210, p3.lineCount());

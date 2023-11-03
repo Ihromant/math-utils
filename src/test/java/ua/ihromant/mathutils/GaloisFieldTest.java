@@ -142,6 +142,9 @@ public class GaloisFieldTest {
     @Test
     public void testSolve() {
         GaloisField fd = new GaloisField(25);
-        assertEquals(13, fd.solve(new int[]{1, 4, 2}));
+        assertArrayEquals(new int[]{13, 18}, fd.solve(new int[]{1, 4, 2}).toArray());
+        GaloisField fd1 = new GaloisField(4);
+        assertArrayEquals(new int[]{2, 3}, fd1.solve(new int[]{1, 1, 1}).toArray());
+        assertArrayEquals(new int[]{1}, fd1.solve(new int[]{1, 0, 1}).toArray());
     }
 }
