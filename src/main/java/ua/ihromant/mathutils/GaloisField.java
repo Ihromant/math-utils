@@ -223,4 +223,8 @@ public class GaloisField {
     public int solve(int[] polynomial) {
         return IntStream.range(0, cardinality).filter(i -> evalPolynomial(polynomial, i) == 0).findAny().orElseThrow();
     }
+
+    public IntStream oneCubeRoots() {
+        return IntStream.range(2, cardinality).filter(i -> power(i, 3) == 1);
+    }
 }

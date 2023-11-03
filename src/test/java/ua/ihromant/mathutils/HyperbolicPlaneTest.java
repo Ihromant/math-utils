@@ -89,12 +89,31 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testPrimePower() {
+        GaloisField fd = new GaloisField(421);
+        int c1 = 1;
+        int c2 = 4;
+        int w = fd.oneCubeRoots().findAny().orElseThrow();
+        HyperbolicPlane p = new HyperbolicPlane(fd.cardinality(),
+                new int[] {0, c1, fd.mul(c1, w), fd.mul(c1, fd.mul(w, w)), c2, fd.mul(c2, w), fd.mul(c2, fd.mul(w, w))});
+        assertEquals(421, p.pointCount());
+        assertEquals(4210, p.lineCount());
+        testCorrectness(p, of(7), 70);
+        testPlayfairIndex(p, of(63));
+        testHyperbolicIndex(p, 2, 5);
+
         HyperbolicPlane p1 = new HyperbolicPlane(433, new int[]{0, 1, 3, 30, 52, 61, 84, 280, 394});
         assertEquals(433, p1.pointCount());
         assertEquals(2598, p1.lineCount());
         testCorrectness(p1, of(9), 54);
         testPlayfairIndex(p1, of(45));
         testHyperbolicIndex(p1, 2, 7);
+
+        HyperbolicPlane p2 = new HyperbolicPlane(449, new int[]{0, 1, 3, 8, 61, 104, 332, 381});
+        assertEquals(449, p2.pointCount());
+        assertEquals(3592, p2.lineCount());
+        testCorrectness(p2, of(8), 64);
+        testPlayfairIndex(p2, of(56));
+        testHyperbolicIndex(p2, 1, 6);
     }
 
     // ((k^2+(a-1)*k-a+1)*(k^2+(a-1)*k - a)) - k^4 + k^3 - (2a-1)k^3 + (2a-1)k^2 - (a^2 - 2a + 1)k^2 + (a^2-2a+1)k
