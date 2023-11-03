@@ -12,6 +12,7 @@ public class GaloisField {
     private final int[] irreducible;
     private final int[][] additionTable;
     private final int[][] multiplicationTable;
+    private final int[] mulInverces;
 
     public GaloisField(int base) {
         this.cardinality = base;
@@ -25,6 +26,7 @@ public class GaloisField {
                 .mapToObj(this::toPolynomial).filter(this::irreducible).findAny().orElseThrow();
         this.additionTable = new int[base][base];
         this.multiplicationTable = new int[base][base];
+        this.mulInverces = new int[base];
         for (int i = 0; i < base; i++) {
             for (int j = i; j < base; j++) {
                 int sum;
@@ -42,6 +44,10 @@ public class GaloisField {
                 additionTable[j][i] = sum;
                 multiplicationTable[i][j] = product;
                 multiplicationTable[j][i] = product;
+            }
+            if (i != 0) {
+                int ii = i;
+                mulInverces[i] = IntStream.range(0, cardinality).filter(j -> multiplicationTable[ii][j] == 1).findAny().orElseThrow();
             }
         }
     }
@@ -91,7 +97,7 @@ public class GaloisField {
     }
 
     private boolean irreducible(int[] poly) {
-        return IntStream.range(0, base).noneMatch(i -> evalPolynomial(poly, i) == 0);
+        return IntStream.range(0, base).noneMatch(i -> evalPoly(poly, i) == 0);
     }
 
     private int[] toPolynomial(int i) {
@@ -142,10 +148,10 @@ public class GaloisField {
         return result;
     }
 
-    private int evalPolynomial(int[] poly, int number) {
+    private int evalPoly(int[] poly, int number) {
         int result = 0;
         for (int cff : poly) {
-            result = baseAdd(baseMul(result, base), cff);
+            result = baseAdd(baseMul(result, number), cff);
         }
         return result;
     }
@@ -197,5 +203,24 @@ public class GaloisField {
             result = mul(result, a);
         }
         return result;
+    }
+
+    public int inverse(int a) {
+        if (a == 0) {
+            throw new IllegalArgumentException();
+        }
+        return mulInverces[a];
+    }
+
+    public int evalPolynomial(int[] poly, int number) {
+        int result = 0;
+        for (int cff : poly) {
+            result = add(mul(result, number), cff);
+        }
+        return result;
+    }
+
+    public int solve(int[] polynomial) {
+        return IntStream.range(0, cardinality).filter(i -> evalPolynomial(polynomial, i) == 0).findAny().orElseThrow();
     }
 }

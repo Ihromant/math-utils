@@ -42,11 +42,13 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testPrimePower() {
-        HyperbolicPlane p1 = new HyperbolicPlane(181, new int[]{0, 1, 3, 19});
-        assertEquals(181, p1.pointCount());
-        assertEquals(2715, p1.lineCount());
-        testCorrectness(p1, of(4), 60);
-        testPlayfairIndex(p1, of(56));
+        GaloisField fd = new GaloisField(25);
+        int x = fd.solve(new int[]{1, 4, 2});
+        HyperbolicPlane p1 = new HyperbolicPlane(fd.cardinality(), new int[]{0, 1, x, fd.power(x, 3)});
+        assertEquals(25, p1.pointCount());
+        assertEquals(50, p1.lineCount());
+        testCorrectness(p1, of(4), 8);
+        testPlayfairIndex(p1, of(4));
         testHyperbolicIndex(p1, 0, 2);
     }
 
