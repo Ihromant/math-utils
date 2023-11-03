@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.BitSet;
+import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -92,5 +93,49 @@ public class FiveFieldPointTest {
             }
         }
         System.out.println(min + " " + max);
+    }
+
+    @Test
+    public void testHyperbolicIndex() {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int o : FiveFieldPoint.points(droppedPoints)) {
+            for (int x : FiveFieldPoint.points(droppedPoints)) {
+                if (o == x) {
+                    continue;
+                }
+                for (int y : FiveFieldPoint.points(droppedPoints)) {
+                    if (FiveFieldPoint.collinear(o, x, y)) {
+                        continue;
+                    }
+                    int xy = FiveFieldPoint.line(x, y);
+                    for (int p : FiveFieldPoint.points(xy)) {
+                        if (droppedPoints.get(p) || p == x || p == y) {
+                            continue;
+                        }
+                        int ox = FiveFieldPoint.line(o, x);
+                        int oy = FiveFieldPoint.line(o, y);
+                        int counter = 0;
+                        for (int u : FiveFieldPoint.points(oy)) {
+                            if (droppedPoints.get(u) || u == o || u == y) {
+                                continue;
+                            }
+                            if (droppedPoints.get(FiveFieldPoint.intersection(FiveFieldPoint.line(p, u), ox))) {
+                                counter++;
+                            }
+                        }
+                        if (counter == 0) {
+                            System.out.println(FiveFieldPoint.lineToString(ox) + " " + FiveFieldPoint.pointToString(o) + " " + FiveFieldPoint.pointToString(x) + " " + FiveFieldPoint.pointToString(y) + " " + FiveFieldPoint.pointToString(p) + " "
+                                    + FiveFieldPoint.lineToString(oy) + " " + StreamSupport.stream(FiveFieldPoint.points(oy).spliterator(), false)
+                                    .map(u -> "u=" + FiveFieldPoint.pointToString(u) + ", ou " + FiveFieldPoint.lineToString(FiveFieldPoint.line(p, u)) + " int " + FiveFieldPoint.pointToString(FiveFieldPoint.intersection(FiveFieldPoint.line(p, u), ox))).collect(Collectors.joining(",")));
+                        }
+                        min = Math.min(min, counter);
+                        max = Math.max(max, counter);
+                    }
+                }
+            }
+        }
+        assertEquals(0, min);
+        assertEquals(2, max);
     }
 }

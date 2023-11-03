@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -142,6 +143,21 @@ public class FiveFieldPoint {
         return () -> LINES[line].stream().boxed().iterator();
     }
 
+    public static boolean collinear(int... points) {
+        if (points.length == 0) {
+            return true;
+        }
+        int first = points[0];
+        for (int i = 1; i < points.length; i++) {
+            int second = points[i];
+            if (first != second) {
+                BitSet line = LINES[line(first, second)];
+                return Arrays.stream(points).allMatch(line::get);
+            }
+        }
+        return true;
+    }
+
     private static int mulPoint(int point, int cff) {
         int x = mulField(x(point), cff);
         int y = mulField(y(point), cff);
@@ -158,10 +174,6 @@ public class FiveFieldPoint {
 
     public static int fieldCardinality() {
         return FIELD.length;
-    }
-
-    public static int planeCardinality() {
-        return COUNT;
     }
 
     public static int fromCrd(int x, int y) {
