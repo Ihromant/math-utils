@@ -90,7 +90,7 @@ public class HyperbolicPlaneTest {
     @Test
     public void generatePlane() {
         HyperbolicPlane p = null;
-        for (int i = 1; i < 1000; i++) {
+        for (int i = 547; i < 3500; i++) {
             try {
                 p = new HyperbolicPlane(i * 84 + 4);
                 break;

@@ -1,7 +1,11 @@
 package ua.ihromant.mathutils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -16,53 +20,49 @@ public class HyperbolicPlane {
 
     public HyperbolicPlane(int v) {
         this.pointCount = v;
-        int b = v * (v - 1) / 4 / 3;
-        this.lines = new BitSet[b];
-        this.lookup = new int[v][v];
-        Arrays.stream(lookup).forEach(arr -> Arrays.fill(arr, -1));
+        List<BitSet> linesList = new ArrayList<>(v * 4);
+        Map<Long, Integer> pointToLine = new HashMap<>();
         int lineIdx = 0;
         for (int i = 0; i < v; i++) {
             for (int j = i + 1; j < v; j++) {
-                if (line(i, j) != -1) {
+                if (pointToLine.containsKey(pack(i, j))) {
                     continue;
                 }
                 // connect i and j
                 BitSet line = new BitSet();
                 line.set(i);
                 line.set(j);
-                lines[lineIdx] = line;
-                fillLookup(i, j, lineIdx);
+                linesList.add(line);
+                fillLookup(pointToLine, i, j, lineIdx);
                 for (int k = j + 1; ; k++) {
-                    try {
-                        if (line(i, k) != -1 || line(j, k) != -1) {
-                            continue;
-                        }
-                    } catch (ArrayIndexOutOfBoundsException e) {
+                    if (pointToLine.containsKey(pack(i, k)) || pointToLine.containsKey(pack(j, k))) {
+                        continue;
+                    }
+                    if (k >= v) {
                         throw new IllegalStateException(String.valueOf(i));
                     }
-                    if (findTriangle(i, i, j, k)) {
+                    if (findTriangle(pointToLine, linesList, i, i, j, k)) {
                         continue;
                     }
                     // connect k to i and j
                     line.set(k);
-                    fillLookup(i, k, lineIdx);
-                    fillLookup(j, k, lineIdx);
+                    fillLookup(pointToLine, i, k, lineIdx);
+                    fillLookup(pointToLine, j, k, lineIdx);
                     for (int l = k + 1; ; l++) {
-                        try {
-                            if (line(i, l) != -1 || line(j, l) != -1 || line(k, l) != -1) {
-                                continue;
-                            }
-                        } catch (ArrayIndexOutOfBoundsException e) {
+                        if (pointToLine.containsKey(pack(i, l)) || pointToLine.containsKey(pack(j, l)) || pointToLine.containsKey(pack(k, l))) {
+                            continue;
+                        }
+                        if (l >= v) {
                             throw new IllegalStateException(String.valueOf(i));
                         }
-                        if (findTriangle(i, i, j, l) || findTriangle(i, i, k, l) || findTriangle(i, j, k, l)) {
+                        if (findTriangle(pointToLine, linesList, i, i, j, l) || findTriangle(pointToLine, linesList, i, i, k, l) || findTriangle(pointToLine, linesList, i, j, k, l)) {
                             continue;
                         }
                         // connect l to i, j and k
                         line.set(l);
-                        fillLookup(i, l, lineIdx);
-                        fillLookup(j, l, lineIdx);
-                        fillLookup(k, l, lineIdx);
+                        fillLookup(pointToLine, i, l, lineIdx);
+                        fillLookup(pointToLine, j, l, lineIdx);
+                        fillLookup(pointToLine, k, l, lineIdx);
                         break;
                     }
                     break;
@@ -70,28 +70,35 @@ public class HyperbolicPlane {
                 lineIdx++;
             }
         }
+        this.lines = linesList.toArray(BitSet[]::new);
+        this.lookup = generateLookup();
         this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
-    private void fillLookup(int x, int y, int line) {
-        lookup[x][y] = line;
-        lookup[y][x] = line;
+    private static long pack(int a, int b) {
+        return (long) a << 32 | b;
     }
 
-    private boolean findTriangle(int cap, int i, int j, int k) {
+    private static void fillLookup(Map<Long, Integer> pointToLine, int x, int y, int line) {
+        pointToLine.put(pack(x, y), line);
+        pointToLine.put(pack(y, x), line);
+    }
+
+    private static boolean findTriangle(Map<Long, Integer> pointToLine, List<BitSet> lines, int cap, int i, int j, int k) {
         for (int ex = 0; ex < cap; ex++) {
-            for (int x : points(line(ex, i))) {
-                for (int y : points(line(ex, j))) {
-                    int xy = line(x, y);
-                    if (x == y || xy == -1) {
+            int existing = ex;
+            for (int x : (Iterable<Integer>) () -> lines.get(pointToLine.get(pack(existing, i))).stream().iterator()) {
+                for (int y : (Iterable<Integer>) () -> lines.get(pointToLine.get(pack(existing, j))).stream().iterator()) {
+                    Integer xy = pointToLine.get(pack(x, y));
+                    if (x == y || xy == null) {
                         continue;
                     }
-                    for (int z : points(line(ex, k))) {
+                    for (int z : (Iterable<Integer>) () -> lines.get(pointToLine.get(pack(existing, k))).stream().iterator()) {
                         if (x == z || y == z) {
                             continue;
                         }
-                        if ((x != i || y != j || z != k) && xy == line(y, z)) {
+                        if ((x != i || y != j || z != k) && xy.equals(pointToLine.get(pack(y, z)))) {
                             return true;
                         }
                     }
