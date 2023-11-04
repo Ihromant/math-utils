@@ -2,9 +2,10 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
@@ -161,9 +162,10 @@ public class GaloisFieldTest {
     @Test
     public void testDistinctPermutations() {
         String[] design = new String[] {
-                "00000001111112222223333444455556666",
-                "13579bd3478bc3478bc789a789a789a789a",
-                "2468ace569ade65a9edbcdecbeddebcedcb"
+                "0000111223345",
+                "1246257364789",
+                "385a46b57689a",
+                "9c7ba8cb9cabc"
         };
         List<BitSet> lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
             BitSet res = new BitSet();
@@ -173,7 +175,7 @@ public class GaloisFieldTest {
             return res;
         }).toList();
         int counter = 1_000_000_000;
-        int[] arr = IntStream.range(0, 15).toArray();
+        int[] arr = IntStream.range(0, 13).toArray();
         while (counter-- >= 0) {
             int[] fPerm = arr.clone();
             shuffle(fPerm);
@@ -185,7 +187,20 @@ public class GaloisFieldTest {
                 List<BitSet> sLines = lines.stream().map(line -> line.stream()
                         .map(i -> sPerm[i]).collect(BitSet::new, BitSet::set, BitSet::or)).toList();
                 if (fLines.stream().noneMatch(sLines::contains) && lines.stream().noneMatch(sLines::contains)) {
-                    System.out.println(Arrays.toString(fPerm) + " " + fLines + " " + Arrays.toString(sPerm) + " " + sLines);
+                    int[] tPerm = arr.clone();
+                    shuffle(tPerm);
+                    List<BitSet> tLines = lines.stream().map(line -> line.stream()
+                            .map(i -> tPerm[i]).collect(BitSet::new, BitSet::set, BitSet::or)).toList();
+                    if (fLines.stream().noneMatch(tLines::contains) && lines.stream().noneMatch(tLines::contains)
+                            && sLines.stream().noneMatch(tLines::contains)) {
+                        Set<BitSet> set = new HashSet<>();
+                        set.addAll(lines);
+                        set.addAll(fLines);
+                        set.addAll(sLines);
+                        set.addAll(tLines);
+                        System.out.println(set.size() + " " + lines + " " + fLines + " " + sLines
+                                + " " + tLines);
+                    }
                 }
             }
         }

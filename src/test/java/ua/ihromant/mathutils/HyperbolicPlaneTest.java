@@ -208,6 +208,29 @@ public class HyperbolicPlaneTest {
         testCorrectness(p1, of(6), 21);
         testPlayfairIndex(p1, of(15));
         testHyperbolicIndex(p1, 0, 4);
+
+        int count2 = 111;
+        int[][] blocks = new int[][]{new int[]{0, 3, 9, 21, 51, 1}, new int[]{0, 15, 58, 85, 32, 92},
+                new int[]{15, 99, 40, 103, 59, 23}, new int[]{27, 81, 49, 34, 38, 110}, new int[]{30, 69, 79, 25, 5, 20},
+                new int[]{39, 72, 58, 55, 17, 98}, new int[]{78, 102, 4, 22, 32, 101}};
+        BitSet[] lines1 = Stream.concat(Arrays.stream(blocks).flatMap(arr -> IntStream.range(0, count2 / 3).mapToObj(idx -> {
+            BitSet result = new BitSet();
+            for (int i : arr) {
+                result.set((i + 3 * idx) % count1);
+            }
+            return result;
+        })), Arrays.stream(blocks).flatMap(arr -> IntStream.range(0, count2 / 3).mapToObj(idx -> {
+            BitSet result = new BitSet();
+            for (int i : arr) {
+                switch (i % 3) {
+                    case 0 -> result.set(((i / 3 + idx) % 37) * 3);
+                    case 1 -> result.set(((i / 3 + 10 * idx) % 37) * 3 + 1);
+                    case 2 -> result.set(((i / 3 + 26 * idx) % 37) * 3 + 2);
+                }
+            }
+            return result;
+        }))).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        System.out.println(lines1.length);
     }
 
     @Test
