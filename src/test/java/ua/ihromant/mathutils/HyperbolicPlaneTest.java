@@ -107,7 +107,7 @@ public class HyperbolicPlaneTest {
         }
         assertEquals(109, p.pointCount());
         assertEquals(1591, p.lineCount());
-        testCorrectness(p, of(7), 43); // this fails, example is broken
+        testCorrectness(p, of(7), 43);
         testPlayfairIndex(p, of(18));
         testHyperbolicIndex(p, 1, 4);
     }
