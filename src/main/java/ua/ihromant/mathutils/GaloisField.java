@@ -2,8 +2,10 @@ package ua.ihromant.mathutils;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class GaloisField {
     private final int cardinality;
@@ -226,5 +228,23 @@ public class GaloisField {
 
     public IntStream oneCubeRoots() {
         return IntStream.range(2, cardinality).filter(i -> power(i, 3) == 1);
+    }
+
+    public static Stream<int[]> permutations(int n) {
+        BitSet bs = new BitSet();
+        bs.set(0, n);
+        return IntStream.range(0, n).boxed().flatMap(val -> permutations(n, val, bs, new int[n]));
+    }
+
+    private static Stream<int[]> permutations(int n, int val, BitSet available, int[] curr) {
+        int[] nextCurr = curr.clone();
+        int left = available.cardinality();
+        nextCurr[n - left] = val;
+        if (left == 1) {
+            return Stream.of(nextCurr);
+        }
+        BitSet nextAvailable = (BitSet) available.clone();
+        nextAvailable.set(val, false);
+        return nextAvailable.stream().boxed().flatMap(nVal -> permutations(n, nVal, nextAvailable, nextCurr));
     }
 }

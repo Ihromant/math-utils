@@ -147,4 +147,10 @@ public class GaloisFieldTest {
         assertArrayEquals(new int[]{2, 3}, fd1.solve(new int[]{1, 1, 1}).toArray());
         assertArrayEquals(new int[]{1}, fd1.solve(new int[]{1, 0, 1}).toArray());
     }
+
+    @Test
+    public void testPermutations() {
+        assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}, GaloisField.permutations(3).toArray(int[][]::new));
+        assertEquals(120, GaloisField.permutations(5).count());
+    }
 }
