@@ -2,6 +2,10 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -152,5 +156,69 @@ public class GaloisFieldTest {
     public void testPermutations() {
         assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}, GaloisField.permutations(3).toArray(int[][]::new));
         assertEquals(120, GaloisField.permutations(5).count());
+    }
+
+    @Test
+    public void testDistinctPermutations() {
+        String[] design = new String[] {
+                "00000001111112222223333444455556666",
+                "13579bd3478bc3478bc789a789a789a789a",
+                "2468ace569ade65a9edbcdecbeddebcedcb"
+        };
+        List<BitSet> lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
+            BitSet res = new BitSet();
+            for (String s : design) {
+                res.set(Character.digit(s.charAt(idx), 36));
+            }
+            return res;
+        }).toList();
+        int counter = 1_000_000_000;
+        int[] arr = IntStream.range(0, 15).toArray();
+        while (counter-- >= 0) {
+            int[] fPerm = arr.clone();
+            shuffle(fPerm);
+            List<BitSet> fLines = lines.stream().map(line -> line.stream()
+                    .map(i -> fPerm[i]).collect(BitSet::new, BitSet::set, BitSet::or)).toList();
+            if (fLines.stream().noneMatch(lines::contains)) {
+                int[] sPerm = arr.clone();
+                shuffle(sPerm);
+                List<BitSet> sLines = lines.stream().map(line -> line.stream()
+                        .map(i -> sPerm[i]).collect(BitSet::new, BitSet::set, BitSet::or)).toList();
+                if (fLines.stream().noneMatch(sLines::contains) && lines.stream().noneMatch(sLines::contains)) {
+                    System.out.println(Arrays.toString(fPerm) + " " + fLines + " " + Arrays.toString(sPerm) + " " + sLines);
+                }
+            }
+        }
+    }
+
+    public static void shuffle(int[] arr) {
+        int size = arr.length;
+        for (int i = size; i > 1; i--) {
+            swap(arr, i - 1, ThreadLocalRandom.current().nextInt(i));
+        }
+    }
+
+    private static void swap(int[] arr, int i, int j) {
+        int tmp = arr[i];
+        arr[i] = arr[j];
+        arr[j] = tmp;
+    }
+
+    @Test
+    public void printGood() {
+        for (int p = 1; p < 20; p++) {
+            int k = 6 * p + 1;
+            int v = 18 * p + 7;
+            if (v % 12 == 1) {
+                System.out.println(k + " " + v);
+            }
+        }
+        for (int p = 1; p < 20; p++) {
+            int k = 6 * p + 3;
+            int v = 18 * p + 13;
+            if (v % 12 == 1) {
+                System.out.println(k + " " + v);
+            }
+        }
     }
 }
