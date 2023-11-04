@@ -14,6 +14,93 @@ public class HyperbolicPlane {
     private final BitSet[] points;
     private final int[][] intersections;
 
+    public HyperbolicPlane(int v) {
+        this.pointCount = v;
+        int b = v * (v - 1) / 4 / 3;
+        this.lines = new BitSet[b];
+        this.lookup = new int[v][v];
+        Arrays.stream(lookup).forEach(arr -> Arrays.fill(arr, -1));
+        int lineIdx = 0;
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                if (line(i, j) != -1) {
+                    continue;
+                }
+                // connect i and j
+                BitSet line = new BitSet();
+                line.set(i);
+                line.set(j);
+                lines[lineIdx] = line;
+                fillLookup(i, j, lineIdx);
+                for (int k = j + 1; ; k++) {
+                    try {
+                        if (line(i, k) != -1 || line(j, k) != -1) {
+                            continue;
+                        }
+                    } catch (ArrayIndexOutOfBoundsException e) {
+                        throw new IllegalStateException(String.valueOf(i));
+                    }
+                    if (findTriangle(i, i, j, k)) {
+                        continue;
+                    }
+                    // connect k to i and j
+                    line.set(k);
+                    fillLookup(i, k, lineIdx);
+                    fillLookup(j, k, lineIdx);
+                    for (int l = k + 1; ; l++) {
+                        try {
+                            if (line(i, l) != -1 || line(j, l) != -1 || line(k, l) != -1) {
+                                continue;
+                            }
+                        } catch (ArrayIndexOutOfBoundsException e) {
+                            throw new IllegalStateException(String.valueOf(i));
+                        }
+                        if (findTriangle(i, i, j, l) || findTriangle(i, i, k, l) || findTriangle(i, j, k, l)) {
+                            continue;
+                        }
+                        // connect l to i, j and k
+                        line.set(l);
+                        fillLookup(i, l, lineIdx);
+                        fillLookup(j, l, lineIdx);
+                        fillLookup(k, l, lineIdx);
+                        break;
+                    }
+                    break;
+                }
+                lineIdx++;
+            }
+        }
+        this.points = generateBeams();
+        this.intersections = generateIntersections();
+    }
+
+    private void fillLookup(int x, int y, int line) {
+        lookup[x][y] = line;
+        lookup[y][x] = line;
+    }
+
+    private boolean findTriangle(int cap, int i, int j, int k) {
+        for (int ex = 0; ex < cap; ex++) {
+            for (int x : points(line(ex, i))) {
+                for (int y : points(line(ex, j))) {
+                    int xy = line(x, y);
+                    if (x == y || xy == -1) {
+                        continue;
+                    }
+                    for (int z : points(line(ex, k))) {
+                        if (x == z || y == z) {
+                            continue;
+                        }
+                        if ((x != i || y != j || z != k) && xy == line(y, z)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     public HyperbolicPlane(BitSet[] lines) {
         this.pointCount = Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality();
         this.lines = lines;
