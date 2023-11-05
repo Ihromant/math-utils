@@ -81,4 +81,8 @@ public class TaoPoint {
         int[] crd = toCoordinates(p);
         return IntStream.of(crd).mapToObj(Integer::toString).collect(Collectors.joining(",", "(", ")"));
     }
+
+    public static Iterable<Integer> points() {
+        return () -> IntStream.range(0, SIZE).iterator();
+    }
 }

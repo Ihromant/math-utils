@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import org.opentest4j.AssertionFailedError;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -34,6 +33,14 @@ public class HyperbolicPlaneTest {
         testCorrectness(p, of(3), 7);
         testHyperbolicIndex(p, 0, 0);
         checkPlane(p, 7, 7); // it's model of 3-dimensional projective space
+        checkSpace(p, p.pointCount(), p.pointCount());
+
+        HyperbolicPlane p1 = new HyperbolicPlane(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
+                new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
+        testCorrectness(p1, of(3), 15);
+        testHyperbolicIndex(p1, 0, 0);
+        checkPlane(p1, 7, 7); // 4-dimensional projective space
+        checkSpace(p1, 15, 15); // 4-dimensional projective space
     }
 
     @Test
@@ -387,6 +394,20 @@ public class HyperbolicPlaneTest {
         testCorrectness(sixPoints, of(6), 18);
         testPlayfairIndex(sixPoints, of(12));
         testHyperbolicIndex(sixPoints, 1, 4);
+
+        HyperbolicPlane p3 = new HyperbolicPlane(39, new int[]{0, 1, 3}, new int[]{0, 4, 18},
+                new int[]{0, 5, 27}, new int[]{0, 6, 16}, new int[]{0, 7, 15}, new int[]{0, 9, 20}, new int[]{0, 13, 26});
+        testCorrectness(p3, of(3), 19);
+        testHyperbolicIndex(p3, 1, 1);
+        checkPlane(p3, p3.pointCount(), p3.pointCount());
+        IntStream.range(0, p3.lineCount()).forEach(i -> System.out.println(p3.line(i)));
+
+        HyperbolicPlane p2 = new HyperbolicPlane(37, new int[]{0, 1, 3}, new int[]{0, 4, 26},
+                new int[]{0, 5, 14}, new int[]{0, 6, 25}, new int[]{0, 7, 17}, new int[]{0, 8, 21});
+        testCorrectness(p2, of(3), 18);
+        testHyperbolicIndex(p2, 1, 1);
+        checkPlane(p2, p2.pointCount(), p2.pointCount());
+        IntStream.range(0, p2.lineCount()).forEach(i -> System.out.println(p2.line(i)));
     }
 
     @Test
@@ -493,8 +514,11 @@ public class HyperbolicPlaneTest {
         int max = Integer.MIN_VALUE;
         for (int x : plane.points()) {
             for (int y : plane.points()) {
+                if (x >= y) {
+                    continue;
+                }
                 for (int z : plane.points()) {
-                    if (plane.collinear(x, y, z)) {
+                    if (y >= z || plane.collinear(x, y, z)) {
                         continue;
                     }
                     int pCard = plane.hull(x, y, z).cardinality();
@@ -505,6 +529,34 @@ public class HyperbolicPlaneTest {
         }
         assertEquals(minPlane, min);
         assertEquals(maxPlane, max);
+    }
+
+    private void checkSpace(HyperbolicPlane plane, int minSpace, int maxSpace) {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int x : plane.points()) {
+            for (int y : plane.points()) {
+                if (x >= y) {
+                    continue;
+                }
+                for (int z : plane.points()) {
+                    if (y >= z || plane.collinear(x, y, z)) {
+                        continue;
+                    }
+                    BitSet hull = plane.hull(x, y, z);
+                    for (int w : plane.points()) {
+                        if (w >= z || hull.get(w)) {
+                            continue;
+                        }
+                        int sCard = plane.hull(x, y, z, w).cardinality();
+                        min = Math.min(min, sCard);
+                        max = Math.max(max, sCard);
+                    }
+                }
+            }
+        }
+        assertEquals(minSpace, min);
+        assertEquals(maxSpace, max);
     }
 
     private void testPlayfairIndex(HyperbolicPlane plane, BitSet hyperbolicNumber) {
@@ -559,7 +611,7 @@ public class HyperbolicPlaneTest {
                 }
             }
         }
-        assertEquals(min, minIdx);
-        assertEquals(max, maxIdx);
+        assertEquals(minIdx, min);
+        assertEquals(maxIdx, max);
     }
 }

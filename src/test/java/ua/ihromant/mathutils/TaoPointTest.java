@@ -237,6 +237,45 @@ public class TaoPointTest {
     }
 
     @Test
+    public void testHyperbolicIndex() {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int o : TaoPoint.points()) {
+            for (int x : TaoPoint.points()) {
+                if (o == x) {
+                    continue;
+                }
+                for (int y : TaoPoint.points()) {
+                    if (y == x || o == y || TaoPoint.collinear(o, x, y)) {
+                        continue;
+                    }
+                    BitSet xy = TaoPoint.hull(x, y);
+                    for (int p : (Iterable<Integer>) () -> xy.stream().iterator()) {
+                        if (p == x || p == y) {
+                            continue;
+                        }
+                        BitSet ox = TaoPoint.hull(o, x);
+                        BitSet oy = TaoPoint.hull(o, y);
+                        int counter = 0;
+                        for (int u : (Iterable<Integer>) () -> oy.stream().iterator()) {
+                            if (u == o || u == y) {
+                                continue;
+                            }
+                            if (!TaoPoint.hull(p, u).intersects(ox)) {
+                                counter++;
+                            }
+                        }
+                        min = Math.min(min, counter);
+                        max = Math.max(max, counter);
+                    }
+                }
+            }
+        }
+        assertEquals(1, min);
+        assertEquals(1, max);
+    }
+
+    @Test
     public void findFullRegularityBreak() {
         for (int o : space) {
             for (int a : space) {

@@ -119,6 +119,45 @@ public class HallPointTest {
     }
 
     @Test
+    public void testHyperbolicIndex() {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int o : HallPoint.points()) {
+            for (int x : HallPoint.points()) {
+                if (o == x) {
+                    continue;
+                }
+                for (int y : HallPoint.points()) {
+                    if (x == y || o == y || HallPoint.collinear(o, x, y)) {
+                        continue;
+                    }
+                    BitSet xy = HallPoint.hull(x, y);
+                    for (int p : (Iterable<Integer>) () -> xy.stream().iterator()) {
+                        if (p == x || p == y) {
+                            continue;
+                        }
+                        BitSet ox = HallPoint.hull(o, x);
+                        BitSet oy = HallPoint.hull(o, y);
+                        int counter = 0;
+                        for (int u : (Iterable<Integer>) () -> oy.stream().iterator()) {
+                            if (u == o || u == y) {
+                                continue;
+                            }
+                            if (!HallPoint.hull(p, u).intersects(ox)) {
+                                counter++;
+                            }
+                        }
+                        min = Math.min(min, counter);
+                        max = Math.max(max, counter);
+                    }
+                }
+            }
+        }
+        assertEquals(1, min);
+        assertEquals(1, max);
+    }
+
+    @Test
     public void testThreePointClosure() {
         Set<BitSet> planes = new HashSet<>();
         for (int x : space) {
