@@ -35,6 +35,15 @@ public class HyperbolicPlaneTest {
         checkPlane(p, 7, 7); // it's model of 3-dimensional projective space
         checkSpace(p, p.pointCount(), p.pointCount());
 
+        HyperbolicPlane p3 = new HyperbolicPlane("00000001111112222223333444455556666",
+                "13579bd3478bc3478bc789a789a789a789a",
+                "2468ace569ade65a9edbcdecbededcbdebc");
+        assertEquals(15, p3.pointCount());
+        assertEquals(35, p3.lineCount());
+        testCorrectness(p3, of(3), 7);
+        testHyperbolicIndex(p3, 0, 1);
+        checkPlane(p3, 7, 15); // it's plane with no exchange property
+
         HyperbolicPlane p1 = new HyperbolicPlane(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
                 new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
         testCorrectness(p1, of(3), 15);
