@@ -5,7 +5,7 @@ import java.util.Arrays;
 public class CyclicGroup {
     public int[] base;
 
-    public CyclicGroup(int[] base) {
+    public CyclicGroup(int... base) {
         this.base = base;
     }
 
@@ -13,7 +13,7 @@ public class CyclicGroup {
         return Arrays.stream(base).reduce(1, (a, b) -> a * b);
     }
 
-    public int fromArr(int[] arr) {
+    public int fromArr(int... arr) {
         int result = 0;
         for (int i = 0; i < base.length; i++) {
             result = result * base[i] + arr[i];

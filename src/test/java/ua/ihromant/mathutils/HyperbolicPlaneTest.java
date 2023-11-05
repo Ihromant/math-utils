@@ -45,7 +45,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testCyclic() {
-        CyclicGroup cg1 = new CyclicGroup(new int[]{11, 11});
+        CyclicGroup cg1 = new CyclicGroup(11, 11);
         int[][][] cycles = new int[][][]{
                 {{0, 0}, {0, 3}, {0, 4}, {1, 1}, {1, 7}, {4, 6}},
                 {{0, 0}, {0, 2}, {2, 5}, {4, 7}, {6, 4}, {8, 0}},
@@ -66,7 +66,7 @@ public class HyperbolicPlaneTest {
         testPlayfairIndex(p1, of(18));
         testHyperbolicIndex(p1, 1, 4);
 
-        CyclicGroup cg2 = new CyclicGroup(new int[]{7, 5, 5});
+        CyclicGroup cg2 = new CyclicGroup(7, 5, 5);
 
         cycles = new int[][][] {
                 {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}},
@@ -90,7 +90,7 @@ public class HyperbolicPlaneTest {
         testHyperbolicIndex(p1, 1, 4);
 
 
-        CyclicGroup cg = new CyclicGroup(new int[]{7, 37});
+        CyclicGroup cg = new CyclicGroup(7, 37);
         int[][] microBase = new int[][] {{1, 1}, {2, 10}, {4, 26}};
         cycles = Stream.concat(Stream.<int[][]>of(new int[][]{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}, {6, 0}}),
                 Arrays.stream(microBase).flatMap(arr -> Stream.of(
@@ -174,6 +174,65 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void nonStandard() {
+        CyclicGroup cg = new CyclicGroup(13, 5);
+        HyperbolicPlane p7 = new HyperbolicPlane(Stream.concat(Stream.of(
+                        new int[]{cg.fromArr(2, 0), cg.fromArr(5, 0), cg.fromArr(4, 1), cg.fromArr(9, 1), cg.fromArr(0, 3), cg.fromArr(6, 3)},
+                        new int[]{cg.fromArr(6, 1), cg.fromArr(2, 1), cg.fromArr(12, 2), cg.fromArr(1, 2), cg.fromArr(0, 3), cg.fromArr(5, 3)},
+                        new int[]{cg.fromArr(5, 2), cg.fromArr(6, 2), cg.fromArr(10, 0), cg.fromArr(3, 0), cg.fromArr(0, 3), cg.fromArr(2, 3)},
+                        new int[]{cg.fromArr(1, 0), cg.fromArr(2, 0), cg.fromArr(6, 0), cg.fromArr(12, 2), cg.fromArr(5, 4), cg.fromArr(8, 4)},
+                        new int[]{cg.fromArr(3, 1), cg.fromArr(6, 1), cg.fromArr(5, 1), cg.fromArr(10, 0), cg.fromArr(2, 4), cg.fromArr(11, 4)},
+                        new int[]{cg.fromArr(9, 2), cg.fromArr(5, 2), cg.fromArr(2, 2), cg.fromArr(4, 1), cg.fromArr(6, 4), cg.fromArr(7, 4)},
+                        new int[]{cg.fromArr(7, 0), cg.fromArr(9, 0), cg.fromArr(10, 1), cg.fromArr(1, 2), cg.fromArr(3, 3), cg.fromArr(4, 4)},
+                        new int[]{cg.fromArr(8, 1), cg.fromArr(1, 1), cg.fromArr(4, 2), cg.fromArr(3, 0), cg.fromArr(9, 3), cg.fromArr(12, 4)},
+                        new int[]{cg.fromArr(11, 2), cg.fromArr(3, 2), cg.fromArr(12, 0), cg.fromArr(9, 1), cg.fromArr(1, 3), cg.fromArr(10, 4)},
+                        new int[]{cg.fromArr(2, 3), cg.fromArr(6, 3), cg.fromArr(5, 3), cg.fromArr(4, 4), cg.fromArr(12, 4), cg.fromArr(10, 4)})
+                .flatMap(arr -> IntStream.range(0, 13).mapToObj(idx -> {
+                    BitSet result = new BitSet();
+                    for (int i : arr) {
+                        result.set(cg.add(i, cg.fromArr(idx, 0)));
+                    }
+                    return result;
+                })), IntStream.range(0, 13).mapToObj(idx -> {
+            BitSet result = new BitSet();
+            for (int i = 0; i < 5; i++) {
+                result.set(cg.fromArr(idx, i));
+            }
+            result.set(cg.cardinality());
+            return result;
+        })).toArray(BitSet[]::new));
+        assertEquals(cg.cardinality() + 1, p7.pointCount());
+        assertEquals(143, p7.lineCount());
+        testCorrectness(p7, of(6), 13);
+        testPlayfairIndex(p7, of(7));
+        testHyperbolicIndex(p7, 0, 4);
+        checkPlane(p7, p7.pointCount(), p7.pointCount());
+
+        CyclicGroup cg1 = new CyclicGroup(19, 4);
+        HyperbolicPlane p9 = new HyperbolicPlane(Stream.of(
+                        new int[]{cg1.fromArr(0, 0), cg1.fromArr(0, 1), cg1.fromArr(1, 1), cg1.fromArr(3, 1), cg1.fromArr(14, 1), cg1.fromArr(10, 3)},
+                        new int[]{cg1.fromArr(0, 0), cg1.fromArr(0, 2), cg1.fromArr(7, 2), cg1.fromArr(2, 2), cg1.fromArr(3, 2), cg1.fromArr(13, 1)},
+                        new int[]{cg1.fromArr(0, 0), cg1.fromArr(0, 3), cg1.fromArr(11, 3), cg1.fromArr(14, 3), cg1.fromArr(2, 3), cg1.fromArr(15, 2)},
+                        new int[]{cg1.fromArr(1, 0), cg1.fromArr(3, 0), cg1.fromArr(0, 1), cg1.fromArr(7, 1), cg1.fromArr(0, 2), cg1.fromArr(2, 3)},
+                        new int[]{cg1.fromArr(7, 0), cg1.fromArr(2, 0), cg1.fromArr(0, 2), cg1.fromArr(11, 2), cg1.fromArr(0, 3), cg1.fromArr(14, 1)},
+                        new int[]{cg1.fromArr(11, 0), cg1.fromArr(14, 0), cg1.fromArr(0, 3), cg1.fromArr(1, 3), cg1.fromArr(0, 1), cg1.fromArr(3, 2)},
+                        new int[]{cg1.fromArr(1, 0), cg1.fromArr(7, 0), cg1.fromArr(11, 0), cg1.fromArr(3, 1), cg1.fromArr(2, 2), cg1.fromArr(14, 3)},
+                        new int[]{cg1.fromArr(3, 0), cg1.fromArr(2, 0), cg1.fromArr(14, 0), cg1.fromArr(12, 1), cg1.fromArr(8, 2), cg1.fromArr(18, 3)},
+                        new int[]{cg1.fromArr(7, 1), cg1.fromArr(16, 1), cg1.fromArr(11, 2), cg1.fromArr(17, 2), cg1.fromArr(1, 3), cg1.fromArr(5, 3)},
+                        new int[]{cg1.fromArr(13, 1), cg1.fromArr(17, 1), cg1.fromArr(15, 2), cg1.fromArr(5, 2), cg1.fromArr(10, 3), cg1.fromArr(16, 3)})
+                .flatMap(arr -> IntStream.range(0, 19).mapToObj(idx -> {
+                    BitSet result = new BitSet();
+                    for (int i : arr) {
+                        result.set(cg1.add(i, cg1.fromArr(idx, 0)));
+                    }
+                    return result;
+                })).toArray(BitSet[]::new));
+        assertEquals(cg1.cardinality(), p9.pointCount());
+        assertEquals(190, p9.lineCount());
+        testCorrectness(p9, of(6), 15);
+        testPlayfairIndex(p9, of(9));
+        testHyperbolicIndex(p9, 0, 4);
+        checkPlane(p9, p9.pointCount(), p9.pointCount());
+
         int count = 96;
         HyperbolicPlane p = new HyperbolicPlane(Stream.of(new int[]{0, 16, 32, 48, 64, 80}, new int[]{1, 17, 33, 49, 65, 81},
                 new int[]{0, 2, 6, 26, 56, 1}, new int[]{0, 8, 22, 35, 73, 77},

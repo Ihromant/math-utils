@@ -330,6 +330,18 @@ public class HyperbolicPlane {
                 result.set(Math.min(diff, pointCount - diff));
             }));
             return result;
+//        }).map(diff -> {
+//            BitSet result = new BitSet();
+//            result.set(0);
+//            while (!diff.isEmpty()) {
+//                result.set(diff.stream().iterator().next() + result.length() - 1);
+//                result.stream().flatMap(a -> result.stream()
+//                        .filter(b -> a < b).map(b -> b - a)).forEach(idx -> {
+//                            diff.set(idx, false);
+//                            diff.set(pointCount - idx, false);
+//                });
+//            }
+//            return result;
         }).collect(Collectors.toSet());
     }
 }
