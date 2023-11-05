@@ -304,17 +304,20 @@ public class HyperbolicPlane {
         for (int point : points) {
             base.set(point);
         }
-        BitSet next = next(base);
-        while (next.cardinality() > base.cardinality()) {
-            base = next;
-            next = next(base);
+        BitSet additional = base;
+        while (!(additional = additional(base, additional)).isEmpty()) {
+            base.or(additional);
         }
         return base;
     }
 
-    public BitSet next(BitSet base) {
-        BitSet next = (BitSet) base.clone();
-        base.stream().forEach(x -> base.stream().filter(y -> x != y).forEach(y -> next.or(lines[line(x, y)])));
-        return next;
+    public BitSet additional(BitSet first, BitSet second) {
+        BitSet result = new BitSet();
+        first.stream().forEach(x -> second.stream().filter(y -> x != y).forEach(y -> result.or(lines[line(x, y)])));
+        BitSet removal = new BitSet();
+        removal.or(first);
+        removal.or(second);
+        result.xor(removal);
+        return result;
     }
 }
