@@ -400,14 +400,12 @@ public class HyperbolicPlaneTest {
         testCorrectness(p3, of(3), 19);
         testHyperbolicIndex(p3, 1, 1);
         checkPlane(p3, p3.pointCount(), p3.pointCount());
-        IntStream.range(0, p3.lineCount()).forEach(i -> System.out.println(p3.line(i)));
 
         HyperbolicPlane p2 = new HyperbolicPlane(37, new int[]{0, 1, 3}, new int[]{0, 4, 26},
                 new int[]{0, 5, 14}, new int[]{0, 6, 25}, new int[]{0, 7, 17}, new int[]{0, 8, 21});
         testCorrectness(p2, of(3), 18);
         testHyperbolicIndex(p2, 1, 1);
         checkPlane(p2, p2.pointCount(), p2.pointCount());
-        IntStream.range(0, p2.lineCount()).forEach(i -> System.out.println(p2.line(i)));
     }
 
     @Test
