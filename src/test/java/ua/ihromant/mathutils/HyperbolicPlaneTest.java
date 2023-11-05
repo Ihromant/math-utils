@@ -88,31 +88,6 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
-    public void generatePlane() {
-        HyperbolicPlane p = null;
-        for (int i = 547; i < 3500; i++) {
-            try {
-                p = new HyperbolicPlane(i * 84 + 4);
-                break;
-            } catch (IllegalStateException e) {
-                System.out.println(e.getMessage() + " " + (i * 84 + 4));
-                try {
-                    p = new HyperbolicPlane(i * 84 + 25);
-                    break;
-                } catch (IllegalStateException e1) {
-                    System.out.println(e1.getMessage() + " " + (i * 84 + 25));
-                    // continue
-                }
-            }
-        }
-        assertEquals(109, p.pointCount());
-        assertEquals(1591, p.lineCount());
-        testCorrectness(p, of(7), 43);
-        testPlayfairIndex(p, of(18));
-        testHyperbolicIndex(p, 1, 4);
-    }
-
-    @Test
     public void testPrimePower() {
         HyperbolicPlane p4 = new HyperbolicPlane(109, new int[]{0, 1, 3, 60});
         assertEquals(109, p4.pointCount());

@@ -132,4 +132,41 @@ public class FiveFieldPointTest {
         assertEquals(0, min);
         assertEquals(2, max);
     }
+
+    @Test
+    public void generatePlane() {
+        HyperbolicPlane p1 = new HyperbolicPlane(new String[]{
+                "231500240117613536020",
+                "34aa1248924dc588776b4",
+                "5gce3e9fb76ed99ba98c5",
+                "6hjgdfaig8bhffcdbiah7",
+                "kjkiijdkkgekghejfjhic"});
+        HyperbolicPlane p2 = new HyperbolicPlane(new String[] {
+                "40153200a306131252410",
+                "7226b658bc39476784591",
+                "a937d8gaee4a88dfcc9f7",
+                "dd5ehbihfi6ce9gjdgbhb",
+                "ieahjijkgkfjjgkkfhkic"});
+        HyperbolicPlane p3 = new HyperbolicPlane(new String[]{
+                "208035740051013234112",
+                "31924eca6865925667d49",
+                "a3a48gdh7b8ac77cbbf6b",
+                "egd5cheiaefbf89gdfj9i",
+                "figdjjikjkichhkkhgkej"});
+        HyperbolicPlane p4 = new HyperbolicPlane(new String[]{
+                "422501071330034042181",
+                "d43612589a66ae6258597",
+                "f758367gac7cbhb99cdbb",
+                "gaba4ffigf9edjihcdeec",
+                "hegh8kjkjidgkkjikjifh"
+        });
+        HyperbolicPlane p5 = new HyperbolicPlane(new String[] {
+                "345678901012340012012",
+                "6789abcab234565123345",
+                "789abcddecdefg7678456",
+                "cdefghieffghijh89a9ab",
+                "efghijkjkghijkkijkbcd"
+        });
+        HyperbolicPlane p = new HyperbolicPlane(p1, p2, p3, p4, p5);
+    }
 }

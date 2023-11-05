@@ -1,11 +1,10 @@
 package ua.ihromant.mathutils;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -18,94 +17,105 @@ public class HyperbolicPlane {
     private final BitSet[] points;
     private final int[][] intersections;
 
-    public HyperbolicPlane(int v) {
+    public HyperbolicPlane(HyperbolicPlane... planes) {
+        int sm = planes[0].pointCount;
+        int k = planes.length + 1;
+        int v = sm * planes.length + k;
         this.pointCount = v;
-        List<BitSet> linesList = new ArrayList<>(v * 4);
-        Map<Long, Integer> pointToLine = new HashMap<>();
-        int lineIdx = 0;
-        for (int i = 0; i < v; i++) {
-            for (int j = i + 1; j < v; j++) {
-                if (pointToLine.containsKey(pack(i, j))) {
-                    continue;
+        this.lines = new BitSet[v * (v - 1) / k / (k - 1)];
+        this.lookup = new int[pointCount][pointCount];
+        Arrays.stream(lookup).forEach(arr -> Arrays.fill(arr, -1));
+        IntStream.rangeClosed(0, sm).forEach(i -> {
+            BitSet line = IntStream.range(0, planes.length).map(j -> i * planes.length + j + 1).collect(BitSet::new, BitSet::set, BitSet::or);
+            line.set(0);
+            lines[i] = line;
+            connect(line, i);
+        });
+        for (int p = 0; p < planes.length; p++) {
+            int first = p + 1;
+            HyperbolicPlane plane = planes[p];
+            int lineIdx = plane.lineCount() * first + 1;
+            for (int l : plane.lines()) {
+                BitSet line = plane.line(l);
+                int[] pts = line.stream().toArray();
+                BitSet newLine = new BitSet();
+                newLine.set(first);
+                for (int idx : pts) {
+                    for (int poss = 0; poss < pts.length; poss++) {
+                        int candidate = (idx + 1) * planes.length + poss + 1;
+                        if (newLine.stream().allMatch(curr -> line(curr, candidate) == -1)) {
+                            newLine.set(candidate);
+                            break;
+                        }
+                    }
                 }
-                // connect i and j
-                BitSet line = new BitSet();
-                line.set(i);
-                line.set(j);
-                linesList.add(line);
-                fillLookup(pointToLine, i, j, lineIdx);
-                for (int k = j + 1; ; k++) {
-                    if (pointToLine.containsKey(pack(i, k)) || pointToLine.containsKey(pack(j, k))) {
-                        continue;
-                    }
-                    if (k >= v) {
-                        throw new IllegalStateException(String.valueOf(i));
-                    }
-                    if (findTriangle(pointToLine, linesList, i, i, j, k)) {
-                        continue;
-                    }
-                    // connect k to i and j
-                    line.set(k);
-                    fillLookup(pointToLine, i, k, lineIdx);
-                    fillLookup(pointToLine, j, k, lineIdx);
-                    for (int l = k + 1; ; l++) {
-                        if (pointToLine.containsKey(pack(i, l)) || pointToLine.containsKey(pack(j, l)) || pointToLine.containsKey(pack(k, l))) {
-                            continue;
-                        }
-                        if (l >= v) {
-                            throw new IllegalStateException(String.valueOf(i));
-                        }
-                        if (findTriangle(pointToLine, linesList, i, i, j, l) || findTriangle(pointToLine, linesList, i, i, k, l) || findTriangle(pointToLine, linesList, i, j, k, l)) {
-                            continue;
-                        }
-                        // connect l to i, j and k
-                        line.set(l);
-                        fillLookup(pointToLine, i, l, lineIdx);
-                        fillLookup(pointToLine, j, l, lineIdx);
-                        fillLookup(pointToLine, k, l, lineIdx);
-                        break;
-                    }
-                    break;
+                if (newLine.cardinality() != k) {
+                    throw new IllegalStateException();
                 }
-                lineIdx++;
+                connect(newLine, lineIdx);
+                lines[lineIdx++] = newLine;
             }
         }
-        this.lines = linesList.toArray(BitSet[]::new);
-        this.lookup = generateLookup();
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                if (line(i, j) != -1) {
+                    continue;
+                }
+//                // connect i and j
+//                BitSet line = new BitSet();
+//                line.set(i);
+//                line.set(j);
+//                linesList.add(line);
+//                fillLookup(pointToLine, i, j, lineIdx);
+//                for (int k = j + 1; ; k++) {
+//                    if (pointToLine.containsKey(pack(i, k)) || pointToLine.containsKey(pack(j, k))) {
+//                        continue;
+//                    }
+//                    if (k >= v) {
+//                        throw new IllegalStateException(String.valueOf(i));
+//                    }
+//                    if (findTriangle(pointToLine, linesList, i, i, j, k)) {
+//                        continue;
+//                    }
+//                    // connect k to i and j
+//                    line.set(k);
+//                    fillLookup(pointToLine, i, k, lineIdx);
+//                    fillLookup(pointToLine, j, k, lineIdx);
+//                    for (int l = k + 1; ; l++) {
+//                        if (pointToLine.containsKey(pack(i, l)) || pointToLine.containsKey(pack(j, l)) || pointToLine.containsKey(pack(k, l))) {
+//                            continue;
+//                        }
+//                        if (l >= v) {
+//                            throw new IllegalStateException(String.valueOf(i));
+//                        }
+//                        if (findTriangle(pointToLine, linesList, i, i, j, l) || findTriangle(pointToLine, linesList, i, i, k, l) || findTriangle(pointToLine, linesList, i, j, k, l)) {
+//                            continue;
+//                        }
+//                        // connect l to i, j and k
+//                        line.set(l);
+//                        fillLookup(pointToLine, i, l, lineIdx);
+//                        fillLookup(pointToLine, j, l, lineIdx);
+//                        fillLookup(pointToLine, k, l, lineIdx);
+//                        break;
+//                    }
+//                    break;
+//                }
+//                lineIdx++;
+            }
+        }
+        Map<Integer, Integer> frequencies = Arrays.stream(lines).filter(Objects::nonNull).flatMap(l -> l.stream().boxed())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.mapping(Function.identity(), Collectors.summingInt(i -> 1))));
         this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
-    private static long pack(int a, int b) {
-        return (long) a << 32 | b;
+    private void connect(BitSet line, int idx) {
+        line.stream().forEach(p1 -> line.stream().forEach(p2 -> connect(p1, p2, p1 != p2 ? idx : -1)));
     }
 
-    private static void fillLookup(Map<Long, Integer> pointToLine, int x, int y, int line) {
-        pointToLine.put(pack(x, y), line);
-        pointToLine.put(pack(y, x), line);
-    }
-
-    private static boolean findTriangle(Map<Long, Integer> pointToLine, List<BitSet> lines, int cap, int i, int j, int k) {
-        for (int ex = 0; ex < cap; ex++) {
-            int existing = ex;
-            for (int x : (Iterable<Integer>) () -> lines.get(pointToLine.get(pack(existing, i))).stream().iterator()) {
-                for (int y : (Iterable<Integer>) () -> lines.get(pointToLine.get(pack(existing, j))).stream().iterator()) {
-                    Integer xy = pointToLine.get(pack(x, y));
-                    if (x == y || xy == null) {
-                        continue;
-                    }
-                    for (int z : (Iterable<Integer>) () -> lines.get(pointToLine.get(pack(existing, k))).stream().iterator()) {
-                        if (x == z || y == z) {
-                            continue;
-                        }
-                        if ((x != i || y != j || z != k) && xy.equals(pointToLine.get(pack(y, z)))) {
-                            return true;
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+    private void connect(int p1, int p2, int line) {
+        lookup[p1][p2] = line;
+        lookup[p2][p1] = line;
     }
 
     public HyperbolicPlane(BitSet[] lines) {

@@ -3,11 +3,11 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.BitSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -161,21 +161,12 @@ public class GaloisFieldTest {
 
     @Test
     public void testDistinctPermutations() {
-        String[] design = new String[] {
-                "0000111223345",
-                "1246257364789",
-                "385a46b57689a",
-                "9c7ba8cb9cabc"
-        };
-        List<BitSet> lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
-            BitSet res = new BitSet();
-            for (String s : design) {
-                res.set(Character.digit(s.charAt(idx), 36));
-            }
-            return res;
-        }).toList();
+        int[] diffSet = new int[]{3, 6, 7, 12, 14};
+        HyperbolicPlane plane = new HyperbolicPlane(new int[][]{diffSet});
+        List<BitSet> lines = StreamSupport.stream(plane.lines().spliterator(), false).map(plane::line).toList();
+        System.out.println(lines.size());
         int counter = 1_000_000_000;
-        int[] arr = IntStream.range(0, 13).toArray();
+        int[] arr = IntStream.range(0, lines.size()).toArray();
         while (counter-- >= 0) {
             int[] fPerm = arr.clone();
             shuffle(fPerm);
@@ -193,17 +184,37 @@ public class GaloisFieldTest {
                             .map(i -> tPerm[i]).collect(BitSet::new, BitSet::set, BitSet::or)).toList();
                     if (fLines.stream().noneMatch(tLines::contains) && lines.stream().noneMatch(tLines::contains)
                             && sLines.stream().noneMatch(tLines::contains)) {
-                        Set<BitSet> set = new HashSet<>();
-                        set.addAll(lines);
-                        set.addAll(fLines);
-                        set.addAll(sLines);
-                        set.addAll(tLines);
-                        System.out.println(set.size() + " " + lines + " " + fLines + " " + sLines
-                                + " " + tLines);
+                        int[] fourPerm = arr.clone();
+                        shuffle(fourPerm);
+                        List<BitSet> fourLines = lines.stream().map(line -> line.stream()
+                                .map(i -> fourPerm[i]).collect(BitSet::new, BitSet::set, BitSet::or)).toList();
+                        if (fLines.stream().noneMatch(fourLines::contains) && lines.stream().noneMatch(fourLines::contains)
+                                && sLines.stream().noneMatch(fourLines::contains) && tLines.stream().noneMatch(fourLines::contains)) {
+                            printDesign(lines);
+                            printDesign(fLines);
+                            printDesign(sLines);
+                            printDesign(tLines);
+                            printDesign(fourLines);
+                            System.out.println();
+                        }
                     }
                 }
             }
         }
+    }
+
+    private void printDesign(List<BitSet> design) {
+        System.out.println(design.stream().map(bitSet -> String.valueOf(Character.forDigit(bitSet.stream()
+                .skip(0).findAny().orElseThrow(), 36))).collect(Collectors.joining()));
+        System.out.println(design.stream().map(bitSet -> String.valueOf(Character.forDigit(bitSet.stream()
+                .skip(1).findAny().orElseThrow(), 36))).collect(Collectors.joining()));
+        System.out.println(design.stream().map(bitSet -> String.valueOf(Character.forDigit(bitSet.stream()
+                .skip(2).findAny().orElseThrow(), 36))).collect(Collectors.joining()));
+        System.out.println(design.stream().map(bitSet -> String.valueOf(Character.forDigit(bitSet.stream()
+                .skip(3).findAny().orElseThrow(), 36))).collect(Collectors.joining()));
+        System.out.println(design.stream().map(bitSet -> String.valueOf(Character.forDigit(bitSet.stream()
+                .skip(4).findAny().orElseThrow(), 36))).collect(Collectors.joining()));
+        System.out.println("------------------------------------------------------------------");
     }
 
     public static void shuffle(int[] arr) {
