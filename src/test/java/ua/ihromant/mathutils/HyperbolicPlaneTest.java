@@ -42,7 +42,7 @@ public class HyperbolicPlaneTest {
         assertEquals(35, p3.lineCount());
         testCorrectness(p3, of(3), 7);
         testHyperbolicIndex(p3, 0, 1);
-        checkPlane(p3, 7, 15); // it's plane with no exchange property
+        checkPlane(p3, 7, p.pointCount()); // it's plane with no exchange property
 
         HyperbolicPlane p1 = new HyperbolicPlane(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
                 new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
