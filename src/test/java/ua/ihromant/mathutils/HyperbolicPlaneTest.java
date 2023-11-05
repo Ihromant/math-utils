@@ -64,6 +64,30 @@ public class HyperbolicPlaneTest {
         testPlayfairIndex(p1, of(18));
         testHyperbolicIndex(p1, 1, 4);
 
+        CyclicGroup cg2 = new CyclicGroup(new int[]{7, 5, 5});
+
+        cycles = new int[][][] {
+                {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}},
+                {{0, 0, 0}, {1, 1, 3}, {1, 4, 2}, {2, 2, 2}, {2, 3, 3}, {4, 2, 0}, {4, 3, 0}},
+                {{0, 0, 0}, {1, 3, 4}, {1, 2, 1}, {2, 2, 2}, {2, 3, 2}, {4, 0, 2}, {4, 0, 3}},
+                {{0, 0, 0}, {1, 1, 2}, {1, 4, 3}, {2, 1, 4}, {2, 4, 4}, {4, 0, 1}, {4, 0, 4}},
+                {{0, 0, 0}, {1, 3, 1}, {1, 2, 4}, {2, 4, 1}, {2, 1, 4}, {4, 1, 0}, {4, 4, 0}}
+        };
+        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg2.cardinality()).mapToObj(idx -> {
+            BitSet res = new BitSet();
+            for (int[] numb : base) {
+                res.set(cg2.add(cg2.fromArr(numb), idx));
+            }
+            return res;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        p1 = new HyperbolicPlane(lines);
+        assertEquals(175, p1.pointCount());
+        assertEquals(725, p1.lineCount());
+        testCorrectness(p1, of(7), 29); // this fails, example is broken
+        testPlayfairIndex(p1, of(22));
+        testHyperbolicIndex(p1, 1, 4);
+
+
         CyclicGroup cg = new CyclicGroup(new int[]{7, 37});
         int[][] microBase = new int[][] {{1, 1}, {2, 10}, {4, 26}};
         cycles = Stream.concat(Stream.<int[][]>of(new int[][]{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}, {6, 0}}),
