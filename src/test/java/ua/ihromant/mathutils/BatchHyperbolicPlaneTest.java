@@ -7,13 +7,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
 import java.util.zip.ZipInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -70,9 +67,9 @@ public class BatchHyperbolicPlaneTest {
         List<HyperbolicPlane> planes = readPlanes(217, 7);
         assertEquals(4, planes.size());
         planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7), 36));
-//        HyperbolicPlaneTest.testHyperbolicIndex(planes.get(0), 1, 5);
-//        HyperbolicPlaneTest.testHyperbolicIndex(planes.get(1), 1, 5);
-//        HyperbolicPlaneTest.testHyperbolicIndex(planes.get(2), 1, 5);
+        assertEquals(of(1, 2, 3, 4, 5), planes.get(0).hyperbolicIndex());
+        assertEquals(of(1, 2, 3, 4, 5), planes.get(1).hyperbolicIndex());
+        assertEquals(of(1, 2, 3, 4, 5), planes.get(2).hyperbolicIndex());
         assertEquals(of(2, 3, 4, 5), planes.get(3).hyperbolicIndex());
     }
 
@@ -99,35 +96,24 @@ public class BatchHyperbolicPlaneTest {
         HyperbolicPlaneTest.testCorrectness(planes.get(0), of(5), 16);
         assertEquals(of(3), planes.get(0).hyperbolicIndex());
         HyperbolicPlaneTest.checkPlane(planes.get(0), 65, 65);
-//        planes.forEach(p -> {
-//            assertArrayEquals(new int[]{1, 3}, p.hyperbolicIndex());
-//        });
     }
 
     @Test
     public void test41_5() throws IOException {
         List<HyperbolicPlane> planes = readPlanes(41, 5);
         assertEquals(15, planes.size());
-//        int idx = IntStream.range(0, planes.size()).filter(i -> Arrays.equals(new int[]{3, 3}, planes.get(i).hyperbolicIndex())).findAny().orElseThrow();
-//        System.out.println(idx);
     }
 
     @Test
     public void test45_5() throws IOException {
         List<HyperbolicPlane> planes = readPlanes(45, 5);
         assertEquals(30, planes.size());
-//        int idx = IntStream.range(0, planes.size()).filter(i -> Arrays.equals(new int[]{2, 2}, planes.get(i).hyperbolicIndex())).findAny().orElseThrow();
-//        System.out.println(idx);
     }
 
     @Test
     public void test37_4() throws IOException {
         List<HyperbolicPlane> planes = readPlanes(37, 4);
         assertEquals(51402, planes.size());
-
-        BitSet withHole = of(0, 2);
-        int idx = IntStream.range(0, planes.size()).filter(i -> withHole.equals(planes.get(i).hyperbolicIndex())).findAny().orElseThrow();
-        System.out.println(idx);
     }
 
     @Test
@@ -138,9 +124,5 @@ public class BatchHyperbolicPlaneTest {
         assertEquals(of(2), plane.hyperbolicIndex());
         HyperbolicPlaneTest.checkPlane(plane, 28, 28);
         HyperbolicPlaneTest.testCorrectness(plane, of(4), 9);
-
-        BitSet withHole = of(0, 2);
-        int idx = IntStream.range(0, planes.size()).filter(i -> withHole.equals(planes.get(i).hyperbolicIndex())).findAny().orElseThrow();
-        System.out.println(idx);
     }
 }
