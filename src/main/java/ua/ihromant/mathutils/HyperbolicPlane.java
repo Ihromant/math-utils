@@ -342,9 +342,8 @@ public class HyperbolicPlane {
         }).collect(Collectors.toSet());
     }
 
-    public int[] hyperbolicIndex() {
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
+    public BitSet hyperbolicIndex() {
+        BitSet result = new BitSet();
         for (int o : points()) {
             for (int x : points()) {
                 if (o == x) {
@@ -370,13 +369,12 @@ public class HyperbolicPlane {
                                 counter++;
                             }
                         }
-                        min = Math.min(min, counter);
-                        max = Math.max(max, counter);
+                        result.set(counter);
                     }
                 }
             }
         }
-        return new int[]{min, max};
+        return result;
     }
 
     public BitSet playfairIndex() {
