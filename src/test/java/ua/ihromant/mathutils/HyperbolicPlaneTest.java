@@ -13,7 +13,19 @@ import static org.junit.jupiter.api.Assertions.*;
 public class HyperbolicPlaneTest {
     @Test
     public void hyperbolicPlaneExample() {
-        HyperbolicPlane p1 = new HyperbolicPlane(new String[] {
+        HyperbolicPlane p2 = new HyperbolicPlane(new String[]{
+                "00000001111112222223333444455566678",
+                "13579bd3469ac34578b678a58ab78979c9a",
+                "2468ace578bde96aecdbcded9cebecaeddb"
+        });
+        assertEquals(15, p2.pointCount());
+        assertEquals(35, p2.lineCount());
+        testCorrectness(p2, of(3), 7);
+        assertEquals(of(4), p2.playfairIndex());
+        testHyperbolicIndex(p2, 1, 1);
+        checkPlane(p2, p2.pointCount(), p2.pointCount());
+
+        HyperbolicPlane p1 = new HyperbolicPlane(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
