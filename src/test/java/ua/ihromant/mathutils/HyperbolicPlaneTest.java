@@ -304,96 +304,90 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void test25PointPlanes() {
-        HyperbolicPlane p1 = new HyperbolicPlane("00000000111111122222223333344445555666778899aabbil",
-                "134567ce34578cd34568de468bh679f78ag79b9aabcddecejm",
-                "298dfbhkea6g9kf7c9afkg5cgfihdgifchi8ejjcjdfhgfghkn",
-                "iaolgmjnmbohnljonblhmjjdlknmeklnekmkinlimimonooloo");
-        assertEquals(25, p1.pointCount());
-        assertEquals(50, p1.lineCount());
-        testCorrectness(p1, of(4), 8);
-        testPlayfairIndex(p1, of(4));
-        testHyperbolicIndex(p1, 1, 2);
-        checkPlane(p1, p1.pointCount(), p1.pointCount());
-
-        HyperbolicPlane p2 = new HyperbolicPlane("0000000011111112222222333334444555566667778889abil",
-                "13457bce34589cd3456ade489eh6acf7bdg79ab9ab9abdecjm",
-                "2689gdfka76fekg798fckh5cfgidghichfi8chjjdfgjehfgkn",
-                "iloahnjmbmohlnjobngmljjdknmeklnekmlkinmnilmliooooo");
-        assertEquals(25, p2.pointCount());
-        assertEquals(50, p2.lineCount());
-        testCorrectness(p2, of(4), 8);
-        testPlayfairIndex(p2, of(4));
-        testHyperbolicIndex(p2, 0, 2);
-
-        HyperbolicPlane p3 = new HyperbolicPlane("0000000011111112222222333334444555566667778889abil",
-                "13457bde34589ce3456acd489eh6acf7bdg79ab9ab9abcdejm",
-                "2689gcfka76fdkg798fehk5cgfidhgicfhi8hcjjfdejgfghkn",
-                "iloahmjnbmohnljobngljmjdkmneknleklmkminlniimlooooo");
-        assertEquals(25, p3.pointCount());
-        assertEquals(50, p3.lineCount());
-        testCorrectness(p3, of(4), 8);
-        testPlayfairIndex(p3, of(4));
-        testHyperbolicIndex(p3, 0, 2);
-
-        HyperbolicPlane p4 = new HyperbolicPlane("000000001111111222222333334444555566667778899abcde",
-                "123468cj23479af3458bg456ah57bi78bd89ce9adabacghiff",
-                "5ad97fek6be8gdl7ch9em89fcn6gdkfickgjdlhmeekblhijjg",
-                "oignbhmlkjhcinmlfjdonmeikoajlonlgmomhnkoijnfolmnok");
-        assertEquals(25, p4.pointCount());
-        assertEquals(50, p4.lineCount());
-        testCorrectness(p4, of(4), 8);
-        testPlayfairIndex(p4, of(4));
-        testHyperbolicIndex(p4, 0, 2);
-
-        HyperbolicPlane p5 = new HyperbolicPlane("000000001111111222222333333444445555566666777889al",
-                "124789bh2589ace39abde47abcf8bcde79cdf78adg89b9cabm",
-                "365egifj46fhjgi5gikhf6ihjegjikfggkjehfhekiadcbdcdn",
-                "dcaolmnk7bolmnk8olmnj9nolmknolmhmnolilmnojkjheifgo");
-        assertEquals(25, p5.pointCount());
-        assertEquals(50, p5.lineCount());
-        testCorrectness(p5, of(4), 8);
-        testPlayfairIndex(p5, of(4));
-        testHyperbolicIndex(p5, 0, 2);
-
-        HyperbolicPlane p6 = new HyperbolicPlane("000000001111111222222333333444455566667777889aacee",
-                "12459bdf24569cg3458bh4568bi59bh9ac78ab89cgaddbedfl",
-                "3786cihjd78haek96kfgja7fgclgkdiimfi9djebkjcjffhmgn",
-                "oanegklmifbmljnecolmnjdkhnmlmeojnhnoglmhloiknokoio");
-        assertEquals(25, p6.pointCount());
-        assertEquals(50, p6.lineCount());
-        testCorrectness(p6, of(4), 8);
-        testPlayfairIndex(p6, of(4));
-        testHyperbolicIndex(p6, 0, 2);
-
-        HyperbolicPlane p7 = new HyperbolicPlane("000000001111111222222233333444455556677889abcdefgh",
-                "13456789345678a34567894679c67ad68be9aab9bdecijkijk",
-                "2fbcdgiadg9jcfbaehficb5b8eg89ch7adfchdfgefghmlllmn",
-                "onklehjmmlikehnjnmgkdloilhkmjfinkgjolomnokijnnmooo");
-        assertEquals(25, p7.pointCount());
-        assertEquals(50, p7.lineCount());
-        testCorrectness(p7, of(4), 8);
-        testPlayfairIndex(p7, of(4));
-        testHyperbolicIndex(p7, 0, 2);
-
-        HyperbolicPlane p8 = new HyperbolicPlane("0000000011111112222222333333344445555666677778889a",
-                "147adgjm4569chi4569bdf45689ae9bcf9ach89abbcdeabicd",
-                "258behkn78ebfkl87caekgdb7cfglgkehefgjfildfighegjdj",
-                "369cfiloadgjmnonlohimjimjhoknmojlkinoknmhnkomolmln");
-        assertEquals(25, p8.pointCount());
-        assertEquals(50, p8.lineCount());
-        testCorrectness(p8, of(4), 8);
-        testPlayfairIndex(p8, of(4));
-        testHyperbolicIndex(p8, 0, 2);
-
-        HyperbolicPlane p9 = new HyperbolicPlane("0000000011111112222222333333344445555666677778889a",
-                "147adgjm4569cef4569bcd45689ae9bdf9abe89acbcdiabcfd",
-                "258behkn78bhkil87jafghhc7jbigcekggfihelhdheglgkfij",
-                "369cfiloadgjmnoikoemnlmlfndokolnjmnjomnkinjomlohkm");
-        assertEquals(25, p9.pointCount());
-        assertEquals(50, p9.lineCount());
-        testCorrectness(p9, of(4), 8);
-        testPlayfairIndex(p9, of(4));
-        testHyperbolicIndex(p9, 0, 2);
+        String[] batch =
+            """
+                    00000000111111122222223333344445555666778899aabbil
+                    134567ce34578cd34568de468bh679f78ag79b9aabcddecejm
+                    298dfbhkea6g9kf7c9afkg5cgfihdgifchi8ejjcjdfhgfghkn
+                    iaolgmjnmbohnljonblhmjjdlknmeklnekmkinlimimonooloo
+                    0000000011111112222222333334444555566667778889abil
+                    13457bce34589cd3456ade489eh6acf7bdg79ab9ab9abdecjm
+                    2689gdfka76fekg798fckh5cfgidghichfi8chjjdfgjehfgkn
+                    iloahnjmbmohlnjobngmljjdknmeklnekmlkinmnilmliooooo
+                    0000000011111112222222333334444555566667778889abil
+                    13457bde34589ce3456acd489eh6acf7bdg79ab9ab9abcdejm
+                    2689gcfka76fdkg798fehk5cgfidhgicfhi8hcjjfdejgfghkn
+                    iloahmjnbmohnljobngljmjdkmneknleklmkminlniimlooooo
+                    0000000011111112222222333334444555566667778889abil
+                    13457aef3458bcf34569dg489dh69ef7acg79bc9acabdcdejm
+                    2689bcjha769djg7b8aejh5cbfkdagkebhk8gieihdifefghkn
+                    ilodgknmemohklnocnfkmljgminhnilflimkjnmljnmjlooooo
+                    00000000111111122222223333344445555666778899abcfil
+                    134567cd34578de34568ce468ag67bh789f79aab9bacdedgjm
+                    298abhgkba69fhk79bgakf5cdfiedgicehi8djejjcbfghehkn
+                    ieolfmjnmcognjlondlhmjjhlknmfklngkmkinilmiolmnoooo
+                    000000001111111222222333334444555566667778899abcde
+                    123468cj23479af3458bg456ah57bi78bd89ce9adabacghiff
+                    5ad97fek6be8gdl7ch9em89fcn6gdkfickgjdlhmeekblhijjg
+                    oignbhmlkjhcinmlfjdonmeikoajlonlgmomhnkoijnfolmnok
+                    000000001111111222222333333444445555566666777889al
+                    124789bh2589ace39abde47abcf8bcde79cdf78adg89b9cabm
+                    365egifj46fhjgi5gikhf6ihjegjikfggkjehfhekiadcbdcdn
+                    dcaolmnk7bolmnk8olmnj9nolmknolmhmnolilmnojkjheifgo
+                    000000001111111222222333333444455566667777889aacee
+                    12459bdf24569cg3458bh4568bi59bh9ac78ab89cgaddbedfl
+                    3786cihjd78haek96kfgja7fgclgkdiimfi9djebkjcjffhmgn
+                    oanegklmifbmljnecolmnjdkhnmlmeojnhnoglmhloiknokoio
+                    000000001111111222222233333444455556677889abcdefgh
+                    13456789345678a34567894679c67ad68be9aab9bdecijkijk
+                    2fbcdgiadg9jcfbaehficb5b8eg89ch7adfchdfgefghmlllmn
+                    onklehjmmlikehnjnmgkdloilhkmjfinkgjolomnokijnnmooo
+                    000000001111111222222233333444455566577889abccdfgh
+                    13456789345678a345678b467ad679e69c9b89aabfghdeeijk
+                    2jadebchekbdc9f9ciaedg5f8bg8gbf7afcihjdiemllikjlmn
+                    onmkgfliilnmhgjljmhnfkokmchnidhlegojjkokonnmnmlooo
+                    0000000011111112222222333334444555566778899acdefgh
+                    1345678b3456789345678a467bc679d68ae9daebcabbkijijk
+                    2iace9fgdjbgcah9cibhdf5a8fg8bfh79gfcfdgehedclmllmn
+                    ojmdhnklekniflmlekmjgnokmhnniglljhmojokoiikjmnnooo
+                    0000000011111112222222333334444555566778899accdfgh
+                    1345678a345678b34567894679e67ac68bd9fagbfabbdeeijk
+                    2j9ebcmickal9dibdielaj5a8df8beg79chcgdhehgfhjiklmn
+                    olhgdfnkhmfnegjgfnhmckomkininjljlkmokoiojnmlnmlooo
+                    0000000011111112222222333334444555566677899accdfgh
+                    134578ae34568bc345679d467ad78be689c7898ababbdeeijk
+                    2f6b9cjg9g7dakh8ahbeif5lbigl9ifamjffhcgdegfhikjlmn
+                    omkdhlnienimfljjclgnmkonckhmdjhenkgjiokoolnmnmlooo
+                    0000000011111112222222333334444555566677899accdfgh
+                    1345789c34568ad34567be467ad78be689c7898ababbdeeijk
+                    2h6beajg9f7bckh8agd9if5lbifl9jgamiffhcgdegfhjiklmn
+                    omidnflkenjglmikclmhnjoncjgmdkhenkhkjoioonmlnmlooo
+                    0000000011111112222222333334444555566677889abcdeil
+                    1345689b345679a34578ab467ad789e689c7bc9daeghffghjm
+                    2cg7afdi8dhfbjcf6eg9kc59ebhacbfdbag8ehcfdgijkijkkn
+                    lnkjohemknigomejinhomdmligoljhoklfonjmkmimnnnllloo
+                    0000000011111112222222333334444555566677889abcdeil
+                    134568ab345679b345789a467ae789c689d7be9cadfghfghjm
+                    2cf7g9dk8dgafich6ebfcj59dbgaebhcbaf8dfegchkijijkkn
+                    lnjihoemjnkohmeiknogdmmlkfoligojlhonimjmkmnnnllloo
+                    0000000011111112222222333333344445555666677778889a
+                    147adgjm4569chi4569bdf45689ae9bcf9ach89abbcdeabicd
+                    258behkn78ebfkl87caekgdb7cfglgkehefgjfildfighegjdj
+                    369cfiloadgjmnonlohimjimjhoknmojlkinoknmhnkomolmln
+                    0000000011111112222222333333344445555666677778889a
+                    147adgjm4569cef4569bcd45689ae9bdf9abe89acbcdiabcfd
+                    258behkn78bhkil87jafghhc7jbigcekggfihelhdheglgkfij
+                    369cfiloadgjmnoikoemnlmlfndokolnjmnjomnkinjomlohkm
+                    """.split("\n");
+        for (int i = 0; i < batch.length / 4; i++) {
+            HyperbolicPlane p = new HyperbolicPlane(batch[i * 4], batch[i * 4 + 1], batch[i * 4 + 2], batch[i * 4 + 3]);
+            assertEquals(25, p.pointCount());
+            assertEquals(50, p.lineCount());
+            testCorrectness(p, of(4), 8);
+            testPlayfairIndex(p, of(4));
+            testHyperbolicIndex(p, i == 0 ? 1 : 0, 2); // first is hyperaffine
+            checkPlane(p, p.pointCount(), p.pointCount());
+        }
     }
 
     @Test
