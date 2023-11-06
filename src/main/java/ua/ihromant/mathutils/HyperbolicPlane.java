@@ -2,10 +2,7 @@ package ua.ihromant.mathutils;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -104,8 +101,8 @@ public class HyperbolicPlane {
 //                lineIdx++;
             }
         }
-        Map<Integer, Integer> frequencies = Arrays.stream(lines).filter(Objects::nonNull).flatMap(l -> l.stream().boxed())
-                .collect(Collectors.groupingBy(Function.identity(), Collectors.mapping(Function.identity(), Collectors.summingInt(i -> 1))));
+//        Map<Integer, Integer> frequencies = Arrays.stream(lines).filter(Objects::nonNull).flatMap(l -> l.stream().boxed())
+//                .collect(Collectors.groupingBy(Function.identity(), Collectors.mapping(Function.identity(), Collectors.summingInt(i -> 1))));
         this.points = generateBeams();
         this.intersections = generateIntersections();
     }
@@ -343,5 +340,62 @@ public class HyperbolicPlane {
 //            }
 //            return result;
         }).collect(Collectors.toSet());
+    }
+
+    public int[] hyperbolicIndex() {
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        for (int o : points()) {
+            for (int x : points()) {
+                if (o == x) {
+                    continue;
+                }
+                for (int y : points()) {
+                    if (collinear(o, x, y)) {
+                        continue;
+                    }
+                    int xy = line(x, y);
+                    for (int p : points(xy)) {
+                        if (p == x || p == y) {
+                            continue;
+                        }
+                        int ox = line(o, x);
+                        int oy = line(o, y);
+                        int counter = 0;
+                        for (int u : points(oy)) {
+                            if (u == o || u == y) {
+                                continue;
+                            }
+                            if (intersection(line(p, u), ox) == -1) {
+                                counter++;
+                            }
+                        }
+                        min = Math.min(min, counter);
+                        max = Math.max(max, counter);
+                    }
+                }
+            }
+        }
+        return new int[]{min, max};
+    }
+
+    public BitSet playfairIndex() {
+        BitSet result = new BitSet();
+        for (int l : lines()) {
+            BitSet line = line(l);
+            for (int p : points()) {
+                if (line.get(p)) {
+                    continue;
+                }
+                int counter = 0;
+                for (int parallel : lines(p)) {
+                    if (intersection(parallel, l) == -1) {
+                        counter++;
+                    }
+                }
+                result.set(counter);
+            }
+        }
+        return result;
     }
 }
