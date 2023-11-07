@@ -236,6 +236,64 @@ public class GaloisField {
         return IntStream.range(0, n).boxed().flatMap(val -> permutations(n, val, bs, new int[n]));
     }
 
+    private int fromEuclideanCrd(int x, int y) {
+        return x * cardinality + y;
+    }
+
+    private int mulPoint(int point, int cff) {
+        int x = mul(x(point), cff);
+        int y = mul(y(point), cff);
+        return fromEuclideanCrd(x, y);
+    }
+
+    private int addPoints(int p1, int p2) {
+        return fromEuclideanCrd(add(x(p1), x(p2)), add(y(p1), y(p2)));
+    }
+
+    private int x(int point) {
+        return point / cardinality;
+    }
+
+    private int y(int point) {
+        return point % cardinality;
+    }
+
+    public BitSet[] generateLines() {
+        int v = cardinality * cardinality + cardinality + 1;
+        int[][] rays = Stream.concat(
+                Stream.of(elements().skip(1)
+                        .map(y -> fromEuclideanCrd(0, y)).toArray()),
+                elements().mapToObj(y -> elements().skip(1)
+                        .map(cf -> mulPoint(fromEuclideanCrd(1, y), cf)).toArray())).toArray(int[][]::new);
+        BitSet[] lines = new BitSet[v];
+        for (int i = 0; i < cardinality; i++) {
+            int start = fromEuclideanCrd(0, i);
+            for (int j = 0; j < cardinality; j++) {
+                int lineIdx = i * cardinality + j;
+                BitSet line = new BitSet();
+                line.set(start);
+                IntStream.of(rays[j + 1]).forEach(p -> line.set(addPoints(p, start)));
+                line.set(cardinality * cardinality + j);
+                lines[lineIdx] = line;
+            }
+        }
+        for (int i = 0; i < cardinality; i++) {
+            int lineIdx = cardinality * cardinality + i;
+            BitSet line = new BitSet();
+            int start = fromEuclideanCrd(i, 0);
+            line.set(start);
+            IntStream.of(rays[0]).forEach(p -> line.set(addPoints(p, start)));
+            line.set(cardinality * cardinality + cardinality);
+            lines[lineIdx] = line;
+        }
+        BitSet infinity = new BitSet();
+        for (int i = 0; i <= cardinality; i++) {
+            infinity.set(cardinality * cardinality + i);
+        }
+        lines[cardinality * cardinality + cardinality] = infinity;
+        return lines;
+    }
+
     private static Stream<int[]> permutations(int n, int val, BitSet available, int[] curr) {
         int[] nextCurr = curr.clone();
         int left = available.cardinality();

@@ -7,6 +7,7 @@ import java.util.BitSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -553,6 +554,46 @@ public class HyperbolicPlaneTest {
         testCorrectness(fp8, of(5), 20);
         assertEquals(of(15), fp8.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp8.hyperbolicIndex());
+    }
+
+    @Test
+    public void generateUnital() {
+        int q = 8;
+        int ord = q * q;
+        int v = ord * ord + ord + 1;
+        GaloisField fd = new GaloisField(ord);
+        HyperbolicPlane pl = new HyperbolicPlane(fd.generateLines());
+        assertEquals(v, pl.pointCount());
+        assertEquals(v, pl.lineCount());
+        BitSet unital = new BitSet();
+        for (int p : pl.points()) {
+            int[] hom = getHomogeneus(p, ord);
+            int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
+            if (val == 0) {
+                unital.set(p);
+            }
+        }
+        int[] pointArray = unital.stream().toArray();
+        BitSet[] lines = StreamSupport.stream(pl.lines().spliterator(), false).map(l -> pl.line(l).stream()
+                .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
+                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
+        HyperbolicPlane uni = new HyperbolicPlane(lines);
+        assertEquals(ord * q + 1, uni.pointCount());
+        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1), ord);
+        System.out.println(uni.hyperbolicIndex());
+    }
+
+    private int[] getHomogeneus(int p, int ord) {
+        int sqr = ord * ord;
+        if (p < sqr) {
+            return new int[]{p / ord, p % ord, 1};
+        }
+        p = p - sqr;
+        if (p < ord) {
+            return new int[]{1, p, 0};
+        } else {
+            return new int[]{1, 0, 0};
+        }
     }
 
     private static BitSet of(int... values) {
