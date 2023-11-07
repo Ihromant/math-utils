@@ -396,4 +396,22 @@ public class HyperbolicPlane {
         }
         return result;
     }
+
+    public BitSet cardSubPlanes() {
+        BitSet result = new BitSet();
+        for (int x : points()) {
+            for (int y : points()) {
+                if (x >= y) {
+                    continue;
+                }
+                for (int z : points()) {
+                    if (y >= z || collinear(x, y, z)) {
+                        continue;
+                    }
+                    result.set(hull(x, y, z).cardinality());
+                }
+            }
+        }
+        return result;
+    }
 }

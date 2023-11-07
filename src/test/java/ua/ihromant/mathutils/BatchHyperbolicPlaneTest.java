@@ -101,7 +101,7 @@ public class BatchHyperbolicPlaneTest {
         assertEquals(1777, planes.size());
         HyperbolicPlaneTest.testCorrectness(planes.get(0), of(5), 16);
         assertEquals(of(3), planes.get(0).hyperbolicIndex());
-        HyperbolicPlaneTest.checkPlane(planes.get(0), 65, 65);
+        HyperbolicPlaneTest.checkPlane(planes.get(0));
     }
 
     @Test
@@ -128,7 +128,7 @@ public class BatchHyperbolicPlaneTest {
         assertEquals(4466, planes.size());
         HyperbolicPlane plane = planes.get(1001);
         assertEquals(of(2), plane.hyperbolicIndex());
-        HyperbolicPlaneTest.checkPlane(plane, 28, 28);
+        HyperbolicPlaneTest.checkPlane(plane);
         HyperbolicPlaneTest.testCorrectness(plane, of(4), 9);
     }
 
