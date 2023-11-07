@@ -7,10 +7,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 import java.util.zip.ZipInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -26,34 +28,38 @@ public class BatchHyperbolicPlaneTest {
         try (InputStream is = getClass().getResourceAsStream("/inc/S2-" + k + "-" + v + ".inc.zip");
              ZipInputStream zis = getZis(is);
              InputStreamReader isr = new InputStreamReader(zis);
-             BufferedReader bf = new BufferedReader(isr)) {
-            String[] first = bf.readLine().trim().split(" ");
+             BufferedReader br = new BufferedReader(isr)) {
+            String[] first = br.readLine().trim().split(" ");
             assertEquals(Integer.parseInt(first[0]), v);
             int b = Integer.parseInt(first[1]);
             assertEquals(b, v * (v - 1) / k / (k - 1));
             List<HyperbolicPlane> result = new ArrayList<>();
             while (true) {
-                String next = bf.readLine();
+                String next = br.readLine();
                 if (next == null) {
                     zis.getNextEntry();
                     return result;
                 }
                 while (next.trim().isEmpty()) {
-                    next = bf.readLine();
+                    next = br.readLine();
                 }
-                BitSet[] lines = IntStream.range(0, b).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
-                for (int i = 0; i < v; i++) {
-                    char[] chars = next.trim().toCharArray();
-                    for (int j = 0; j < b; j++) {
-                        if (chars[j] == '1') {
-                            lines[j].set(i);
-                        }
-                    }
-                    next = bf.readLine();
-                }
-                result.add(new HyperbolicPlane(lines));
+                result.add(readPlane(v, b, next, br));
             }
         }
+    }
+
+    private HyperbolicPlane readPlane(int v, int b, String next, BufferedReader br) throws IOException {
+        BitSet[] lines = IntStream.range(0, b).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
+        for (int i = 0; i < v; i++) {
+            char[] chars = next.trim().toCharArray();
+            for (int j = 0; j < b; j++) {
+                if (chars[j] == '1') {
+                    lines[j].set(i);
+                }
+            }
+            next = br.readLine();
+        }
+        return new HyperbolicPlane(lines);
     }
 
     private static BitSet of(int... values) {
@@ -124,5 +130,39 @@ public class BatchHyperbolicPlaneTest {
         assertEquals(of(2), plane.hyperbolicIndex());
         HyperbolicPlaneTest.checkPlane(plane, 28, 28);
         HyperbolicPlaneTest.testCorrectness(plane, of(4), 9);
+    }
+
+    @Test
+    public void testProjectiveAndUnitals() throws IOException {
+        try (InputStream is = getClass().getResourceAsStream("/proj/pg216.uni");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            String[] first = br.readLine().trim().split(" ");
+            int v = Integer.parseInt(first[0]);
+            int b = Integer.parseInt(first[1]);
+            br.readLine();
+            String next = br.readLine();
+            HyperbolicPlane projective = readPlane(v, b, next, br);
+            HyperbolicPlaneTest.testCorrectness(projective, of(17), 17);
+            int ub = Integer.parseInt(br.readLine());
+            br.readLine();
+            while ((next = br.readLine()) != null) {
+                String[] numbers = next.split(" ");
+                assertEquals(ub, numbers.length);
+                BitSet points = Arrays.stream(numbers).mapToInt(Integer::parseInt).collect(BitSet::new, BitSet::set, BitSet::or);
+                BitSet[] lines = StreamSupport.stream(projective.lines().spliterator(), false).map(l -> {
+                    BitSet result = new BitSet();
+                    result.or(projective.line(l));
+                    result.and(points);
+                    return result;
+                }).filter(l -> l.cardinality() > 1).toArray(BitSet[]::new);
+                int[] pointArray = points.stream().toArray();
+                lines = Arrays.stream(lines).map(l -> l.stream()
+                        .map(p -> Arrays.binarySearch(pointArray, p)).collect(BitSet::new, BitSet::set, BitSet::or)).toArray(BitSet[]::new);
+                HyperbolicPlane p = new HyperbolicPlane(lines);
+                HyperbolicPlaneTest.testCorrectness(p, of(5), 16);
+                System.out.println(p.hyperbolicIndex());
+            }
+        }
     }
 }
