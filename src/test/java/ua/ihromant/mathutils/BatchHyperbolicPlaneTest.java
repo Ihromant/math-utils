@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -22,6 +23,42 @@ public class BatchHyperbolicPlaneTest {
         ZipInputStream zis = new ZipInputStream(Objects.requireNonNull(is));
         zis.getNextEntry();
         return zis;
+    }
+
+    private HyperbolicPlane readProjective(int order, int v, int batchSize, String name) throws IOException {
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name);
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            BitSet[] lines = new BitSet[v];
+            for (int i = 0; i < v; i++) {
+                BitSet bs = new BitSet();
+                for (int j = 0; j < batchSize; j++) {
+                    Arrays.stream(br.readLine().trim().split(" ")).mapToInt(Integer::parseInt).forEach(bs::set);
+                }
+                lines[i] = bs;
+            }
+            return new HyperbolicPlane(lines);
+        }
+    }
+
+    @Test
+    public void testProjectives1() throws IOException {
+        int order = 25;
+        File root = new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + order);
+        for (File f : Objects.requireNonNull(root.listFiles())) {
+            if ("s1.txt".equals(f.getName())) { // filter out desarg
+                continue;
+            }
+            int v = order * order + order + 1;
+            HyperbolicPlane p = readProjective(order, v, 2, f.getName());
+            HyperbolicPlaneTest.testCorrectness(p, of(order + 1), order + 1);
+            System.out.println(f.getName());
+            for (int i : p.lines()) {
+                if (checkPappus(p, i)) {
+                    System.out.println(i + " " + f.getName());
+                }
+            }
+        }
     }
 
     private List<HyperbolicPlane> readPlanes(int v, int k) throws IOException {
