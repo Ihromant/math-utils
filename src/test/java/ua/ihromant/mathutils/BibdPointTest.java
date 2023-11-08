@@ -13,6 +13,7 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -258,43 +259,50 @@ public class BibdPointTest {
     }
 
     private Stream<BitSet[]> allDifferenceSets(List<BitSet> diffs, int needed, BitSet[] curr, BitSet present) {
-        if (needed == 0) {
-            return Stream.<BitSet[]>of(curr);
-        }
-        return IntStream.range(0, diffs.size() - needed + 1).filter(idx -> !present.intersects(diffs.get(idx)))
-                .boxed().flatMap(idx -> {
-                    BitSet diff = diffs.get(idx);
-                    BitSet nextPresent = (BitSet) present.clone();
-                    nextPresent.or(diff);
-                    int size = curr.length;
-                    BitSet[] nextCurr = new BitSet[size + 1];
-                    System.arraycopy(curr, 0, nextCurr, 0, size);
-                    nextCurr[size] = diffs.get(idx);
-                    return allDifferenceSets(diffs.subList(idx + 1, diffs.size()), needed - 1,
-                            nextCurr, nextPresent);
-                });
+        return (curr.length == 0 ? IntStream.range(0, diffs.size() - needed + 1).boxed().parallel()
+                : IntStream.range(0, diffs.size() - needed + 1).boxed()).mapMulti((idx, sink) -> {
+            if (present.intersects(diffs.get(idx))) {
+                return;
+            }
+            int size = curr.length;
+            BitSet[] nextCurr = new BitSet[size + 1];
+            System.arraycopy(curr, 0, nextCurr, 0, size);
+            nextCurr[size] = diffs.get(idx);
+            if (needed == 1) {
+                sink.accept(nextCurr);
+                return;
+            }
+            BitSet diff = diffs.get(idx);
+            BitSet nextPresent = (BitSet) present.clone();
+            nextPresent.or(diff);
+            allDifferenceSets(diffs.subList(idx + 1, diffs.size()), needed - 1,
+                    nextCurr, nextPresent).forEach(sink);
+        });
     }
 
     @Test
-    public void findMutant1() throws IOException {
-        int v = 126;
-        int k = 6;
+    public void findMutant() throws IOException {
+        int v = 63;
+        int k = 3;
         long time = System.currentTimeMillis();
         Map<BitSet, BitSet> cycles = new HashMap<>();
         fillCycles(cycles, v, k, of(v / k));
         List<BitSet> diffs = new ArrayList<>(cycles.keySet());
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
-        List<BitSet[]> diffSets = allDifferenceSets(diffs, (v - k) / k / (k - 1), new BitSet[0], new BitSet()).toList();
-        System.out.println("Calculated difference sets, candidates size: " + diffSets.size() + ", time spent " + (System.currentTimeMillis() - time));
         File f = new File("/home/ihromant/workspace/math-utils/src/test/resources/diffSets", v + "-" + k + ".txt");
+        AtomicLong counter = new AtomicLong();
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             ps.println(v + " " + k);
-            diffSets.forEach(ds -> ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
-                    .collect(Collectors.joining(", ", "{", "}"))));
+            allDifferenceSets(diffs, (v - k) / k / (k - 1), new BitSet[0], new BitSet()).forEach(ds -> {
+                counter.incrementAndGet();
+                ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
+                        .collect(Collectors.joining(", ", "{", "}")));
+            });
         }
+        System.out.println("Calculated difference sets, candidates size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
     private static void fillCycles(Map<BitSet, BitSet> map, int variants, int size) {
