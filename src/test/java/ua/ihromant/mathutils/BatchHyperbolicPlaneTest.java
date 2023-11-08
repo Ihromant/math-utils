@@ -10,8 +10,11 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipInputStream;
@@ -167,6 +170,66 @@ public class BatchHyperbolicPlaneTest {
         assertEquals(of(2), plane.hyperbolicIndex());
         HyperbolicPlaneTest.checkPlane(plane);
         HyperbolicPlaneTest.testCorrectness(plane, of(4), 9);
+
+        String[] design = printDesign(planes.get(3429));
+        Arrays.stream(design).forEach(System.out::println);
+
+        for (int i = 2600; i < planes.size(); i++) {
+            HyperbolicPlane p1 = planes.get(i);
+            Set<BitSet> subaffines = new HashSet<>();
+            for (int t0 : p1.points()) {
+                for (int t1 : p1.points()) {
+                    if (t0 >= t1) {
+                        continue;
+                    }
+                    for (int t3 : p1.points()) {
+                        if (t1 >= t3 || p1.collinear(t0, t1, t3)) {
+                            continue;
+                        }
+                        for (int t2 : p1.points(p1.line(t0, t1))) {
+                            if (t2 == t0 || t2 == t1) {
+                                continue;
+                            }
+                            for (int t6 : p1.points(p1.line(t0, t3))) {
+                                if (t6 == t0 || t6 == t3) {
+                                    continue;
+                                }
+                                for (int t4 : p1.points(p1.line(t2, t6))) {
+                                    if (t2 == t4 || t6 == t4) {
+                                        continue;
+                                    }
+                                    for (int t8 : p1.points(p1.line(t0, t4))) {
+                                        if (t8 == t0 || t8 == t4 || !p1.collinear(t1, t3, t8)) {
+                                            continue;
+                                        }
+                                        for (int t7 : p1.points(p1.line(t6, t8))) {
+                                            if (t7 == t6 || t7 == t8 || !p1.collinear(t2, t3, t7) || !p1.collinear(t1, t4, t7)) {
+                                                continue;
+                                            }
+                                            for (int t5 : p1.points(p1.line(t2, t8))) {
+                                                if (t5 == t2 || t5 == t8 || !p1.collinear(t3, t4, t5) || !p1.collinear(t0, t5, t7) || !p1.collinear(t1, t5, t6)) {
+                                                    continue;
+                                                }
+                                                BitSet aff = of(t0, t1, t2, t3, t4, t5, t6, t7, t8);
+                                                if (subaffines.add(aff)) {
+                                                    System.out.println(i + " " + aff);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private String[] printDesign(HyperbolicPlane plane) {
+        return IntStream.range(0, plane.line(0).cardinality()).mapToObj(i -> StreamSupport.stream(plane.lines().spliterator(), false)
+                .map(plane::line).map(bs -> String.valueOf(Character.forDigit(bs.stream()
+                        .skip(i).findAny().orElseThrow(), 36))).collect(Collectors.joining())).toArray(String[]::new);
     }
 
     @Test
