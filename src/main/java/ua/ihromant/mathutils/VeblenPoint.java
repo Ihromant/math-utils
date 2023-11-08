@@ -10,22 +10,24 @@ public record VeblenPoint(String l, int cff) {
     private static final int COUNT = 91;
     private static final int SHIFT = 13;
 
-    private static final BitSet[] base = new BitSet[]{
-            Stream.of("A0", "A1", "A3", "A9", "B0", "C0", "D0", "E0", "F0", "G0")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or),
-            Stream.of("A0", "B1", "B8", "D3", "D11", "E2", "E5", "E6", "G7", "G9")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or),
-            Stream.of("A0", "C1", "C8", "E7", "E9", "F3", "F11", "G2", "G5", "G6")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or),
-            Stream.of("A0", "B7", "B9", "D1", "D8", "F2", "F5", "F6", "G3", "G11")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or),
-            Stream.of("A0", "B2", "B5", "B6", "C3", "C11", "E1", "E8", "F7", "F9")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or),
-            Stream.of("A0", "C7", "C9", "D2", "D5", "D6", "E3", "E11", "F1", "F8")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or),
-            Stream.of("A0", "B3", "B11", "C2", "C5", "C6", "D7", "D9", "G1", "G8")
-                    .mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or)
+    private static final String[][] baseRecords = {
+            {"A0", "A1", "A3", "A9", "B0", "C0", "D0", "E0", "F0", "G0"},
+            {"A0", "B1", "B8", "D3", "D11", "E2", "E5", "E6", "G7", "G9"},
+            {"A0", "C1", "C8", "E7", "E9", "F3", "F11", "G2", "G5", "G6"},
+            {"A0", "B7", "B9", "D1", "D8", "F2", "F5", "F6", "G3", "G11"},
+            {"A0", "B2", "B5", "B6", "C3", "C11", "E1", "E8", "F7", "F9"},
+            {"A0", "C7", "C9", "D2", "D5", "D6", "E3", "E11", "F1", "F8"},
+            {"A0", "B3", "B11", "C2", "C5", "C6", "D7", "D9", "G1", "G8"},
     };
+
+    private static final BitSet[] base = Arrays.stream(baseRecords).map(arr ->
+            Stream.of(arr).mapToInt(VeblenPoint::parse).collect(BitSet::new, BitSet::set, BitSet::or)).toArray(BitSet[]::new);
+
+    public static void main(String[] args) {
+        Arrays.stream(baseRecords).map(l -> Arrays.stream(l)
+                .map(el -> el.substring(1) + (char) ('\u2080' + el.charAt(0) - 'A')).collect(Collectors.joining(", ")))
+                .forEach(System.out::println);
+    }
 
     private static final BitSet[] LINES = IntStream.range(0, COUNT).mapToObj(idx -> base[idx / SHIFT].stream()
             .map(p -> next(p, idx % SHIFT)).collect(BitSet::new, BitSet::set, BitSet::or)).toArray(BitSet[]::new);
