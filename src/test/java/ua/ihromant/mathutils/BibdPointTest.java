@@ -2,11 +2,20 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class BibdPointTest {
     @Test
@@ -242,38 +251,76 @@ public class BibdPointTest {
         return sets;
     }
 
+    private static BitSet of(int... values) {
+        BitSet bs = new BitSet();
+        IntStream.of(values).forEach(bs::set);
+        return bs;
+    }
+
+    private Stream<BitSet[]> allDifferenceSets(List<BitSet> diffs, int needed, BitSet[] curr, BitSet present) {
+        if (needed == 0) {
+            return Stream.<BitSet[]>of(curr);
+        }
+        return IntStream.range(0, diffs.size() - needed + 1).filter(idx -> !present.intersects(diffs.get(idx)))
+                .boxed().flatMap(idx -> {
+                    BitSet diff = diffs.get(idx);
+                    BitSet nextPresent = (BitSet) present.clone();
+                    nextPresent.or(diff);
+                    int size = curr.length;
+                    BitSet[] nextCurr = new BitSet[size + 1];
+                    System.arraycopy(curr, 0, nextCurr, 0, size);
+                    nextCurr[size] = diffs.get(idx);
+                    return allDifferenceSets(diffs.subList(idx + 1, diffs.size()), needed - 1,
+                            nextCurr, nextPresent);
+                });
+    }
+
     @Test
-    public void findMutant() {
-        int size = 73;
-        Map<Quintuple, BitSet> quins = getQuintuples(size);
-        Map<Sextuple, BitSet> six = getSextuples(size);
-        List<Map.Entry<Quintuple, BitSet>> quinList = new ArrayList<>(quins.entrySet());
-        List<Map.Entry<Sextuple, BitSet>> sixList = new ArrayList<>(six.entrySet());
-        for (Map.Entry<Quintuple, BitSet> a1 : quinList) {
-            for (Map.Entry<Sextuple, BitSet> a2 : sixList) {
-                if (a1.getValue().intersects(a2.getValue())) {
-                    continue;
-                }
-                System.out.println(a1 + " " + a2);
-            }
+    public void findMutant1() throws IOException {
+        int v = 126;
+        int k = 6;
+        long time = System.currentTimeMillis();
+        Map<BitSet, BitSet> cycles = new HashMap<>();
+        fillCycles(cycles, v, k, of(v / k));
+        List<BitSet> diffs = new ArrayList<>(cycles.keySet());
+        System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+        List<BitSet[]> diffSets = allDifferenceSets(diffs, (v - k) / k / (k - 1), new BitSet[0], new BitSet()).toList();
+        System.out.println("Calculated difference sets, candidates size: " + diffSets.size() + ", time spent " + (System.currentTimeMillis() - time));
+        File f = new File("/home/ihromant/workspace/math-utils/src/test/resources/diffSets", v + "-" + k + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            ps.println(v + " " + k);
+            diffSets.forEach(ds -> ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
+                    .collect(Collectors.joining(", ", "{", "}"))));
         }
     }
 
-    private static Map<Tuple, BitSet> getTuples(int size) {
-        Map<Tuple, BitSet> sets = new HashMap<>();
-        for (int i = 1; i < size; i++) {
-            for (int j = i + 1; j < size; j++) {
-                BitSet bs = new BitSet();
-                bs.set(diff(0, i, size));
-                bs.set(diff(0, j, size));
-                bs.set(diff(i, j, size));
-                if (bs.cardinality() == 3) {
-                    sets.put(new Tuple(i, j), bs);
-                }
-            }
+    private static void fillCycles(Map<BitSet, BitSet> map, int variants, int size) {
+        fillCycles(map, variants, size, new BitSet());
+    }
+
+    private static void fillCycles(Map<BitSet, BitSet> map, int variants, int size, BitSet filter) {
+        fillCycles(map, variants, size - 1, filter, of(0), new BitSet());
+    }
+
+    private static void fillCycles(Map<BitSet, BitSet> map, int variants, int needed, BitSet filter, BitSet tuple, BitSet currDiff) {
+        if (needed == 0) {
+            map.putIfAbsent(currDiff, tuple);
+            return;
         }
-        System.out.println("Tuples for size " + size + " count " + sets.size());
-        return sets;
+        IntStream.range(tuple.length(), variants - needed + 1).forEach(idx -> {
+            BitSet addition = new BitSet(variants);
+            tuple.stream().forEach(set -> addition.set(diff(set, idx, variants)));
+            if (addition.cardinality() == tuple.cardinality() && !filter.intersects(addition) && !addition.intersects(currDiff)) {
+                BitSet nextTuple = (BitSet) tuple.clone();
+                nextTuple.set(idx);
+                BitSet nextDiff = (BitSet) currDiff.clone();
+                nextDiff.or(addition);
+                fillCycles(map, variants, needed - 1, filter, nextTuple, nextDiff);
+            }
+        });
     }
 
     private static Map<Sextuple, BitSet> getSextuples(int size) {
