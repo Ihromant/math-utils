@@ -405,7 +405,7 @@ public class HyperbolicPlane {
                     continue;
                 }
                 for (int z : points()) {
-                    if (y >= z || collinear(x, y, z)) {
+                    if (y >= z || line(x, y) == line(y, z)) {
                         continue;
                     }
                     result.set(hull(x, y, z).cardinality());
