@@ -32,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BibdFinderTest {
     @Test
     public void testDifferenceSets1() throws IOException {
-        try (InputStream is = getClass().getResourceAsStream("/diffSets/55-3.txt");
+        try (InputStream is = getClass().getResourceAsStream("/diffSets/73-4.txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
@@ -42,17 +42,17 @@ public class BibdFinderTest {
             int counter = 0;
             while ((line = br.readLine()) != null) {
                 counter++;
-//                line = line.replace("{{", "");
-//                line = line.replace("}}", "");
-//                String[] arrays = line.replace("{{", "").replace("}}", "").split("\\}, \\{");
-//                int[][] diffSet = Stream.concat(v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
-//                        Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
-//                HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
-//                if (!planes.containsKey(p.cardSubPlanes())) {
-//                    planes.putIfAbsent(p.cardSubPlanes(), line);
-//                    System.out.println(p.cardSubPlanes() + " " + line);
-//                }
-                //HyperbolicPlaneTest.testCorrectness(p, of(k), (v - 1) / (k - 1));
+                line = line.replace("{{", "");
+                line = line.replace("}}", "");
+                String[] arrays = line.replace("{{", "").replace("}}", "").split("\\}, \\{");
+                int[][] diffSet = Stream.concat(v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
+                        Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
+                HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
+                if (!planes.containsKey(p.cardSubPlanes())) {
+                    planes.putIfAbsent(p.cardSubPlanes(), line);
+                    System.out.println(p.cardSubPlanes() + " " + line);
+                }
+                HyperbolicPlaneTest.testCorrectness(p, of(k), (v - 1) / (k - 1));
             }
             System.out.println(counter);
         }
@@ -90,7 +90,7 @@ public class BibdFinderTest {
 
     @Test
     public void generate() throws IOException {
-        generateDiffSets(13, 3);
+        generateDiffSets(45, 5);
     }
 
     private static BitSet of(int... values) {
