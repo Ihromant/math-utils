@@ -21,6 +21,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -31,30 +34,43 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BibdFinderTest {
     @Test
-    public void testDifferenceSets1() throws IOException {
-        try (InputStream is = getClass().getResourceAsStream("/diffSets/73-4.txt");
+    public void testDifferenceSets1() throws IOException, InterruptedException {
+        try (InputStream is = getClass().getResourceAsStream("/diffSets/63-3f.txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
             int v = Integer.parseInt(line.split(" ")[0]);
             int k = Integer.parseInt(line.split(" ")[1]);
-            Map<BitSet, String> planes = new HashMap<>();
-            int counter = 0;
+            Map<BitSet, String> planes = new ConcurrentHashMap<>();
+            ExecutorService service = Executors.newFixedThreadPool(12);
+            AtomicLong counter = new AtomicLong();
+            AtomicLong waiter = new AtomicLong();
+            waiter.incrementAndGet();
+            long time = System.currentTimeMillis();
             while ((line = br.readLine()) != null) {
-                counter++;
-                line = line.replace("{{", "");
-                line = line.replace("}}", "");
-                String[] arrays = line.replace("{{", "").replace("}}", "").split("\\}, \\{");
-                int[][] diffSet = Stream.concat(v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
-                        Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
-                HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
-                if (!planes.containsKey(p.cardSubPlanes())) {
-                    planes.putIfAbsent(p.cardSubPlanes(), line);
-                    System.out.println(p.cardSubPlanes() + " " + line);
-                }
-                HyperbolicPlaneTest.testCorrectness(p, of(k), (v - 1) / (k - 1));
+                String cut = line.replace("{{", "").replace("}}", "");
+                waiter.incrementAndGet();
+                service.execute(() -> {
+                    String[] arrays = cut.split("\\}, \\{");
+                    int[][] diffSet = Stream.concat(v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
+                            Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
+                    HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
+                    BitSet subPlanes = p.cardSubPlanes();
+                    if (planes.putIfAbsent(subPlanes, cut) == null) {
+                        System.out.println(subPlanes + " " + cut);
+                    }
+                    long cnt = counter.incrementAndGet();
+                    if (cnt % 1000 == 0) {
+                        System.out.println(cnt);
+                    }
+                    if (waiter.decrementAndGet() == 0) {
+                        service.shutdown();
+                    }
+                });
             }
-            System.out.println(counter);
+            waiter.decrementAndGet();
+            boolean res = service.awaitTermination(1, TimeUnit.DAYS);
+            System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
         }
     }
 
@@ -90,7 +106,7 @@ public class BibdFinderTest {
 
     @Test
     public void generate() throws IOException {
-        generateDiffSets(45, 5);
+        generateDiffSets(21, 5);
     }
 
     private static BitSet of(int... values) {
