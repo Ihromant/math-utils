@@ -36,8 +36,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BibdFinderTest {
     @Test
-    public void testDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "63-3f.txt"));
+    public void testDifferenceSets1() throws IOException, InterruptedException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "52-4.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              ExecutorService service = Executors.newFixedThreadPool(12)) {
@@ -61,10 +61,7 @@ public class BibdFinderTest {
                         int[][] ds = IntStream.range(0, diffSet.length)
                                 .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
                         HyperbolicPlane p = new HyperbolicPlane(v, ds);
-                        BitSet subPlanes = p.cardSubPlanes();
-                        if (planes.putIfAbsent(subPlanes, cut) == null) {
-                            System.out.println(subPlanes + " " + Arrays.deepToString(ds));
-                        }
+                        checkHypIndex(p, planes, cut, ds);
                     });
 
                     long cnt = counter.incrementAndGet();
@@ -79,6 +76,20 @@ public class BibdFinderTest {
             waiter.decrementAndGet();
             boolean res = service.awaitTermination(1, TimeUnit.DAYS);
             System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
+        }
+    }
+
+    private static void checkSubPlanes(HyperbolicPlane p, Map<BitSet, String> planes, String cut, int[][] ds) {
+        BitSet subPlanes = p.cardSubPlanes();
+        if (planes.putIfAbsent(subPlanes, cut) == null) {
+            System.out.println(subPlanes + " " + Arrays.deepToString(ds));
+        }
+    }
+
+    private static void checkHypIndex(HyperbolicPlane p, Map<BitSet, String> planes, String cut, int[][] ds) {
+        BitSet index = p.hyperbolicIndex();
+        if (planes.putIfAbsent(index, cut) == null) {
+            System.out.println(index + " " + Arrays.deepToString(ds));
         }
     }
 

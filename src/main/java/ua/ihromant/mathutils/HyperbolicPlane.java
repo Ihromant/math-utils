@@ -343,6 +343,7 @@ public class HyperbolicPlane {
     }
 
     public BitSet hyperbolicIndex() {
+        int maximum = lines[0].cardinality() - 1;
         BitSet result = new BitSet();
         for (int o : points()) {
             for (int x : points()) {
@@ -371,6 +372,9 @@ public class HyperbolicPlane {
                         }
                         result.set(counter);
                     }
+                }
+                if (result.cardinality() == maximum) {
+                    return result;
                 }
             }
         }
