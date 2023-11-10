@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -14,7 +15,7 @@ public class GaloisField {
     private final int[] irreducible;
     private final int[][] additionTable;
     private final int[][] multiplicationTable;
-    private final int[] mulInverces;
+    private final int[] mulInverses;
 
     public GaloisField(int base) {
         this.cardinality = base;
@@ -28,7 +29,7 @@ public class GaloisField {
                 .mapToObj(this::toPolynomial).filter(this::irreducible).findAny().orElseThrow();
         this.additionTable = new int[base][base];
         this.multiplicationTable = new int[base][base];
-        this.mulInverces = new int[base];
+        this.mulInverses = new int[base];
         for (int i = 0; i < base; i++) {
             for (int j = i; j < base; j++) {
                 int sum;
@@ -49,7 +50,7 @@ public class GaloisField {
             }
             if (i != 0) {
                 int ii = i;
-                mulInverces[i] = IntStream.range(0, cardinality).filter(j -> multiplicationTable[ii][j] == 1).findAny().orElseThrow();
+                mulInverses[i] = IntStream.range(0, cardinality).filter(j -> multiplicationTable[ii][j] == 1).findAny().orElseThrow();
             }
         }
     }
@@ -211,7 +212,7 @@ public class GaloisField {
         if (a == 0) {
             throw new IllegalArgumentException();
         }
-        return mulInverces[a];
+        return mulInverses[a];
     }
 
     public int evalPolynomial(int[] poly, int number) {
@@ -228,12 +229,6 @@ public class GaloisField {
 
     public IntStream oneCubeRoots() {
         return IntStream.range(2, cardinality).filter(i -> power(i, 3) == 1);
-    }
-
-    public static Stream<int[]> permutations(int n) {
-        BitSet bs = new BitSet();
-        bs.set(0, n);
-        return IntStream.range(0, n).boxed().flatMap(val -> permutations(n, val, bs, new int[n]));
     }
 
     private int fromEuclideanCrd(int x, int y) {
@@ -294,15 +289,47 @@ public class GaloisField {
         return lines;
     }
 
-    private static Stream<int[]> permutations(int n, int val, BitSet available, int[] curr) {
-        int[] nextCurr = curr.clone();
-        int left = available.cardinality();
-        nextCurr[n - left] = val;
-        if (left == 1) {
-            return Stream.of(nextCurr);
+    public static Stream<int[]> permutations(int[] base) {
+        int cnt = base.length;
+        if (cnt < 2) {
+            return Stream.of(base);
         }
-        BitSet nextAvailable = (BitSet) available.clone();
-        nextAvailable.set(val, false);
-        return nextAvailable.stream().boxed().flatMap(nVal -> permutations(n, nVal, nextAvailable, nextCurr));
+        return Stream.iterate(base, Objects::nonNull, GaloisField::nextPermutation);
+    }
+
+    public static int[] nextPermutation(int[] prev) {
+        int[] next = prev.clone();
+        int last = next.length - 2;
+        while (last >= 0) {
+            if (next[last] < next[last + 1]) {
+                break;
+            }
+            last--;
+        }
+        if (last < 0) {
+            return null;
+        }
+
+        int nextGreater = next.length - 1;
+        for (int i = next.length - 1; i > last; i--) {
+            if (next[i] > next[last]) {
+                nextGreater = i;
+                break;
+            }
+        }
+
+        int temp = next[nextGreater];
+        next[nextGreater] = next[last];
+        next[last] = temp;
+
+        int left = last + 1;
+        int right = next.length - 1;
+        while (left < right) {
+            int temp1 = next[left];
+            next[left++] = next[right];
+            next[right--] = temp1;
+        }
+
+        return next;
     }
 }

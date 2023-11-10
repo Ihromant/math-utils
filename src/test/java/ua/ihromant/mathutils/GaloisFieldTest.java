@@ -155,8 +155,9 @@ public class GaloisFieldTest {
 
     @Test
     public void testPermutations() {
-        assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}, {1, 0, 2}, {1, 2, 0}, {2, 0, 1}, {2, 1, 0}}, GaloisField.permutations(3).toArray(int[][]::new));
-        assertEquals(120, GaloisField.permutations(5).count());
+        assertArrayEquals(new int[][]{{0, 2, 4}, {0, 4, 2}, {2, 0, 4}, {2, 4, 0}, {4, 0, 2}, {4, 2, 0}}, GaloisField.permutations(new int[]{0, 2, 4}).toArray(int[][]::new));
+        assertEquals(120, GaloisField.permutations(IntStream.range(0, 5).toArray()).count());
+        assertEquals(39916800, GaloisField.permutations(IntStream.range(0, 11).toArray()).count());
     }
 
     @Test
