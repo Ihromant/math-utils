@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BibdFinderTest {
     @Test
     public void testDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "3-15.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "15-3.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              ExecutorService service = Executors.newFixedThreadPool(12)) {
@@ -55,12 +55,18 @@ public class BibdFinderTest {
                 service.execute(() -> {
                     String[] arrays = cut.split("\\}, \\{");
                     int[][] diffSet = Stream.concat(v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
-                            Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
-                    HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
-                    BitSet subPlanes = p.cardSubPlanes();
-                    if (planes.putIfAbsent(subPlanes, cut) == null) {
-                        System.out.println(subPlanes + " " + cut);
-                    }
+                            Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                                    .toArray())).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                    IntStream.range(0, 1 << (diffSet.length - 1)).forEach(comb -> {
+                        int[][] ds = IntStream.range(0, diffSet.length)
+                                .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
+                        HyperbolicPlane p = new HyperbolicPlane(v, ds);
+                        BitSet subPlanes = p.cardSubPlanes();
+                        if (planes.putIfAbsent(subPlanes, cut) == null) {
+                            System.out.println(subPlanes + " " + Arrays.deepToString(ds));
+                        }
+                    });
+
                     long cnt = counter.incrementAndGet();
                     if (cnt % 1000 == 0) {
                         System.out.println(cnt);
@@ -175,7 +181,7 @@ public class BibdFinderTest {
 
     private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Map<BitSet, BitSet> cycles, boolean multiple) {
         if (multiple) {
-            IntStream.range(0, 1 << ds.length - 1).forEach(comb -> ps.println(IntStream.range(0, ds.length)
+            IntStream.range(0, 1 << (ds.length - 1)).forEach(comb -> ps.println(IntStream.range(0, ds.length)
                     .mapToObj(i -> ((1 << i) & comb) == 0 ? cycles.get(ds[i]) : mirrorTuple(cycles.get(ds[i])))
                     .map(BitSet::toString).collect(Collectors.joining(", ", "{", "}"))));
         } else {
@@ -321,6 +327,11 @@ public class BibdFinderTest {
         return tuple.stream().map(i -> max - i).collect(BitSet::new, BitSet::set, BitSet::or);
     }
 
+    private static int[] mirrorTuple(int[] tuple) {
+        int max = tuple[tuple.length - 1];
+        return IntStream.range(0, tuple.length).map(i -> max - tuple[tuple.length - i - 1]).toArray();
+    }
+
     private static BitSet minimalTuple(BitSet tuple, int v) {
         int[] arr = tuple.stream().toArray();
         int l = arr.length;
@@ -331,6 +342,19 @@ public class BibdFinderTest {
         int minIdx = IntStream.range(0, l).boxed().max(Comparator.comparing(i -> diffs[i])).orElseThrow();
         int val = arr[minIdx];
         return tuple.stream().map(i -> i >= val ? i - val : v + i - val).collect(BitSet::new, BitSet::set, BitSet::or);
+    }
+
+    private static int[] minimalTuple(int[] arr, int v) {
+        int l = arr.length;
+        int[] diffs = new int[l];
+        for (int i = 0; i < l; i++) {
+            diffs[i] = diff(arr[i], arr[(l + i - 1) % l], v);
+        }
+        int minIdx = IntStream.range(0, l).boxed().max(Comparator.comparing(i -> diffs[i])).orElseThrow();
+        int val = arr[minIdx];
+        int[] res = Arrays.stream(arr).map(i -> i >= val ? i - val : v + i - val).toArray();
+        Arrays.sort(res);
+        return res;
     }
 
     private static BitSet diffFromTuple(BitSet tuple, int v) {
