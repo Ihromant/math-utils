@@ -57,7 +57,7 @@ public class HyperbolicPlaneTest {
         assertEquals(35, p.lineCount());
         testCorrectness(p, of(3), 7);
         assertEquals(of(0, 0), p.hyperbolicIndex());
-        assertEquals(of(7), p.cardSubPlanes()); // it's model of 3-dimensional projective space
+        assertEquals(of(7), p.cardSubPlanes(true)); // it's model of 3-dimensional projective space
         checkSpace(p, p.pointCount(), p.pointCount());
 
         HyperbolicPlane p3 = new HyperbolicPlane("00000001111112222223333444455556666",
@@ -67,13 +67,13 @@ public class HyperbolicPlaneTest {
         assertEquals(35, p3.lineCount());
         testCorrectness(p3, of(3), 7);
         assertEquals(of(0, 1), p3.hyperbolicIndex());
-        assertEquals(of(7, p.pointCount()), p3.cardSubPlanes()); // it's plane with no exchange property
+        assertEquals(of(7, p.pointCount()), p3.cardSubPlanes(true)); // it's plane with no exchange property
 
         HyperbolicPlane p1 = new HyperbolicPlane(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
                 new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
         testCorrectness(p1, of(3), 15);
         assertEquals(of(0), p1.hyperbolicIndex());
-        assertEquals(of(7), p1.cardSubPlanes()); // 4-dimensional projective space
+        assertEquals(of(7), p1.cardSubPlanes(true)); // 4-dimensional projective space
         checkSpace(p1, 15, 15); // 4-dimensional projective space
     }
 
@@ -663,6 +663,6 @@ public class HyperbolicPlaneTest {
     }
 
     public static void checkPlane(HyperbolicPlane p) {
-        assertEquals(of(p.pointCount()), p.cardSubPlanes());
+        assertEquals(of(p.pointCount()), p.cardSubPlanes(true));
     }
 }

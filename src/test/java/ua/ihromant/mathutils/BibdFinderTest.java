@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BibdFinderTest {
     @Test
     public void testDifferenceSets1() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "52-4.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "73-4.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              ExecutorService service = Executors.newFixedThreadPool(12)) {
             String line = br.readLine();
             int v = Integer.parseInt(line.split(" ")[0]);
             int k = Integer.parseInt(line.split(" ")[1]);
-            Map<BitSet, String> planes = new ConcurrentHashMap<>();
+            Set<BitSet> planes = ConcurrentHashMap.newKeySet();
             AtomicLong counter = new AtomicLong();
             AtomicLong waiter = new AtomicLong();
             waiter.incrementAndGet();
@@ -57,7 +57,7 @@ public class BibdFinderTest {
                     int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
                                     .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty())
                             .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
-                    IntStream.range(0, 1 << (diffSet.length - ((v % k == 0) ? 2 : 1))).forEach(comb -> {
+                    IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                         int[][] ds = IntStream.range(0, diffSet.length)
                                 .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
                         HyperbolicPlane p = new HyperbolicPlane(v, ds);
@@ -79,16 +79,16 @@ public class BibdFinderTest {
         }
     }
 
-    private static void checkSubPlanes(HyperbolicPlane p, Map<BitSet, String> planes, String cut, int[][] ds) {
-        BitSet subPlanes = p.cardSubPlanes();
-        if (planes.putIfAbsent(subPlanes, cut) == null) {
+    private static void checkSubPlanes(HyperbolicPlane p, Set<BitSet> unique, String cut, int[][] ds) {
+        BitSet subPlanes = p.cardSubPlanes(false);
+        if (unique.add(subPlanes)) {
             System.out.println(subPlanes + " " + Arrays.deepToString(ds));
         }
     }
 
-    private static void checkHypIndex(HyperbolicPlane p, Map<BitSet, String> planes, String cut, int[][] ds) {
+    private static void checkHypIndex(HyperbolicPlane p, Set<BitSet> unique, String cut, int[][] ds) {
         BitSet index = p.hyperbolicIndex();
-        if (planes.putIfAbsent(index, cut) == null) {
+        if (unique.add(index)) {
             System.out.println(index + " " + Arrays.deepToString(ds));
         }
     }
@@ -160,8 +160,8 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generate() throws IOException {
-        generateDiffSets(15, 3);
+    public void generate2() throws IOException {
+        generateDiffSets(85, 5);
     }
 
     private static void generateDiffSets(int v, int k) throws IOException {
