@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BibdFinderTest {
     @Test
     public void testDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "15-3.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "63-3f.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              ExecutorService service = Executors.newFixedThreadPool(12)) {
@@ -54,10 +54,10 @@ public class BibdFinderTest {
                 waiter.incrementAndGet();
                 service.execute(() -> {
                     String[] arrays = cut.split("\\}, \\{");
-                    int[][] diffSet = Stream.concat(v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
-                            Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                                    .toArray())).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
-                    IntStream.range(0, 1 << (diffSet.length - 1)).forEach(comb -> {
+                    int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                                    .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty())
+                            .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                    IntStream.range(0, 1 << (diffSet.length - ((v % k == 0) ? 2 : 1))).forEach(comb -> {
                         int[][] ds = IntStream.range(0, diffSet.length)
                                 .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
                         HyperbolicPlane p = new HyperbolicPlane(v, ds);
