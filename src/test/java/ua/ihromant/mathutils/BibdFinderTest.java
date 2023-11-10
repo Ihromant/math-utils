@@ -159,8 +159,8 @@ public class BibdFinderTest {
         Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
         calcCycles(v, k, v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or)
                 : new BitSet()).forEach(e -> cycles.putIfAbsent(e.getKey(), e.getValue()));
-        List<BitSet> diffs = new ArrayList<>(cycles.keySet());
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
+        List<BitSet> diffs = new ArrayList<>(cycles.keySet());
         time = System.currentTimeMillis();
         File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt");
         AtomicLong counter = new AtomicLong();
@@ -170,7 +170,7 @@ public class BibdFinderTest {
             ps.println(v + " " + k);
             allDifferenceSets(diffs, v / k / (k - 1), new BitSet[0], new BitSet()).forEach(ds -> {
                 counter.incrementAndGet();
-                printDifferenceSet(ds, ps, cycles, false); // set multiple to true if you wish to print all results
+                printDifferenceSet(ds, ps, cycles, v, false); // set multiple to true if you wish to print all results
                 if (k > 4) {
                     ps.flush();
                 }
@@ -179,10 +179,11 @@ public class BibdFinderTest {
         System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
-    private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Map<BitSet, BitSet> cycles, boolean multiple) {
+    private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Map<BitSet, BitSet> cycles, int v, boolean multiple) {
         if (multiple) {
             IntStream.range(0, 1 << (ds.length - 1)).forEach(comb -> ps.println(IntStream.range(0, ds.length)
-                    .mapToObj(i -> ((1 << i) & comb) == 0 ? cycles.get(ds[i]) : mirrorTuple(cycles.get(ds[i])))
+                    .mapToObj(i -> ((1 << i) & comb) == 0 ? minimalTuple(cycles.get(ds[i]), v)
+                            : mirrorTuple(minimalTuple(cycles.get(ds[i]), v)))
                     .map(BitSet::toString).collect(Collectors.joining(", ", "{", "}"))));
         } else {
             ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
@@ -195,6 +196,9 @@ public class BibdFinderTest {
         int diffSize = diffs.size();
         return (currSize == 0 ? IntStream.range(0, diffSize - needed + 1).boxed().parallel()
                 : IntStream.range(0, diffSize - needed + 1).boxed()).mapMulti((idx, sink) -> {
+            if (currSize == 0 && idx == Integer.highestOneBit(idx)) {
+                System.out.println(idx);
+            }
             BitSet diff = diffs.get(idx);
             if (present.intersects(diff)) {
                 return;
