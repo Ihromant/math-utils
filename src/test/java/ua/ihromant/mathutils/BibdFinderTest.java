@@ -123,8 +123,8 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generate() throws IOException {
-        generateDiffSets(85, 4);
+    public void generate2() throws IOException {
+        generateDiffSets(31, 3);
     }
 
     private static void generateDiffSets(int v, int k) throws IOException {
@@ -141,7 +141,7 @@ public class BibdFinderTest {
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            ps.println(v + " " + k);
+            ps.println(v + " " + k + " " + cycles.size());
             allDifferenceSets(diffs, v / k / (k - 1), new BitSet[0], new BitSet()).forEach(ds -> {
                 counter.incrementAndGet();
                 printDifferenceSet(ds, ps, cycles, v, false); // set multiple to true if you wish to print all results
@@ -197,6 +197,25 @@ public class BibdFinderTest {
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, BitSet filter) {
         return calcCycles(variants, size - 1, filter, of(0), new BitSet());
+    }
+
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(int variants, int needed, BitSet filter) {
+        int expectedCard = needed * (needed - 1) / 2;
+        return GaloisField.choices(variants, needed).mapMulti((choice, sink) -> {
+            if (!isMinimal(choice, variants)) {
+                return;
+            }
+            BitSet differences = new BitSet();
+            for (int i = 0; i < needed; i++) {
+                for (int j = i + 1; j < needed; j++) {
+                    differences.set(diff(choice[i], choice[j], variants));
+                }
+            }
+            if (differences.cardinality() != expectedCard || filter.intersects(differences)) {
+                return;
+            }
+            sink.accept(Map.entry(differences, of(choice)));
+        });
     }
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int needed, BitSet filter, BitSet tuple, BitSet currDiff) {
@@ -320,6 +339,17 @@ public class BibdFinderTest {
         int minIdx = IntStream.range(0, l).boxed().max(Comparator.comparing(i -> diffs[i])).orElseThrow();
         int val = arr[minIdx];
         return tuple.stream().map(i -> i >= val ? i - val : v + i - val).collect(BitSet::new, BitSet::set, BitSet::or);
+    }
+
+    private static boolean isMinimal(int[] tuple, int v) {
+        int l = tuple.length;
+        int last = v - tuple[l - 1];
+        for (int i = 1; i < l; i++) {
+            if (tuple[i] - tuple[i - 1] >= last) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static int[] minimalTuple(int[] arr, int v) {
