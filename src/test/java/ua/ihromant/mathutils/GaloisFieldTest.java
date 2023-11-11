@@ -161,6 +161,13 @@ public class GaloisFieldTest {
     }
 
     @Test
+    public void testChoices() {
+        assertArrayEquals(new int[][]{{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}}, GaloisField.choices(4, 2).toArray(int[][]::new));
+        assertEquals(35, GaloisField.choices(7, 4).count());
+        assertEquals(126, GaloisField.choices(9, 5).count());
+    }
+
+    @Test
     public void testDistinctPermutations() {
         int[] diffSet = new int[]{3, 6, 7, 12, 14};
         HyperbolicPlane plane = new HyperbolicPlane(new int[][]{diffSet});

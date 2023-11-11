@@ -332,4 +332,32 @@ public class GaloisField {
 
         return next;
     }
+
+    public static Stream<int[]> choices(int n, int k) {
+        return Stream.iterate(IntStream.range(0, k).toArray(), Objects::nonNull, prev -> nextChoice(n, prev));
+    }
+
+    public static int[] nextChoice(int cap, int[] prev) {
+        int[] next = prev.clone();
+        int last = next.length - 1;
+        int max = cap;
+        while (last >= 0) {
+            if (max - next[last] != 1) {
+                break;
+            }
+            max = next[last];
+            last--;
+        }
+        if (last < 0) {
+            return null;
+        }
+
+        max = next[last];
+        int cnt = next.length - last;
+        for (int i = 0; i < cnt; i++) {
+            next[last + i] = max + i + 1;
+        }
+
+        return next;
+    }
 }

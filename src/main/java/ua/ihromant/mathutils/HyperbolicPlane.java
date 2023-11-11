@@ -250,7 +250,7 @@ public class HyperbolicPlane {
     }
 
     public BitSet hyperbolicIndex() {
-        int maximum = lines[0].cardinality() - 1;
+        int maximum = lines[0].cardinality() - 1; // TODO it should be maximum of lines lengths
         BitSet result = new BitSet();
         for (int o : points()) {
             for (int x : points()) {
@@ -279,9 +279,9 @@ public class HyperbolicPlane {
                         }
                         result.set(counter);
                     }
-                }
-                if (result.cardinality() == maximum) {
-                    return result;
+                    if (result.cardinality() == maximum) {
+                        return result;
+                    }
                 }
             }
         }
@@ -319,11 +319,12 @@ public class HyperbolicPlane {
                     if (y >= z || line(x, y) == line(y, z)) {
                         continue;
                     }
-                    result.set(hull(x, y, z).cardinality());
+                    int card = hull(x, y, z).cardinality();
+                    result.set(card);
+                    if (!full && card == pointCount) {
+                        return result; // it's either plane or has no exchange property
+                    }
                 }
-            }
-            if (!full && result.get(pointCount)) {
-                return result; // it's either plane or has no exchange property
             }
         }
         return result;

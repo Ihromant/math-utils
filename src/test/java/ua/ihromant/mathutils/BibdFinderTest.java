@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -36,8 +35,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BibdFinderTest {
     @Test
-    public void testDifferenceSets1() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "73-4.txt"));
+    public void testDifferenceSets2() throws IOException, InterruptedException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-85.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              ExecutorService service = Executors.newFixedThreadPool(12)) {
@@ -124,44 +123,8 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generateOldFashioned() {
-        int v = 21;
-        Map<BitSet, BitSet> diffToPair = new HashMap<>();
-        BitSet ignore = of(0, v / 3, 2 * v / 3);
-        for (int i = 0; i < v; i++) {
-            for (int j = 0; j < v; j++) {
-                BitSet diff = new BitSet();
-                diff.set(diff(0, i, v));
-                diff.set(diff(0, j, v));
-                diff.set(diff(i, j, v));
-                if (diff.cardinality() == 3 && !ignore.intersects(diff)) {
-                    diffToPair.putIfAbsent(diff, of(i, j));
-                }
-            }
-        }
-        List<BitSet> diffs = new ArrayList<>(diffToPair.keySet());
-        for (int i = 0; i < diffs.size(); i++) {
-            BitSet first = diffs.get(i);
-            for (int j = i + 1; j < diffs.size(); j++) {
-                BitSet second = diffs.get(j);
-                if (first.intersects(second)) {
-                    continue;
-                }
-                for (int k = j + 1; k < diffs.size(); k++) {
-                    BitSet third = diffs.get(k);
-                    if (third.intersects(first) || third.intersects(second)) {
-                        continue;
-                    }
-                    System.out.println(first + " " + diffToPair.get(first) + " " + second + " "
-                            + diffToPair.get(second) + " " + third + " " + diffToPair.get(third));
-                }
-            }
-        }
-    }
-
-    @Test
-    public void generate2() throws IOException {
-        generateDiffSets(85, 5);
+    public void generate() throws IOException {
+        generateDiffSets(85, 4);
     }
 
     private static void generateDiffSets(int v, int k) throws IOException {
