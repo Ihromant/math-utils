@@ -112,7 +112,7 @@ public class BibdFinderTest {
                                 .map(j -> diff(i, j, v))).collect(BitSet::new, BitSet::set, BitSet::or))
                         .collect(Collectors.toCollection(LinkedHashSet::new));
                 assertTrue(diffs.add(difference));
-                BitSet filter = v % k != 0 ? new BitSet() : IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or);
+                BitSet filter = v % k != 0 ? new BitSet(0) : IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or);
                 BitSet expected = IntStream.rangeClosed(1, v / 2).filter(i -> !filter.get(i)).collect(BitSet::new, BitSet::set, BitSet::or);
                 assertTrue(difference.stream().allMatch(bs -> bs.stream().allMatch(i -> expected.get(i) && !filter.get(i))));
                 counter++;
@@ -124,19 +124,50 @@ public class BibdFinderTest {
 
     @Test
     public void generate2() throws IOException {
-        generateDiffSets(52, 4);
+        generateDiffSets(175, 7);
     }
+
+    private static void printDifferencesToFile(int v, int k) throws IOException {
+        System.out.println("Printing for " + v + " " + k);
+        long time = System.currentTimeMillis();
+        Set<BitSet> cycles = ConcurrentHashMap.newKeySet();
+        BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
+        try (FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/diffs", k + "-" + v + "diffs.txt"));
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            AtomicLong counter = new AtomicLong();
+            ps.println(v + " " + k);
+            calcDistinctDifferences(v, k, filter).filter(cycles::add).forEach(diff -> {
+                ps.println(diff);
+                long c = counter.incrementAndGet();
+                if (c % 1000_000 == 0) {
+                    System.out.println(c);
+                }
+            });
+        }
+        System.out.println("Printed possible differences: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
+    }
+
+    private static final int CONST = (1 << 20) - 1;
 
     private static void generateDiffSets(int v, int k) throws IOException {
         System.out.println("Generating for " + v + " " + k);
         long time = System.currentTimeMillis();
         Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
-        BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet();
-        calcCyclesAlt(v, k, filter).forEach(e -> cycles.putIfAbsent(e.getKey(), e.getValue()));
+        AtomicLong counter = new AtomicLong();
+        BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
+        calcCyclesAlt(v, k, filter).forEach(e -> {
+            if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
+                long c = counter.incrementAndGet();
+                if ((c & CONST) != 0) {
+                    System.out.println(c);
+                }
+            }
+        });
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
+        counter.set(0);
         File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt");
-        AtomicLong counter = new AtomicLong();
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
@@ -144,8 +175,11 @@ public class BibdFinderTest {
             int needed = v / k / (k - 1);
             allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
             //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
-                counter.incrementAndGet();
+                long c = counter.incrementAndGet();
                 printDifferenceSet(ds, ps, cycles, v, false); // set multiple to true if you wish to print all results
+                if ((c & CONST) != 0) {
+                    System.out.println(c);
+                }
                 if (k > 4) {
                     ps.flush();
                 }
@@ -171,9 +205,10 @@ public class BibdFinderTest {
         int k = start.length;
         int cap = variants - variants / k;
         int cl = curr.length;
+        int nBits = variants / 2 + 1;
         return (needed == cl ? Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch)).parallel()
                 : Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))).mapMulti((perm, sink) -> {
-            BitSet diff = new BitSet();
+            BitSet diff = new BitSet(nBits);
             for (int i = 0; i < k; i++) {
                 for (int j = i + 1; j < k; j++) {
                     diff.set(diff(perm[i], perm[j], variants));
@@ -225,7 +260,7 @@ public class BibdFinderTest {
     }
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size) {
-        return calcCycles(variants, size, new BitSet());
+        return calcCycles(variants, size, new BitSet(0));
     }
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, BitSet filter) {
@@ -235,12 +270,13 @@ public class BibdFinderTest {
     private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(int variants, int needed, BitSet filter) {
         int expectedCard = needed * (needed - 1) / 2;
         int cap = variants - variants / needed;
+        int nBits = variants / 2 + 1;
         return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))
                 .parallel().mapMulti((choice, sink) -> {
                     if (!isMinimal(choice, variants)) {
                         return;
                     }
-                    BitSet differences = new BitSet();
+                    BitSet differences = new BitSet(nBits);
                     for (int i = 0; i < needed; i++) {
                         for (int j = i + 1; j < needed; j++) {
                             differences.set(diff(choice[i], choice[j], variants));
@@ -250,6 +286,28 @@ public class BibdFinderTest {
                         return;
                     }
                     sink.accept(Map.entry(differences, of(choice)));
+                });
+    }
+
+    private static Stream<BitSet> calcDistinctDifferences(int variants, int needed, BitSet filter) {
+        int expectedCard = needed * (needed - 1) / 2;
+        int cap = variants - variants / needed;
+        int nBits = variants / 2 + 1;
+        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))
+                .parallel().mapMulti((choice, sink) -> {
+                    if (!isMinimal(choice, variants)) {
+                        return;
+                    }
+                    BitSet diff = new BitSet(nBits);
+                    for (int i = 0; i < needed; i++) {
+                        for (int j = i + 1; j < needed; j++) {
+                            diff.set(diff(choice[i], choice[j], variants));
+                        }
+                    }
+                    if (diff.cardinality() != expectedCard || filter.intersects(diff)) {
+                        return;
+                    }
+                    sink.accept(diff);
                 });
     }
 
@@ -401,7 +459,7 @@ public class BibdFinderTest {
     }
 
     private static BitSet diffFromTuple(BitSet tuple, int v) {
-        BitSet diff = new BitSet();
+        BitSet diff = new BitSet(v);
         tuple.stream().forEach(i -> tuple.stream().filter(j -> i != j).forEach(j -> {
             int abs = Math.abs(i - j);
             diff.set(abs);
@@ -416,7 +474,7 @@ public class BibdFinderTest {
     }
 
     private static BitSet of(int... values) {
-        BitSet bs = new BitSet();
+        BitSet bs = new BitSet(values[values.length - 1] + 1);
         IntStream.of(values).forEach(bs::set);
         return bs;
     }
