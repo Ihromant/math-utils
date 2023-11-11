@@ -124,14 +124,14 @@ public class BibdFinderTest {
 
     @Test
     public void generate2() throws IOException {
-        generateDiffSets(31, 3);
+        generateDiffSets(121, 6);
     }
 
     private static void generateDiffSets(int v, int k) throws IOException {
         System.out.println("Generating for " + v + " " + k);
         long time = System.currentTimeMillis();
         Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
-        calcCycles(v, k, v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or)
+        calcCyclesAlt(v, k, v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or)
                 : new BitSet()).forEach(e -> cycles.putIfAbsent(e.getKey(), e.getValue()));
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
         List<BitSet> diffs = new ArrayList<>(cycles.keySet());
@@ -201,7 +201,7 @@ public class BibdFinderTest {
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(int variants, int needed, BitSet filter) {
         int expectedCard = needed * (needed - 1) / 2;
-        return GaloisField.choices(variants, needed).mapMulti((choice, sink) -> {
+        return GaloisField.choices(variants - variants / needed, needed).parallel().mapMulti((choice, sink) -> {
             if (!isMinimal(choice, variants)) {
                 return;
             }
