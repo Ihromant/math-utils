@@ -1,6 +1,8 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.Group;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -123,8 +125,8 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generate2() throws IOException {
-        generateDiffSets(175, 7);
+    public void generate3() throws IOException {
+        generateDiffSets(new GroupProduct(5, 5), 4);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -165,34 +167,72 @@ public class BibdFinderTest {
             }
         });
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
-//        time = System.currentTimeMillis();
-//        counter.set(0);
-//        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt");
-//        try (FileOutputStream fos = new FileOutputStream(f);
-//             BufferedOutputStream bos = new BufferedOutputStream(fos);
-//             PrintStream ps = new PrintStream(bos)) {
-//            ps.println(v + " " + k + " " + cycles.size());
-//            int needed = v / k / (k - 1);
-//            allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
-//            //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
-//                long c = counter.incrementAndGet();
-//                printDifferenceSet(ds, ps, cycles, v, false); // set multiple to true if you wish to print all results
-//                if ((c & CONST) != 0) {
-//                    System.out.println(c);
-//                }
-//                if (k > 4) {
-//                    ps.flush();
-//                }
-//            });
-//        }
-//        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+        counter.set(0);
+        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            ps.println(v + " " + k + " " + cycles.size());
+            int needed = v / k / (k - 1);
+            allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
+            //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
+                long c = counter.incrementAndGet();
+                printDifferenceSet(ds, ps, cycles, false); // set multiple to true if you wish to print all results
+                if ((c & CONST) != 0) {
+                    System.out.println(c);
+                }
+                if (k > 4) {
+                    ps.flush();
+                }
+            });
+        }
+        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
-    private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Map<BitSet, BitSet> cycles, int v, boolean multiple) {
+    private static void generateDiffSets(Group g, int k) throws IOException {
+        System.out.println("Generating for " + g.name() + " " + k);
+        long time = System.currentTimeMillis();
+        Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
+        AtomicLong counter = new AtomicLong();
+        // BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
+        BitSet filter = new BitSet(0);
+        calcCyclesAlt(g.asTable(), k, filter).forEach(e -> {
+            if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
+                long c = counter.incrementAndGet();
+                if ((c & CONST) == 0) {
+                    System.out.println(c);
+                }
+            }
+        });
+        System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+        counter.set(0);
+        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name() + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            ps.println(g.name() + " " + k + " " + cycles.size());
+            int needed = g.order() / k / (k - 1);
+            allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
+                //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
+                long c = counter.incrementAndGet();
+                printDifferenceSet(ds, ps, cycles, false); // set multiple to true if you wish to print all results
+                if ((c & CONST) != 0) {
+                    System.out.println(c);
+                }
+                if (k > 4) {
+                    ps.flush();
+                }
+            });
+        }
+        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
+    }
+
+    private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Map<BitSet, BitSet> cycles, boolean multiple) {
         if (multiple) {
             IntStream.range(0, 1 << (ds.length - 1)).forEach(comb -> ps.println(IntStream.range(0, ds.length)
-                    .mapToObj(i -> ((1 << i) & comb) == 0 ? minimalTuple(cycles.get(ds[i]), v)
-                            : mirrorTuple(minimalTuple(cycles.get(ds[i]), v)))
+                    .mapToObj(i -> ((1 << i) & comb) == 0 ? cycles.get(ds[i]) : mirrorTuple(cycles.get(ds[i])))
                     .map(BitSet::toString).collect(Collectors.joining(", ", "{", "}"))));
         } else {
             ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
@@ -289,6 +329,25 @@ public class BibdFinderTest {
                 });
     }
 
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(Group g, int needed, BitSet filter) {
+        int expectedCard = needed * (needed - 1);
+        int variants = g.order();
+        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(variants, ch))
+                .parallel().mapMulti((choice, sink) -> {
+                    BitSet diff = new BitSet(variants);
+                    for (int i = 0; i < needed; i++) {
+                        for (int j = i + 1; j < needed; j++) {
+                            diff.set(g.op(choice[i], g.inv(choice[j])));
+                            diff.set(g.op(g.inv(choice[i]), choice[j]));
+                        }
+                    }
+                    if (diff.cardinality() != expectedCard || filter.intersects(diff)) {
+                        return;
+                    }
+                    sink.accept(Map.entry(diff, of(choice)));
+                });
+    }
+
     private static Stream<BitSet> calcDistinctDifferences(int variants, int needed, BitSet filter) {
         int expectedCard = needed * (needed - 1) / 2;
         int cap = variants - variants / needed;
@@ -333,83 +392,8 @@ public class BibdFinderTest {
         });
     }
 
-    @Test
-    public void test() {
-        assertEquals(of(1, 3, 4, 9, 10, 12), diffFromTuple(of(0, 1, 4), 13));
-        assertEquals(of(2, 5, 6, 7, 8, 11), diffFromTuple(of(0, 6, 8), 13));
-        assertEquals(of(0, 1, 4), minimalTuple(of(0, 1, 4), 13));
-        assertEquals(of(0, 2, 7), minimalTuple(of(0, 6, 8), 13));
-        BitSet[][] testSet = new BitSet[][]{
-                {of(0, 20, 21, 34), of(0, 1, 14, 17)},
-                {of(0, 12, 19, 27), of(0, 7, 15, 25)},
-                {of(0, 26, 28, 32), of(0, 2, 6, 11)},
-                {of(0, 12, 18, 22), of(0, 12, 18, 22)},
-                {of(0, 1, 8, 21), of(0, 1, 8, 21)},
-                {of(0, 23, 26, 28), of(0, 3, 5, 14)},
-                {of(0, 21, 23, 26), of(0, 2, 5, 16)},
-                {of(0, 12, 13, 20), of(0, 12, 13, 20)},
-                {of(0, 18, 22, 28), of(0, 4, 10, 19)},
-                {of(0, 1, 14, 21), of(0, 1, 14, 21)},
-                {of(0, 10, 18, 22), of(0, 10, 18, 22)},
-                {of(0, 26, 28, 31), of(0, 2, 5, 11)},
-                {of(0, 21, 23, 34), of(0, 2, 13, 16)},
-                {of(0, 12, 19, 20), of(0, 12, 19, 20)},
-                {of(0, 22, 27, 31), of(0, 5, 9, 15)},
-                {of(0, 21, 23, 24), of(0, 2, 3, 16)},
-                {of(0, 12, 19, 29), of(0, 7, 17, 25)},
-                {of(0, 22, 26, 31), of(0, 4, 9, 15)}
-        };
-        Arrays.stream(testSet).forEach(test -> {
-            BitSet minimal = minimalTuple(test[0], 37);
-            assertEquals(test[1], minimal);
-            assertEquals(diffFromTuple(minimal, 37), diffFromTuple(test[0], 37));
-        });
-        BitSet tuple = of(0, 22, 26, 31);
-        BitSet diff = diffFromTuple(tuple, 37);
-        Set<Set<BitSet>> rotations = new HashSet<>();
-        generateAlternatives(tuple, 37).forEach(altTuple -> {
-            assertEquals(diff, diffFromTuple(altTuple, 37));
-            assertTrue(rotations.add(IntStream.range(0, 37).mapToObj(i -> altTuple.stream().map(j -> (i + j) % 37)
-                    .collect(BitSet::new, BitSet::set, BitSet::or)).collect(Collectors.toSet())));
-        });
-        assertEquals(2, rotations.size());
-
-        BitSet tuple1 = of(0, 1, 4);
-        BitSet diff1 = diffFromTuple(tuple1, 13);
-        Set<Set<BitSet>> rotations1 = new HashSet<>();
-        generateAlternatives(tuple1, 13).forEach(altTuple -> {
-            assertEquals(diff1, diffFromTuple(altTuple, 13));
-            assertTrue(rotations1.add(IntStream.range(0, 13).mapToObj(i -> altTuple.stream().map(j -> (i + j) % 13)
-                    .collect(BitSet::new, BitSet::set, BitSet::or)).collect(Collectors.toSet())));
-        });
-        assertEquals(2, rotations1.size());
-
-        BitSet tuple2 = of(0, 2, 7);
-        BitSet tuple3 = of(0, 5, 7);
-        assertEquals(IntStream.range(0, 13).mapToObj(i -> tuple2.stream().map(j -> (i + j) % 13)
-                        .collect(BitSet::new, BitSet::set, BitSet::or)).collect(Collectors.toSet()),
-                IntStream.range(0, 13).mapToObj(i -> tuple3.stream().map(j -> (i + j) % 13)
-                        .collect(BitSet::new, BitSet::set, BitSet::or)).collect(Collectors.toSet()));
-    }
-
-    private Stream<BitSet> generateAlternatives(BitSet tuple, int v) {
-        int[] arr = minimalTuple(tuple, v).stream().toArray();
-        int l = arr.length;
-        int[] diffs = new int[l - 1];
-        for (int i = 0; i < l - 1; i++) {
-            diffs[i] = arr[i + 1] - arr[i];
-        }
-        BitSet diff = diffFromTuple(tuple, v);
-        return GaloisField.permutations(diffs).map(perm -> {
-            BitSet result = new BitSet();
-            int sum = 0;
-            result.set(0);
-            for (int d : perm) {
-                sum = sum + d;
-                result.set(sum);
-            }
-            return result;
-        }).filter(oDiff -> diff.equals(diffFromTuple(oDiff, v)));
+    private static BitSet mirrorTuple(Group g, BitSet tuple) {
+        return tuple.stream().map(g::inv).collect(BitSet::new, BitSet::set, BitSet::or);
     }
 
     private static BitSet mirrorTuple(BitSet tuple) {
@@ -456,16 +440,6 @@ public class BibdFinderTest {
         int[] res = Arrays.stream(arr).map(i -> i >= val ? i - val : v + i - val).toArray();
         Arrays.sort(res);
         return res;
-    }
-
-    private static BitSet diffFromTuple(BitSet tuple, int v) {
-        BitSet diff = new BitSet(v);
-        tuple.stream().forEach(i -> tuple.stream().filter(j -> i != j).forEach(j -> {
-            int abs = Math.abs(i - j);
-            diff.set(abs);
-            diff.set(Math.abs(v - abs));
-        }));
-        return diff;
     }
 
     private static int diff(int a, int b, int size) {

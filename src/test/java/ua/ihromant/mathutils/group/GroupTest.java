@@ -2,20 +2,33 @@ package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class GroupTest {
     @Test
     public void testGroups() {
         testCorrectness(new CyclicGroup(15), true);
-        testCorrectness(new CyclicProduct(3, 3, 5), true);
+        testCorrectness(new GroupProduct(3, 3, 5), true);
         testCorrectness(new DihedralGroup(7), false);
     }
 
     @Test
     public void testEquivalent() {
-        CyclicProduct cp = new CyclicProduct(3, 3, 5);
+        GroupProduct cp = new GroupProduct(3, 3, 5);
         cp.elements().forEach(i -> assertEquals(i, cp.fromArr(cp.toArr(i))));
+    }
+
+    @Test
+    public void testSpecific() {
+        int specific = 7;
+        GroupProduct cp = new GroupProduct(specific, 5, 5);
+        assertArrayEquals(new int[]{0, 25, 50, 75, 100, 125, 150}, IntStream.range(0, specific).map(i -> cp.fromArr(i, 0, 0)).toArray());
+        GroupProduct gp2 = new GroupProduct(2, 2);
+        GroupProduct cp1 = new GroupProduct(gp2, new CyclicGroup(7));
+        assertArrayEquals(new int[]{0, 7, 14, 21}, IntStream.range(0, gp2.order()).map(i -> cp1.fromArr(i, 0)).toArray());
     }
 
     private void testCorrectness(Group g, boolean commutative) {

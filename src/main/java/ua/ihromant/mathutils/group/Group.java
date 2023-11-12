@@ -9,6 +9,10 @@ public interface Group {
 
     int order();
 
+    String name();
+
+    String elementName(int a);
+
     default IntStream elements() {
         return IntStream.range(0, order());
     }

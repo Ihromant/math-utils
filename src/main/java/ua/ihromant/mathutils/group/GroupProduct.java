@@ -1,12 +1,18 @@
 package ua.ihromant.mathutils.group;
 
 import java.util.Arrays;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
-public class CyclicProduct implements Group {
-    public CyclicGroup[] base;
+public class GroupProduct implements Group {
+    private final Group[] base;
 
-    public CyclicProduct(int... base) {
-        this.base = Arrays.stream(base).mapToObj(CyclicGroup::new).toArray(CyclicGroup[]::new);
+    public GroupProduct(int... base) {
+        this(Arrays.stream(base).mapToObj(CyclicGroup::new).toArray(Group[]::new));
+    }
+
+    public GroupProduct(Group... base) {
+        this.base = base;
     }
 
     public int fromArr(int... arr) {
@@ -63,5 +69,16 @@ public class CyclicProduct implements Group {
     @Override
     public int order() {
         return Arrays.stream(base).reduce(1, (pr, cg) -> pr * cg.order(), (pr1, pr2) -> pr1 * pr2);
+    }
+
+    @Override
+    public String name() {
+        return Arrays.stream(base).map(Group::name).collect(Collectors.joining("x"));
+    }
+
+    @Override
+    public String elementName(int a) {
+        int[] arr = toArr(a);
+        return IntStream.range(0, base.length).mapToObj(i -> base[i].elementName(arr[i])).collect(Collectors.joining(", ", "(", ")"));
     }
 }

@@ -48,4 +48,14 @@ public class DihedralGroup implements Group {
     public int order() {
         return 2 * order;
     }
+
+    @Override
+    public String name() {
+        return "D" + order;
+    }
+
+    @Override
+    public String elementName(int a) {
+        return String.valueOf(a); // TODO remake
+    }
 }

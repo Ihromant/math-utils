@@ -25,6 +25,16 @@ public class TableGroup implements Group {
     }
 
     @Override
+    public String name() {
+        return "Table" + order();
+    }
+
+    @Override
+    public String elementName(int a) {
+        return String.valueOf(a);
+    }
+
+    @Override
     public Group asTable() {
         return this;
     }
