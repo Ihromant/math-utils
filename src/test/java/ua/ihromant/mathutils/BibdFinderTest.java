@@ -190,13 +190,16 @@ public class BibdFinderTest {
         System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
-    private static void generateDiffSets(Group g, int k) throws IOException {
+    private static void generateDiffSets(GroupProduct g, int k) throws IOException {
         System.out.println("Generating for " + g.name() + " " + k);
         long time = System.currentTimeMillis();
         Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
         AtomicLong counter = new AtomicLong();
-        // BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
-        BitSet filter = new BitSet(0);
+        BitSet filter = g.base().get(0).order() == k ? IntStream.range(0, g.base().get(0).order()).map(i -> {
+            int[] arr = new int[g.base().size()];
+            arr[0] = i;
+            return g.fromArr(arr);
+        }).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
         calcCyclesAlt(g.asTable(), k, filter).forEach(e -> {
             if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
                 long c = counter.incrementAndGet();
@@ -238,39 +241,6 @@ public class BibdFinderTest {
             ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
                     .collect(Collectors.joining(", ", "{", "}")));
         }
-    }
-
-    private static Stream<BitSet[]> altAllDifferenceSets(Map<BitSet, BitSet> existing, int variants, int[] start, int needed,
-                                                         BitSet[] curr, BitSet present, Set<Set<BitSet>> added) {
-        int k = start.length;
-        int cap = variants - variants / k;
-        int cl = curr.length;
-        int nBits = variants / 2 + 1;
-        return (needed == cl ? Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch)).parallel()
-                : Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))).mapMulti((perm, sink) -> {
-            BitSet diff = new BitSet(nBits);
-            for (int i = 0; i < k; i++) {
-                for (int j = i + 1; j < k; j++) {
-                    diff.set(diff(perm[i], perm[j], variants));
-                }
-            }
-            if (!existing.containsKey(diff) || present.intersects(diff)) {
-                return;
-            }
-            BitSet[] nextCurr = curr.clone();
-            nextCurr[cl - needed] = diff;
-            if (needed == 1) {
-                if (added.add(Arrays.stream(nextCurr).collect(Collectors.toSet()))) {
-                    sink.accept(nextCurr);
-                }
-                return;
-            }
-            BitSet nextPresent = (BitSet) present.clone();
-            nextPresent.or(diff);
-            //noinspection ConstantConditions
-            altAllDifferenceSets(existing, variants, GaloisField.nextChoice(cap, start),
-                    needed - 1, nextCurr, nextPresent, added).forEach(sink);
-        });
     }
 
     private static Stream<BitSet[]> allDifferenceSets(List<BitSet> diffs, int needed, BitSet[] curr, BitSet present) {
@@ -451,5 +421,38 @@ public class BibdFinderTest {
         BitSet bs = new BitSet(values[values.length - 1] + 1);
         IntStream.of(values).forEach(bs::set);
         return bs;
+    }
+
+    private static Stream<BitSet[]> altAllDifferenceSets(Map<BitSet, BitSet> existing, int variants, int[] start, int needed,
+                                                         BitSet[] curr, BitSet present, Set<Set<BitSet>> added) {
+        int k = start.length;
+        int cap = variants - variants / k;
+        int cl = curr.length;
+        int nBits = variants / 2 + 1;
+        return (needed == cl ? Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch)).parallel()
+                : Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))).mapMulti((perm, sink) -> {
+            BitSet diff = new BitSet(nBits);
+            for (int i = 0; i < k; i++) {
+                for (int j = i + 1; j < k; j++) {
+                    diff.set(diff(perm[i], perm[j], variants));
+                }
+            }
+            if (!existing.containsKey(diff) || present.intersects(diff)) {
+                return;
+            }
+            BitSet[] nextCurr = curr.clone();
+            nextCurr[cl - needed] = diff;
+            if (needed == 1) {
+                if (added.add(Arrays.stream(nextCurr).collect(Collectors.toSet()))) {
+                    sink.accept(nextCurr);
+                }
+                return;
+            }
+            BitSet nextPresent = (BitSet) present.clone();
+            nextPresent.or(diff);
+            //noinspection ConstantConditions
+            altAllDifferenceSets(existing, variants, GaloisField.nextChoice(cap, start),
+                    needed - 1, nextCurr, nextPresent, added).forEach(sink);
+        });
     }
 }

@@ -4,8 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GroupTest {
     @Test
@@ -41,19 +40,18 @@ public class GroupTest {
 
     private void testCorrectness(Group g, boolean commutative) {
         Group tg = g.asTable();
-        g.elements().forEach(i -> {
+        int nonComm = g.elements().flatMap(i -> {
             assertEquals(i, g.op(i, 0));
             assertEquals(i, g.op(0, i));
             int inv = g.inv(i);
             assertEquals(0, g.op(inv, i));
             assertEquals(0, g.op(i, inv));
-            g.elements().forEach(j -> {
-                if (commutative) {
-                    assertEquals(g.op(i, j), g.op(j, i));
-                }
+            return g.elements().map(j -> {
                 assertEquals(g.op(i, j), tg.op(i, j));
                 g.elements().forEach(k -> assertEquals(g.op(i, g.op(j, k)), g.op(g.op(i, j), k)));
+                return g.op(i, j) != g.op(j, i) ? 1 : 0;
             });
-        });
+        }).sum();
+        assertEquals(commutative, nonComm == 0);
     }
 }
