@@ -1,17 +1,6 @@
 package ua.ihromant.mathutils.group;
 
-import java.util.stream.IntStream;
-
-public class DihedralGroup implements Group {
-    private final int order;
-    private final int[][] operationTable;
-
-    public DihedralGroup(int order) {
-        this.order = order;
-        this.operationTable = IntStream.range(0, order()).mapToObj(i ->
-                IntStream.range(0, order()).map(j -> addByDef(i, j)).toArray()).toArray(int[][]::new);
-    }
-
+public record DihedralGroup(int order) implements Group {
     private int addByDef(int v1, int v2) {
         int alpha1 = v1 % order;
         int beta1 = v1 / order;
@@ -26,10 +15,6 @@ public class DihedralGroup implements Group {
 
     private int fromAlphaBeta(int alpha, int beta) {
         return (beta % order) * order + (alpha % order);
-    }
-
-    public int add(int a, int b) {
-        return operationTable[a][b];
     }
 
     @Override
