@@ -28,15 +28,6 @@ public class GaloisFieldTest {
     }
 
     @Test
-    public void testFactorize() {
-        assertArrayEquals(new int[]{17, 19}, GaloisField.factorize(17 * 19));
-        assertArrayEquals(new int[]{333667}, GaloisField.factorize(333667));
-        assertArrayEquals(new int[]{3, 7, 11, 13, 37}, GaloisField.factorize(111111));
-        assertArrayEquals(new int[]{23, 23}, GaloisField.factorize(529));
-        assertArrayEquals(IntStream.range(0, 25).map(i -> 2).toArray(), GaloisField.factorize(1 << 25));
-    }
-
-    @Test
     public void testCorrectness() {
         GaloisField fd = new GaloisField(61);
         testField(fd);

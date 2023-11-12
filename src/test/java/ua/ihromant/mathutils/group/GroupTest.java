@@ -29,6 +29,16 @@ public class GroupTest {
         assertArrayEquals(new int[]{0, 7, 14, 21}, IntStream.range(0, cp1.base().get(0).order()).map(i -> cp1.fromArr(i, 0)).toArray());
     }
 
+    @Test
+    public void testFactorize() {
+        assertArrayEquals(new int[]{2, 2, 2, 3, 3, 5, 7}, Group.factorize(2520));
+        assertArrayEquals(new int[]{17, 19}, Group.factorize(17 * 19));
+        assertArrayEquals(new int[]{333667}, Group.factorize(333667));
+        assertArrayEquals(new int[]{3, 7, 11, 13, 37}, Group.factorize(111111));
+        assertArrayEquals(new int[]{23, 23}, Group.factorize(529));
+        assertArrayEquals(IntStream.range(0, 25).map(i -> 2).toArray(), Group.factorize(1 << 25));
+    }
+
     private void testCorrectness(Group g, boolean commutative) {
         Group tg = g.asTable();
         g.elements().forEach(i -> {

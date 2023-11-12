@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.group.Group;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -19,7 +21,7 @@ public class GaloisField {
 
     public GaloisField(int base) {
         this.cardinality = base;
-        int[] factors = factorize(base);
+        int[] factors = Group.factorize(base);
         if (!Arrays.stream(factors).allMatch(f -> f == factors[0])) {
             throw new IllegalArgumentException(base + " contains different factors: " + Arrays.toString(factors));
         }
@@ -55,18 +57,6 @@ public class GaloisField {
         }
     }
 
-    public static int[] factorize(int base) {
-        List<Integer> result = new ArrayList<>();
-        int from = 2;
-        while (base != 1) {
-            int factor = factor(from, base);
-            from = factor;
-            base = base / factor;
-            result.add(factor);
-        }
-        return result.stream().mapToInt(Integer::intValue).toArray();
-    }
-
     private int[] trim(int[] poly) {
         int zeros = Arrays.stream(poly).takeWhile(i -> i == 0).toArray().length;
         if (zeros == poly.length) {
@@ -87,16 +77,6 @@ public class GaloisField {
 
     private int[] mulPoly(int[] poly, int cff) {
         return Arrays.stream(poly).map(i -> baseMul(i, cff)).toArray();
-    }
-
-    private static int factor(int from, int base) {
-        int sqrt = (int) Math.ceil(Math.sqrt(base + 1));
-        for (int i = from; i <= sqrt; i++) {
-            if (base % i == 0) {
-                return i;
-            }
-        }
-        return base;
     }
 
     private boolean irreducible(int[] poly) {

@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.group;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.IntStream;
 
 public interface Group {
@@ -39,5 +41,27 @@ public interface Group {
         return new TableGroup(
                 elements().mapToObj(i -> elements().map(j -> op(i, j)).toArray()).toArray(int[][]::new),
                 elements().map(this::inv).toArray());
+    }
+
+    static int[] factorize(int base) {
+        List<Integer> result = new ArrayList<>();
+        int from = 2;
+        while (base != 1) {
+            int factor = factor(from, base);
+            from = factor;
+            base = base / factor;
+            result.add(factor);
+        }
+        return result.stream().mapToInt(Integer::intValue).toArray();
+    }
+
+    private static int factor(int from, int base) {
+        int sqrt = (int) Math.ceil(Math.sqrt(base + 1));
+        for (int i = from; i <= sqrt; i++) {
+            if (base % i == 0) {
+                return i;
+            }
+        }
+        return base;
     }
 }
