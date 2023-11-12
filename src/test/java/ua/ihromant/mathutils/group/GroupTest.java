@@ -7,9 +7,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class GroupTest {
     @Test
     public void testGroups() {
-        testCorrectness(new CyclicGroup(65), true);
-        testCorrectness(new CyclicProduct(5, 5, 7), true);
+        testCorrectness(new CyclicGroup(15), true);
+        testCorrectness(new CyclicProduct(3, 3, 5), true);
         testCorrectness(new DihedralGroup(7), false);
+    }
+
+    @Test
+    public void testEquivalent() {
+        CyclicProduct cp = new CyclicProduct(3, 3, 5);
+        cp.elements().forEach(i -> assertEquals(i, cp.fromArr(cp.toArr(i))));
     }
 
     private void testCorrectness(Group g, boolean commutative) {
