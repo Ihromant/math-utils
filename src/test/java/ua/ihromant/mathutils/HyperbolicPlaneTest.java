@@ -87,10 +87,10 @@ public class HyperbolicPlaneTest {
                 {{0, 0}, {1, 5}, {2, 0}, {4, 1}, {6, 0}, {7, 2}},
                 {{0, 0}, {1, 0}, {3, 9}, {4, 8}, {6, 1}, {9, 5}}
         };
-        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg1.cardinality()).mapToObj(idx -> {
+        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg1.order()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int[] numb : base) {
-                res.set(cg1.add(cg1.fromArr(numb), idx));
+                res.set(cg1.op(cg1.fromArr(numb), idx));
             }
             return res;
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
@@ -110,10 +110,10 @@ public class HyperbolicPlaneTest {
                 {{0, 0, 0}, {1, 1, 2}, {1, 4, 3}, {2, 1, 4}, {2, 4, 4}, {4, 0, 1}, {4, 0, 4}},
                 {{0, 0, 0}, {1, 3, 1}, {1, 2, 4}, {2, 4, 1}, {2, 1, 4}, {4, 1, 0}, {4, 4, 0}}
         };
-        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg2.cardinality()).mapToObj(idx -> {
+        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg2.order()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int[] numb : base) {
-                res.set(cg2.add(cg2.fromArr(numb), idx));
+                res.set(cg2.op(cg2.fromArr(numb), idx));
             }
             return res;
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
@@ -133,10 +133,10 @@ public class HyperbolicPlaneTest {
                                 cg.arrMul(arr, new int[]{2, 19}), cg.arrMul(arr, new int[]{3, 25}), cg.arrMul(arr, new int[]{6, 25})},
                         new int[][]{{0, 0}, cg.arrMul(arr, new int[]{0, 4}), cg.arrMul(arr, new int[]{1, 25}), cg.arrMul(arr, new int[]{1, 34}),
                                 cg.arrMul(arr, new int[]{2, 24}), cg.arrMul(arr, new int[]{2, 35}), cg.arrMul(arr, new int[]{4, 10})}))).toArray(int[][][]::new);
-        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg.cardinality()).mapToObj(idx -> {
+        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg.order()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int[] numb : base) {
-                res.set(cg.add(cg.fromArr(numb), idx));
+                res.set(cg.op(cg.fromArr(numb), idx));
             }
             return res;
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
@@ -224,7 +224,7 @@ public class HyperbolicPlaneTest {
                 .flatMap(arr -> IntStream.range(0, 13).mapToObj(idx -> {
                     BitSet result = new BitSet();
                     for (int i : arr) {
-                        result.set(cg.add(i, cg.fromArr(idx, 0)));
+                        result.set(cg.op(i, cg.fromArr(idx, 0)));
                     }
                     return result;
                 })), IntStream.range(0, 13).mapToObj(idx -> {
@@ -232,10 +232,10 @@ public class HyperbolicPlaneTest {
             for (int i = 0; i < 5; i++) {
                 result.set(cg.fromArr(idx, i));
             }
-            result.set(cg.cardinality());
+            result.set(cg.order());
             return result;
         })).toArray(BitSet[]::new));
-        assertEquals(cg.cardinality() + 1, p7.pointCount());
+        assertEquals(cg.order() + 1, p7.pointCount());
         assertEquals(143, p7.lineCount());
         testCorrectness(p7, of(6), 13);
         assertEquals(of(7), p7.playfairIndex());
@@ -257,11 +257,11 @@ public class HyperbolicPlaneTest {
                 .flatMap(arr -> IntStream.range(0, 19).mapToObj(idx -> {
                     BitSet result = new BitSet();
                     for (int i : arr) {
-                        result.set(cg1.add(i, cg1.fromArr(idx, 0)));
+                        result.set(cg1.op(i, cg1.fromArr(idx, 0)));
                     }
                     return result;
                 })).toArray(BitSet[]::new));
-        assertEquals(cg1.cardinality(), p9.pointCount());
+        assertEquals(cg1.order(), p9.pointCount());
         assertEquals(190, p9.lineCount());
         testCorrectness(p9, of(6), 15);
         assertEquals(of(9), p9.playfairIndex());
