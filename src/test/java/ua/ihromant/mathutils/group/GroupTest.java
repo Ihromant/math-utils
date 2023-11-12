@@ -23,12 +23,10 @@ public class GroupTest {
 
     @Test
     public void testSpecific() {
-        int specific = 7;
-        GroupProduct cp = new GroupProduct(specific, 5, 5);
-        assertArrayEquals(new int[]{0, 25, 50, 75, 100, 125, 150}, IntStream.range(0, specific).map(i -> cp.fromArr(i, 0, 0)).toArray());
-        GroupProduct gp2 = new GroupProduct(2, 2);
-        GroupProduct cp1 = new GroupProduct(gp2, new CyclicGroup(7));
-        assertArrayEquals(new int[]{0, 7, 14, 21}, IntStream.range(0, gp2.order()).map(i -> cp1.fromArr(i, 0)).toArray());
+        GroupProduct cp = new GroupProduct(7, 5, 5);
+        assertArrayEquals(new int[]{0, 25, 50, 75, 100, 125, 150}, IntStream.range(0, cp.base().get(0).order()).map(i -> cp.fromArr(i, 0, 0)).toArray());
+        GroupProduct cp1 = new GroupProduct(new GroupProduct(2, 2), new CyclicGroup(7));
+        assertArrayEquals(new int[]{0, 7, 14, 21}, IntStream.range(0, cp1.base().get(0).order()).map(i -> cp1.fromArr(i, 0)).toArray());
     }
 
     private void testCorrectness(Group g, boolean commutative) {
