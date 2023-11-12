@@ -29,6 +29,11 @@ public class GroupTest {
     }
 
     @Test
+    public void testEuler() {
+        assertEquals(576, Group.euler(2520));
+    }
+
+    @Test
     public void testFactorize() {
         assertArrayEquals(new int[]{2, 2, 2, 3, 3, 5, 7}, Group.factorize(2520));
         assertArrayEquals(new int[]{17, 19}, Group.factorize(17 * 19));

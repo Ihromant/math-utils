@@ -64,4 +64,28 @@ public interface Group {
         }
         return base;
     }
+
+    static int gcd(int a, int b) {
+        if (b == 0) {
+            return a;
+        }
+        return gcd(b, a % b);
+    }
+
+    static int euler(int base) {
+        int[] factors = factorize(base);
+        if (factors.length == 0) {
+            return 0;
+        }
+        int result = 1;
+        int idx = 0;
+        while (idx < factors.length) {
+            int curr = factors[idx];
+            result = result * (curr - 1);
+            while (++idx < factors.length && factors[idx] == curr) {
+                result = result * curr;
+            }
+        }
+        return result;
+    }
 }
