@@ -1,11 +1,11 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.group;
 
 import java.util.Arrays;
 
-public class CyclicGroup {
+public class CyclicProduct implements Group {
     public int[] base;
 
-    public CyclicGroup(int... base) {
+    public CyclicProduct(int... base) {
         this.base = base;
     }
 
@@ -38,6 +38,14 @@ public class CyclicGroup {
         return result;
     }
 
+    private int[] invArr(int[] a) {
+        int[] result = new int[a.length];
+        for (int i = 0; i < result.length; i++) {
+            result[i] = a[i] == 0 ? 0 : base[i] - a[i];
+        }
+        return result;
+    }
+
     public int add(int a, int b) {
         return fromArr(arrAdd(toArr(a), toArr(b)));
     }
@@ -48,5 +56,20 @@ public class CyclicGroup {
             result[i] = (a[i] * b[i]) % base[i];
         }
         return result;
+    }
+
+    @Override
+    public int op(int a, int b) {
+        return fromArr(arrAdd(toArr(a), toArr(b)));
+    }
+
+    @Override
+    public int inv(int a) {
+        return fromArr(invArr(toArr(a)));
+    }
+
+    @Override
+    public int order() {
+        return cardinality();
     }
 }

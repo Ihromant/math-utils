@@ -36,7 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BibdFinderTest {
     @Test
     public void testDifferenceSets2() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-85.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "4-76f.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              ExecutorService service = Executors.newFixedThreadPool(12)) {
@@ -73,7 +73,7 @@ public class BibdFinderTest {
                 });
             }
             waiter.decrementAndGet();
-            boolean res = service.awaitTermination(1, TimeUnit.DAYS);
+            boolean res = service.awaitTermination(20, TimeUnit.DAYS);
             System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
         }
     }
@@ -159,33 +159,33 @@ public class BibdFinderTest {
         calcCyclesAlt(v, k, filter).forEach(e -> {
             if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
                 long c = counter.incrementAndGet();
-                if ((c & CONST) != 0) {
+                if ((c & CONST) == 0) {
                     System.out.println(c);
                 }
             }
         });
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
-        time = System.currentTimeMillis();
-        counter.set(0);
-        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt");
-        try (FileOutputStream fos = new FileOutputStream(f);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            ps.println(v + " " + k + " " + cycles.size());
-            int needed = v / k / (k - 1);
-            allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
-            //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
-                long c = counter.incrementAndGet();
-                printDifferenceSet(ds, ps, cycles, v, false); // set multiple to true if you wish to print all results
-                if ((c & CONST) != 0) {
-                    System.out.println(c);
-                }
-                if (k > 4) {
-                    ps.flush();
-                }
-            });
-        }
-        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
+//        time = System.currentTimeMillis();
+//        counter.set(0);
+//        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt");
+//        try (FileOutputStream fos = new FileOutputStream(f);
+//             BufferedOutputStream bos = new BufferedOutputStream(fos);
+//             PrintStream ps = new PrintStream(bos)) {
+//            ps.println(v + " " + k + " " + cycles.size());
+//            int needed = v / k / (k - 1);
+//            allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
+//            //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
+//                long c = counter.incrementAndGet();
+//                printDifferenceSet(ds, ps, cycles, v, false); // set multiple to true if you wish to print all results
+//                if ((c & CONST) != 0) {
+//                    System.out.println(c);
+//                }
+//                if (k > 4) {
+//                    ps.flush();
+//                }
+//            });
+//        }
+//        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
     private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Map<BitSet, BitSet> cycles, int v, boolean multiple) {
@@ -276,16 +276,16 @@ public class BibdFinderTest {
                     if (!isMinimal(choice, variants)) {
                         return;
                     }
-                    BitSet differences = new BitSet(nBits);
+                    BitSet diff = new BitSet(nBits);
                     for (int i = 0; i < needed; i++) {
                         for (int j = i + 1; j < needed; j++) {
-                            differences.set(diff(choice[i], choice[j], variants));
+                            diff.set(diff(choice[i], choice[j], variants));
                         }
                     }
-                    if (differences.cardinality() != expectedCard || filter.intersects(differences)) {
+                    if (diff.cardinality() != expectedCard || filter.intersects(diff)) {
                         return;
                     }
-                    sink.accept(Map.entry(differences, of(choice)));
+                    sink.accept(Map.entry(diff, of(choice)));
                 });
     }
 
