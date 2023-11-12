@@ -38,6 +38,21 @@ public class GroupTest {
         assertArrayEquals(IntStream.range(0, 25).map(i -> 2).toArray(), Group.factorize(1 << 25));
     }
 
+    @Test
+    public void testOrder() {
+        CyclicGroup cg = new CyclicGroup(113);
+        cg.elements().forEach(i -> assertEquals(i == 0 ? 1 : 113, cg.order(i)));
+        GroupProduct gp = new GroupProduct(2, 2, 2, 2, 2, 2);
+        gp.elements().forEach(i -> assertEquals(i == 0 ? 1 : 2, gp.order(i)));
+    }
+
+    @Test
+    public void testPower() {
+        CyclicGroup cg = new CyclicGroup(20);
+        assertEquals(7, cg.power(3, 9));
+        assertEquals(0, cg.power(3, 20));
+    }
+
     private void testCorrectness(Group g, boolean commutative) {
         Group tg = g.asTable();
         int nonComm = g.elements().flatMap(i -> {
