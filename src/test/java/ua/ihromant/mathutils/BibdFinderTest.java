@@ -220,7 +220,7 @@ public class BibdFinderTest {
             allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
                 //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
                 long c = counter.incrementAndGet();
-                printDifferenceSet(ds, ps, cycles, false); // set multiple to true if you wish to print all results
+                printDifferenceSet(ds, ps, g, cycles); // set multiple to true if you wish to print all results
                 if ((c & CONST) != 0) {
                     System.out.println(c);
                 }
@@ -241,6 +241,12 @@ public class BibdFinderTest {
             ps.println(Arrays.stream(ds).map(cycles::get).map(BitSet::toString)
                     .collect(Collectors.joining(", ", "{", "}")));
         }
+    }
+
+    private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Group gr, Map<BitSet, BitSet> cycles) {
+        ps.println(Arrays.stream(ds).map(cycles::get).map(bs -> bs.stream()
+                        .mapToObj(gr::elementName).collect(Collectors.joining(", ", "{", "}")))
+                .collect(Collectors.joining(", ", "{", "}")));
     }
 
     private static Stream<BitSet[]> allDifferenceSets(List<BitSet> diffs, int needed, BitSet[] curr, BitSet present) {

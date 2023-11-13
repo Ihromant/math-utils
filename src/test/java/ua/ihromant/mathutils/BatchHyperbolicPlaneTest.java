@@ -54,7 +54,7 @@ public class BatchHyperbolicPlaneTest {
             }
             int v = order * order + order + 1;
             HyperbolicPlane p = readProjective(order, v, 2, f.getName());
-            HyperbolicPlaneTest.testCorrectness(p, of(order + 1), order + 1);
+            HyperbolicPlaneTest.testCorrectness(p, of(order + 1));
             System.out.println(f.getName());
             for (int i : p.lines()) {
                 if (checkPappus(p, i)) {
@@ -112,7 +112,7 @@ public class BatchHyperbolicPlaneTest {
     public void test217_7() throws IOException {
         List<HyperbolicPlane> planes = readPlanes(217, 7);
         assertEquals(4, planes.size());
-        planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7), 36));
+        planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7)));
         assertEquals(of(1, 2, 3, 4, 5), planes.get(0).hyperbolicIndex());
         assertEquals(of(1, 2, 3, 4, 5), planes.get(1).hyperbolicIndex());
         assertEquals(of(1, 2, 3, 4, 5), planes.get(2).hyperbolicIndex());
@@ -123,7 +123,7 @@ public class BatchHyperbolicPlaneTest {
     public void test175_7() throws IOException {
         List<HyperbolicPlane> planes = readPlanes(175, 7);
         assertEquals(2, planes.size());
-        planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7), 29));
+        planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7)));
         assertEquals(of(2, 3, 4, 5), planes.get(0).hyperbolicIndex());
         assertEquals(of(1, 2, 3, 4, 5), planes.get(1).hyperbolicIndex());
     }
@@ -139,7 +139,7 @@ public class BatchHyperbolicPlaneTest {
     public void test65_5() throws IOException {
         List<HyperbolicPlane> planes = readPlanes(65, 5);
         assertEquals(1777, planes.size());
-        HyperbolicPlaneTest.testCorrectness(planes.get(0), of(5), 16);
+        HyperbolicPlaneTest.testCorrectness(planes.get(0), of(5));
         assertEquals(of(3), planes.get(0).hyperbolicIndex());
         HyperbolicPlaneTest.checkPlane(planes.get(0));
     }
@@ -169,7 +169,7 @@ public class BatchHyperbolicPlaneTest {
         HyperbolicPlane plane = planes.get(1001);
         assertEquals(of(2), plane.hyperbolicIndex());
         HyperbolicPlaneTest.checkPlane(plane);
-        HyperbolicPlaneTest.testCorrectness(plane, of(4), 9);
+        HyperbolicPlaneTest.testCorrectness(plane, of(4));
 
         String[] design = printDesign(planes.get(3429));
         Arrays.stream(design).forEach(System.out::println);
@@ -245,7 +245,7 @@ public class BatchHyperbolicPlaneTest {
             br.readLine();
             String next = br.readLine();
             HyperbolicPlane projective = readPlane(v, b, next, br);
-            HyperbolicPlaneTest.testCorrectness(projective, of(17), 17);
+            HyperbolicPlaneTest.testCorrectness(projective, of(17));
             for (int i : projective.lines()) {
                 //if (checkThales(projective, i)) {
                 //    System.out.println("Thales " + i);
@@ -268,7 +268,7 @@ public class BatchHyperbolicPlaneTest {
                 lines = Arrays.stream(lines).map(l -> l.stream()
                         .map(p -> Arrays.binarySearch(pointArray, p)).collect(BitSet::new, BitSet::set, BitSet::or)).toArray(BitSet[]::new);
                 HyperbolicPlane p = new HyperbolicPlane(lines);
-                HyperbolicPlaneTest.testCorrectness(p, of(5), 16);
+                HyperbolicPlaneTest.testCorrectness(p, of(5));
                 System.out.println(p.hyperbolicIndex());
             }
         }

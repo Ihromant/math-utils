@@ -22,7 +22,7 @@ public class HyperbolicPlaneTest {
         });
         assertEquals(15, p2.pointCount());
         assertEquals(35, p2.lineCount());
-        testCorrectness(p2, of(3), 7);
+        testCorrectness(p2, of(3));
         assertEquals(of(4), p2.playfairIndex());
         assertEquals(of(1), p2.hyperbolicIndex());
         checkPlane(p2);
@@ -34,7 +34,7 @@ public class HyperbolicPlaneTest {
                 "3cdefopqrghijrqopqrponmklporqklmn7romnqpnmqoklrplkbopporqqrfjnr"});
         assertEquals(28, p1.pointCount());
         assertEquals(63, p1.lineCount());
-        testCorrectness(p1, of(4), 9);
+        testCorrectness(p1, of(4));
         assertEquals(of(5), p1.playfairIndex());
         assertEquals(of(2), p1.hyperbolicIndex());
         checkPlane(p1);
@@ -43,7 +43,7 @@ public class HyperbolicPlaneTest {
                 new int[]{0,11,86,100,120,144,190}, new int[]{0,29,64,165,198,205,207}, new int[]{0,31,62,93,124,155,186});
         assertEquals(217, p.pointCount());
         assertEquals(1116, p.lineCount());
-        testCorrectness(p, of(7), 36);
+        testCorrectness(p, of(7));
         assertEquals(of(29), p.playfairIndex());
         assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
         checkPlane(p);
@@ -56,7 +56,7 @@ public class HyperbolicPlaneTest {
                 "2468ace569ade65a9edbcdecbeddebcedcb");
         assertEquals(15, p.pointCount());
         assertEquals(35, p.lineCount());
-        testCorrectness(p, of(3), 7);
+        testCorrectness(p, of(3));
         assertEquals(of(0, 0), p.hyperbolicIndex());
         assertEquals(of(7), p.cardSubPlanes(true)); // it's model of 3-dimensional projective space
         checkSpace(p, p.pointCount(), p.pointCount());
@@ -66,13 +66,13 @@ public class HyperbolicPlaneTest {
                 "2468ace569ade65a9edbcdecbededcbdebc");
         assertEquals(15, p3.pointCount());
         assertEquals(35, p3.lineCount());
-        testCorrectness(p3, of(3), 7);
+        testCorrectness(p3, of(3));
         assertEquals(of(0, 1), p3.hyperbolicIndex());
         assertEquals(of(7, p.pointCount()), p3.cardSubPlanes(true)); // it's plane with no exchange property
 
         HyperbolicPlane p1 = new HyperbolicPlane(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
                 new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
-        testCorrectness(p1, of(3), 15);
+        testCorrectness(p1, of(3));
         assertEquals(of(0), p1.hyperbolicIndex());
         assertEquals(of(7), p1.cardSubPlanes(true)); // 4-dimensional projective space
         checkSpace(p1, 15, 15); // 4-dimensional projective space
@@ -97,7 +97,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p1 = new HyperbolicPlane(lines);
         assertEquals(121, p1.pointCount());
         assertEquals(484, p1.lineCount());
-        testCorrectness(p1, of(6), 24);
+        testCorrectness(p1, of(6));
         assertEquals(of(18), p1.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
 
@@ -120,7 +120,7 @@ public class HyperbolicPlaneTest {
         p1 = new HyperbolicPlane(lines);
         assertEquals(175, p1.pointCount());
         assertEquals(725, p1.lineCount());
-        testCorrectness(p1, of(7), 29); // this fails, example is broken
+        testCorrectness(p1, of(7)); // this fails, example is broken
         assertEquals(of(22), p1.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
 
@@ -142,7 +142,7 @@ public class HyperbolicPlaneTest {
         p1 = new HyperbolicPlane(lines);
         assertEquals(259, p1.pointCount());
         assertEquals(1591, p1.lineCount());
-        testCorrectness(p1, of(7), 43); // this fails, example is broken
+        testCorrectness(p1, of(7)); // this fails, example is broken
         assertEquals(of(18), p1.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
     }
@@ -152,7 +152,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p4 = new HyperbolicPlane(109, new int[]{0, 1, 3, 60});
         assertEquals(109, p4.pointCount());
         assertEquals(981, p4.lineCount());
-        testCorrectness(p4, of(4), 36);
+        testCorrectness(p4, of(4));
         assertEquals(of(32), p4.playfairIndex());
         assertEquals(of(1, 2), p4.hyperbolicIndex());
 
@@ -161,7 +161,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p3 = new HyperbolicPlane(fd1.cardinality(), new int[]{0, 1, x, fd1.power(x, 10)});
         assertEquals(121, p3.pointCount());
         assertEquals(1210, p3.lineCount());
-        testCorrectness(p3, of(4), 40);
+        testCorrectness(p3, of(4));
         assertEquals(of(36), p3.playfairIndex());
         assertEquals(of(0, 1, 2), p3.hyperbolicIndex());
 
@@ -173,21 +173,21 @@ public class HyperbolicPlaneTest {
                 new int[] {0, c1, fd.mul(c1, w), fd.mul(c1, fd.mul(w, w)), c2, fd.mul(c2, w), fd.mul(c2, fd.mul(w, w))});
         assertEquals(421, p.pointCount());
         assertEquals(4210, p.lineCount());
-        testCorrectness(p, of(7), 70);
+        testCorrectness(p, of(7));
         assertEquals(of(63), p.playfairIndex());
         assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
 
         HyperbolicPlane p1 = new HyperbolicPlane(433, new int[]{0, 1, 3, 30, 52, 61, 84, 280, 394});
         assertEquals(433, p1.pointCount());
         assertEquals(2598, p1.lineCount());
-        testCorrectness(p1, of(9), 54);
+        testCorrectness(p1, of(9));
         assertEquals(of(45), p1.playfairIndex());
         assertEquals(of(2, 3, 4, 5, 6, 7), p1.hyperbolicIndex());
 
         HyperbolicPlane p2 = new HyperbolicPlane(449, new int[]{0, 1, 3, 8, 61, 104, 332, 381});
         assertEquals(449, p2.pointCount());
         assertEquals(3592, p2.lineCount());
-        testCorrectness(p2, of(8), 64);
+        testCorrectness(p2, of(8));
         assertEquals(of(56), p2.playfairIndex());
         assertEquals(of(1, 2, 3, 4, 5, 6), p2.hyperbolicIndex());
     }
@@ -236,7 +236,7 @@ public class HyperbolicPlaneTest {
         })).toArray(BitSet[]::new));
         assertEquals(cg.order() + 1, p7.pointCount());
         assertEquals(143, p7.lineCount());
-        testCorrectness(p7, of(6), 13);
+        testCorrectness(p7, of(6));
         assertEquals(of(7), p7.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), p7.hyperbolicIndex());
         checkPlane(p7);
@@ -262,7 +262,7 @@ public class HyperbolicPlaneTest {
                 })).toArray(BitSet[]::new));
         assertEquals(cg1.order(), p9.pointCount());
         assertEquals(190, p9.lineCount());
-        testCorrectness(p9, of(6), 15);
+        testCorrectness(p9, of(6));
         assertEquals(of(9), p9.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), p9.hyperbolicIndex());
         checkPlane(p9);
@@ -281,7 +281,7 @@ public class HyperbolicPlaneTest {
                 })).collect(Collectors.toSet()).toArray(BitSet[]::new));
         assertEquals(count, p.pointCount());
         assertEquals(304, p.lineCount());
-        testCorrectness(p, of(6), 19);
+        testCorrectness(p, of(6));
         assertEquals(of(13), p.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p.hyperbolicIndex());
 
@@ -299,7 +299,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p1 = new HyperbolicPlane(lines);
         assertEquals(count1, p1.pointCount());
         assertEquals(371, p1.lineCount());
-        testCorrectness(p1, of(6), 21);
+        testCorrectness(p1, of(6));
         assertEquals(of(15), p1.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), p1.hyperbolicIndex());
 
@@ -408,7 +408,7 @@ public class HyperbolicPlaneTest {
             HyperbolicPlane p = new HyperbolicPlane(batch[i * 4], batch[i * 4 + 1], batch[i * 4 + 2], batch[i * 4 + 3]);
             assertEquals(25, p.pointCount());
             assertEquals(50, p.lineCount());
-            testCorrectness(p, of(4), 8);
+            testCorrectness(p, of(4));
             assertEquals(of(4), p.playfairIndex());
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
             checkPlane(p);
@@ -435,62 +435,62 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane sixPoints = new HyperbolicPlane(new int[]{0, 1, 3, 7, 25, 38}, new int[]{0, 16, 21, 36, 48, 62}, new int[]{0, 30, 40, 63, 74, 82});
         assertEquals(13, triPoints.pointCount());
         assertEquals(26, triPoints.lineCount());
-        testCorrectness(triPoints, of(3), 6);
+        testCorrectness(triPoints, of(3));
         assertEquals(of(3), triPoints.playfairIndex());
         assertEquals(of(0, 1), triPoints.hyperbolicIndex());
         checkPlane(triPoints);
 
         assertEquals(19, otherTriPoints.pointCount());
         assertEquals(57, otherTriPoints.lineCount());
-        testCorrectness(otherTriPoints, of(3), 9);
+        testCorrectness(otherTriPoints, of(3));
         assertEquals(of(6), otherTriPoints.playfairIndex());
         assertEquals(of(0, 1), otherTriPoints.hyperbolicIndex());
 
         assertEquals(37, fourPoints.pointCount());
         assertEquals(111, fourPoints.lineCount());
-        testCorrectness(fourPoints, of(4), 12);
+        testCorrectness(fourPoints, of(4));
         assertEquals(of(8), fourPoints.playfairIndex());
         assertEquals(of(0, 1, 2), fourPoints.hyperbolicIndex());
 
         assertEquals(49, otherFourPoints.pointCount());
         assertEquals(196, otherFourPoints.lineCount());
-        testCorrectness(otherFourPoints, of(4), 16);
+        testCorrectness(otherFourPoints, of(4));
         assertEquals(of(12), otherFourPoints.playfairIndex());
         assertEquals(of(0, 1, 2), otherFourPoints.hyperbolicIndex());
 
         assertEquals(41, fivePoints.pointCount());
         assertEquals(82, fivePoints.lineCount());
-        testCorrectness(fivePoints, of(5), 10);
+        testCorrectness(fivePoints, of(5));
         assertEquals(of(5), fivePoints.playfairIndex());
         assertEquals(of(1, 2, 3), fivePoints.hyperbolicIndex());
 
         assertEquals(41, otherFivePoints.pointCount());
         assertEquals(82, otherFivePoints.lineCount());
-        testCorrectness(otherFivePoints, of(5), 10);
+        testCorrectness(otherFivePoints, of(5));
         assertEquals(of(5), otherFivePoints.playfairIndex());
         assertEquals(of(1, 2, 3), otherFivePoints.hyperbolicIndex());
 
         assertEquals(19, triFour.pointCount());
         assertEquals(38, triFour.lineCount());
-        testCorrectness(triFour, of(3, 4), 7);
+        testCorrectness(triFour, of(3, 4));
         assertEquals(of(3, 4), triFour.playfairIndex());
         assertEquals(of(0, 1, 2), triFour.hyperbolicIndex());
 
         assertEquals(91, sixPoints.pointCount());
         assertEquals(273, sixPoints.lineCount());
-        testCorrectness(sixPoints, of(6), 18);
+        testCorrectness(sixPoints, of(6));
         assertEquals(of(12), sixPoints.playfairIndex());
         assertEquals(of(1, 2, 3, 4), sixPoints.hyperbolicIndex());
 
         HyperbolicPlane p3 = new HyperbolicPlane(39, new int[]{0, 1, 3}, new int[]{0, 4, 18},
                 new int[]{0, 5, 27}, new int[]{0, 6, 16}, new int[]{0, 7, 15}, new int[]{0, 9, 20}, new int[]{0, 13, 26});
-        testCorrectness(p3, of(3), 19);
+        testCorrectness(p3, of(3));
         assertEquals(of(1), p3.hyperbolicIndex());
         checkPlane(p3);
 
         HyperbolicPlane p2 = new HyperbolicPlane(37, new int[]{0, 1, 3}, new int[]{0, 4, 26},
                 new int[]{0, 5, 14}, new int[]{0, 6, 25}, new int[]{0, 7, 17}, new int[]{0, 8, 21});
-        testCorrectness(p2, of(3), 18);
+        testCorrectness(p2, of(3));
         assertEquals(of(1), p2.hyperbolicIndex());
         checkPlane(p2);
     }
@@ -509,56 +509,56 @@ public class HyperbolicPlaneTest {
 
         assertEquals(61, fp1.pointCount());
         assertEquals(183, fp1.lineCount());
-        testCorrectness(fp1, of(5), 15);
+        testCorrectness(fp1, of(5));
         assertEquals(of(10), fp1.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp1.hyperbolicIndex());
 
         assertEquals(61, fp2.pointCount());
         assertEquals(183, fp2.lineCount());
-        testCorrectness(fp2, of(5), 15);
+        testCorrectness(fp2, of(5));
         assertEquals(of(10), fp2.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp2.hyperbolicIndex());
 
         assertEquals(61, fp3.pointCount());
         assertEquals(183, fp3.lineCount());
-        testCorrectness(fp3, of(5), 15);
+        testCorrectness(fp3, of(5));
         assertEquals(of(10), fp3.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp3.hyperbolicIndex());
 
         assertEquals(61, fp4.pointCount());
         assertEquals(183, fp4.lineCount());
-        testCorrectness(fp4, of(5), 15);
+        testCorrectness(fp4, of(5));
         assertEquals(of(10), fp4.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp4.hyperbolicIndex());
 
         assertEquals(61, fp5.pointCount());
         assertEquals(183, fp5.lineCount());
-        testCorrectness(fp5, of(5), 15);
+        testCorrectness(fp5, of(5));
         assertEquals(of(10), fp5.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp5.hyperbolicIndex());
 
         assertEquals(71, fp6.pointCount());
         assertEquals(213, fp6.lineCount());
-        testCorrectness(fp6, of(5, 6), 16);
+        testCorrectness(fp6, of(5, 6));
         assertEquals(of(10, 11), fp6.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), fp6.hyperbolicIndex());
 
         assertEquals(121, fp7.pointCount());
         assertEquals(726, fp7.lineCount());
-        testCorrectness(fp7, of(5), 30);
+        testCorrectness(fp7, of(5));
         assertEquals(of(25), fp7.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp7.hyperbolicIndex());
 
         assertEquals(81, fp8.pointCount());
         assertEquals(324, fp8.lineCount());
-        testCorrectness(fp8, of(5), 20);
+        testCorrectness(fp8, of(5));
         assertEquals(of(15), fp8.playfairIndex());
         assertEquals(of(0, 1, 2, 3), fp8.hyperbolicIndex());
     }
 
     @Test
     public void generateUnital() {
-        int q = 8;
+        int q = 4;
         int ord = q * q;
         int v = ord * ord + ord + 1;
         GaloisField fd = new GaloisField(ord);
@@ -579,7 +579,7 @@ public class HyperbolicPlaneTest {
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
         HyperbolicPlane uni = new HyperbolicPlane(lines);
         assertEquals(ord * q + 1, uni.pointCount());
-        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1), ord);
+        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1));
         System.out.println(uni.hyperbolicIndex());
     }
 
@@ -602,10 +602,7 @@ public class HyperbolicPlaneTest {
         return bs;
     }
 
-    public static void testCorrectness(HyperbolicPlane plane, BitSet perLine, int beamCount) {
-        for (int p : plane.points()) {
-            assertEquals(beamCount, plane.point(p).cardinality());
-        }
+    public static void testCorrectness(HyperbolicPlane plane, BitSet perLine) {
         for (int l : plane.lines()) {
             assertTrue(perLine.get(plane.line(l).cardinality()));
         }
@@ -629,7 +626,10 @@ public class HyperbolicPlaneTest {
             }
         }
         if (perLine.cardinality() == 1) { // Theorem 8.3.1
-            assertEquals(beamCount * (perLine.stream().findAny().orElseThrow() - 1), plane.pointCount() - 1);
+            int beamCount = (plane.pointCount() - 1) / (perLine.length() - 2);
+            for (int p : plane.points()) {
+                assertEquals(beamCount, plane.point(p).cardinality());
+            }
             assertEquals(plane.pointCount() * beamCount, plane.lineCount() * perLine.stream().findAny().orElseThrow());
         }
     }

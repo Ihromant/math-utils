@@ -250,7 +250,8 @@ public class HyperbolicPlane {
     }
 
     public BitSet hyperbolicIndex() {
-        int maximum = lines[0].cardinality() - 1; // TODO it should be maximum of lines lengths
+        int maximum = lines[0].cardinality() - 1; // uncomment below when testing PBD
+        // int maximum = Arrays.stream(lines).mapToInt(BitSet::cardinality).max().orElseThrow() - 1;
         BitSet result = new BitSet();
         for (int o : points()) {
             for (int x : points()) {
