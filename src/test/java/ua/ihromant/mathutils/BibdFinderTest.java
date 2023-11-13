@@ -40,8 +40,7 @@ public class BibdFinderTest {
     public void testDifferenceSets2() throws IOException, InterruptedException {
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "4-76f.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
-             BufferedReader br = new BufferedReader(isr);
-             ExecutorService service = Executors.newFixedThreadPool(12)) {
+             BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
             int v = Integer.parseInt(line.split(" ")[0]);
             int k = Integer.parseInt(line.split(" ")[1]);
@@ -49,6 +48,7 @@ public class BibdFinderTest {
             AtomicLong counter = new AtomicLong();
             AtomicLong waiter = new AtomicLong();
             waiter.incrementAndGet();
+            ExecutorService service = Executors.newFixedThreadPool(12);
             long time = System.currentTimeMillis();
             while ((line = br.readLine()) != null) {
                 String cut = line.replace("{{", "").replace("}}", "");
