@@ -35,9 +35,6 @@ public class SemiDirectProduct implements Group {
         int beta1 = a / left.order();
         int alpha2 = b % left.order();
         int beta2 = b / left.order();
-        if (beta1 == 0 || alpha2 == 0) {
-            return fromAlphaBeta(left.op(alpha1, alpha2), right.op(beta1, beta2));
-        }
         return fromAlphaBeta(left.op(alpha1, left.mul(left.exponent(i, beta1), alpha2)), right.op(beta1, beta2));
     }
 
@@ -47,9 +44,6 @@ public class SemiDirectProduct implements Group {
         int beta = a / left.order();
         int ia = left.inv(alpha);
         int ib = right.inv(beta);
-        if (alpha == 0 || beta == 0) {
-            return fromAlphaBeta(ia, ib);
-        }
         return fromAlphaBeta(left.mul(left.exponent(i, ib), ia), ib);
     }
 
