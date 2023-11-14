@@ -21,14 +21,38 @@ public interface Group {
         return counter;
     }
 
+    default int expOrder(int a) {
+        int eul = euler(order());
+        int res = a;
+        for (int i = 1; i < eul + 1; i++) {
+            res = mul(res, a);
+            if (res == a) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     String name();
 
     String elementName(int a);
 
-    default int power(int a, int pow) {
+    default int mul(int a, int cff) {
         int result = 0;
-        for (int i = 0; i < pow; i++) {
+        for (int i = 0; i < cff; i++) {
             result = op(a, result);
+        }
+        return result;
+    }
+
+    default int exponent(int base, int power) {
+        int result = 1;
+        while (power > 0) {
+            if (power % 2 == 1) {
+                result = mul(result, base);
+            }
+            base = mul(base, base);
+            power = power / 2;
         }
         return result;
     }

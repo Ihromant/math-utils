@@ -12,6 +12,9 @@ public class GroupTest {
         testCorrectness(new CyclicGroup(15), true);
         testCorrectness(new GroupProduct(3, 3, 5), true);
         testCorrectness(new DihedralGroup(7), false);
+        testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), false);
+        testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3)), false);
+        testCorrectness(new SemiDirectProduct(new CyclicGroup(11), new CyclicGroup(5)), false);
     }
 
     @Test
@@ -52,10 +55,22 @@ public class GroupTest {
     }
 
     @Test
-    public void testPower() {
+    public void testMul() {
         CyclicGroup cg = new CyclicGroup(20);
-        assertEquals(7, cg.power(3, 9));
-        assertEquals(0, cg.power(3, 20));
+        assertEquals(7, cg.mul(3, 9));
+        assertEquals(0, cg.mul(3, 20));
+    }
+
+    @Test
+    public void testExp() {
+        CyclicGroup cg = new CyclicGroup(125);
+        assertEquals(3, cg.exponent(2, 7));
+        CyclicGroup cg1 = new CyclicGroup(7);
+        assertEquals(3, cg1.expOrder(2));
+        assertEquals(2, cg1.expOrder(6));
+        assertEquals(6, cg1.expOrder(3));
+        CyclicGroup cg2 = new CyclicGroup(8);
+        IntStream.range(2, cg2.order()).forEach(i -> assertEquals(i % 2 == 0 ? -1 : 2, cg2.expOrder(i)));
     }
 
     private void testCorrectness(Group g, boolean commutative) {
