@@ -37,8 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BibdFinderTest {
     @Test
-    public void testDifferenceSets2() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "4-76f.txt"));
+    public void testDifferenceSets() throws IOException, InterruptedException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-85.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
@@ -125,8 +125,9 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generate3() throws IOException {
-        generateDiffSets(new GroupProduct(5, 5), 4);
+    public void generate() throws IOException {
+        generateDiffSets(101, 5);
+        //generateDiffSets(new GroupProduct(5, 5), 4);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -179,7 +180,7 @@ public class BibdFinderTest {
             //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
                 long c = counter.incrementAndGet();
                 printDifferenceSet(ds, ps, cycles, false); // set multiple to true if you wish to print all results
-                if ((c & CONST) != 0) {
+                if ((c & CONST) == 0) {
                     System.out.println(c);
                 }
                 if (k > 4) {
@@ -221,7 +222,7 @@ public class BibdFinderTest {
                 //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
                 long c = counter.incrementAndGet();
                 printDifferenceSet(ds, ps, g, cycles); // set multiple to true if you wish to print all results
-                if ((c & CONST) != 0) {
+                if ((c & CONST) == 0) {
                     System.out.println(c);
                 }
                 if (k > 4) {

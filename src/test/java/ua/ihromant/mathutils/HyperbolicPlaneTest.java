@@ -562,12 +562,12 @@ public class HyperbolicPlaneTest {
         int ord = q * q;
         int v = ord * ord + ord + 1;
         GaloisField fd = new GaloisField(ord);
-        HyperbolicPlane pl = new HyperbolicPlane(fd.generateLines());
+        HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
         assertEquals(v, pl.pointCount());
         assertEquals(v, pl.lineCount());
         BitSet unital = new BitSet();
         for (int p : pl.points()) {
-            int[] hom = getHomogeneus(p, ord);
+            int[] hom = getHomogenous(p, ord);
             int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
             if (val == 0) {
                 unital.set(p);
@@ -583,7 +583,54 @@ public class HyperbolicPlaneTest {
         System.out.println(uni.hyperbolicIndex());
     }
 
-    private int[] getHomogeneus(int p, int ord) {
+    @Test
+    public void generate3DUnital() {
+        int q = 3;
+        int ord = q * q;
+        GaloisField fd = new GaloisField(ord);
+        HyperbolicPlane pl = new HyperbolicPlane(fd.generateSpace());
+        testCorrectness(pl, of(ord + 1));
+        //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
+        //checkSpace(pl, pl.pointCount(), pl.pointCount());
+        BitSet unital = new BitSet();
+        for (int p : pl.points()) {
+            int[] hom = getHomogenousSpace(p, ord);
+            int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
+            if (val == 0) {
+                unital.set(p);
+            }
+        }
+        int[] pointArray = unital.stream().toArray();
+        BitSet[] lines = StreamSupport.stream(pl.lines().spliterator(), false).map(l -> pl.line(l).stream()
+                        .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
+                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
+        HyperbolicPlane uni = new HyperbolicPlane(lines);
+        assertEquals(280, uni.pointCount());
+        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
+        assertEquals(of(28, 37), uni.cardSubPlanes(true));
+        checkSpace(uni, 280, 280);
+        System.out.println(uni.hyperbolicIndex());
+    }
+
+    private int[] getHomogenousSpace(int p, int ord) {
+        int cb = ord * ord * ord;
+        if (p < cb) {
+            return new int[]{p / ord / ord, p / ord % ord, p % ord, 1};
+        }
+        p = p - cb;
+        int sqr = ord * ord;
+        if (p < sqr) {
+            return new int[]{0, p / ord, p % ord, 1};
+        }
+        p = p - sqr;
+        if (p < ord) {
+            return new int[]{0, 1, p, 0};
+        } else {
+            return new int[]{0, 1, 0, 0};
+        }
+    }
+
+    private int[] getHomogenous(int p, int ord) {
         int sqr = ord * ord;
         if (p < sqr) {
             return new int[]{p / ord, p % ord, 1};

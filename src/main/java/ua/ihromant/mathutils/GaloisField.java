@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -215,6 +216,13 @@ public class GaloisField {
         return x * cardinality + y;
     }
 
+    private int mulSpace(int point, int cff) {
+        int x = mul(point / cardinality / cardinality, cff);
+        int y = mul(point / cardinality % cardinality, cff);
+        int z = mulPoint(point % cardinality, cff);
+        return fromSpaceCrd(x, y, z);
+    }
+
     private int mulPoint(int point, int cff) {
         int x = mul(x(point), cff);
         int y = mul(y(point), cff);
@@ -225,6 +233,16 @@ public class GaloisField {
         return fromEuclideanCrd(add(x(p1), x(p2)), add(y(p1), y(p2)));
     }
 
+    private int addSpace(int p1, int p2) {
+        int x1 = p1 / cardinality / cardinality;
+        int y1 = p1 / cardinality % cardinality;
+        int z1 = p1 % cardinality;
+        int x2 = p2 / cardinality / cardinality;
+        int y2 = p2 / cardinality % cardinality;
+        int z2 = p2 % cardinality;
+        return fromSpaceCrd(add(x1, x2), add(y1, y2), add(z1, z2));
+    }
+
     private int x(int point) {
         return point / cardinality;
     }
@@ -233,11 +251,11 @@ public class GaloisField {
         return point % cardinality;
     }
 
-    public BitSet[] generateLines() {
+    public BitSet[] generatePlane() {
         int v = cardinality * cardinality + cardinality + 1;
         int[][] rays = Stream.concat(
                 Stream.of(elements().skip(1)
-                        .map(y -> fromEuclideanCrd(0, y)).toArray()),
+                        .map(cf -> mulPoint(fromEuclideanCrd(0, 1), cf)).toArray()),
                 elements().mapToObj(y -> elements().skip(1)
                         .map(cf -> mulPoint(fromEuclideanCrd(1, y), cf)).toArray())).toArray(int[][]::new);
         BitSet[] lines = new BitSet[v];
@@ -266,6 +284,98 @@ public class GaloisField {
             infinity.set(cardinality * cardinality + i);
         }
         lines[cardinality * cardinality + cardinality] = infinity;
+        return lines;
+    }
+
+    private int fromSpaceCrd(int x, int y, int z) {
+        return (x * cardinality + y) * cardinality + z;
+    }
+
+    public BitSet[] generateSpace() {
+        int v = cardinality * cardinality * cardinality * cardinality + cardinality * cardinality * cardinality
+                + 2 * cardinality * cardinality + cardinality + 1;
+        int[][] planeRays = Stream.concat(
+                Stream.of(elements().skip(1)
+                        .map(cf -> mulPoint(fromEuclideanCrd(0, 1), cf)).toArray()),
+                elements().mapToObj(y -> elements().skip(1)
+                        .map(cf -> mulPoint(fromEuclideanCrd(1, y), cf)).toArray())).toArray(int[][]::new);
+        int[][] rays = Stream.of(Stream.of(elements().skip(1)
+                        .map(cf -> mulSpace(fromSpaceCrd(0, 0, 1), cf)).toArray()),
+                elements().mapToObj(z -> elements().skip(1)
+                        .map(cf -> mulSpace(fromSpaceCrd(0, 1, z), cf)).toArray()),
+                elements().boxed().flatMap(y -> elements().mapToObj(z -> elements().skip(1)
+                        .map(cf -> mulSpace(fromSpaceCrd(1, y, z), cf)).toArray()))).flatMap(Function.identity()).toArray(int[][]::new);
+        BitSet[] lines = new BitSet[v];
+        int fromIdx = 0;
+        for (int y = 0; y < cardinality; y++) {
+            for (int z = 0; z < cardinality; z++) {
+                int start = fromSpaceCrd(0, y, z);
+                for (int yDir = 0; yDir < cardinality; yDir++) {
+                    for (int zDir = 0; zDir < cardinality; zDir++) {
+                        int lineIdx = fromIdx + ((y * cardinality + z) * cardinality + yDir) * cardinality + zDir;
+                        BitSet line = new BitSet();
+                        line.set(start);
+                        IntStream.of(rays[1 + cardinality + yDir * cardinality + zDir]).forEach(p -> line.set(addSpace(p, start)));
+                        line.set(cardinality * cardinality * cardinality + yDir * cardinality + zDir);
+                        lines[lineIdx] = line;
+                    }
+                }
+            }
+        }
+        fromIdx = fromIdx + cardinality * cardinality * cardinality * cardinality;
+        for (int x = 0; x < cardinality; x++) {
+            for (int z = 0; z < cardinality; z++) {
+                int start = fromSpaceCrd(x, 0, z);
+                for (int zDir = 0; zDir < cardinality; zDir++) {
+                    int lineIdx = fromIdx + (x * cardinality + z) * cardinality + zDir;
+                    BitSet line = new BitSet();
+                    line.set(start);
+                    IntStream.of(rays[1 + zDir]).forEach(p -> line.set(addSpace(p, start)));
+                    line.set(cardinality * cardinality * cardinality + cardinality * cardinality + zDir);
+                    lines[lineIdx] = line;
+                }
+            }
+        }
+        fromIdx = fromIdx + cardinality * cardinality * cardinality;
+        for (int x = 0; x < cardinality; x++) {
+            for (int y = 0; y < cardinality; y++) {
+                int start = fromSpaceCrd(x, y, 0);
+                int lineIdx = fromIdx + x * cardinality + y;
+                BitSet line = new BitSet();
+                line.set(start);
+                IntStream.of(rays[0]).forEach(p -> line.set(addSpace(p, start)));
+                line.set(cardinality * cardinality * cardinality + cardinality * cardinality + cardinality);
+                lines[lineIdx] = line;
+            }
+        }
+        fromIdx = fromIdx + cardinality * cardinality;
+        for (int z = 0; z < cardinality; z++) {
+            int start = fromEuclideanCrd(0, z);
+            for (int zDir = 0; zDir < cardinality; zDir++) {
+                int lineIdx = fromIdx + z * cardinality + zDir;
+                BitSet line = new BitSet();
+                line.set(cardinality * cardinality * cardinality  + start);
+                IntStream.of(planeRays[zDir + 1]).forEach(p -> line.set(cardinality * cardinality * cardinality + addPoints(p, start)));
+                line.set(cardinality * cardinality * cardinality + cardinality * cardinality + zDir);
+                lines[lineIdx] = line;
+            }
+        }
+        fromIdx = fromIdx + cardinality * cardinality;
+        for (int y = 0; y < cardinality; y++) {
+            int lineIdx = fromIdx + y;
+            BitSet line = new BitSet();
+            int start = fromEuclideanCrd(y, 0);
+            line.set(cardinality * cardinality * cardinality + start);
+            IntStream.of(planeRays[0]).forEach(p -> line.set(cardinality * cardinality * cardinality + addPoints(p, start)));
+            line.set(cardinality * cardinality * cardinality + cardinality * cardinality + cardinality);
+            lines[lineIdx] = line;
+        }
+        fromIdx = fromIdx + cardinality;
+        BitSet infinity = new BitSet();
+        for (int i = 0; i <= cardinality; i++) {
+            infinity.set(cardinality * cardinality * cardinality + cardinality * cardinality + i);
+        }
+        lines[fromIdx] = infinity;
         return lines;
     }
 

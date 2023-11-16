@@ -97,6 +97,7 @@ public class HyperbolicPlane {
 
     private int[][] generateLookup() {
         int[][] result = new int[pointCount][pointCount];
+        Arrays.stream(result).forEach(l -> Arrays.fill(l, -1));
         for (int line : lines()) {
             for (int p1 : points(line)) {
                 int[] map = result[p1];
