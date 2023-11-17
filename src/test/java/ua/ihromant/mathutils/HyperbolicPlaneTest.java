@@ -76,6 +76,13 @@ public class HyperbolicPlaneTest {
         assertEquals(of(0), p1.hyperbolicIndex());
         assertEquals(of(7), p1.cardSubPlanes(true)); // 4-dimensional projective space
         checkSpace(p1, 15, 15); // 4-dimensional projective space
+
+        HyperbolicPlane p2 = new HyperbolicPlane(63, new int[][]{{0, 7, 26}, {0, 13, 35}, {0, 1, 6},
+                {0, 16, 33}, {0, 11, 25}, {0, 2, 12}, {0, 9, 27}, {0, 3, 32}, {0, 15, 23}, {0, 4, 24}, {0, 21, 42}});
+        testCorrectness(p2, of(3));
+        assertEquals(of(0, 1), p2.hyperbolicIndex());
+        assertEquals(of(7, 15), p2.cardSubPlanes(true));
+        checkSpace(p2, 15, 63);
     }
 
     @Test
