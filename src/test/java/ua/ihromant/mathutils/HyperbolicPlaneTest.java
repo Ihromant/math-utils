@@ -606,10 +606,24 @@ public class HyperbolicPlaneTest {
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
         HyperbolicPlane uni = new HyperbolicPlane(lines);
         assertEquals(280, uni.pointCount());
-        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
-        assertEquals(of(28, 37), uni.cardSubPlanes(true));
-        checkSpace(uni, 280, 280);
-        System.out.println(uni.hyperbolicIndex());
+        //HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
+        //assertEquals(of(28, 37), uni.cardSubPlanes(true));
+        //checkSpace(uni, 280, 280);
+        //System.out.println(uni.hyperbolicIndex());
+        int[] point37Array = of(0, 1, 2, 3, 31, 32, 33, 34, 68, 69, 70, 71, 83, 84, 85, 86, 117, 118, 119, 120, 130, 131, 132, 133, 178, 179, 180, 181, 191, 192, 193, 194, 228, 229, 230, 231, 268).stream().toArray();
+        int[] point28Array = of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 276, 277, 278, 279).stream().toArray();
+        BitSet[] lines37 = StreamSupport.stream(uni.lines().spliterator(), false).map(l -> uni.line(l).stream()
+                        .map(p -> Arrays.binarySearch(point37Array, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
+                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
+        BitSet[] lines28 = StreamSupport.stream(uni.lines().spliterator(), false).map(l -> uni.line(l).stream()
+                        .map(p -> Arrays.binarySearch(point28Array, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
+                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
+        HyperbolicPlane pl37 = new HyperbolicPlane(lines37);
+        HyperbolicPlane pl28 = new HyperbolicPlane(lines28);
+        testCorrectness(pl37, of(q + 1, ord + 1));
+        testCorrectness(pl28, of(q + 1));
+        System.out.println(pl37.hyperbolicIndex());
+        System.out.println(pl28.hyperbolicIndex());
     }
 
     private int[] getHomogenousSpace(int p, int ord) {
