@@ -87,44 +87,49 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testCyclic() {
+        GroupProduct cg3 = new GroupProduct(5, 5);
+
+        HyperbolicPlane p3 = new HyperbolicPlane(cg3, new int[][]{{0, 9, 23, 24}, {0, 12, 14, 17}});
+        assertEquals(25, p3.pointCount());
+        assertEquals(50, p3.lineCount());
+        testCorrectness(p3, of(4));
+        assertEquals(of(4), p3.playfairIndex());
+        assertEquals(of(0, 1, 2), p3.hyperbolicIndex());
+
         GroupProduct cg1 = new GroupProduct(11, 11);
-        int[][][] cycles = new int[][][]{
-                {{0, 0}, {0, 3}, {0, 4}, {1, 1}, {1, 7}, {4, 6}},
-                {{0, 0}, {0, 2}, {2, 5}, {4, 7}, {6, 4}, {8, 0}},
-                {{0, 0}, {1, 5}, {2, 0}, {4, 1}, {6, 0}, {7, 2}},
-                {{0, 0}, {1, 0}, {3, 9}, {4, 8}, {6, 1}, {9, 5}}
+        int[][] cycles = new int[][]{
+                {cg1.fromArr(0, 0), cg1.fromArr(0, 3), cg1.fromArr(0, 4), cg1.fromArr(1, 1), cg1.fromArr(1, 7), cg1.fromArr(4, 6)},
+                {cg1.fromArr(0, 0), cg1.fromArr(0, 2), cg1.fromArr(2, 5), cg1.fromArr(4, 7), cg1.fromArr(6, 4), cg1.fromArr(8, 0)},
+                {cg1.fromArr(0, 0), cg1.fromArr(1, 5), cg1.fromArr(2, 0), cg1.fromArr(4, 1), cg1.fromArr(6, 0), cg1.fromArr(7, 2)},
+                {cg1.fromArr(0, 0), cg1.fromArr(1, 0), cg1.fromArr(3, 9), cg1.fromArr(4, 8), cg1.fromArr(6, 1), cg1.fromArr(9, 5)}
         };
-        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg1.order()).mapToObj(idx -> {
-            BitSet res = new BitSet();
-            for (int[] numb : base) {
-                res.set(cg1.op(cg1.fromArr(numb), idx));
-            }
-            return res;
-        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
-        HyperbolicPlane p1 = new HyperbolicPlane(lines);
+        HyperbolicPlane p1 = new HyperbolicPlane(cg1, cycles);
         assertEquals(121, p1.pointCount());
         assertEquals(484, p1.lineCount());
         testCorrectness(p1, of(6));
         assertEquals(of(18), p1.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
+    }
 
+    @Test
+    public void brokenCyclic() {
         GroupProduct cg2 = new GroupProduct(7, 5, 5);
 
-        cycles = new int[][][] {
+        int[][][] cycles = new int[][][] {
                 {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}},
                 {{0, 0, 0}, {1, 1, 3}, {1, 4, 2}, {2, 2, 2}, {2, 3, 3}, {4, 2, 0}, {4, 3, 0}},
                 {{0, 0, 0}, {1, 3, 4}, {1, 2, 1}, {2, 2, 2}, {2, 3, 2}, {4, 0, 2}, {4, 0, 3}},
                 {{0, 0, 0}, {1, 1, 2}, {1, 4, 3}, {2, 1, 4}, {2, 4, 4}, {4, 0, 1}, {4, 0, 4}},
                 {{0, 0, 0}, {1, 3, 1}, {1, 2, 4}, {2, 4, 1}, {2, 1, 4}, {4, 1, 0}, {4, 4, 0}}
         };
-        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg2.order()).mapToObj(idx -> {
+        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg2.order()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int[] numb : base) {
                 res.set(cg2.op(cg2.fromArr(numb), idx));
             }
             return res;
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
-        p1 = new HyperbolicPlane(lines);
+        HyperbolicPlane p1 = new HyperbolicPlane(lines);
         assertEquals(175, p1.pointCount());
         assertEquals(725, p1.lineCount());
         testCorrectness(p1, of(7)); // this fails, example is broken

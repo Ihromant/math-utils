@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.group.Group;
+
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Set;
@@ -76,6 +78,28 @@ public class HyperbolicPlane {
             }
             return res;
         }) : Stream.of()).toArray(BitSet[]::new);
+        this.lookup = generateLookup();
+        this.points = generateBeams();
+        this.intersections = generateIntersections();
+    }
+
+    public HyperbolicPlane(Group g, int[]... base) {
+        this.pointCount = g.order();
+        int k = base[0].length; // assuming that difference set is correct
+        this.lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
+                .flatMap(arr -> g.elements().mapToObj(el -> {
+                    BitSet res = new BitSet();
+                    for (int shift : arr) {
+                        res.set(g.op(el, shift));
+                    }
+                    return res;
+                })), pointCount % k == 0 ? g.elements().mapToObj(idx -> {
+            BitSet res = new BitSet();
+            for (int shift : base[base.length - 1]) {
+                res.set(g.op(idx, shift));
+            }
+            return res;
+        }).distinct() : Stream.of()).toArray(BitSet[]::new);
         this.lookup = generateLookup();
         this.points = generateBeams();
         this.intersections = generateIntersections();
