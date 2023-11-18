@@ -39,13 +39,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class BibdFinderTest {
     @Test
     public void testGroupDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "4-Z5xZ5.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-Z15xZ3.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
-            Group g = new GroupProduct(new CyclicGroup(5), new CyclicGroup(5));
-            int k = Integer.parseInt(line.split(" ")[1]);
-            BitSet degenerate = line.length() < 4 ? new BitSet() : new BitSet(); // TODO
+            Group g = new GroupProduct(new CyclicGroup(15), new CyclicGroup(3));
+            String[] chunks = line.split(" ");
+            int k = Integer.parseInt(chunks[1]);
+            int[] degenerate = chunks.length <= 3 ? new int[0] : Arrays.stream(chunks, 3, chunks.length)
+                    .map(ch -> ch.replace(",", "").replace("{", "").replace("}", ""))
+                    .mapToInt(Integer::parseInt).toArray();
             Set<BitSet> planes = ConcurrentHashMap.newKeySet();
             AtomicLong counter = new AtomicLong();
             AtomicLong waiter = new AtomicLong();
@@ -58,12 +61,12 @@ public class BibdFinderTest {
                 service.execute(() -> {
                     String[] arrays = cut.split("\\}, \\{");
                     int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                                    .toArray()), g.order() % k == 0 ? Stream.of(degenerate.stream().toArray()) : Stream.empty()).toArray(int[][]::new);
+                                    .toArray()), g.order() % k == 0 ? Stream.of(degenerate) : Stream.empty()).toArray(int[][]::new);
                     IntStream.range(0, 1 << (diffSet.length - (g.order() % k == 0 ? 2 : 1))).forEach(comb -> {
                         int[][] ds = IntStream.range(0, diffSet.length)
                                 .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(g, diffSet[i])).toArray(int[][]::new);
                         HyperbolicPlane p = new HyperbolicPlane(g, ds);
-                        checkHypIndex(p, planes, cut, ds);
+                        checkSubPlanes(p, planes, cut, ds);
                     });
 
                     long cnt = counter.incrementAndGet();
@@ -172,7 +175,7 @@ public class BibdFinderTest {
     @Test
     public void generate() throws IOException {
         //generateDiffSets(101, 5);
-        generateDiffSets(new GroupProduct(new CyclicGroup(7), new CyclicGroup(7)), 4);
+        generateDiffSets(new GroupProduct(new CyclicGroup(15), new CyclicGroup(3)), 5);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -272,11 +275,11 @@ public class BibdFinderTest {
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
         counter.set(0);
-        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name()
-                + (filter.isEmpty() ? "" : "-" + filter.stream().mapToObj(String::valueOf).collect(Collectors.joining("-"))) + ".txt");
+        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name()); // TODO possible multiple
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
+            filter.set(0);
             ps.println(g.name() + " " + k + " " + cycles.size() + (filter.isEmpty() ? "" : " " + filter));
             int needed = g.order() / k / (k - 1);
             allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
