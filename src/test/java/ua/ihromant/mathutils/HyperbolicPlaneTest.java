@@ -1,7 +1,9 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.SemiDirectProduct;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -315,28 +317,31 @@ public class HyperbolicPlaneTest {
         assertEquals(of(15), p1.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), p1.hyperbolicIndex());
 
-        int count2 = 111;
-        int[][] blocks = new int[][]{new int[]{0, 3, 9, 21, 51, 1}, new int[]{0, 15, 58, 85, 32, 92},
-                new int[]{15, 99, 40, 103, 59, 23}, new int[]{27, 81, 49, 34, 38, 110}, new int[]{30, 69, 79, 25, 5, 20},
-                new int[]{39, 72, 58, 55, 17, 98}, new int[]{78, 102, 4, 22, 32, 101}};
-        BitSet[] lines1 = Stream.concat(Arrays.stream(blocks).flatMap(arr -> IntStream.range(0, count2 / 3).mapToObj(idx -> {
-            BitSet result = new BitSet();
-            for (int i : arr) {
-                result.set((i + 3 * idx) % count1);
-            }
-            return result;
-        })), Arrays.stream(blocks).flatMap(arr -> IntStream.range(0, count2 / 3).mapToObj(idx -> {
-            BitSet result = new BitSet();
-            for (int i : arr) {
-                switch (i % 3) {
-                    case 0 -> result.set(((i / 3 + idx) % 37) * 3);
-                    case 1 -> result.set(((i / 3 + 10 * idx) % 37) * 3 + 1);
-                    case 2 -> result.set(((i / 3 + 26 * idx) % 37) * 3 + 2);
-                }
-            }
-            return result;
-        }))).collect(Collectors.toSet()).toArray(BitSet[]::new);
-        System.out.println(lines1.length);
+        SemiDirectProduct semi = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        BitSet[] lines2 = Stream.concat(Stream.of(new int[]{0, semi.fromAB(1, 0), semi.fromAB(3, 0),
+                        semi.fromAB(7, 0), semi.fromAB(17, 0), semi.fromAB(0, 1)},
+                new int[]{0, semi.fromAB(5, 0), semi.fromAB(19, 1), semi.fromAB(28, 1),
+                        semi.fromAB(10, 2), semi.fromAB(30, 2)}).flatMap(arr -> IntStream.range(0, semi.order()).mapToObj(i -> {
+            BitSet res = new BitSet();
+            Arrays.stream(arr).forEach(el -> res.set(semi.op(i, el)));
+            return res;
+        })), Stream.of(new int[]{5, 33}, new int[]{9, 27}, new int[]{10, 23}, new int[]{13, 24}, new int[]{26, 34})
+                .flatMap(arr -> IntStream.range(0, 37).mapToObj(i -> {
+                    BitSet res = new BitSet();
+                    res.set(semi.op(i, arr[0]));
+                    res.set(semi.op(i, arr[1]));
+                    res.set(semi.op(semi.fromAB(i, 1), arr[0]));
+                    res.set(semi.op(semi.fromAB(i, 1), arr[1]));
+                    res.set(semi.op(semi.fromAB(i, 2), arr[0]));
+                    res.set(semi.op(semi.fromAB(i, 2), arr[1]));
+                    return res;
+                }))).toArray(BitSet[]::new);
+        HyperbolicPlane p2 = new HyperbolicPlane(lines2);
+        testCorrectness(p2, of(6));
+        assertEquals(semi.order(), p2.pointCount());
+        assertEquals(407, p2.lineCount());
+        assertEquals(of(16), p2.playfairIndex());
+        assertEquals(of(1, 2, 3, 4), p2.hyperbolicIndex());
     }
 
     @Test

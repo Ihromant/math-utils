@@ -25,7 +25,7 @@ public class SemiDirectProduct implements Group {
         this.i = i;
     }
 
-    private int fromAlphaBeta(int alpha, int beta) {
+    public int fromAB(int alpha, int beta) {
         return beta * left.order() + alpha;
     }
 
@@ -35,7 +35,7 @@ public class SemiDirectProduct implements Group {
         int beta1 = a / left.order();
         int alpha2 = b % left.order();
         int beta2 = b / left.order();
-        return fromAlphaBeta(left.op(alpha1, left.mul(left.exponent(i, beta1), alpha2)), right.op(beta1, beta2));
+        return fromAB(left.op(alpha1, left.mul(left.exponent(i, beta1), alpha2)), right.op(beta1, beta2));
     }
 
     @Override
@@ -44,7 +44,7 @@ public class SemiDirectProduct implements Group {
         int beta = a / left.order();
         int ia = left.inv(alpha);
         int ib = right.inv(beta);
-        return fromAlphaBeta(left.mul(left.exponent(i, ib), ia), ib);
+        return fromAB(left.mul(left.exponent(i, ib), ia), ib);
     }
 
     @Override
