@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupProduct;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -36,6 +37,50 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BibdFinderTest {
+    @Test
+    public void testGroupDifferenceSets() throws IOException, InterruptedException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "4-Z5xZ5.txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line = br.readLine();
+            Group g = new GroupProduct(new CyclicGroup(5), new CyclicGroup(5));
+            int k = Integer.parseInt(line.split(" ")[1]);
+            BitSet degenerate = line.length() < 4 ? new BitSet() : new BitSet(); // TODO
+            Set<BitSet> planes = ConcurrentHashMap.newKeySet();
+            AtomicLong counter = new AtomicLong();
+            AtomicLong waiter = new AtomicLong();
+            waiter.incrementAndGet();
+            ExecutorService service = Executors.newFixedThreadPool(12);
+            long time = System.currentTimeMillis();
+            while ((line = br.readLine()) != null) {
+                String cut = line.replace("{{", "").replace("}}", "");
+                waiter.incrementAndGet();
+                service.execute(() -> {
+                    String[] arrays = cut.split("\\}, \\{");
+                    int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                                    .toArray()), g.order() % k == 0 ? Stream.of(degenerate.stream().toArray()) : Stream.empty()).toArray(int[][]::new);
+                    IntStream.range(0, 1 << (diffSet.length - (g.order() % k == 0 ? 2 : 1))).forEach(comb -> {
+                        int[][] ds = IntStream.range(0, diffSet.length)
+                                .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(g, diffSet[i])).toArray(int[][]::new);
+                        HyperbolicPlane p = new HyperbolicPlane(g, ds);
+                        checkHypIndex(p, planes, cut, ds);
+                    });
+
+                    long cnt = counter.incrementAndGet();
+                    if (cnt % 1000 == 0) {
+                        System.out.println(cnt);
+                    }
+                    if (waiter.decrementAndGet() == 0) {
+                        service.shutdown();
+                    }
+                });
+            }
+            waiter.decrementAndGet();
+            boolean res = service.awaitTermination(20, TimeUnit.DAYS);
+            System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
+        }
+    }
+
     @Test
     public void testDifferenceSets() throws IOException, InterruptedException {
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-85.txt"));
@@ -127,7 +172,7 @@ public class BibdFinderTest {
     @Test
     public void generate() throws IOException {
         //generateDiffSets(101, 5);
-        generateDiffSets(new CyclicGroup(40), 4);
+        generateDiffSets(new GroupProduct(new CyclicGroup(7), new CyclicGroup(7)), 4);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -262,7 +307,7 @@ public class BibdFinderTest {
 
     private static void printDifferenceSet(BitSet[] ds, PrintStream ps, Group gr, Map<BitSet, BitSet> cycles) {
         ps.println(Arrays.stream(ds).map(cycles::get).map(bs -> bs.stream()
-                        .mapToObj(gr::elementName).collect(Collectors.joining(", ", "{", "}")))
+                        .mapToObj(String::valueOf).collect(Collectors.joining(", ", "{", "}")))
                 .collect(Collectors.joining(", ", "{", "}")));
     }
 
@@ -384,8 +429,8 @@ public class BibdFinderTest {
         });
     }
 
-    private static BitSet mirrorTuple(Group g, BitSet tuple) {
-        return tuple.stream().map(g::inv).collect(BitSet::new, BitSet::set, BitSet::or);
+    private static int[] mirrorTuple(Group g, int[] tuple) {
+        return Arrays.stream(tuple).map(g::inv).toArray();
     }
 
     private static BitSet mirrorTuple(BitSet tuple) {
