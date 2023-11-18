@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 
 import java.io.BufferedOutputStream;
@@ -126,8 +126,8 @@ public class BibdFinderTest {
 
     @Test
     public void generate() throws IOException {
-        generateDiffSets(101, 5);
-        //generateDiffSets(new GroupProduct(5, 5), 4);
+        //generateDiffSets(101, 5);
+        generateDiffSets(new CyclicGroup(40), 4);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -191,17 +191,32 @@ public class BibdFinderTest {
         System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
-    private static void generateDiffSets(GroupProduct g, int k) throws IOException {
+    private static void generateDiffSets(Group g, int k) throws IOException {
         System.out.println("Generating for " + g.name() + " " + k);
+        Map<BitSet, BitSet> degenerated = new ConcurrentHashMap<>();
+        calcCyclesAlt(g.asTable(), k, new BitSet(), g.order() % k == 0 ? k - 1 : 0).forEach(e -> {
+            if (degenerated.putIfAbsent(e.getKey(), e.getValue()) == null) {
+                System.out.println("Degenerated " + e.getKey() + " " + e.getValue());
+            }
+        });
+        if (g.order() % k == 0) {
+            if (degenerated.isEmpty()) {
+                System.out.println("Impossible to generate for " + g + " " + k);
+                return;
+            }
+            for (BitSet filter : degenerated.keySet()) {
+                generateDiffSets(g, k, filter);
+            }
+        } else {
+            generateDiffSets(g, k, new BitSet(0));
+        }
+    }
+
+    private static void generateDiffSets(Group g, int k, BitSet filter) throws IOException {
         long time = System.currentTimeMillis();
         Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
         AtomicLong counter = new AtomicLong();
-        BitSet filter = g.base().get(0).order() == k ? IntStream.range(0, g.base().get(0).order()).map(i -> {
-            int[] arr = new int[g.base().size()];
-            arr[0] = i;
-            return g.fromArr(arr);
-        }).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
-        calcCyclesAlt(g.asTable(), k, filter).forEach(e -> {
+        calcCyclesAlt(g.asTable(), k, filter, k * (k - 1)).forEach(e -> {
             if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
                 long c = counter.incrementAndGet();
                 if ((c & CONST) == 0) {
@@ -212,11 +227,12 @@ public class BibdFinderTest {
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
         counter.set(0);
-        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name() + ".txt");
+        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name()
+                + (filter.isEmpty() ? "" : "-" + filter.stream().mapToObj(String::valueOf).collect(Collectors.joining("-"))) + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            ps.println(g.name() + " " + k + " " + cycles.size());
+            ps.println(g.name() + " " + k + " " + cycles.size() + (filter.isEmpty() ? "" : " " + filter));
             int needed = g.order() / k / (k - 1);
             allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
                 //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
@@ -306,8 +322,7 @@ public class BibdFinderTest {
                 });
     }
 
-    private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(Group g, int needed, BitSet filter) {
-        int expectedCard = needed * (needed - 1);
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(Group g, int needed, BitSet filter, int expectedCard) {
         int variants = g.order();
         return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(variants, ch))
                 .parallel().mapMulti((choice, sink) -> {

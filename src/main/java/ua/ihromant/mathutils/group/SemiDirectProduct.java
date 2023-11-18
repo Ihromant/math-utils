@@ -54,7 +54,7 @@ public class SemiDirectProduct implements Group {
 
     @Override
     public String name() {
-        return left + "⋊" + right;
+        return left.name() + "⋊" + right.name();
     }
 
     @Override
