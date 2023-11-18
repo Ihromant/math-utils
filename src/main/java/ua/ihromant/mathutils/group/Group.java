@@ -1,6 +1,8 @@
 package ua.ihromant.mathutils.group;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -65,6 +67,11 @@ public interface Group {
         return new TableGroup(
                 elements().mapToObj(i -> elements().map(j -> op(i, j)).toArray()).toArray(int[][]::new),
                 elements().map(this::inv).toArray());
+    }
+
+    default BitSet difference(int[] basic) {
+        return Arrays.stream(basic).flatMap(i -> Arrays.stream(basic).filter(j -> i != j).map(j -> op(i, inv(j))))
+                .collect(BitSet::new, BitSet::set, BitSet::or);
     }
 
     static int[] factorize(int base) {

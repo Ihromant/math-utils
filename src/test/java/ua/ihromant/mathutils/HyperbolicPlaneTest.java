@@ -111,49 +111,50 @@ public class HyperbolicPlaneTest {
         testCorrectness(p1, of(6));
         assertEquals(of(18), p1.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
-    }
 
-    @Test
-    public void brokenCyclic() {
         GroupProduct cg2 = new GroupProduct(7, 5, 5);
 
-        int[][][] cycles = new int[][][] {
+        int[][][] cycles1 = new int[][][] {
                 {{0, 0, 0}, {1, 0, 0}, {2, 0, 0}, {3, 0, 0}, {4, 0, 0}, {5, 0, 0}, {6, 0, 0}},
                 {{0, 0, 0}, {1, 1, 3}, {1, 4, 2}, {2, 2, 2}, {2, 3, 3}, {4, 2, 0}, {4, 3, 0}},
-                {{0, 0, 0}, {1, 3, 4}, {1, 2, 1}, {2, 2, 2}, {2, 3, 2}, {4, 0, 2}, {4, 0, 3}},
-                {{0, 0, 0}, {1, 1, 2}, {1, 4, 3}, {2, 1, 4}, {2, 4, 4}, {4, 0, 1}, {4, 0, 4}},
+                {{0, 0, 0}, {1, 3, 4}, {1, 2, 1}, {2, 2, 3}, {2, 3, 2}, {4, 0, 2}, {4, 0, 3}},
+                {{0, 0, 0}, {1, 1, 2}, {1, 4, 3}, {2, 1, 1}, {2, 4, 4}, {4, 0, 1}, {4, 0, 4}},
                 {{0, 0, 0}, {1, 3, 1}, {1, 2, 4}, {2, 4, 1}, {2, 1, 4}, {4, 1, 0}, {4, 4, 0}}
         };
-        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg2.order()).mapToObj(idx -> {
+        BitSet[] lines = Arrays.stream(cycles1).flatMap(base -> IntStream.range(0, cg2.order()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int[] numb : base) {
                 res.set(cg2.op(cg2.fromArr(numb), idx));
             }
             return res;
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
-        HyperbolicPlane p1 = new HyperbolicPlane(lines);
-        assertEquals(175, p1.pointCount());
-        assertEquals(725, p1.lineCount());
-        testCorrectness(p1, of(7)); // this fails, example is broken
-        assertEquals(of(22), p1.playfairIndex());
-        assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
+        HyperbolicPlane p = new HyperbolicPlane(lines);
+        assertEquals(175, p.pointCount());
+        assertEquals(725, p.lineCount());
+        testCorrectness(p, of(7));
+        assertEquals(of(22), p.playfairIndex());
+        assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
+        assertEquals(of(p.pointCount()), p.cardSubPlanes(true));
+    }
 
+    @Test
+    public void brokenCyclic() {
         GroupProduct cg = new GroupProduct(7, 37);
         int[][] microBase = new int[][] {{1, 1}, {2, 10}, {4, 26}};
-        cycles = Stream.concat(Stream.<int[][]>of(new int[][]{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}, {6, 0}}),
+        int[][][] cycles = Stream.concat(Stream.<int[][]>of(new int[][]{{0, 0}, {1, 0}, {2, 0}, {3, 0}, {4, 0}, {5, 0}, {6, 0}}),
                 Arrays.stream(microBase).flatMap(arr -> Stream.of(
                         new int[][]{{0, 0}, cg.arrMul(arr, new int[]{0, 1}), cg.arrMul(arr, new int[]{0, 6}), cg.arrMul(arr, new int[]{1, 4}),
                                 cg.arrMul(arr, new int[]{2, 19}), cg.arrMul(arr, new int[]{3, 25}), cg.arrMul(arr, new int[]{6, 25})},
                         new int[][]{{0, 0}, cg.arrMul(arr, new int[]{0, 4}), cg.arrMul(arr, new int[]{1, 25}), cg.arrMul(arr, new int[]{1, 34}),
                                 cg.arrMul(arr, new int[]{2, 24}), cg.arrMul(arr, new int[]{2, 35}), cg.arrMul(arr, new int[]{4, 10})}))).toArray(int[][][]::new);
-        lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg.order()).mapToObj(idx -> {
+        BitSet[] lines = Arrays.stream(cycles).flatMap(base -> IntStream.range(0, cg.order()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int[] numb : base) {
                 res.set(cg.op(cg.fromArr(numb), idx));
             }
             return res;
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
-        p1 = new HyperbolicPlane(lines);
+        HyperbolicPlane p1 = new HyperbolicPlane(lines);
         assertEquals(259, p1.pointCount());
         assertEquals(1591, p1.lineCount());
         testCorrectness(p1, of(7)); // this fails, example is broken
