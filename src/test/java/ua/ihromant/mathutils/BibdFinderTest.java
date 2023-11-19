@@ -37,18 +37,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class BibdFinderTest {
+    // 1428546
     @Test
     public void filterIsomorphic() throws IOException {
-        int v = 43;
-        int k = 3;
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", v + "-" + k + ".txt"));
+        int v = 76;
+        int k = 4;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", k + "-" + v + "f.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             String line = br.readLine();
-            int[] degenerate = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).toArray() : null;
             CyclicGroup gr = new CyclicGroup(v);
             int[][] auths = gr.auth();
             Set<Set<BitSet>> unique = new HashSet<>();
@@ -59,7 +59,7 @@ public class BibdFinderTest {
                 String cut = line.replace("{{", "").replace("}}", "");
                 String[] arrays = cut.split("\\}, \\{");
                 int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                        .toArray()), v % k == 0 ? Stream.of(degenerate) : Stream.empty()).toArray(int[][]::new);
+                        .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i1 -> i1 * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
                 IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                     int[][] diffs = IntStream.range(0, diffSet.length)
                             .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i].clone() : mirrorTuple(gr, diffSet[i]))
