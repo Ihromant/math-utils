@@ -43,4 +43,9 @@ public record DihedralGroup(int order) implements Group {
     public String elementName(int a) {
         return String.valueOf(a); // TODO remake
     }
+
+    @Override
+    public int[][] auth() {
+        throw new UnsupportedOperationException();
+    }
 }

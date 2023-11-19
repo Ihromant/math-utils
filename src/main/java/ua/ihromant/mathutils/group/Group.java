@@ -39,6 +39,8 @@ public interface Group {
 
     String elementName(int a);
 
+    int[][] auth();
+
     default int mul(int a, int cff) {
         int result = 0;
         for (int i = 0; i < cff; i++) {

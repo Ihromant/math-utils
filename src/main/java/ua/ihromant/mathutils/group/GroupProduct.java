@@ -80,4 +80,9 @@ public record GroupProduct(List<Group> base) implements Group {
         int[] arr = toArr(a);
         return IntStream.range(0, base.size()).mapToObj(i -> base.get(i).elementName(arr[i])).collect(Collectors.joining(", ", "(", ")"));
     }
+
+    @Override
+    public int[][] auth() {
+        throw new UnsupportedOperationException();
+    }
 }

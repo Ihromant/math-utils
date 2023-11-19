@@ -63,4 +63,9 @@ public class SemiDirectProduct implements Group {
         int beta = a / left.order();
         return "a" + alpha + "b" + beta;
     }
+
+    @Override
+    public int[][] auth() {
+        throw new UnsupportedOperationException();
+    }
 }

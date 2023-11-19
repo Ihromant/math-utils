@@ -73,6 +73,12 @@ public class GroupTest {
         IntStream.range(2, cg2.order()).forEach(i -> assertEquals(i % 2 == 0 ? -1 : 2, cg2.expOrder(i)));
     }
 
+    @Test
+    public void testAuth() {
+        assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}}, new CyclicGroup(3).auth());
+        assertArrayEquals(new int[][]{{0, 1, 2, 3}, {0, 3, 2, 1}}, new CyclicGroup(4).auth());
+    }
+
     private void testCorrectness(Group g, boolean commutative) {
         Group tg = g.asTable();
         int nonComm = g.elements().flatMap(i -> {

@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.group;
 
+import java.util.stream.IntStream;
+
 public record CyclicGroup(int order) implements Group {
     @Override
     public int op(int a, int b) {
@@ -19,5 +21,11 @@ public record CyclicGroup(int order) implements Group {
     @Override
     public String elementName(int a) {
         return String.valueOf(a);
+    }
+
+    @Override
+    public int[][] auth() {
+        return IntStream.range(1, order).filter(i -> Group.gcd(i, order) == 1)
+                .mapToObj(i -> IntStream.range(0, order).map(j -> mul(i, j)).toArray()).toArray(int[][]::new);
     }
 }
