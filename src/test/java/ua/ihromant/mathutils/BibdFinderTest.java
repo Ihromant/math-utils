@@ -59,7 +59,7 @@ public class BibdFinderTest {
                 String cut = line.replace("{{", "").replace("}}", "");
                 String[] arrays = cut.split("\\}, \\{");
                 int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                        .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i1 -> i1 * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
+                        .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
                 IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                     int[][] diffs = IntStream.range(0, diffSet.length)
                             .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i].clone() : mirrorTuple(gr, diffSet[i]))
