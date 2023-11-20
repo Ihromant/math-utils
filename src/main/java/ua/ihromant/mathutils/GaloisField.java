@@ -219,7 +219,7 @@ public class GaloisField {
     private int mulSpace(int point, int cff) {
         int x = mul(point / cardinality / cardinality, cff);
         int y = mul(point / cardinality % cardinality, cff);
-        int z = mulPoint(point % cardinality, cff);
+        int z = mul(point % cardinality, cff);
         return fromSpaceCrd(x, y, z);
     }
 
