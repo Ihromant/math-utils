@@ -27,7 +27,7 @@ public class HyperbolicPlaneTest {
         testCorrectness(p2, of(3));
         assertEquals(of(4), p2.playfairIndex());
         assertEquals(of(1), p2.hyperbolicIndex());
-        assertEquals(p2.pointCount(), p2.cardSubPlanes(true));
+        assertEquals(of(p2.pointCount()), p2.cardSubPlanes(true));
 
         HyperbolicPlane p1 = new HyperbolicPlane(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
@@ -39,7 +39,7 @@ public class HyperbolicPlaneTest {
         testCorrectness(p1, of(4));
         assertEquals(of(5), p1.playfairIndex());
         assertEquals(of(2), p1.hyperbolicIndex());
-        assertEquals(p1.pointCount(), p1.cardSubPlanes(true));
+        assertEquals(of(p1.pointCount()), p1.cardSubPlanes(true));
 
         HyperbolicPlane p = new HyperbolicPlane(217, new int[]{0,1,37,67,88,92,149}, new int[]{0,15,18,65,78,121,137}, new int[]{0,8,53,79,85,102,107},
                 new int[]{0,11,86,100,120,144,190}, new int[]{0,29,64,165,198,205,207}, new int[]{0,31,62,93,124,155,186});
