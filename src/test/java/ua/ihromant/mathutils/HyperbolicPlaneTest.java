@@ -127,6 +127,33 @@ public class HyperbolicPlaneTest {
         assertEquals(of(22), p.playfairIndex());
         assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
         assertEquals(of(p.pointCount()), p.cardSubPlanes(false)); // it's a plane, but long-running, change to true to check
+
+        CyclicGroup left = new CyclicGroup(7);
+        CyclicGroup right = new CyclicGroup(41);
+        GroupProduct cg = new GroupProduct(left, right);
+        int[][] bases = new int[][]{{0, 9}, {0, 32}, {1, 3}, {1, 38}, {2, 1}, {2, 40}, {4, 14}, {4, 27}};
+        BitSet[] lines = Stream.concat(IntStream.of(1, 37, 16, 18, 10).boxed().flatMap(t -> {
+            int[][] shifted = Arrays.stream(bases).map(pair -> {
+                int[] result = pair.clone();
+                result[1] = right.mul(result[1], t);
+                return result;
+            }).toArray(int[][]::new);
+            return left.elements().boxed().flatMap(l -> right.elements().mapToObj(r -> {
+                BitSet result = new BitSet();
+                for (int[] pair : shifted) {
+                    result.set(cg.fromArr(left.op(l, pair[0]), right.op(r, pair[1])));
+                }
+                return result;
+            }));
+        }), right.elements().mapToObj(r -> {
+            BitSet result = new BitSet();
+            left.elements().forEach(l -> result.set(cg.fromArr(l, r)));
+            result.set(cg.order());
+            return result;
+        })).toArray(BitSet[]::new);
+        HyperbolicPlane p6 = new HyperbolicPlane(lines);
+        testCorrectness(p6, of(8));
+        assertEquals(of(2, 3, 4, 5, 6), p6.hyperbolicIndex());
     }
 
     @Test
