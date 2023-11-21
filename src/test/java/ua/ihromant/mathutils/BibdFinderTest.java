@@ -115,11 +115,51 @@ public class BibdFinderTest {
                         int[][] ds = IntStream.range(0, diffSet.length)
                                 .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(g, diffSet[i])).toArray(int[][]::new);
                         HyperbolicPlane p = new HyperbolicPlane(g, ds);
-                        checkSubPlanes(p, planes, cut, ds);
+                        checkSubPlanes(p, planes, ds);
                     });
 
                     long cnt = counter.incrementAndGet();
                     if (cnt % 1000 == 0) {
+                        System.out.println(cnt);
+                    }
+                    if (waiter.decrementAndGet() == 0) {
+                        service.shutdown();
+                    }
+                });
+            }
+            waiter.decrementAndGet();
+            boolean res = service.awaitTermination(20, TimeUnit.DAYS);
+            System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
+        }
+    }
+
+    @Test
+    public void testDifferenceSets1() throws IOException, InterruptedException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", "3-63.txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line = br.readLine();
+            int v = Integer.parseInt(line.split(" ")[0]);
+            int k = Integer.parseInt(line.split(" ")[1]);
+            Set<BitSet> planes = ConcurrentHashMap.newKeySet();
+            AtomicLong counter = new AtomicLong();
+            AtomicLong waiter = new AtomicLong();
+            waiter.incrementAndGet();
+            ExecutorService service = Executors.newFixedThreadPool(12);
+            long time = System.currentTimeMillis();
+            while ((line = br.readLine()) != null) {
+                String cut = line.replace("{{", "").replace("}}", "");
+                waiter.incrementAndGet();
+                service.execute(() -> {
+                    String[] arrays = cut.split("\\}, \\{");
+                    int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                                    .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty())
+                            .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                    HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
+                    checkSubPlanes(p, planes, diffSet);
+
+                    long cnt = counter.incrementAndGet();
+                    if (cnt % 10000 == 0) {
                         System.out.println(cnt);
                     }
                     if (waiter.decrementAndGet() == 0) {
@@ -159,7 +199,7 @@ public class BibdFinderTest {
                         int[][] ds = IntStream.range(0, diffSet.length)
                                 .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
                         HyperbolicPlane p = new HyperbolicPlane(v, ds);
-                        checkHypIndex(p, planes, cut, ds);
+                        checkHypIndex(p, planes, ds);
                     });
 
                     long cnt = counter.incrementAndGet();
@@ -177,14 +217,14 @@ public class BibdFinderTest {
         }
     }
 
-    private static void checkSubPlanes(HyperbolicPlane p, Set<BitSet> unique, String cut, int[][] ds) {
+    private static void checkSubPlanes(HyperbolicPlane p, Set<BitSet> unique, int[][] ds) {
         BitSet subPlanes = p.cardSubPlanes(false);
         if (unique.add(subPlanes)) {
             System.out.println(subPlanes + " " + Arrays.deepToString(ds));
         }
     }
 
-    private static void checkHypIndex(HyperbolicPlane p, Set<BitSet> unique, String cut, int[][] ds) {
+    private static void checkHypIndex(HyperbolicPlane p, Set<BitSet> unique, int[][] ds) {
         BitSet index = p.hyperbolicIndex();
         if (unique.add(index)) {
             System.out.println(index + " " + Arrays.deepToString(ds));

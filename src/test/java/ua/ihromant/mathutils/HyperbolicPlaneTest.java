@@ -16,6 +16,33 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class HyperbolicPlaneTest {
     @Test
+    public void testLarge() {
+        GroupProduct c1 = new GroupProduct(43, 7);
+        HyperbolicPlane p1 = new HyperbolicPlane(c1, new int[][]{
+                {0, c1.fromArr(1, 1), c1.fromArr(37, 2), c1.fromArr(36, 4), c1.fromArr(42, 1), c1.fromArr(6, 2), c1.fromArr(7, 4)},
+                {0, c1.fromArr(3, 2), c1.fromArr(25, 4), c1.fromArr(22, 1), c1.fromArr(40, 2), c1.fromArr(18, 4), c1.fromArr(21, 1)},
+                {0, c1.fromArr(9, 4), c1.fromArr(32, 1), c1.fromArr(23, 2), c1.fromArr(34, 4), c1.fromArr(11, 1), c1.fromArr(20, 2)},
+                {0, c1.fromArr(27, 1), c1.fromArr(10, 2), c1.fromArr(26, 4), c1.fromArr(16, 1), c1.fromArr(33, 2), c1.fromArr(17, 4)},
+                {0, c1.fromArr(38, 2), c1.fromArr(30, 4), c1.fromArr(35, 1), c1.fromArr(5, 2), c1.fromArr(13, 4), c1.fromArr(8, 1)},
+                {0, c1.fromArr(28, 4), c1.fromArr(4, 1), c1.fromArr(19, 2), c1.fromArr(15, 4), c1.fromArr(39, 1), c1.fromArr(24, 2)},
+                {0, c1.fromArr(41, 1), c1.fromArr(12, 2), c1.fromArr(14, 4), c1.fromArr(2, 1), c1.fromArr(31, 2), c1.fromArr(29, 4)},
+                {0, c1.fromArr(0, 1), c1.fromArr(0, 2), c1.fromArr(0, 3), c1.fromArr(0, 4), c1.fromArr(0, 5), c1.fromArr(0, 6)}
+        });
+        assertEquals(of(2, 3, 4, 5), p1.hyperbolicIndex());
+
+        GroupProduct cg = new GroupProduct(31, 7);
+        HyperbolicPlane p = new HyperbolicPlane(cg, new int[][]{
+                {0, cg.fromArr(1, 1), cg.fromArr(26, 4), cg.fromArr(25, 2), cg.fromArr(30, 1), cg.fromArr(5, 4), cg.fromArr(6, 2)},
+                {0, cg.fromArr(3, 2), cg.fromArr(16, 1), cg.fromArr(13, 4), cg.fromArr(28, 2), cg.fromArr(15, 1), cg.fromArr(18, 4)},
+                {0, cg.fromArr(9, 4), cg.fromArr(17, 2), cg.fromArr(8, 1), cg.fromArr(22, 4), cg.fromArr(14, 2), cg.fromArr(23, 1)},
+                {0, cg.fromArr(27, 1), cg.fromArr(20, 4), cg.fromArr(24, 2), cg.fromArr(4, 1), cg.fromArr(11, 4), cg.fromArr(7, 2)},
+                {0, cg.fromArr(19, 2), cg.fromArr(29, 1), cg.fromArr(10, 4), cg.fromArr(12, 2), cg.fromArr(2, 1), cg.fromArr(21, 4)},
+                {0, cg.fromArr(0, 1), cg.fromArr(0, 2), cg.fromArr(0, 3), cg.fromArr(0, 4), cg.fromArr(0, 5), cg.fromArr(0, 6)}
+        });
+        assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
+    }
+
+    @Test
     public void hyperbolicPlaneExample() {
         HyperbolicPlane p2 = new HyperbolicPlane(new String[]{
                 "00000001111112222223333444455566678",
