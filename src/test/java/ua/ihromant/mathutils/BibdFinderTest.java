@@ -40,9 +40,9 @@ public class BibdFinderTest {
     // 1428546
     @Test
     public void filterIsomorphic() throws IOException {
-        int v = 76;
-        int k = 4;
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", k + "-" + v + "f.txt"));
+        int v = 85;
+        int k = 5;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
@@ -135,7 +135,7 @@ public class BibdFinderTest {
 
     @Test
     public void testDifferenceSets1() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", "3-63.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", "3-45.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
@@ -152,10 +152,10 @@ public class BibdFinderTest {
                 waiter.incrementAndGet();
                 service.execute(() -> {
                     String[] arrays = cut.split("\\}, \\{");
-                    int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                                    .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty())
-                            .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                    int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                            .toArray()).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
                     HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
+                    HyperbolicPlaneTest.testCorrectness(p, of(3));
                     checkSubPlanes(p, planes, diffSet);
 
                     long cnt = counter.incrementAndGet();
@@ -175,7 +175,7 @@ public class BibdFinderTest {
 
     @Test
     public void testDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-85.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "55-3.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String line = br.readLine();
@@ -262,9 +262,9 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generate() throws IOException {
-        //generateDiffSets(101, 5);
-        generateDiffSets(new GroupProduct(new CyclicGroup(15), new CyclicGroup(3)), 5);
+    public void generate4() throws IOException {
+        generateDiffSets1(15, 3);
+        //generateDiffSets(new GroupProduct(new CyclicGroup(15), new CyclicGroup(3)), 5);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -325,6 +325,45 @@ public class BibdFinderTest {
                 }
             });
         }
+        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
+    }
+
+    private static void generateDiffSets1(int v, int k) throws IOException {
+        System.out.println("Generating for " + v + " " + k);
+        long time = System.currentTimeMillis();
+        Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
+        AtomicLong counter = new AtomicLong();
+        BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
+        calcCyclesAlt(v, k, filter).forEach(e -> {
+            if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
+                long c = counter.incrementAndGet();
+                if ((c & CONST) == 0) {
+                    System.out.println(c);
+                }
+            }
+        });
+        System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+        counter.set(0);
+        int needed = v / k / (k - 1);
+        allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
+            //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
+            long c = counter.incrementAndGet();
+            int[][] dss = Stream.concat(Arrays.stream(ds).map(cycles::get).map(bs -> bs.stream().toArray()),
+                    v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> v * i / k).toArray()) : Stream.of()).toArray(int[][]::new);
+            IntStream.range(0, 1 << (dss.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+                int[][] dsss = IntStream.range(0, dss.length)
+                        .mapToObj(i -> ((1 << i) & comb) == 0 ? dss[i] : mirrorTuple(dss[i])).toArray(int[][]::new);
+                HyperbolicPlane hp = new HyperbolicPlane(v, dsss);
+                BitSet csp = hp.cardSubPlanes(false);
+                if (!csp.get(v)) {
+                    System.out.println(csp + " " + Arrays.deepToString(dsss));
+                }
+            });
+            if ((c & CONST) == 0) {
+                System.out.println(c);
+            }
+        });
         System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
 
