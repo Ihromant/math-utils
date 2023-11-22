@@ -134,42 +134,31 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void testDifferenceSets1() throws IOException, InterruptedException {
+    public void testDifferenceSets1() throws IOException {
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", "3-45.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
-            String line = br.readLine();
-            int v = Integer.parseInt(line.split(" ")[0]);
-            int k = Integer.parseInt(line.split(" ")[1]);
+            String l = br.readLine();
+            int v = Integer.parseInt(l.split(" ")[0]);
+            int k = Integer.parseInt(l.split(" ")[1]);
             Set<BitSet> planes = ConcurrentHashMap.newKeySet();
             AtomicLong counter = new AtomicLong();
-            AtomicLong waiter = new AtomicLong();
-            waiter.incrementAndGet();
-            ExecutorService service = Executors.newFixedThreadPool(12);
             long time = System.currentTimeMillis();
-            while ((line = br.readLine()) != null) {
+            br.lines().parallel().forEach(line -> {
                 String cut = line.replace("{{", "").replace("}}", "");
-                waiter.incrementAndGet();
-                service.execute(() -> {
-                    String[] arrays = cut.split("\\}, \\{");
-                    int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                            .toArray()).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
-                    HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
-                    HyperbolicPlaneTest.testCorrectness(p, of(3));
-                    checkSubPlanes(p, planes, diffSet);
+                String[] arrays = cut.split("\\}, \\{");
+                int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                        .toArray()).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
+                HyperbolicPlaneTest.testCorrectness(p, of(3));
+                checkSubPlanes(p, planes, diffSet);
 
-                    long cnt = counter.incrementAndGet();
-                    if (cnt % 10000 == 0) {
-                        System.out.println(cnt);
-                    }
-                    if (waiter.decrementAndGet() == 0) {
-                        service.shutdown();
-                    }
-                });
-            }
-            waiter.decrementAndGet();
-            boolean res = service.awaitTermination(20, TimeUnit.DAYS);
-            System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
+                long cnt = counter.incrementAndGet();
+                if (cnt % 10000 == 0) {
+                    System.out.println(cnt);
+                }
+            });
+            System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
         }
     }
 
