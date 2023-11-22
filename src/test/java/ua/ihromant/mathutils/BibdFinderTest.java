@@ -164,45 +164,34 @@ public class BibdFinderTest {
 
     @Test
     public void testDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "55-3.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/old", "33-3.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
-            String line = br.readLine();
-            int v = Integer.parseInt(line.split(" ")[0]);
-            int k = Integer.parseInt(line.split(" ")[1]);
+            String l = br.readLine();
+            int v = Integer.parseInt(l.split(" ")[0]);
+            int k = Integer.parseInt(l.split(" ")[1]);
             Set<BitSet> planes = ConcurrentHashMap.newKeySet();
             AtomicLong counter = new AtomicLong();
-            AtomicLong waiter = new AtomicLong();
-            waiter.incrementAndGet();
-            ExecutorService service = Executors.newFixedThreadPool(12);
             long time = System.currentTimeMillis();
-            while ((line = br.readLine()) != null) {
+            br.lines().parallel().forEach(line -> {
                 String cut = line.replace("{{", "").replace("}}", "");
-                waiter.incrementAndGet();
-                service.execute(() -> {
-                    String[] arrays = cut.split("\\}, \\{");
-                    int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                                    .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty())
-                            .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
-                    IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
-                        int[][] ds = IntStream.range(0, diffSet.length)
-                                .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
-                        HyperbolicPlane p = new HyperbolicPlane(v, ds);
-                        checkHypIndex(p, planes, ds);
-                    });
-
-                    long cnt = counter.incrementAndGet();
-                    if (cnt % 1000 == 0) {
-                        System.out.println(cnt);
-                    }
-                    if (waiter.decrementAndGet() == 0) {
-                        service.shutdown();
-                    }
+                String[] arrays = cut.split("\\}, \\{");
+                int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                                .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty())
+                        .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+                    int[][] ds = IntStream.range(0, diffSet.length)
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
+                    HyperbolicPlane p = new HyperbolicPlane(v, ds);
+                    checkHypIndex(p, planes, ds);
                 });
-            }
-            waiter.decrementAndGet();
-            boolean res = service.awaitTermination(20, TimeUnit.DAYS);
-            System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
+
+                long cnt = counter.incrementAndGet();
+                if (cnt % 1000 == 0) {
+                    System.out.println(cnt);
+                }
+            });
+            System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
         }
     }
 
