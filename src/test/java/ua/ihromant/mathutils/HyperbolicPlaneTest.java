@@ -43,6 +43,37 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
+    public void testBose() {
+        HyperbolicPlane affine = new HyperbolicPlane("000011122236", "134534534547", "268787676858");
+        BitSet[] constructed = Stream.concat(IntStream.range(0, affine.pointCount()).boxed().flatMap(x ->
+                        IntStream.range(x + 1, affine.pointCount()).boxed().flatMap(y -> IntStream.range(0, 3).mapToObj(i -> {
+                            BitSet result = new BitSet();
+                            result.set(3 * x + i);
+                            result.set(3 * y + i);
+                            result.set(3 * quasiOp(affine, x, y) + ((i + 1) % 3));
+                            return result;
+                        }))),
+                IntStream.range(0, affine.pointCount()).mapToObj(x -> {
+                    BitSet result = new BitSet();
+                    result.set(3 * x);
+                    result.set(3 * x + 1);
+                    result.set(3 * x + 2);
+                    return result;
+                })).toArray(BitSet[]::new);
+        HyperbolicPlane bose = new HyperbolicPlane(constructed);
+        testCorrectness(bose, of(3));
+        assertEquals(3 * affine.pointCount(), bose.pointCount());
+        assertEquals(9 * 13, bose.lineCount());
+        assertEquals(of(1), bose.hyperbolicIndex());
+        assertEquals(of(9, 27), bose.cardSubPlanes(true));
+    }
+
+    private static int quasiOp(HyperbolicPlane pl, int x, int y) {
+        int line = pl.line(x, y);
+        return StreamSupport.stream(pl.points(line).spliterator(), false).filter(p -> p != x && p != y).findAny().orElseThrow();
+    }
+
+    @Test
     public void hyperbolicPlaneExample() {
         HyperbolicPlane p2 = new HyperbolicPlane(new String[]{
                 "00000001111112222223333444455566678",
