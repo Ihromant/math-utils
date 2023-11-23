@@ -25,9 +25,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -87,55 +84,44 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void testGroupDifferenceSets() throws IOException, InterruptedException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-Z15xZ3.txt"));
+    public void testGroupDifferenceSets() throws IOException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-Z3xZ3xZ3xZ3.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
-            String line = br.readLine();
-            Group g = new GroupProduct(new CyclicGroup(15), new CyclicGroup(3));
-            String[] chunks = line.split(" ");
+            String l = br.readLine();
+            Group g = new GroupProduct(new CyclicGroup(3), new CyclicGroup(3), new CyclicGroup(3), new CyclicGroup(3));
+            String[] chunks = l.split(" ");
             int k = Integer.parseInt(chunks[1]);
             int[] degenerate = chunks.length <= 3 ? new int[0] : Arrays.stream(chunks, 3, chunks.length)
                     .map(ch -> ch.replace(",", "").replace("{", "").replace("}", ""))
                     .mapToInt(Integer::parseInt).toArray();
             Set<BitSet> planes = ConcurrentHashMap.newKeySet();
             AtomicLong counter = new AtomicLong();
-            AtomicLong waiter = new AtomicLong();
-            waiter.incrementAndGet();
-            ExecutorService service = Executors.newFixedThreadPool(12);
             long time = System.currentTimeMillis();
-            while ((line = br.readLine()) != null) {
+            br.lines().parallel().forEach(line -> {
                 String cut = line.replace("{{", "").replace("}}", "");
-                waiter.incrementAndGet();
-                service.execute(() -> {
-                    String[] arrays = cut.split("\\}, \\{");
-                    int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                                    .toArray()), g.order() % k == 0 ? Stream.of(degenerate) : Stream.empty()).toArray(int[][]::new);
-                    IntStream.range(0, 1 << (diffSet.length - (g.order() % k == 0 ? 2 : 1))).forEach(comb -> {
-                        int[][] ds = IntStream.range(0, diffSet.length)
-                                .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(g, diffSet[i])).toArray(int[][]::new);
-                        HyperbolicPlane p = new HyperbolicPlane(g, ds);
-                        checkSubPlanes(p, planes, ds);
-                    });
-
-                    long cnt = counter.incrementAndGet();
-                    if (cnt % 1000 == 0) {
-                        System.out.println(cnt);
-                    }
-                    if (waiter.decrementAndGet() == 0) {
-                        service.shutdown();
-                    }
+                String[] arrays = cut.split("\\}, \\{");
+                int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                        .toArray()), g.order() % k == 0 ? Stream.of(degenerate) : Stream.empty()).toArray(int[][]::new);
+                IntStream.range(0, 1 << (diffSet.length - (g.order() % k == 0 ? 2 : 1))).forEach(comb -> {
+                    int[][] ds = IntStream.range(0, diffSet.length)
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(g, diffSet[i])).toArray(int[][]::new);
+                    HyperbolicPlane p = new HyperbolicPlane(g, ds);
+                    checkHypIndex(p, planes, ds);
                 });
-            }
-            waiter.decrementAndGet();
-            boolean res = service.awaitTermination(20, TimeUnit.DAYS);
-            System.out.println(res + " " + counter.get() + " " + (System.currentTimeMillis() - time));
+
+                long cnt = counter.incrementAndGet();
+                if (cnt % 1000 == 0) {
+                    System.out.println(cnt);
+                }
+            });
+            System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
         }
     }
 
     @Test
     public void testDifferenceSets1() throws IOException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", "3-45.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", "5-85.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String l = br.readLine();
@@ -150,8 +136,8 @@ public class BibdFinderTest {
                 int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
                         .toArray()).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
                 HyperbolicPlane p = new HyperbolicPlane(v, diffSet);
-                HyperbolicPlaneTest.testCorrectness(p, of(3));
-                checkSubPlanes(p, planes, diffSet);
+                HyperbolicPlaneTest.testCorrectness(p, of(5));
+                checkHypIndex(p, planes, diffSet);
 
                 long cnt = counter.incrementAndGet();
                 if (cnt % 10000 == 0) {
