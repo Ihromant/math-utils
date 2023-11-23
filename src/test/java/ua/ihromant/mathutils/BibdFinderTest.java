@@ -227,8 +227,8 @@ public class BibdFinderTest {
 
     @Test
     public void generate4() throws IOException {
-        generateDiffSets1(15, 3);
-        //generateDiffSets(new GroupProduct(new CyclicGroup(15), new CyclicGroup(3)), 5);
+        //generateDiffSets1(15, 3);
+        generateDiffSets(new GroupProduct(new CyclicGroup(9), new CyclicGroup(9)), 5);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -372,7 +372,7 @@ public class BibdFinderTest {
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             filter.set(0);
-            ps.println(g.name() + " " + k + " " + cycles.size() + (filter.isEmpty() ? "" : " " + filter));
+            ps.println(g.name() + " " + k + " " + cycles.size() + (filter.cardinality() == 1 ? "" : " " + filter));
             int needed = g.order() / k / (k - 1);
             allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
                 //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
