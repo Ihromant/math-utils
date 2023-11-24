@@ -85,7 +85,7 @@ public class BibdFinderTest {
 
     @Test
     public void testGroupDifferenceSets() throws IOException {
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-Z3xZ3xZ3xZ3.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "5-Z9xZ9.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String l = br.readLine();
@@ -367,7 +367,7 @@ public class BibdFinderTest {
         System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
         counter.set(0);
-        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name()); // TODO possible multiple
+        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + g.name() + ".txt"); // TODO possible multiple
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
