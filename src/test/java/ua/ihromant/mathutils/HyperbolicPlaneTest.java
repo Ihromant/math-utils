@@ -7,7 +7,7 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -299,18 +299,7 @@ public class HyperbolicPlaneTest {
         }
     }
 
-    private static final CyclicGroup c3 = new CyclicGroup(3);
-    private static final CyclicGroup c45 = new CyclicGroup(45);
-
-    private static int[] alpha(int[] from) {
-        return new int[]{c3.op(from[0], 1), c45.mul(from[1], 16)};
-    }
-
-    private static int[] beta(int[] from) {
-        return new int[]{from[0], c45.op(from[1], 1)};
-    }
-
-    private int[] apply(Function<int[], int[]> auth, int[] base, int times) {
+    private int[] apply(UnaryOperator<int[]> auth, int[] base, int times) {
         int[] result = base;
         for (int i = 0; i < times; i++) {
             result = auth.apply(result);
@@ -439,6 +428,8 @@ public class HyperbolicPlaneTest {
         assertEquals(of(16), p2.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p2.hyperbolicIndex());
 
+        CyclicGroup c3 = new CyclicGroup(3);
+        CyclicGroup c45 = new CyclicGroup(45);
         GroupProduct pr135 = new GroupProduct(c3, c45);
         int[][][] base1 = new int[][][] {
                 {{0, 0}, {0, 3}, {0, 15}, {0, 35}, {2, 6}, {2, 10}},
@@ -448,16 +439,18 @@ public class HyperbolicPlaneTest {
                 {{0, 0}, {0, 1}, {1, 0}, {1, 16}, {2, 0}, {2, 31}}
         };
         int[][] base2 = new int[][]{{0, 0}, {0, 9}, {0, 18}, {0, 27}, {0, 36}};
+        UnaryOperator<int[]> alpha135 = arr -> new int[]{c3.op(arr[0], 1), c45.mul(arr[1], 16)};
+        UnaryOperator<int[]> beta135 = arr -> new int[]{arr[0], c45.op(arr[1], 1)};
         BitSet[] blocks = Stream.concat(Arrays.stream(base1).flatMap(arr -> c3.elements().boxed().flatMap(a -> c45.elements().mapToObj(b -> {
             BitSet result = new BitSet();
             for (int[] base : arr) {
-                result.set(pr135.fromArr(apply(HyperbolicPlaneTest::beta, apply(HyperbolicPlaneTest::alpha, base, a), b)));
+                result.set(pr135.fromArr(apply(beta135, apply(alpha135, base, a), b)));
             }
             return result;
         }))), c3.elements().boxed().flatMap(a -> c45.elements().mapToObj(b -> {
             BitSet result = new BitSet();
             for (int[] base : base2) {
-                result.set(pr135.fromArr(apply(HyperbolicPlaneTest::beta, apply(HyperbolicPlaneTest::alpha, base, a), b)));
+                result.set(pr135.fromArr(apply(beta135, apply(alpha135, base, a), b)));
             }
             result.set(pr135.order());
             return result;
@@ -466,6 +459,39 @@ public class HyperbolicPlaneTest {
         testCorrectness(p4, of(6));
         assertEquals(of(21), p4.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), p4.hyperbolicIndex());
+
+        CyclicGroup c4 = new CyclicGroup(4);
+        CyclicGroup c35 = new CyclicGroup(35);
+        GroupProduct pr140 = new GroupProduct(c4, c35);
+        int[][][] base4 = new int[][][]{
+                {{0, 0}, {0, 16}, {0, 24}, {1, 24}, {2, 15}, {2, 25}},
+                {{0, 0}, {0, 3}, {0, 26}, {1, 13}, {1, 33}, {3, 34}},
+                {{0, 0}, {0, 13}, {0, 18}, {1, 15}, {2, 7}, {3, 0}},
+                {{0, 0}, {0, 2}, {1, 14}, {1, 23}, {3, 26}, {3, 32}},
+                {{0, 0}, {0, 4}, {1, 29}, {2, 6}, {3, 9}, {3, 20}},
+                {{0, 0}, {0, 1}, {2, 12}, {3, 2}, {3, 4}, {3, 19}}
+        };
+        int[][] base5 = new int[][]{{0, 0}, {0, 7}, {0, 14}, {0, 21}, {0, 28}};
+        UnaryOperator<int[]> alpha105 = arr -> new int[]{arr[0] == c3.order() ? arr[0] : c3.op(arr[0], 1), c35.mul(arr[1], 16)};
+        UnaryOperator<int[]> beta105 = arr -> new int[]{arr[0], c35.op(arr[1], 1)};
+        BitSet[] blocks2 = Stream.concat(Arrays.stream(base4).flatMap(arr -> c3.elements().boxed().flatMap(a -> c35.elements().mapToObj(b -> {
+            BitSet result = new BitSet();
+            for (int[] base : arr) {
+                result.set(pr140.fromArr(apply(beta105, apply(alpha105, base, a), b)));
+            }
+            return result;
+        }))), c4.elements().boxed().flatMap(a -> c35.elements().mapToObj(b -> {
+            BitSet result = new BitSet();
+            for (int[] base : base5) {
+                result.set(pr140.fromArr(apply(beta105, apply(alpha105, new int[]{base[0] + a, base[1]}, a), b)));
+            }
+            result.set(pr140.order());
+            return result;
+        }))).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane p6 = new HyperbolicPlane(blocks2);
+        testCorrectness(p6, of(6));
+        assertEquals(of(22), p6.playfairIndex());
+        assertEquals(of(1, 2, 3, 4), p6.hyperbolicIndex());
 
         SemiDirectProduct semi1 = new SemiDirectProduct(new CyclicGroup(57), new CyclicGroup(3));
         BitSet[] lines3 = Stream.concat(Stream.of(new int[]{0, 19, 39, 41, semi1.fromAB(14, 1), semi1.fromAB(38, 2)},
@@ -494,6 +520,89 @@ public class HyperbolicPlaneTest {
         testCorrectness(p3, of(6));
         assertEquals(of(28), p3.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p3.hyperbolicIndex());
+
+        CyclicGroup c49 = new CyclicGroup(49);
+        GroupProduct pr196 = new GroupProduct(c4, c49);
+        int[][][] base6 = new int[][][]{
+                {{0, 0}, {0, 1}, {1, 0}, {1, 30}, {2, 0}, {2, 18}},
+                {{0, 8}, {0, 19}, {1, 44}, {1, 31}, {2, 46}, {2, 48}},
+                {{0, 0}, {0, 2}, {0, 12}, {0, 45}, {1, 3}, {3, 11}},
+                {{0, 0}, {0, 3}, {0, 8}, {1, 5}, {1, 17}, {3, 39}},
+                {{0, 0}, {0, 9}, {0, 36}, {1, 24}, {1, 44}, {3, 37}},
+                {{0, 0}, {0, 15}, {1, 34}, {1, 41}, {2, 47}, {3, 18}},
+                {{0, 0}, {0, 7}, {0, 31}, {1, 13}, {2, 35}, {3, 41}},
+                {{0, 0}, {0, 14}, {1, 32}, {2, 10}, {3, 22}, {3, 44}},
+                {{0, 0}, {0, 23}, {1, 21}, {1, 39}, {3, 19}, {3, 25}},
+                {{0, 0}, {1, 33}, {3, 0}, {3, 5}, {3, 29}, {3, 47}}
+        };
+        UnaryOperator<int[]> alpha147 = arr -> new int[]{arr[0] == c3.order() ? arr[0] : c3.op(arr[0], 1), c49.mul(arr[1], 30)};
+        UnaryOperator<int[]> beta147 = arr -> new int[]{arr[0], c49.op(arr[1], 1)};
+        BitSet[] blocks3 = Arrays.stream(base6).flatMap(arr -> c3.elements().boxed().flatMap(a -> c49.elements().mapToObj(b -> {
+            BitSet result = new BitSet();
+            for (int[] base : arr) {
+                result.set(pr196.fromArr(apply(beta147, apply(alpha147, base, a), b)));
+            }
+            return result;
+        }))).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane p8 = new HyperbolicPlane(blocks3);
+        testCorrectness(p8, of(6));
+        assertEquals(of(33), p8.playfairIndex());
+        assertEquals(of(0, 1, 2, 3, 4), p8.hyperbolicIndex());
+
+        CyclicGroup c67 = new CyclicGroup(67);
+        GroupProduct pr201 = new GroupProduct(c3, c67);
+        int[][][] base3 = new int[][][] {
+                {{1, 3}, {1, 20}, {1, 44}, {2, 36}, {2, 39}, {2, 59}},
+                {{0, 0}, {1, 0}, {1, 30}, {1, 38}, {1, 66}, {2, 0}},
+                {{0, 0}, {0, 1}, {2, 4}, {2, 9}, {2, 34}, {2, 62}},
+                {{1, 0}, {1, 2}, {1, 15}, {2, 8}, {2, 27}, {2, 49}},
+                {{0, 0}, {0, 3}, {0, 22}, {1, 54}, {2, 13}, {2, 40}},
+                {{0, 0}, {0, 36}, {0, 40}, {1, 31}, {1, 34}, {2, 5}},
+                {{0, 0}, {0, 50}, {0, 55}, {1, 6}, {1, 24}, {2, 26}},
+                {{0, 0}, {0, 2}, {1, 3}, {1, 14}, {1, 35}, {2, 25}}
+        };
+        UnaryOperator<int[]> alpha201 = arr -> new int[]{arr[0], c67.mul(arr[1], 29)};
+        UnaryOperator<int[]> beta201 = arr -> new int[]{arr[0], c67.op(arr[1], 1)};
+        BitSet[] blocks1 = Arrays.stream(base3).flatMap(arr -> c3.elements().boxed().flatMap(a -> c67.elements().mapToObj(b -> {
+            BitSet result = new BitSet();
+            for (int[] base : arr) {
+                result.set(pr201.fromArr(apply(beta201, apply(alpha201, base, a), b)));
+            }
+            return result;
+        }))).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane p5 = new HyperbolicPlane(blocks1);
+        testCorrectness(p5, of(6));
+        assertEquals(of(34), p5.playfairIndex());
+        assertEquals(of(1, 2, 3, 4), p5.hyperbolicIndex());
+
+        CyclicGroup c97 = new CyclicGroup(97);
+        GroupProduct pr291 = new GroupProduct(c3, c97);
+        int[][][] base7 = new int[][][] {
+                {{0, 1}, {0, 35}, {0, 61}, {1, 38}, {1, 69}, {1, 87}},
+                {{0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 35}, {2, 61}},
+                {{0, 0}, {0, 20}, {2, 73}, {2, 77}, {2, 80}, {2, 89}},
+                {{1, 0}, {1, 50}, {1, 57}, {2, 56}, {2, 79}, {2, 84}},
+                {{0, 0}, {0, 42}, {0, 53}, {1, 66}, {2, 15}, {2, 56}},
+                {{0, 0}, {0, 13}, {0, 18}, {1, 40}, {1, 93}, {2, 49}},
+                {{0, 0}, {0, 45}, {0, 46}, {0, 73}, {1, 19}, {2, 23}},
+                {{0, 0}, {0, 43}, {1, 35}, {1, 57}, {1, 76}, {2, 27}},
+                {{0, 0}, {0, 22}, {1, 21}, {1, 32}, {2, 17}, {2, 65}},
+                {{0, 0}, {1, 38}, {1, 39}, {1, 48}, {1, 65}, {2, 90}},
+                {{0, 0}, {1, 23}, {1, 46}, {2, 9}, {2, 26}, {2, 51}}
+        };
+        UnaryOperator<int[]> alpha291 = arr -> new int[]{arr[0], c97.mul(arr[1], 35)};
+        UnaryOperator<int[]> beta291 = arr -> new int[]{arr[0], c97.op(arr[1], 1)};
+        BitSet[] blocks4 = Arrays.stream(base7).flatMap(arr -> c3.elements().boxed().flatMap(a -> c97.elements().mapToObj(b -> {
+            BitSet result = new BitSet();
+            for (int[] base : arr) {
+                result.set(pr291.fromArr(apply(beta291, apply(alpha291, base, a), b)));
+            }
+            return result;
+        }))).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane p10 = new HyperbolicPlane(blocks4);
+        testCorrectness(p10, of(6));
+        assertEquals(of(52), p10.playfairIndex());
+        assertEquals(of(1, 2, 3, 4), p10.hyperbolicIndex());
     }
 
     @Test
