@@ -62,8 +62,9 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffFamilies() {
-        int v = 217;
-        int k = 7;
+        int v = 65;
+        int k = 5;
+        System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         Map<BitSet, BitSet> curr = new HashMap<>();
         if (v % k == 0) {
@@ -71,8 +72,8 @@ public class BibdFinder1Test {
         }
         long time = System.currentTimeMillis();
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
-        allDifferenceSets(v, k, curr, v / k / (k - 1), filter).filter(res -> dedup.add(res.keySet())).forEach(System.out::println);
-        System.out.println(System.currentTimeMillis() - time);
+        System.out.println(allDifferenceSets(v, k, curr, v / k / (k - 1), filter).filter(res -> dedup.add(res.keySet())).peek(System.out::println).count()
+                + " " + (System.currentTimeMillis() - time));
     }
 
     private static Stream<Map<BitSet, BitSet>> allDifferenceSets(int variants, int k, Map<BitSet, BitSet> curr, int needed, BitSet filter) {
