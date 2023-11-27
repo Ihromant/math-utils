@@ -5,19 +5,22 @@ import org.junit.jupiter.api.Test;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BibdFinder1Test {
-    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int needed, BitSet filter, BitSet tuple) {
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet tuple) {
         int tLength = tuple.length();
+        int from = Math.max(tLength, prev);
         int tCardinality = tuple.cardinality();
         int vMax = variants - max - 1;
-        return IntStream.rangeClosed(tLength, needed == 1 ? vMax : Math.min(vMax,
-                        tLength + (variants - tLength - (1 << needed) + 1) / 2))
+        return IntStream.rangeClosed(from, needed == 1 ? vMax : Math.min(vMax,
+                        from + (variants - tLength - (1 << needed) + 1) / 2))
                 .boxed().mapMulti((idx, sink) -> {
             BitSet addition = new BitSet(variants / 2 + 1);
             int present = tuple.stream().reduce(0, (acc, set) -> {
@@ -36,7 +39,7 @@ public class BibdFinder1Test {
             }
             BitSet newFilter = (BitSet) filter.clone();
             newFilter.or(addition);
-            calcCycles(variants, Math.max(max, idx - tLength + 1), needed - 1, newFilter, nextTuple).forEach(sink);
+            calcCycles(variants, Math.max(max, idx - tLength + 1), prev, needed - 1, newFilter, nextTuple).forEach(sink);
         });
     }
 
@@ -46,41 +49,43 @@ public class BibdFinder1Test {
         return result;
     }
 
-    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, BitSet filter) {
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter) {
         Map<BitSet, BitSet> map = new HashMap<>();
-        return calcCycles(variants, 0, size - 1, filter, of(0)).filter(e -> map.putIfAbsent(e.getKey(), e.getValue()) == null);
+        return calcCycles(variants, 0, prev, size - 1, filter, of(0)).filter(e -> map.putIfAbsent(e.getKey(), e.getValue()) == null);
     }
 
     @Test
     public void testDiffSets() {
-        int v = 141;
+        int v = 65;
         int k = 5;
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        System.out.println(calcCycles(v, k, filter).count() + " " + (System.currentTimeMillis() - time));
+        System.out.println(calcCycles(v, k, 1, filter)
+                //.peek(System.out::println)
+                .count() + " " + (System.currentTimeMillis() - time));
     }
 
     @Test
     public void testDiffFamilies() {
-        int v = 65;
-        int k = 5;
+        int v = 126;
+        int k = 6;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        Map<BitSet, BitSet> curr = new HashMap<>();
-        if (v % k == 0) {
-            curr.put(filter, IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or));
-        }
+        SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
         long time = System.currentTimeMillis();
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
-        System.out.println(allDifferenceSets(v, k, curr, v / k / (k - 1), filter).filter(res -> dedup.add(res.keySet())).peek(System.out::println).count()
-                + " " + (System.currentTimeMillis() - time));
+        System.out.println(allDifferenceSets(v, k, curr, v / k / (k - 1), filter).filter(res -> dedup.add(res.keySet()))
+                .peek(System.out::println)
+                .count() + " " + (System.currentTimeMillis() - time));
     }
 
-    private static Stream<Map<BitSet, BitSet>> allDifferenceSets(int variants, int k, Map<BitSet, BitSet> curr, int needed, BitSet filter) {
+    private static Stream<Map<BitSet, BitSet>> allDifferenceSets(int variants, int k, SequencedMap<BitSet, BitSet> curr, int needed, BitSet filter) {
+        int prev = curr.isEmpty() ? 1 : IntStream.range(curr.lastEntry().getValue().stream().skip(1).findFirst().orElseThrow() + 1, variants)
+                .filter(i -> !filter.get(i)).findFirst().orElseThrow();
         return (needed == variants / k / (k - 1) ?
-                calcCycles(variants, k, filter).parallel()
-                : calcCycles(variants, k, filter)).mapMulti((pair, sink) -> {
-            HashMap<BitSet, BitSet> nextCurr = new HashMap<>(curr);
+                calcCycles(variants, k, prev, filter).parallel()
+                : calcCycles(variants, k, prev, filter)).mapMulti((pair, sink) -> {
+            SequencedMap<BitSet, BitSet> nextCurr = new LinkedHashMap<>(curr);
             nextCurr.put(pair.getKey(), pair.getValue());
             if (needed == 1) {
                 sink.accept(nextCurr);
