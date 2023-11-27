@@ -227,8 +227,8 @@ public class BibdFinderTest {
 
     @Test
     public void generate4() throws IOException {
-        //generateDiffSets1(15, 3);
-        generateDiffSets(new GroupProduct(new CyclicGroup(9), new CyclicGroup(9)), 5);
+        generateDiffSets(52, 4);
+        //generateDiffSets(new GroupProduct(new CyclicGroup(9), new CyclicGroup(9)), 5);
     }
 
     private static void printDifferencesToFile(int v, int k) throws IOException {
@@ -441,22 +441,23 @@ public class BibdFinderTest {
     }
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(int variants, int needed, BitSet filter) {
-        int expectedCard = needed * (needed - 1) / 2;
         int cap = variants - variants / needed;
         int nBits = variants / 2 + 1;
         return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))
                 .parallel().mapMulti((choice, sink) -> {
-                    if (!isMinimal(choice, variants)) {
-                        return;
-                    }
                     BitSet diff = new BitSet(nBits);
+                    int lastDiff = variants - choice[needed - 1];
                     for (int i = 0; i < needed; i++) {
-                        for (int j = i + 1; j < needed; j++) {
-                            diff.set(diff(choice[i], choice[j], variants));
+                        if (i > 0 && choice[i] - choice[i - 1] >= lastDiff) {
+                            return;
                         }
-                    }
-                    if (diff.cardinality() != expectedCard || filter.intersects(diff)) {
-                        return;
+                        for (int j = i + 1; j < needed; j++) {
+                            int d = diff(choice[i], choice[j], variants);
+                            if (filter.get(d) || diff.get(d)) {
+                                return;
+                            }
+                            diff.set(d);
+                        }
                     }
                     sink.accept(Map.entry(diff, of(choice)));
                 });
