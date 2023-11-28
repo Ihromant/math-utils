@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -15,6 +16,7 @@ public class GroupTest {
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(11), new CyclicGroup(5)), false);
+        testCorrectness(new BurnsideGroup(), false);
     }
 
     @Test
@@ -77,6 +79,20 @@ public class GroupTest {
     public void testAuth() {
         assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}}, new CyclicGroup(3).auth());
         assertArrayEquals(new int[][]{{0, 1, 2, 3}, {0, 3, 2, 1}}, new CyclicGroup(4).auth());
+    }
+
+    @Test
+    public void testBurnsideAssociativity() {
+        BurnsideGroup bg = new BurnsideGroup();
+        IntBinaryOperator op = (x, y) -> bg.op(bg.op(bg.inv(x), y), bg.inv(x));
+        bg.elements().forEach(i -> {
+            assertEquals(i, op.applyAsInt(i, 0));
+            assertEquals(i, op.applyAsInt(0, i));
+            bg.elements().forEach(j -> {
+                assertEquals(op.applyAsInt(i, j), op.applyAsInt(i, j));
+                bg.elements().forEach(k -> assertEquals(op.applyAsInt(i, op.applyAsInt(j, k)), op.applyAsInt(op.applyAsInt(i, j), k)));
+            });
+        });
     }
 
     private void testCorrectness(Group g, boolean commutative) {

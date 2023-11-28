@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
@@ -902,6 +903,22 @@ public class HyperbolicPlaneTest {
         testCorrectness(pl28, of(q + 1));
         System.out.println(pl37.hyperbolicIndex());
         System.out.println(pl28.hyperbolicIndex());
+    }
+
+    @Test
+    public void testBurnside() {
+        BurnsideGroup bg = new BurnsideGroup();
+        BitSet[] lines = IntStream.range(0, bg.order()).boxed().flatMap(x -> IntStream.range(x + 1, bg.order()).mapToObj(y -> {
+            BitSet result = new BitSet();
+            result.set(x);
+            result.set(y);
+            result.set(bg.op(bg.op(x, bg.inv(y)), x));
+            return result;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane bp = new HyperbolicPlane(lines);
+        assertEquals(of(1), bp.hyperbolicIndex());
+        assertEquals(of(9), bp.cardSubPlanes(true));
+        checkSpace(bp, bp.pointCount(), bp.pointCount());
     }
 
     private int[] getHomogenousSpace(int p, int ord) {
