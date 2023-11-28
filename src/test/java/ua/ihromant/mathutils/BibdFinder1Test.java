@@ -15,15 +15,16 @@ import java.util.stream.Stream;
 
 public class BibdFinder1Test {
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet tuple) {
+        int half = variants / 2;
         int tLength = tuple.length();
         int from = Math.max(tLength, prev);
         int tCardinality = tuple.cardinality();
         int vMax = variants - max - 1;
         return IntStream.rangeClosed(from, needed == 1 ? vMax : Math.min(vMax,
-                        tLength + (variants - tLength - (1 << needed) + 1) / 2))
-                .filter(idx -> !filter.get(variants - idx) && !filter.get(idx))
+                        (variants + tLength - (1 << needed) + 1) / 2))
+                .filter(idx -> idx > half ? !filter.get(variants - idx) : !filter.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
-            BitSet addition = new BitSet(variants / 2 + 1);
+            BitSet addition = new BitSet(half + 1);
             tuple.stream().map(t -> diff(t, idx, variants)).filter(d -> !addition.get(d) && !filter.get(d)).forEach(addition::set);
             if (addition.cardinality() != tCardinality) {
                 return;
@@ -64,7 +65,7 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffFamilies() {
-        int v = 52;
+        int v = 64;
         int k = 4;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
@@ -77,8 +78,9 @@ public class BibdFinder1Test {
     }
 
     private static Stream<Map<BitSet, BitSet>> allDifferenceSets(int variants, int k, SequencedMap<BitSet, BitSet> curr, int needed, BitSet filter) {
+        int half = variants / 2;
         int prev = curr.isEmpty() ? 1 : IntStream.range(curr.lastEntry().getValue().stream().skip(1).findFirst().orElseThrow() + 1, variants)
-                .filter(i -> !filter.get(i)).findFirst().orElseThrow();
+                .filter(i -> i > half ? !filter.get(variants - i) : !filter.get(i)).findFirst().orElseThrow();
         return (needed == variants / k / (k - 1) ?
                 calcCycles(variants, k, prev, filter).parallel()
                 : calcCycles(variants, k, prev, filter)).mapMulti((pair, sink) -> {
