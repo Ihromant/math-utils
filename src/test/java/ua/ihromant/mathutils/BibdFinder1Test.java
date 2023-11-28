@@ -18,26 +18,28 @@ public class BibdFinder1Test {
         int half = variants / 2;
         int tLength = tuple.length();
         int from = Math.max(tLength, prev);
-        int tCardinality = tuple.cardinality();
         int vMax = variants - max - 1;
         return IntStream.rangeClosed(from, needed == 1 ? vMax : Math.min(vMax,
                         (variants + tLength - (1 << needed) + 1) / 2))
                 .filter(idx -> idx > half ? !filter.get(variants - idx) : !filter.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
-            BitSet addition = new BitSet(half + 1);
-            tuple.stream().map(t -> diff(t, idx, variants)).filter(d -> !addition.get(d) && !filter.get(d)).forEach(addition::set);
-            if (addition.cardinality() != tCardinality) {
-                return;
-            }
-            BitSet nextTuple = (BitSet) tuple.clone();
-            nextTuple.set(idx);
-            if (needed == 1) {
-                sink.accept(Map.entry(diff(nextTuple, variants), nextTuple));
-                return;
-            }
-            BitSet newFilter = (BitSet) filter.clone();
-            newFilter.or(addition);
-            calcCycles(variants, Math.max(max, idx - tLength + 1), prev, needed - 1, newFilter, nextTuple).forEach(sink);
+                    BitSet addition = new BitSet(half + 1);
+                    if (tuple.stream().map(pr -> diff(pr, idx, variants)).anyMatch(d -> {
+                        boolean result = filter.get(d) || addition.get(d);
+                        addition.set(d);
+                        return result;
+                    })) {
+                        return;
+                    }
+                    BitSet nextTuple = (BitSet) tuple.clone();
+                    nextTuple.set(idx);
+                    if (needed == 1) {
+                        sink.accept(Map.entry(diff(nextTuple, variants), nextTuple));
+                        return;
+                    }
+                    BitSet newFilter = (BitSet) filter.clone();
+                    newFilter.or(addition);
+                    calcCycles(variants, Math.max(max, idx - tLength + 1), prev, needed - 1, newFilter, nextTuple).forEach(sink);
         });
     }
 
@@ -65,15 +67,15 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffFamilies() {
-        int v = 64;
-        int k = 4;
+        int v = 65;
+        int k = 5;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
         long time = System.currentTimeMillis();
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
         System.out.println(allDifferenceSets(v, k, curr, v / k / (k - 1), filter).filter(res -> dedup.add(res.keySet()))
-                .peek(System.out::println)
+                //.peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
 
