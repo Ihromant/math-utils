@@ -20,7 +20,7 @@ public class BibdFinder1Test {
         int tCardinality = tuple.cardinality();
         int vMax = variants - max - 1;
         return IntStream.rangeClosed(from, needed == 1 ? vMax : Math.min(vMax,
-                        from + (variants - tLength - (1 << needed) + 1) / 2))
+                        tLength + (variants - tLength - (1 << needed) + 1) / 2))
                 .filter(idx -> !filter.get(variants - idx) && !filter.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
             BitSet addition = new BitSet(variants / 2 + 1);
