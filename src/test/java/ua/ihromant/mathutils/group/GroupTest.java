@@ -2,6 +2,11 @@ package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 
@@ -79,6 +84,45 @@ public class GroupTest {
     public void testAuth() {
         assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}}, new CyclicGroup(3).auth());
         assertArrayEquals(new int[][]{{0, 1, 2, 3}, {0, 3, 2, 1}}, new CyclicGroup(4).auth());
+    }
+
+    @Test
+    public void findHints() {
+        IntStream.range(6, 11).forEach(k -> {
+            int mul = k * (k + 1);
+            for (int t : (Iterable<Integer>) () -> IntStream.range(2, 10).iterator()) {
+                for (int dff : List.of(1, k + 1)) {
+                    int v = t * mul + dff;
+                    CyclicGroup cg = new CyclicGroup(v);
+                    Set<BitSet> dedup = new HashSet<>();
+                    BitSet filter = dff == 1 ? new BitSet() : IntStream.range(0, k + 1).map(i -> i * v / (k + 1)).collect(BitSet::new, BitSet::set, BitSet::or);
+                    BitSet[] sets = cg.elements().filter(el -> Group.gcd(el, cg.order()) == 1).filter(el -> cg.expOrder(el) == k)
+                            .mapToObj(el -> {
+                                BitSet result = new BitSet();
+                                result.set(0);
+                                IntStream.range(0, k).map(pow -> cg.exponent(el, pow)).forEach(result::set);
+                                return result;
+                            })
+                            .filter(bs -> {
+                                BitSet res = new BitSet();
+                                bs.stream().forEach(a -> bs.stream().filter(b -> a < b)
+                                        .map(b -> diff(a, b, cg.order())).filter(d -> !filter.get(d)).forEach(res::set));
+                                return res.cardinality() == mul / 2 && dedup.add(res);
+                            })
+                            .toArray(BitSet[]::new);
+                    if (sets.length > 0) {
+                        System.out.println((k + 1) + " " + t + " " + dff + " " + cg.order());
+                        Arrays.stream(sets).forEach(System.out::println);
+                        System.out.println();
+                    }
+                }
+            }
+        });
+    }
+
+    private static int diff(int a, int b, int size) {
+        int d = Math.abs(a - b);
+        return Math.min(d, size - d);
     }
 
     @Test

@@ -2,6 +2,12 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -18,9 +24,9 @@ public class BibdFinder1Test {
         int half = variants / 2;
         int tLength = tuple.length();
         int from = Math.max(tLength, prev);
-        int vMax = variants - max - 1;
-        return IntStream.rangeClosed(from, needed == 1 ? vMax : Math.min(vMax,
-                        (variants + tLength - (1 << needed) + 1) / 2))
+        int vMax = variants - max;
+        return IntStream.range(from, needed == 1 ? vMax : Math.min(vMax,
+                        (variants + tLength) / 2))
                 .filter(idx -> idx > half ? !filter.get(variants - idx) : !filter.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
                     BitSet addition = new BitSet(half + 1);
@@ -66,16 +72,54 @@ public class BibdFinder1Test {
     }
 
     @Test
+    public void findByHints() throws IOException {
+        try (FileInputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "hint.txt"));
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            while ((line = br.readLine()) != null) {
+                String[] parts = line.split(" ");
+                int v = Integer.parseInt(parts[3]);
+                int k = Integer.parseInt(parts[0]);
+                System.out.println(line);
+                while (!(line = br.readLine()).isEmpty()) {
+                    BitSet hint = Arrays.stream(line.replace("{", "").replace("}", "").split(", "))
+                            .mapToInt(Integer::parseInt).collect(BitSet::new, BitSet::set, BitSet::or);
+                    System.out.println("Hint: " + hint);
+                    findByHint(hint, v, k);
+                }
+                System.out.println();
+            }
+        }
+    }
+
+    @Test
+    public void find() {
+        findByHint(of(0, 1, 8, 19, 59, 64), 151, 6);
+    }
+
+    private static void findByHint(BitSet hint, int v, int k) {
+        BitSet diff = diff(hint, v);
+        SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
+        curr.put(diff, hint);
+        Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
+        BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
+        filter.or(diff);
+        allDifferenceSets(v, k, curr, (v / k / (k - 1)) - 1, filter).filter(res -> dedup.add(res.keySet()))
+                .forEach(res -> System.out.println(res.values()));
+    }
+
+    @Test
     public void testDiffFamilies() {
-        int v = 65;
-        int k = 5;
+        int v = 91;
+        int k = 10;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
         long time = System.currentTimeMillis();
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
         System.out.println(allDifferenceSets(v, k, curr, v / k / (k - 1), filter).filter(res -> dedup.add(res.keySet()))
-                //.peek(System.out::println)
+                .peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
 
