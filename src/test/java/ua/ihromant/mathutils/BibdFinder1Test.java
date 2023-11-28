@@ -21,14 +21,11 @@ public class BibdFinder1Test {
         int vMax = variants - max - 1;
         return IntStream.rangeClosed(from, needed == 1 ? vMax : Math.min(vMax,
                         from + (variants - tLength - (1 << needed) + 1) / 2))
+                .filter(idx -> !filter.get(variants - idx) && !filter.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
             BitSet addition = new BitSet(variants / 2 + 1);
-            int present = tuple.stream().reduce(0, (acc, set) -> {
-                int d = diff(set, idx, variants);
-                addition.set(d);
-                return filter.get(d) ? acc + 1 : acc;
-            });
-            if (present > 0 || addition.cardinality() != tCardinality) {
+            tuple.stream().map(t -> diff(t, idx, variants)).filter(d -> !addition.get(d) && !filter.get(d)).forEach(addition::set);
+            if (addition.cardinality() != tCardinality) {
                 return;
             }
             BitSet nextTuple = (BitSet) tuple.clone();
@@ -56,19 +53,19 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffSets() {
-        int v = 65;
-        int k = 5;
+        int v = 52;
+        int k = 4;
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         System.out.println(calcCycles(v, k, 1, filter)
-                //.peek(System.out::println)
+                .peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
 
     @Test
     public void testDiffFamilies() {
-        int v = 126;
-        int k = 6;
+        int v = 52;
+        int k = 4;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
