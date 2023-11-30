@@ -33,30 +33,23 @@ public class FinderTest {
     private final SemiDirectProduct semi = new SemiDirectProduct(left, new CyclicGroup(2));
 
     @Test
-    public void generate4() {
-        int v = 61;
-        int k = 6;
+    public void generate3() {
+        int v = 9;
+        int k = 3;
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
-        BitSet[] frequencies = IntStream.range(0, v - 1).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
+        BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         BitSet[] blocks = new BitSet[r + 1];
-        int shift = 2 * r;
         IntStream.range(0, r).forEach(i -> {
             BitSet bs = new BitSet();
-            bs.set(v - 1);
-            bs.set(2 * i);
-            bs.set(2 * i + 1);
-            frequencies[2 * i].set(2 * i + 1);
-            frequencies[2 * i + 1].set(2 * i);
-            for (int j = 0; j < k - 3; j++) {
-                int t = shift + i * (k - 3) + j;
+            bs.set(0);
+            for (int j = 0; j < k - 1; j++) {
+                int t = 1 + i * (k - 1) + j;
                 bs.set(t);
-                frequencies[2 * i].set(t);
-                frequencies[2 * i + 1].set(t);
-                frequencies[t].set(2 * i);
-                frequencies[t].set(2 * i + 1);
-                for (int l = j + 1; l < k - 3; l++) {
-                    int u = shift + i * (k - 3) + l;
+                frequencies[0].set(t);
+                frequencies[t].set(0);
+                for (int l = j + 1; l < k - 1; l++) {
+                    int u = 1 + i * (k - 1) + l;
                     frequencies[u].set(t);
                     frequencies[t].set(u);
                 }
@@ -65,18 +58,18 @@ public class FinderTest {
         });
         int[] initial = new int[k];
         for (int i = 0; i < k; i++) {
-            int t = 2 * i;
+            int t = 1 + (k - 1) * i;
             initial[i] = t;
             for (int j = i + 1; j < k; j++) {
-                int u = 2 * j;
+                int u = 1 + (k - 1) * j;
                 frequencies[u].set(t);
                 frequencies[t].set(u);
             }
         }
         blocks[r] = of(initial);
-        int[] nextPossible = IntStream.range(0, v - 1).filter(i -> {
+        int[] nextPossible = IntStream.range(0, v).filter(i -> {
             BitSet frq = frequencies[i];
-            return !frq.get(0);
+            return !frq.get(initial[0]);
         }).toArray();
         designs(v, k, b, r, nextPossible, blocks, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
     }
@@ -113,11 +106,11 @@ public class FinderTest {
                             nextFrequencies[t].set(u);
                         }
                     }
-                    int fst = IntStream.range(perm[0], v - 1)
-                            .filter(i -> nextFrequencies[i].cardinality() + 2 != v).findAny().orElseThrow();
-                    int[] nextPossible = IntStream.range(fst, v - 1).filter(i -> {
+                    int fst = IntStream.range(perm[0], v)
+                            .filter(i -> nextFrequencies[i].cardinality() + 1 != v).findAny().orElseThrow();
+                    int[] nextPossible = IntStream.range(fst, v).filter(i -> {
                         BitSet frq = nextFrequencies[i];
-                        return !frq.get(fst) && frq.cardinality() + 2 != v;
+                        return !frq.get(fst) && frq.cardinality() + 1 != v;
                     }).toArray();
                     if (nextPossible.length < k) {
                         return;
