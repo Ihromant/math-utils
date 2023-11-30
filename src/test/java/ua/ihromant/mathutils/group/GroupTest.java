@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -90,25 +91,31 @@ public class GroupTest {
     public void findHints() {
         IntStream.range(6, 11).forEach(k -> {
             int mul = k * (k + 1);
-            for (int t : (Iterable<Integer>) () -> IntStream.range(2, 10).iterator()) {
+            for (int t : (Iterable<Integer>) () -> IntStream.range(1, 4).iterator()) {
                 for (int dff : List.of(1, k + 1)) {
                     int v = t * mul + dff;
                     CyclicGroup cg = new CyclicGroup(v);
                     Set<BitSet> dedup = new HashSet<>();
                     BitSet filter = dff == 1 ? new BitSet() : IntStream.range(0, k + 1).map(i -> i * v / (k + 1)).collect(BitSet::new, BitSet::set, BitSet::or);
-                    BitSet[] sets = cg.elements().filter(el -> Group.gcd(el, cg.order()) == 1).filter(el -> cg.expOrder(el) == k)
-                            .mapToObj(el -> {
+                    BitSet[] sets = cg.elements().filter(el -> Group.gcd(el, cg.order()) == 1)
+                            .boxed().flatMap(el -> Stream.concat(IntStream.range(0, cg.expOrder(el))
+                            .mapToObj(st -> {
                                 BitSet result = new BitSet();
                                 result.set(0);
-                                IntStream.range(0, k).map(pow -> cg.exponent(el, pow)).forEach(result::set);
+                                IntStream.range(st, st + k).map(pow -> cg.exponent(el, pow)).forEach(result::set);
                                 return result;
-                            })
-                            .filter(bs -> {
+                            }), IntStream.range(0, cg.expOrder(el))
+                                    .mapToObj(st -> {
+                                        BitSet result = new BitSet();
+                                        IntStream.range(st, st + k + 1).map(pow -> cg.exponent(el, pow)).forEach(result::set);
+                                        return result;
+                                    })).filter(bs -> {
                                 BitSet res = new BitSet();
                                 bs.stream().forEach(a -> bs.stream().filter(b -> a < b)
                                         .map(b -> diff(a, b, cg.order())).filter(d -> !filter.get(d)).forEach(res::set));
                                 return res.cardinality() == mul / 2 && dedup.add(res);
                             })
+                            )
                             .toArray(BitSet[]::new);
                     if (sets.length > 0) {
                         System.out.println((k + 1) + " " + t + " " + dff + " " + cg.order());
