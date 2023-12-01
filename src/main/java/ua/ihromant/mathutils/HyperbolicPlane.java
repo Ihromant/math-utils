@@ -274,6 +274,12 @@ public class HyperbolicPlane {
         }).collect(Collectors.toSet());
     }
 
+    public HyperbolicPlane subPlane(int[] pointArray) {
+        return new HyperbolicPlane(Arrays.stream(lines).map(l -> l.stream()
+                        .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
+                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new));
+    }
+
     public BitSet hyperbolicIndex() {
         int maximum = lines[0].cardinality() - 1; // uncomment below when testing PBD
         // int maximum = Arrays.stream(lines).mapToInt(BitSet::cardinality).max().orElseThrow() - 1;

@@ -156,8 +156,16 @@ public class GaloisField {
         return additionTable[a][b];
     }
 
+    public int add(int... vals) {
+        return Arrays.stream(vals).reduce(0, this::add);
+    }
+
     public int mul(int a, int b) {
         return multiplicationTable[a][b];
+    }
+
+    public int mul(int... vals) {
+        return Arrays.stream(vals).reduce(1, this::mul);
     }
 
     public int mulOrder(int a) {

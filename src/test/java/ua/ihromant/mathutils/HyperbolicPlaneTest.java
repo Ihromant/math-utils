@@ -12,7 +12,6 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -96,8 +95,7 @@ public class HyperbolicPlaneTest {
     }
 
     private static int quasiOp(HyperbolicPlane pl, int x, int y) {
-        int line = pl.line(x, y);
-        return StreamSupport.stream(pl.points(line).spliterator(), false).filter(p -> p != x && p != y).findAny().orElseThrow();
+        return pl.line(pl.line(x, y)).stream().filter(p -> p != x && p != y).findAny().orElseThrow();
     }
 
     @Test
@@ -836,6 +834,42 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
+    public void generateArc() {
+        int q = 16;
+        int n = 8;
+        int k = (q + 1) * (n - 1) + 1;
+        GaloisField fd = new GaloisField(q);
+        HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
+        BitSet pts = generatePts(fd, q, n, k);
+        HyperbolicPlane arc = pl.subPlane(pts.stream().toArray());
+        testCorrectness(arc, of(n));
+        assertEquals(k, arc.pointCount());
+        System.out.println(arc.hyperbolicIndex());
+    }
+
+    private static BitSet generatePts(GaloisField fd, int q, int n, int k) {
+        for (int a = 1; a < q; a++) {
+            for (int b = 1; b < q; b++) {
+                for (int c = 0; c < q; c++) {
+                    BitSet pts = new BitSet();
+                    for (int i = 0; i < q * q; i++) {
+                        int x = i / q;
+                        int y = i % q;
+                        int qf = fd.add(fd.mul(a, x, x), fd.mul(c, x, y), fd.mul(b, y, y));
+                        if (qf < n) {
+                            pts.set(i);
+                        }
+                    }
+                    if (pts.cardinality() == k) {
+                        return pts;
+                    }
+                }
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    @Test
     public void generateUnital() {
         int q = 4;
         int ord = q * q;
@@ -852,13 +886,9 @@ public class HyperbolicPlaneTest {
                 unital.set(p);
             }
         }
-        int[] pointArray = unital.stream().toArray();
-        BitSet[] lines = StreamSupport.stream(pl.lines().spliterator(), false).map(l -> pl.line(l).stream()
-                .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
-                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
-        HyperbolicPlane uni = new HyperbolicPlane(lines);
+        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
         assertEquals(ord * q + 1, uni.pointCount());
-        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1));
+        testCorrectness(uni, of(q + 1));
         System.out.println(uni.hyperbolicIndex());
     }
 
@@ -879,11 +909,7 @@ public class HyperbolicPlaneTest {
                 unital.set(p);
             }
         }
-        int[] pointArray = unital.stream().toArray();
-        BitSet[] lines = StreamSupport.stream(pl.lines().spliterator(), false).map(l -> pl.line(l).stream()
-                        .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
-                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
-        HyperbolicPlane uni = new HyperbolicPlane(lines);
+        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
         assertEquals(280, uni.pointCount());
         //HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
         //assertEquals(of(28, 37), uni.cardSubPlanes(true));
@@ -891,14 +917,8 @@ public class HyperbolicPlaneTest {
         //System.out.println(uni.hyperbolicIndex());
         int[] point37Array = of(0, 1, 2, 3, 31, 32, 33, 34, 68, 69, 70, 71, 83, 84, 85, 86, 117, 118, 119, 120, 130, 131, 132, 133, 178, 179, 180, 181, 191, 192, 193, 194, 228, 229, 230, 231, 268).stream().toArray();
         int[] point28Array = of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 276, 277, 278, 279).stream().toArray();
-        BitSet[] lines37 = StreamSupport.stream(uni.lines().spliterator(), false).map(l -> uni.line(l).stream()
-                        .map(p -> Arrays.binarySearch(point37Array, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
-                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
-        BitSet[] lines28 = StreamSupport.stream(uni.lines().spliterator(), false).map(l -> uni.line(l).stream()
-                        .map(p -> Arrays.binarySearch(point28Array, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
-                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
-        HyperbolicPlane pl37 = new HyperbolicPlane(lines37);
-        HyperbolicPlane pl28 = new HyperbolicPlane(lines28);
+        HyperbolicPlane pl37 = uni.subPlane(point37Array);
+        HyperbolicPlane pl28 = uni.subPlane(point28Array);
         testCorrectness(pl37, of(q + 1, ord + 1));
         testCorrectness(pl28, of(q + 1));
         System.out.println(pl37.hyperbolicIndex());
