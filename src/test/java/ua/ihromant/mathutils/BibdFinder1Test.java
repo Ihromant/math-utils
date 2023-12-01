@@ -20,21 +20,15 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BibdFinder1Test {
-    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet tuple) {
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet blackList, BitSet tuple) {
         int half = variants / 2;
         int tLength = tuple.length();
         return IntStream.range(tLength == 1 ? prev : needed == 1 ? Math.max(variants - max + 1, tLength) : tLength,
                         tLength == 1 ? variants - (needed - 1) * (needed - 2) : Math.min(variants, tLength + max - 1))
-                .filter(idx -> idx > half ? !filter.get(variants - idx) : !filter.get(idx))
+                .filter(idx -> !blackList.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
                     BitSet addition = new BitSet(half + 1);
-                    if (tuple.stream().map(pr -> diff(pr, idx, variants)).anyMatch(d -> {
-                        boolean result = filter.get(d) || addition.get(d);
-                        addition.set(d);
-                        return result;
-                    })) {
-                        return;
-                    }
+                    tuple.stream().map(pr -> diff(pr, idx, variants)).forEach(addition::set);
                     BitSet nextTuple = (BitSet) tuple.clone();
                     nextTuple.set(idx);
                     if (needed == 1) {
@@ -42,8 +36,31 @@ public class BibdFinder1Test {
                         return;
                     }
                     BitSet newFilter = (BitSet) filter.clone();
-                    newFilter.or(addition);
-                    calcCycles(variants, tLength == 1 ? idx : max, prev, needed - 1, newFilter, nextTuple).forEach(sink);
+                    BitSet newBlackList = (BitSet) blackList.clone();
+                    addition.stream().forEach(newDiff -> {
+                        newFilter.set(newDiff);
+                        nextTuple.stream().forEach(val -> {
+                            newBlackList.set((val + newDiff) % variants);
+                            newBlackList.set((val + variants - newDiff) % variants);
+                        });
+                    });
+                    newFilter.stream().forEach(diff -> {
+                        newBlackList.set((idx + diff) % variants);
+                        newBlackList.set((idx + variants - diff) % variants);
+                    });
+                    tuple.stream().forEach(val -> {
+                        int mid = val + idx;
+                        int outMid = val + variants - idx;
+                        if (mid % 2 == 0) {
+                            newBlackList.set(mid / 2);
+                        }
+                        if (outMid % 2 == 0) {
+                            newBlackList.set((idx + outMid / 2) % variants);
+                        }
+                        newBlackList.set((val + idx) % variants);
+                        newBlackList.set((val + variants - idx) % variants);
+                    });
+                    calcCycles(variants, tLength == 1 ? idx : max, prev, needed - 1, newFilter, newBlackList, nextTuple).forEach(sink);
                     if (tLength == 1 && filter.cardinality() <= needed) {
                         System.out.println(idx);
                     }
@@ -58,7 +75,9 @@ public class BibdFinder1Test {
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter) {
         Set<BitSet> dedup = new HashSet<>();
-        return calcCycles(variants, 0, prev, size - 1, filter, of(0)).filter(e -> dedup.add(e.getKey()));
+        BitSet blackList = (BitSet) filter.clone();
+        filter.stream().forEach(i -> blackList.set(variants - i));
+        return calcCycles(variants, 0, prev, size - 1, filter, blackList, of(0)).filter(e -> dedup.add(e.getKey()));
     }
 
     private static int start(int v, int k) {
@@ -68,12 +87,12 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffSets() {
-        int v = 127;
+        int v = 91;
         int k = 7;
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         System.out.println(calcCycles(v, k, start(v, k), filter)
-                .peek(System.out::println)
+                //.peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
 
@@ -116,8 +135,8 @@ public class BibdFinder1Test {
     }
 
     @Test
-    public void testDiffFamilies2() {
-        int v = 133;
+    public void testDiffFamilies() {
+        int v = 91;
         int k = 7;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
