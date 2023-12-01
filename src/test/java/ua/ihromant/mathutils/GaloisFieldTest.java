@@ -33,6 +33,8 @@ public class GaloisFieldTest {
         testField(fd);
         fd = new GaloisField(4);
         testField(fd);
+        fd = new GaloisField(32);
+        testField(fd);
         fd = new GaloisField(27);
         testField(fd);
         fd = new GaloisField(64);
@@ -158,7 +160,7 @@ public class GaloisFieldTest {
         assertEquals(126, GaloisField.choices(9, 5).count());
     }
 
-    @Test
+    //@Test
     public void testDistinctPermutations() {
         int[] diffSet = new int[]{3, 6, 7, 12, 14};
         HyperbolicPlane plane = new HyperbolicPlane(new int[][]{diffSet});

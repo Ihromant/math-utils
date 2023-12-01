@@ -28,7 +28,7 @@ public class GaloisField {
         }
         this.base = factors[0];
         this.power = factors.length;
-        this.irreducible = power == 1 ? new int[]{1, 0} : IntStream.range(base, Integer.MAX_VALUE)
+        this.irreducible = power == 1 ? new int[]{1, 0} : IntStream.range(cardinality, base * cardinality)
                 .mapToObj(this::toPolynomial).filter(this::irreducible).findAny().orElseThrow();
         this.additionTable = new int[base][base];
         this.multiplicationTable = new int[base][base];
@@ -41,7 +41,7 @@ public class GaloisField {
                     int[] poly0 = toPolynomial(i);
                     int[] poly1 = toPolynomial(j);
                     sum = fromPolynomial(addPoly(poly0, poly1));
-                    product = fromPolynomial(mulPoly(poly0, poly1));
+                    product = fromPolynomial(modPoly(mulPoly(poly0, poly1), irreducible));
                 } else {
                     sum = baseAdd(i, j);
                     product = baseMul(i, j);
@@ -66,7 +66,7 @@ public class GaloisField {
         return Arrays.stream(poly, zeros, poly.length).toArray();
     }
 
-    private int[] shift(int[] poly, int shift) {
+    private static int[] shift(int[] poly, int shift) {
         int[] result = new int[poly.length + shift];
         System.arraycopy(poly, 0, result, 0, poly.length);
         return result;
@@ -80,8 +80,23 @@ public class GaloisField {
         return Arrays.stream(poly).map(i -> baseMul(i, cff)).toArray();
     }
 
+    private int[] modPoly(int[] dividend, int[] divisor) {
+        int[] result = dividend;
+        while (result.length >= divisor.length) {
+            int fst = result[0];
+            int multiplier = IntStream.range(1, base).filter(i -> baseMul(divisor[0], i) == fst).findAny().orElseThrow();
+            int[] toSubtract = negPoly(mulPoly(shift(divisor, result.length - divisor.length), multiplier));
+            result = trim(addPoly(result, toSubtract));
+        }
+        return result;
+    }
+
     private boolean irreducible(int[] poly) {
-        return IntStream.range(0, base).noneMatch(i -> evalPoly(poly, i) == 0);
+        return IntStream.range(0, base).noneMatch(i -> evalPoly(poly, i) == 0) && IntStream.range(base, cardinality).noneMatch(i -> {
+            int[] divisor = toPolynomial(i);
+            int[] mod = modPoly(poly, divisor);
+            return mod.length == 1 && mod[0] == 0;
+        });
     }
 
     private int[] toPolynomial(int i) {
@@ -123,13 +138,7 @@ public class GaloisField {
                 result[i + j] = baseAdd(result[i + j], baseMul(first[i], second[j]));
             }
         }
-        result = trim(result);
-        while (result.length > power) {
-            int[] toSubtract = shift(irreducible, result.length - irreducible.length);
-            toSubtract = negPoly(mulPoly(toSubtract, result[0]));
-            result = trim(addPoly(result, toSubtract));
-        }
-        return result;
+        return trim(result);
     }
 
     private int evalPoly(int[] poly, int number) {
