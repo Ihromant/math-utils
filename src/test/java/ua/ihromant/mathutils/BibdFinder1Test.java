@@ -127,6 +127,7 @@ public class BibdFinder1Test {
     }
 
     private static void findByHint(BitSet hint, int v, int k) {
+        System.out.println(v + " " + k + " " + hint);
         BitSet diff = diff(hint, v);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
         curr.put(diff, hint);
