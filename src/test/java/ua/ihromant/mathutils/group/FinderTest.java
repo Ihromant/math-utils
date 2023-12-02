@@ -33,16 +33,15 @@ public class FinderTest {
     private final SemiDirectProduct semi = new SemiDirectProduct(left, new CyclicGroup(2));
 
     @Test
-    public void generate6() {
+    public void generate4() {
         int[][] base = new int[][]{
-                {0, 1, 2, 3},
-                {3, 4, 5, 6},
-                {6, 7, 8, 0},
-                {1, 4, 7},
-                {9, 10}
+                {0, 1, 2},
+                {3, 4},
+                {4, 5},
+                {3, 5}
         };
         int from = Arrays.stream(base).mapToInt(arr -> Arrays.stream(arr).reduce(Integer.MIN_VALUE, Math::max)).reduce(Integer.MIN_VALUE, Math::max) + 1;
-        int range = 10;
+        int range = 20;
         for (int v = from; v < from + range; v++) {
             int k = 3;
             BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
