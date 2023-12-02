@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class BibdFinder1Test {
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet blackList, BitSet tuple) {
         int half = variants / 2;
@@ -119,8 +121,9 @@ public class BibdFinder1Test {
     }
 
     @Test
-    public void find() {
-        findByHint(of(0, 1, 8, 19, 59, 64), 151, 6);
+    public void find1() {
+        findByHint(of(0, 68, 69, 105, 135, 156, 160), 217, 7);
+        //findByHint(of(0, 32, 35, 50, 69, 81, 83), 91, 7);
     }
 
     private static void findByHint(BitSet hint, int v, int k) {
@@ -130,6 +133,7 @@ public class BibdFinder1Test {
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         filter.or(diff);
+        assertEquals((v % k == 0 ? k / 2 + 1 : 0) + k * (k - 1) / 2, filter.cardinality());
         allDifferenceSets(v, k, curr, (v / k / (k - 1)) - 1, filter).filter(res -> dedup.add(res.keySet()))
                 .forEach(res -> System.out.println(res.values()));
     }

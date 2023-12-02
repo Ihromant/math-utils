@@ -411,9 +411,6 @@ public class BibdFinderTest {
         int diffSize = diffs.size();
         return (currSize == 0 ? IntStream.range(0, diffSize - needed + 1).boxed().parallel()
                 : IntStream.range(0, diffSize - needed + 1).boxed()).mapMulti((idx, sink) -> {
-            if (currSize == 0 && idx == Integer.lowestOneBit(idx)) {
-                System.out.println(idx);
-            }
             BitSet diff = diffs.get(idx);
             if (present.intersects(diff)) {
                 return;
@@ -429,6 +426,9 @@ public class BibdFinderTest {
             nextPresent.or(diff);
             allDifferenceSets(diffs.subList(idx + 1, diffSize), needed - 1,
                     nextCurr, nextPresent).forEach(sink);
+            if (currSize == 0 && idx == Integer.lowestOneBit(idx)) {
+                System.out.println(idx);
+            }
         });
     }
 
