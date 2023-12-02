@@ -33,9 +33,9 @@ public class FinderTest {
     private final SemiDirectProduct semi = new SemiDirectProduct(left, new CyclicGroup(2));
 
     @Test
-    public void generate3() {
+    public void generate4() {
         int v = 9;
-        int k = 3;
+        int k = 2;
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
@@ -71,13 +71,52 @@ public class FinderTest {
             BitSet frq = frequencies[i];
             return !frq.get(initial[0]);
         }).toArray();
-        designs(v, k, b, r, nextPossible, blocks, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
+        designs(v, k, true, nextPossible, blocks, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
     }
 
-    private Stream<BitSet[]> designs(int v, int k, int b, int r, int[] possible, BitSet[] curr, BitSet[] frequencies) {
+    private void enhanceFrequencies(BitSet[] frequencies, int[] block) {
+        for (int i = 0; i < block.length - 1; i++) {
+            int t = block[i];
+            for (int j = i + 1; j < block.length; j++) {
+                int u = block[j];
+                frequencies[u].set(t);
+                frequencies[t].set(u);
+            }
+        }
+    }
+
+    private int[] nextPossible(BitSet[] frequencies, int[] prev, int v) {
+        int fst = prev == null ? 0 : IntStream.range(prev[0], v)
+                .filter(i -> frequencies[i].cardinality() + 1 != v).findAny().orElse(v);
+        return IntStream.range(fst, v).filter(i -> {
+            BitSet frq = frequencies[i];
+            return !frq.get(fst) && frq.cardinality() + 1 != v;
+        }).toArray();
+    }
+
+    @Test
+    public void generate3() {
+        int v = 16;
+        int k = 4;
+        int r = (v - 1) / (k - 1);
+        BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
+        BitSet[] blocks = new BitSet[r + 1];
+        IntStream.range(0, r).forEach(i -> {
+            int[] block = IntStream.concat(IntStream.of(0), IntStream.range(0, k - 1).map(j -> 1 + i * (k - 1) + j)).toArray();
+            enhanceFrequencies(frequencies, block);
+            blocks[i] = of(block);
+        });
+        int[] initial = IntStream.range(0, k).map(i -> 1 + (k - 1) * i).toArray();
+        enhanceFrequencies(frequencies, initial);
+        blocks[r] = of(initial);
+        int[] nextPossible = nextPossible(frequencies, initial, v);
+        designs(v, k, true, nextPossible, blocks, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
+    }
+
+    private Stream<BitSet[]> designs(int v, int k, boolean parallel, int[] possible, BitSet[] curr, BitSet[] frequencies) {
         int cl = curr.length;
-        return (cl != r + 1 ? Stream.iterate(IntStream.range(0, k).toArray(), ch -> ch != null && ch[0] == 0 && ch[1] == 1, ch -> GaloisField.nextChoice(possible.length, ch))
-                : Stream.iterate(IntStream.range(0, k).toArray(), ch -> ch != null && ch[0] == 0 && ch[1] == 1, ch -> GaloisField.nextChoice(possible.length, ch)).parallel())
+        return (parallel ? Stream.iterate(IntStream.range(0, k).toArray(), ch -> ch != null && ch[0] == 0 && ch[1] == 1, ch -> GaloisField.nextChoice(possible.length, ch)).parallel()
+                : Stream.iterate(IntStream.range(0, k).toArray(), ch -> ch != null && ch[0] == 0 && ch[1] == 1, ch -> GaloisField.nextChoice(possible.length, ch)))
                 .map(ch -> Arrays.stream(ch).map(i -> possible[i]).toArray())
                 .filter(perm -> {
                     for (int i = 1; i < k - 1; i++) {
@@ -93,29 +132,17 @@ public class FinderTest {
                     System.arraycopy(curr, 0, nextCurr, 0, cl);
                     BitSet block = of(perm);
                     nextCurr[cl] = block;
-                    if (cl + 1 == b) {
+                    BitSet[] nextFrequencies = Arrays.stream(frequencies).map(bs -> (BitSet) bs.clone()).toArray(BitSet[]::new);
+                    enhanceFrequencies(nextFrequencies, perm);
+                    int[] nextPossible = nextPossible(nextFrequencies, perm, v);
+                    if (nextPossible.length == 0) {
                         sink.accept(nextCurr);
                         return;
                     }
-                    BitSet[] nextFrequencies = Arrays.stream(frequencies).map(bs -> (BitSet) bs.clone()).toArray(BitSet[]::new);
-                    for (int i = 0; i < k - 1; i++) {
-                        int t = perm[i];
-                        for (int j = i + 1; j < k; j++) {
-                            int u = perm[j];
-                            nextFrequencies[u].set(t);
-                            nextFrequencies[t].set(u);
-                        }
-                    }
-                    int fst = IntStream.range(perm[0], v)
-                            .filter(i -> nextFrequencies[i].cardinality() + 1 != v).findAny().orElseThrow();
-                    int[] nextPossible = IntStream.range(fst, v).filter(i -> {
-                        BitSet frq = nextFrequencies[i];
-                        return !frq.get(fst) && frq.cardinality() + 1 != v;
-                    }).toArray();
                     if (nextPossible.length < k) {
                         return;
                     }
-                    designs(v, k, b, r, nextPossible, nextCurr, nextFrequencies).forEach(sink);
+                    designs(v, k, false, nextPossible, nextCurr, nextFrequencies).forEach(sink);
                 });
     }
 
