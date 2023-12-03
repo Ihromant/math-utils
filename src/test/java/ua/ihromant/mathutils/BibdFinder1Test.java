@@ -23,7 +23,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BibdFinder1Test {
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet blackList, BitSet tuple) {
-        int half = variants / 2;
         int tLength = tuple.length();
         return IntStream.range(tLength == 1 ? prev : needed == 1 ? Math.max(variants - max + 1, tLength) : tLength,
                         tLength == 1 ? variants - (needed - 1) * (needed - 2) : Math.min(variants, tLength + max - 1))
@@ -46,8 +45,6 @@ public class BibdFinder1Test {
                         if (outMid % 2 == 0) {
                             newBlackList.set((idx + outMid / 2) % variants);
                         }
-                        newBlackList.set((val + idx) % variants);
-                        newBlackList.set((val + variants - idx) % variants);
                         int diff = diff(val, idx, variants);
                         newFilter.set(diff);
                         nextTuple.stream().forEach(nv -> {
@@ -118,15 +115,14 @@ public class BibdFinder1Test {
 
     @Test
     public void find() {
-        findByHint(of(0, 68, 69, 105, 135, 156, 160), 217, 7);
-        //findByHint(of(0, 32, 35, 50, 69, 81, 83), 91, 7);
+        //findByHint(of(0, 68, 69, 105, 135, 156, 160), 217, 7);
+        findByHint(of(0, 41, 51, 68, 69, 72, 84), 91, 7);
     }
 
     private static void findByHint(BitSet hint, int v, int k) {
         System.out.println(v + " " + k + " " + hint);
         BitSet diff = diff(hint, v);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
-        curr.put(diff, hint);
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         filter.or(diff);
