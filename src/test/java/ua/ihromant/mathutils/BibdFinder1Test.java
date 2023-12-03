@@ -35,21 +35,8 @@ public class BibdFinder1Test {
                         sink.accept(Map.entry(diff(nextTuple, variants), nextTuple));
                         return;
                     }
-                    BitSet addition = new BitSet(half + 1);
-                    tuple.stream().map(pr -> diff(pr, idx, variants)).forEach(addition::set);
                     BitSet newFilter = (BitSet) filter.clone();
                     BitSet newBlackList = (BitSet) blackList.clone();
-                    addition.stream().forEach(newDiff -> {
-                        newFilter.set(newDiff);
-                        nextTuple.stream().forEach(val -> {
-                            newBlackList.set((val + newDiff) % variants);
-                            newBlackList.set((val + variants - newDiff) % variants);
-                        });
-                    });
-                    newFilter.stream().forEach(diff -> {
-                        newBlackList.set((idx + diff) % variants);
-                        newBlackList.set((idx + variants - diff) % variants);
-                    });
                     tuple.stream().forEach(val -> {
                         int mid = val + idx;
                         int outMid = val + variants - idx;
@@ -61,6 +48,16 @@ public class BibdFinder1Test {
                         }
                         newBlackList.set((val + idx) % variants);
                         newBlackList.set((val + variants - idx) % variants);
+                        int diff = diff(val, idx, variants);
+                        newFilter.set(diff);
+                        nextTuple.stream().forEach(nv -> {
+                            newBlackList.set((nv + diff) % variants);
+                            newBlackList.set((nv + variants - diff) % variants);
+                        });
+                    });
+                    newFilter.stream().forEach(diff -> {
+                        newBlackList.set((idx + diff) % variants);
+                        newBlackList.set((idx + variants - diff) % variants);
                     });
                     calcCycles(variants, tLength == 1 ? idx : max, prev, needed - 1, newFilter, newBlackList, nextTuple).forEach(sink);
                     if (tLength == 1 && filter.cardinality() <= needed) {
@@ -85,7 +82,6 @@ public class BibdFinder1Test {
     private static int start(int v, int k) {
         return v / k + (k + 1) / 2;
     }
-
 
     @Test
     public void testDiffSets() {
@@ -142,7 +138,7 @@ public class BibdFinder1Test {
     }
 
     @Test
-    public void testDiffFamilies1() {
+    public void testDiffFamilies() {
         int v = 52;
         int k = 4;
         System.out.println(v + " " + k);
