@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.SequencedMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -141,7 +142,7 @@ public class BibdFinder1ExtTest {
         int k = 7;
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        System.out.println(calcCycles(v, k, start(v, k), filter)
+        System.out.println(calcCyclesFixed(v, k, 150, filter)
                 //.peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
@@ -178,7 +179,6 @@ public class BibdFinder1ExtTest {
         System.out.println(v + " " + k + " " + hint);
         BitSet diff = diff(hint, v);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
-        curr.put(diff, hint);
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         filter.or(diff);
@@ -190,9 +190,9 @@ public class BibdFinder1ExtTest {
     }
 
     @Test
-    public void testDiffFamilies() {
-        int v = 65;
-        int k = 5;
+    public void testDiffFamilies1() {
+        int v = 217;
+        int k = 7;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
@@ -207,9 +207,11 @@ public class BibdFinder1ExtTest {
         int half = variants / 2;
         int prev = curr.isEmpty() ? start(variants, k) : IntStream.range(curr.lastEntry().getValue().stream().skip(1).findFirst().orElseThrow() + 1, variants)
                 .filter(i -> i > half ? !filter.get(variants - i) : !filter.get(i)).findFirst().orElse(variants);
-        return (needed == variants / k / (k - 1)
-                ? calcCyclesFixed(variants, k, 19, filter).parallel()
-                : calcCycles(variants, k, prev, filter)).mapMulti((pair, sink) -> {
+        int base = variants / k / (k - 1);
+        boolean first = needed == base;
+        AtomicLong counter = new AtomicLong();
+        return (first ? calcCyclesFixed(variants, k, 150, filter)
+                : needed + 1 == base ? calcCycles(variants, k, prev, filter).parallel() : calcCycles(variants, k, prev, filter)).mapMulti((pair, sink) -> {
             SequencedMap<BitSet, BitSet> nextCurr = new LinkedHashMap<>(curr);
             nextCurr.put(pair.getKey(), pair.getValue());
             if (needed == 1) {
@@ -219,6 +221,12 @@ public class BibdFinder1ExtTest {
             BitSet nextFilter = (BitSet) filter.clone();
             nextFilter.or(pair.getKey());
             allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter).forEach(sink);
+            if (needed == base) {
+                long cnt = counter.incrementAndGet();
+                if ((cnt & ((1 << 10) - 1)) == 0) {
+                    System.out.println(cnt);
+                }
+            }
         });
     }
 
