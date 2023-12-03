@@ -10,7 +10,6 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.SequencedMap;
@@ -106,9 +105,9 @@ public class BibdFinder1ExtTest {
     }
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter) {
-        Set<BitSet> dedup = new HashSet<>();
         BitSet blackList = (BitSet) filter.clone();
         filter.stream().forEach(i -> blackList.set(variants - i));
+        Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
         return calcCycles(variants, prev, size - 1, filter, blackList, of(0)).filter(e -> dedup.add(e.getKey()));
     }
 
@@ -128,7 +127,7 @@ public class BibdFinder1ExtTest {
         if (outMid % 2 == 0) {
             blackList.set((prev + outMid / 2) % variants);
         }
-        Set<BitSet> dedup = new HashSet<>();
+        Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
         return calcCyclesFixed(variants, prev, size - 2, newFilter, blackList, of(0, prev)).filter(e -> dedup.add(e.getKey()));
     }
 
