@@ -136,10 +136,12 @@ public class BibdFinder1ExtTest {
         return v / k + (k + 1) / 2;
     }
 
-    // 217,7: 149=520181 148=620587
+    // 217,7: 149=520181 148=620587 147=635074 146=752650 145=801422 144=923202 143=954210 142=1129782 141=1170224 140=1351656
+    // 139=1404735 138=1621092 137=1676849 136=1953186 135=1985525 134=2288191 133=2386114 132=2699760 131=2764840 130=3200591
+    // 129=3267966 128=3706108 127=3806658 126=4315619 125=4428024 123=4455528 122=5070206 121=5176745 120=5833506 119=5870161
     @Test
     public void testDiffSets() {
-        int prev = 148;
+        int prev = 119;
         int v = 217;
         int k = 7;
         System.out.println(v + " " + k + " " + prev);
@@ -213,7 +215,7 @@ public class BibdFinder1ExtTest {
         int base = variants / k / (k - 1);
         boolean first = needed == base;
         AtomicLong counter = new AtomicLong();
-        return (first ? calcCyclesFixed(variants, k, 150, filter)
+        return (first ? IntStream.range(140, 150).peek(System.out::println).boxed().flatMap(pr -> calcCyclesFixed(variants, k, pr, filter))
                 : needed + 1 == base ? calcCycles(variants, k, prev, filter).parallel() : calcCycles(variants, k, prev, filter)).mapMulti((pair, sink) -> {
             SequencedMap<BitSet, BitSet> nextCurr = new LinkedHashMap<>(curr);
             nextCurr.put(pair.getKey(), pair.getValue());
@@ -226,7 +228,7 @@ public class BibdFinder1ExtTest {
             allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter).forEach(sink);
             if (needed == base) {
                 long cnt = counter.incrementAndGet();
-                if ((cnt & ((1 << 10) - 1)) == 0) {
+                if ((cnt & ((1 << 17) - 1)) == 0) {
                     System.out.println(cnt);
                 }
             }
