@@ -136,13 +136,16 @@ public class BibdFinder1ExtTest {
         return v / k + (k + 1) / 2;
     }
 
+    // 217,7: 149=520181 148=620587
     @Test
     public void testDiffSets() {
+        int prev = 148;
         int v = 217;
         int k = 7;
+        System.out.println(v + " " + k + " " + prev);
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        System.out.println(calcCyclesFixed(v, k, 150, filter)
+        System.out.println(calcCyclesFixed(v, k, prev, filter)
                 //.peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
