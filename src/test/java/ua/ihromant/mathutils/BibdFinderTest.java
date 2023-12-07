@@ -226,8 +226,21 @@ public class BibdFinderTest {
     }
 
     @Test
-    public void generate4() throws IOException {
-        generateDiffSets(52, 4);
+    public void testCycles() {
+        int v = 52;
+        int k = 4;
+        BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
+        Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
+        System.out.println(calcCyclesAlt(52, 4, filter)
+                .filter(e -> dedup.add(e.getKey()))
+                .peek(System.out::println)
+                .count());
+        //generateDiffSets(new GroupProduct(new CyclicGroup(9), new CyclicGroup(9)), 5);
+    }
+
+    @Test
+    public void generate5() throws IOException {
+        generateDiffSets(169, 8, of(15, 19, 20, 21, 22, 23, 24, 25, 34, 39, 40, 41, 43, 45, 47, 49, 54, 59, 60, 63, 64, 66, 69, 72, 75, 79, 82, 83));
         //generateDiffSets(new GroupProduct(new CyclicGroup(9), new CyclicGroup(9)), 5);
     }
 
@@ -291,6 +304,46 @@ public class BibdFinderTest {
         }
         System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
     }
+
+    private static void generateDiffSets(int v, int k, BitSet additionalFilter) throws IOException {
+        System.out.println("Generating for " + v + " " + k);
+        long time = System.currentTimeMillis();
+        Map<BitSet, BitSet> cycles = new ConcurrentHashMap<>();
+        AtomicLong counter = new AtomicLong();
+        BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
+        filter.or(additionalFilter);
+        calcCyclesAlt(v, k, filter).forEach(e -> {
+            if (cycles.putIfAbsent(e.getKey(), e.getValue()) == null) {
+                long c = counter.incrementAndGet();
+                if ((c & CONST) == 0) {
+                    System.out.println(c);
+                }
+            }
+        });
+        System.out.println("Calculated possible cycles: " + cycles.size() + ", time spent " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+        counter.set(0);
+        File f = new File("/home/ihromant/maths/diffSets/", k + "-" + v + "=" + additionalFilter + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            ps.println(v + " " + k + " " + cycles.size());
+            int needed = v / k / (k - 1) - 1;
+            allDifferenceSets(new ArrayList<>(cycles.keySet()), needed, new BitSet[0], new BitSet()).forEach(ds -> {
+                //altAllDifferenceSets(cycles, v, IntStream.range(0, k).toArray(), needed, new BitSet[needed], filter, ConcurrentHashMap.newKeySet()).forEach(ds -> {
+                long c = counter.incrementAndGet();
+                printDifferenceSet(ds, ps, cycles, false); // set multiple to true if you wish to print all results
+                if ((c & CONST) == 0) {
+                    System.out.println(c);
+                }
+                if (k > 4) {
+                    ps.flush();
+                }
+            });
+        }
+        System.out.println("Calculated difference sets size: " + counter.longValue() + ", time spent " + (System.currentTimeMillis() - time));
+    }
+
 
     private static void generateDiffSets1(int v, int k) throws IOException {
         System.out.println("Generating for " + v + " " + k);
@@ -442,9 +495,11 @@ public class BibdFinderTest {
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(int variants, int needed, BitSet filter) {
         int cap = variants - variants / needed;
+        int[] from = IntStream.concat(IntStream.of(0), IntStream.range(0, cap).filter(i -> !filter.get(i) && !filter.get(variants - i))).toArray();
         int nBits = variants / 2 + 1;
-        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))
-                .parallel().mapMulti((choice, sink) -> {
+        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(from.length, ch))
+                .parallel().mapMulti((perm, sink) -> {
+                    int[] choice = Arrays.stream(perm).map(idx -> from[idx]).toArray();
                     BitSet diff = new BitSet(nBits);
                     int lastDiff = variants - choice[needed - 1];
                     for (int i = 0; i < needed; i++) {
