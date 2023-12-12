@@ -8,6 +8,8 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -260,7 +262,7 @@ public class HyperbolicPlaneTest {
         GaloisField fd = new GaloisField(421);
         int c1 = 1;
         int c2 = 4;
-        int w = fd.oneCubeRoots().findAny().orElseThrow();
+        int w = fd.oneRoots(3).findAny().orElseThrow();
         HyperbolicPlane p = new HyperbolicPlane(fd.cardinality(),
                 new int[] {0, c1, fd.mul(c1, w), fd.mul(c1, fd.mul(w, w)), c2, fd.mul(c2, w), fd.mul(c2, fd.mul(w, w))});
         assertEquals(421, p.pointCount());
@@ -939,6 +941,32 @@ public class HyperbolicPlaneTest {
         assertEquals(of(1), bp.hyperbolicIndex());
         assertEquals(of(9), bp.cardSubPlanes(true));
         checkSpace(bp, bp.pointCount(), bp.pointCount());
+    }
+
+    private int operator(GaloisField fd, int x, int a, int b, int alpha) {
+        return fd.add(fd.mul(a, a, x), b);
+    }
+
+    @Test
+    public void generateNetto() {
+        int q = 139; // prime number 12x + 7
+        GaloisField fd = new GaloisField(q);
+        int eps = fd.oneRoots(6).filter(i -> fd.add(fd.mul(i, i), fd.neg(i), 1) == 0).findFirst().orElseThrow();
+        int alpha = IntStream.range(2, fd.cardinality()).filter(i -> fd.expOrder(i) == fd.cardinality() - 1).findAny().orElseThrow();
+        Set<BitSet> lines = new HashSet<>();
+        for (int a = 1; a < fd.cardinality(); a++) {
+            for (int b = 0; b < fd.cardinality(); b++) {
+                BitSet bs = new BitSet();
+                bs.set(operator(fd, 0, a, b, alpha));
+                bs.set(operator(fd, 1, a, b, alpha));
+                bs.set(operator(fd, eps, a, b, alpha));
+                lines.add(bs);
+            }
+        }
+        HyperbolicPlane pl = new HyperbolicPlane(lines.toArray(BitSet[]::new));
+        testCorrectness(pl, of(3));
+        System.out.println(pl.hyperbolicIndex());
+        System.out.println(pl.cardSubPlanes(true));
     }
 
     private int[] getHomogenousSpace(int p, int ord) {

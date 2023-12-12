@@ -18,6 +18,7 @@ public class GaloisField {
     private final int[] irreducible;
     private final int[][] additionTable;
     private final int[][] multiplicationTable;
+    private final int[] addInverses;
     private final int[] mulInverses;
 
     public GaloisField(int base) {
@@ -33,6 +34,7 @@ public class GaloisField {
         this.additionTable = new int[base][base];
         this.multiplicationTable = new int[base][base];
         this.mulInverses = new int[base];
+        this.addInverses = new int[base];
         for (int i = 0; i < base; i++) {
             for (int j = i; j < base; j++) {
                 int sum;
@@ -51,8 +53,9 @@ public class GaloisField {
                 multiplicationTable[i][j] = product;
                 multiplicationTable[j][i] = product;
             }
+            int ii = i;
+            addInverses[i] = IntStream.range(0, cardinality).filter(j -> additionTable[ii][j] == 0).findAny().orElseThrow();
             if (i != 0) {
-                int ii = i;
                 mulInverses[i] = IntStream.range(0, cardinality).filter(j -> multiplicationTable[ii][j] == 1).findAny().orElseThrow();
             }
         }
@@ -206,6 +209,21 @@ public class GaloisField {
         return result;
     }
 
+    public int expOrder(int a) {
+        int res = a;
+        for (int i = 1; i < cardinality + 1; i++) {
+            res = mul(res, a);
+            if (res == a) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public int neg(int a) {
+        return addInverses[a];
+    }
+
     public int inverse(int a) {
         if (a == 0) {
             throw new IllegalArgumentException();
@@ -225,8 +243,8 @@ public class GaloisField {
         return IntStream.range(0, cardinality).filter(i -> evalPolynomial(polynomial, i) == 0);
     }
 
-    public IntStream oneCubeRoots() {
-        return IntStream.range(2, cardinality).filter(i -> power(i, 3) == 1);
+    public IntStream oneRoots(int degree) {
+        return IntStream.range(2, cardinality).filter(i -> power(i, degree) == 1 && IntStream.range(1, degree).noneMatch(dg -> power(i, dg) == 1));
     }
 
     private int fromEuclideanCrd(int x, int y) {
