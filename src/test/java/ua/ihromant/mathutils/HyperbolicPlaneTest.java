@@ -21,6 +21,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class HyperbolicPlaneTest {
     @Test
+    public void test126() {
+        int v = 126;
+        int k = 6;
+        int[][] diffSet = new int[][]{
+                {0, 26, 38, 56, 81, 103},
+                {0, 40, 48, 68, 99, 102},
+                {0, 41, 57, 93, 94, 107},
+                {0, 80, 82, 87, 91, 97},
+                {0, 21, 42, 63, 84, 105}
+        };
+        IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+            int[][] ds = IntStream.range(0, diffSet.length)
+                    .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i]
+                            : IntStream.concat(IntStream.of(0), IntStream.range(1, k).map(idx -> k - idx).map(idx -> v - diffSet[i][idx])).toArray())
+                    .toArray(int[][]::new);
+            HyperbolicPlane p = new HyperbolicPlane(v, ds);
+            testCorrectness(p, of(6));
+            System.out.println(p.hyperbolicIndex() + " " + Arrays.deepToString(ds));
+        });
+    }
+
+    @Test
     public void testLarge() {
         GroupProduct c1 = new GroupProduct(43, 7);
         HyperbolicPlane p1 = new HyperbolicPlane(c1, new int[][]{
