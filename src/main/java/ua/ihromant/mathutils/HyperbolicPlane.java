@@ -281,27 +281,26 @@ public class HyperbolicPlane {
     }
 
     public BitSet hyperbolicIndex() {
-        int maximum = lines[0].cardinality() - 1; // uncomment below when testing PBD
-        // int maximum = Arrays.stream(lines).mapToInt(BitSet::cardinality).max().orElseThrow() - 1;
+        int maximum = Arrays.stream(lines).mapToInt(BitSet::cardinality).max().orElseThrow() - 1;
         BitSet result = new BitSet();
-        for (int o : points()) {
-            for (int x : points()) {
+        for (int o = 0; o < pointCount; o++) {
+            for (int x = 0; x < pointCount; x++) {
                 if (o == x) {
                     continue;
                 }
-                for (int y : points()) {
+                for (int y = 0; y < pointCount; y++) {
                     if (collinear(o, x, y)) {
                         continue;
                     }
-                    int xy = line(x, y);
-                    for (int p : points(xy)) {
+                    BitSet xy = lines[line(x, y)];
+                    for (int p = xy.nextSetBit(0); p >= 0; p = xy.nextSetBit(p + 1)) {
                         if (p == x || p == y) {
                             continue;
                         }
                         int ox = line(o, x);
-                        int oy = line(o, y);
+                        BitSet oy = lines[line(o, y)];
                         int counter = 0;
-                        for (int u : points(oy)) {
+                        for (int u = oy.nextSetBit(0); u >= 0; u = oy.nextSetBit(u + 1)) {
                             if (u == o || u == y) {
                                 continue;
                             }

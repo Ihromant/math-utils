@@ -6,9 +6,11 @@ import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -949,7 +951,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void generateNetto() {
-        int q = 139; // prime number 12x + 7
+        int q = 19; // prime number 12x + 7
         GaloisField fd = new GaloisField(q);
         int eps = fd.oneRoots(6).filter(i -> fd.add(fd.mul(i, i), fd.neg(i), 1) == 0).findFirst().orElseThrow();
         int alpha = IntStream.range(2, fd.cardinality()).filter(i -> fd.expOrder(i) == fd.cardinality() - 1).findAny().orElseThrow();
@@ -967,6 +969,28 @@ public class HyperbolicPlaneTest {
         testCorrectness(pl, of(3));
         System.out.println(pl.hyperbolicIndex());
         System.out.println(pl.cardSubPlanes(true));
+    }
+
+    @Test
+    public void generateDerived1() {
+        GaloisField fd = new GaloisField(4);
+        List<BitSet> lines = new ArrayList<>();
+        for (int i = 0; i < 255; i++) {
+            for (int j = i + 1; j < 255; j++) {
+                for (int k = j + 1; k < 255; k++) {
+                    if (fd.add(i % 4, j % 4, k % 4, 3) == 0
+                            && fd.add(i / 4 % 4, j / 4 % 4, k / 4 % 4, 3) == 0
+                        && fd.add(i / 16 % 4, j / 16 % 4, k / 16 % 4, 3) == 0
+                            && fd.add(i / 64, j / 64, k / 64, 3) == 0) {
+                        lines.add(of(i, j, k));
+                    }
+                }
+            }
+        }
+        HyperbolicPlane plane = new HyperbolicPlane(lines.toArray(BitSet[]::new));
+        testCorrectness(plane, of(3));
+        System.out.println(plane.hyperbolicIndex());
+        System.out.println(plane.cardSubPlanes(true));
     }
 
     private int[] getHomogenousSpace(int p, int ord) {
