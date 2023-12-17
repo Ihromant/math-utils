@@ -80,9 +80,35 @@ public class FinderTest {
     }
 
     @Test
-    public void generate3() {
-        int v = 16;
+    public void generateByPartial1() {
+        int v = 25;
         int k = 4;
+        int[][] base = new int[][] {
+                {0, 1, 2, 3},
+                {4, 5, 6, 7},
+                {8, 9, 10, 11},
+                {12, 13, 14, 15},
+                {0, 5, 10, 15},
+                {3, 6, 9, 12},
+                {2, 4, 11, 13},
+                {1, 7, 8, 14},
+                {0, 4, 8, 12},
+                {1, 5, 9, 13},
+                {2, 6, 10, 14},
+                {3, 7, 11, 15}
+        };
+        BitSet[] blocks = Arrays.stream(base).map(FinderTest::of).toArray(BitSet[]::new);
+        BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
+        Arrays.stream(blocks).forEach(line ->
+                line.stream().forEach(x -> line.stream().filter(y -> y != x).forEach(y -> frequencies[x].set(y))));
+        int[] nextPossible = nextPossible(frequencies, null, v);
+        designs(v, k, true, nextPossible, blocks, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
+    }
+
+    @Test
+    public void generate3() {
+        int v = 13;
+        int k = 3;
         int r = (v - 1) / (k - 1);
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         BitSet[] blocks = new BitSet[r + 1];
