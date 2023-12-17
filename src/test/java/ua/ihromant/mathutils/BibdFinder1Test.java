@@ -70,7 +70,7 @@ public class BibdFinder1Test {
     }
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter) {
-        Set<BitSet> dedup = new HashSet<>();
+        Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
         BitSet blackList = (BitSet) filter.clone();
         filter.stream().forEach(i -> blackList.set(variants - i));
         return calcCycles(variants, 0, prev, size - 1, filter, blackList, of(0)).filter(e -> dedup.add(e.getKey()));
@@ -135,8 +135,8 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffFamilies() {
-        int v = 91;
-        int k = 7;
+        int v = 126;
+        int k = 6;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
