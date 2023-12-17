@@ -80,8 +80,8 @@ public class FinderTest {
     }
 
     @Test
-    public void generateByPartial1() {
-        int v = 25;
+    public void generateByPartial() {
+        int v = 28;
         int k = 4;
         int[][] base = new int[][] {
                 {0, 1, 2, 3},
@@ -101,8 +101,7 @@ public class FinderTest {
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         Arrays.stream(blocks).forEach(line ->
                 line.stream().forEach(x -> line.stream().filter(y -> y != x).forEach(y -> frequencies[x].set(y))));
-        int[] nextPossible = nextPossible(frequencies, null, v);
-        designs(v, k, true, nextPossible, blocks, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
+        designs(v, k, blocks, v * (v - 1) / k / (k - 1) - base.length, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
     }
 
     @Test
