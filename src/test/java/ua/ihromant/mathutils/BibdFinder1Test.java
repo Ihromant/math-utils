@@ -184,27 +184,4 @@ public class BibdFinder1Test {
         }
         return bs;
     }
-
-    private static boolean isMinimal(int[] tuple, int v) {
-        int l = tuple.length;
-        int last = v - tuple[l - 1];
-        for (int i = 1; i < l; i++) {
-            if (tuple[i] - tuple[i - 1] >= last) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private static BitSet minimalTuple(BitSet tuple, int v) {
-        int[] arr = tuple.stream().toArray();
-        int l = arr.length;
-        int[] diffs = new int[l];
-        for (int i = 0; i < l; i++) {
-            diffs[i] = diff(arr[i], arr[(l + i - 1) % l], v);
-        }
-        int minIdx = IntStream.range(0, l).boxed().max(Comparator.comparing(i -> diffs[i])).orElseThrow();
-        int val = arr[minIdx];
-        return tuple.stream().map(i -> i >= val ? i - val : v + i - val).collect(BitSet::new, BitSet::set, BitSet::or);
-    }
 }
