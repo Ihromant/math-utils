@@ -10,7 +10,6 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.SequencedMap;
@@ -65,7 +64,11 @@ public class BibdFinder1Test {
 
     private static BitSet diff(BitSet block, int v) {
         BitSet result = new BitSet();
-        block.stream().forEach(i -> block.stream().filter(j -> j > i).forEach(j -> result.set(diff(j, i, v))));
+        for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
+            for (int j = block.nextSetBit(i + 1); j >= 0; j = block.nextSetBit(j + 1)) {
+                result.set(diff(i, j, v));
+            }
+        }
         return result;
     }
 
@@ -134,9 +137,9 @@ public class BibdFinder1Test {
     }
 
     @Test
-    public void testDiffFamilies() {
-        int v = 126;
-        int k = 6;
+    public void testDiffFamilies1() {
+        int v = 64;
+        int k = 4;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
