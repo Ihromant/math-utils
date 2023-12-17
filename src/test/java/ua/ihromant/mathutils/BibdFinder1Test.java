@@ -35,7 +35,7 @@ public class BibdFinder1Test {
                     }
                     BitSet newFilter = (BitSet) filter.clone();
                     BitSet newBlackList = (BitSet) blackList.clone();
-                    tuple.stream().forEach(val -> {
+                    for (int val = tuple.nextSetBit(0); val >= 0; val = tuple.nextSetBit(val + 1)) {
                         int mid = val + idx;
                         int outMid = val + variants - idx;
                         if (mid % 2 == 0) {
@@ -46,15 +46,15 @@ public class BibdFinder1Test {
                         }
                         int diff = diff(val, idx, variants);
                         newFilter.set(diff);
-                        nextTuple.stream().forEach(nv -> {
+                        for (int nv = nextTuple.nextSetBit(0); nv >= 0; nv = nextTuple.nextSetBit(nv + 1)) {
                             newBlackList.set((nv + diff) % variants);
                             newBlackList.set((nv + variants - diff) % variants);
-                        });
-                    });
-                    newFilter.stream().forEach(diff -> {
+                        }
+                    }
+                    for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
                         newBlackList.set((idx + diff) % variants);
                         newBlackList.set((idx + variants - diff) % variants);
-                    });
+                    }
                     calcCycles(variants, tLength == 1 ? idx : max, prev, needed - 1, newFilter, newBlackList, nextTuple).forEach(sink);
                     if (tLength == 1 && filter.cardinality() <= needed) {
                         System.out.println(idx);
@@ -74,8 +74,11 @@ public class BibdFinder1Test {
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter) {
         Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
-        BitSet blackList = (BitSet) filter.clone();
-        filter.stream().forEach(i -> blackList.set(variants - i));
+        BitSet blackList = new BitSet(variants);
+        for (int i = filter.nextSetBit(1); i >= 0; i = filter.nextSetBit(i + 1)) {
+            blackList.set(i);
+            blackList.set(variants - i);
+        }
         return calcCycles(variants, 0, prev, size - 1, filter, blackList, of(0)).filter(e -> dedup.add(e.getKey()));
     }
 
