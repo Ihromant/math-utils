@@ -135,8 +135,8 @@ public class BibdFinder1Test {
 
     @Test
     public void testDiffFamilies() {
-        int v = 52;
-        int k = 4;
+        int v = 91;
+        int k = 7;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
@@ -149,7 +149,7 @@ public class BibdFinder1Test {
 
     private static Stream<Map<BitSet, BitSet>> allDifferenceSets(int variants, int k, SequencedMap<BitSet, BitSet> curr, int needed, BitSet filter) {
         int half = variants / 2;
-        int prev = curr.isEmpty() ? start(variants, k) : IntStream.range(curr.lastEntry().getValue().stream().skip(1).findFirst().orElseThrow() + 1, variants)
+        int prev = curr.isEmpty() ? start(variants, k) : IntStream.range(curr.lastEntry().getValue().nextSetBit(1) + 1, variants)
                 .filter(i -> i > half ? !filter.get(variants - i) : !filter.get(i)).findFirst().orElse(variants);
         return (needed == variants / k / (k - 1) ?
                 calcCycles(variants, k, prev, filter).parallel()
