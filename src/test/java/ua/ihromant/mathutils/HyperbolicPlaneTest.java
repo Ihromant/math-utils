@@ -951,7 +951,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void generateNetto() {
-        int q = 19; // prime number 12x + 7
+        int q = 79; // prime number 12x + 7
         GaloisField fd = new GaloisField(q);
         int eps = fd.oneRoots(6).filter(i -> fd.add(fd.mul(i, i), fd.neg(i), 1) == 0).findFirst().orElseThrow();
         int alpha = IntStream.range(2, fd.cardinality()).filter(i -> fd.expOrder(i) == fd.cardinality() - 1).findAny().orElseThrow();

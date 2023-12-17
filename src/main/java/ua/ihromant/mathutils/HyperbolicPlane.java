@@ -4,7 +4,6 @@ import ua.ihromant.mathutils.group.Group;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Set;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -122,15 +121,12 @@ public class HyperbolicPlane {
     private int[][] generateLookup() {
         int[][] result = new int[pointCount][pointCount];
         Arrays.stream(result).forEach(l -> Arrays.fill(l, -1));
-        for (int line : lines()) {
-            for (int p1 : points(line)) {
-                int[] map = result[p1];
-                for (int p2 : points(line)) {
-                    if (p1 == p2) {
-                        map[p2] = -1;
-                    } else {
-                        map[p2] = line;
-                    }
+        for (int l = 0; l < lines.length; l++) {
+            BitSet line = lines[l];
+            for (int p1 = line.nextSetBit(0); p1 >= 0; p1 = line.nextSetBit(p1 + 1)) {
+                for (int p2 = line.nextSetBit(p1 + 1); p2 >= 0; p2 = line.nextSetBit(p2 + 1)) {
+                    result[p1][p2] = l;
+                    result[p2][p1] = l;
                 }
             }
         }
@@ -155,15 +151,12 @@ public class HyperbolicPlane {
     private int[][] generateIntersections() {
         int[][] result = new int[lines.length][lines.length];
         Arrays.stream(result).forEach(arr -> Arrays.fill(arr, -1));
-        for (int point : points()) {
-            for (int l1 : lines(point)) {
-                int[] map = result[l1];
-                for (int l2 : lines(point)) {
-                    if (l1 == l2) {
-                        map[l2] = -1;
-                    } else {
-                        map[l2] = point;
-                    }
+        for (int p = 0; p < pointCount; p++) {
+            BitSet beam = points[p];
+            for (int l1 = beam.nextSetBit(0); l1 >= 0; l1 = beam.nextSetBit(l1 + 1)) {
+                for (int l2 = beam.nextSetBit(l1 + 1); l2 >= 0; l2 = beam.nextSetBit(l2 + 1)) {
+                    result[l1][l2] = p;
+                    result[l2][l1] = p;
                 }
             }
         }
@@ -243,35 +236,19 @@ public class HyperbolicPlane {
 
     public BitSet additional(BitSet first, BitSet second) {
         BitSet result = new BitSet();
-        first.stream().forEach(x -> second.stream().filter(y -> x != y).forEach(y -> result.or(lines[line(x, y)])));
+        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
+            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
+                if (x == y) {
+                    continue;
+                }
+                result.or(lines[line(x, y)]);
+            }
+        }
         BitSet removal = new BitSet();
         removal.or(first);
         removal.or(second);
         result.xor(removal);
         return result;
-    }
-
-    public Set<BitSet> differences() {
-        return Arrays.stream(lines).map(line -> {
-            BitSet result = new BitSet();
-            line.stream().forEach(a -> line.stream().filter(b -> a != b).forEach(b -> {
-                int diff = Math.abs(a - b);
-                result.set(Math.min(diff, pointCount - diff));
-            }));
-            return result;
-//        }).map(diff -> {
-//            BitSet result = new BitSet();
-//            result.set(0);
-//            while (!diff.isEmpty()) {
-//                result.set(diff.stream().iterator().next() + result.length() - 1);
-//                result.stream().flatMap(a -> result.stream()
-//                        .filter(b -> a < b).map(b -> b - a)).forEach(idx -> {
-//                            diff.set(idx, false);
-//                            diff.set(pointCount - idx, false);
-//                });
-//            }
-//            return result;
-        }).collect(Collectors.toSet());
     }
 
     public HyperbolicPlane subPlane(int[] pointArray) {
@@ -328,8 +305,9 @@ public class HyperbolicPlane {
                     continue;
                 }
                 int counter = 0;
-                for (int parallel : lines(p)) {
-                    if (intersection(parallel, l) == -1) {
+                BitSet beam = points[p];
+                for (int par = beam.nextSetBit(0); par >= 0; par = beam.nextSetBit(par + 1)) {
+                    if (intersection(par, l) == -1) {
                         counter++;
                     }
                 }
