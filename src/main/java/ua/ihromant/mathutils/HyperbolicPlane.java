@@ -341,13 +341,10 @@ public class HyperbolicPlane {
 
     public BitSet cardSubPlanes(boolean full) {
         BitSet result = new BitSet();
-        for (int x : points()) {
-            for (int y : points()) {
-                if (x >= y) {
-                    continue;
-                }
-                for (int z : points()) {
-                    if (y >= z || line(x, y) == line(y, z)) {
+        for (int x = 0; x < pointCount; x++) {
+            for (int y = x + 1; y < pointCount; y++) {
+                for (int z = y + 1; z < pointCount; z++) {
+                    if (line(x, y) == line(y, z)) {
                         continue;
                     }
                     int card = hull(x, y, z).cardinality();
