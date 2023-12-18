@@ -19,7 +19,7 @@ import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipInputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BatchHyperbolicPlaneTest {
     private ZipInputStream getZis(InputStream is) throws IOException {

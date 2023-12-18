@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.SequencedMap;
@@ -140,9 +139,9 @@ public class BibdFinder1Test {
     }
 
     @Test
-    public void testDiffFamilies1() {
-        int v = 64;
-        int k = 4;
+    public void testDiffFamilies3() {
+        int v = 169;
+        int k = 8;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
