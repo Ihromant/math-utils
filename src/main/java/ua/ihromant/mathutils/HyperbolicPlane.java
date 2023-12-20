@@ -335,4 +335,29 @@ public class HyperbolicPlane {
         }
         return result;
     }
+
+    public BitSet cardSubSpaces(boolean full) {
+        BitSet result = new BitSet();
+        for (int x = 0; x < pointCount; x++) {
+            for (int y = x + 1; y < pointCount; y++) {
+                for (int z = y + 1; z < pointCount; z++) {
+                    if (line(x, y) == line(y, z)) {
+                        continue;
+                    }
+                    BitSet hull = hull(x, y, z);
+                    for (int w = z + 1; w < pointCount; w++) {
+                        if (hull.get(w)) {
+                            continue;
+                        }
+                        int sCard = hull(x, y, z, w).cardinality();
+                        result.set(sCard);
+                        if (!full && sCard == pointCount) {
+                            return result;
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }

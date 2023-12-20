@@ -12,6 +12,7 @@ import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -171,7 +172,7 @@ public class HyperbolicPlaneTest {
         testCorrectness(p, of(3));
         assertEquals(of(0, 0), p.hyperbolicIndex());
         assertEquals(of(7), p.cardSubPlanes(true)); // it's model of 3-dimensional projective space
-        checkSpace(p, p.pointCount(), p.pointCount());
+        assertEquals(of(p.pointCount()), p.cardSubSpaces(true));
 
         HyperbolicPlane p3 = new HyperbolicPlane("00000001111112222223333444455556666",
                 "13579bd3478bc3478bc789a789a789a789a",
@@ -180,21 +181,21 @@ public class HyperbolicPlaneTest {
         assertEquals(35, p3.lineCount());
         testCorrectness(p3, of(3));
         assertEquals(of(0, 1), p3.hyperbolicIndex());
-        assertEquals(of(7, p.pointCount()), p3.cardSubPlanes(true)); // it's plane with no exchange property
+        assertEquals(of(7, p3.pointCount()), p3.cardSubPlanes(true)); // it's plane with no exchange property
 
         HyperbolicPlane p1 = new HyperbolicPlane(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
                 new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
         testCorrectness(p1, of(3));
         assertEquals(of(0), p1.hyperbolicIndex());
         assertEquals(of(7), p1.cardSubPlanes(true)); // 4-dimensional projective space
-        checkSpace(p1, 15, 15); // 4-dimensional projective space
+        assertEquals(of(15), p1.cardSubSpaces(true)); // 4-dimensional projective space
 
         HyperbolicPlane p2 = new HyperbolicPlane(63, new int[][]{{0, 7, 26}, {0, 13, 35}, {0, 1, 6},
                 {0, 16, 33}, {0, 11, 25}, {0, 2, 12}, {0, 9, 27}, {0, 3, 32}, {0, 15, 23}, {0, 4, 24}, {0, 21, 42}});
         testCorrectness(p2, of(3));
         assertEquals(of(0, 1), p2.hyperbolicIndex());
         assertEquals(of(7, 15), p2.cardSubPlanes(true));
-        checkSpace(p2, 15, 63);
+        assertEquals(of(15, 63), p2.cardSubSpaces(true));
     }
 
     @Test
@@ -720,11 +721,46 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
-    public void testClosure() {
-        HyperbolicPlane p = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
-        // 0, 1, 3, 10
-        BitSet set = p.hull(1, 3, 10);
-        assertEquals(13, set.cardinality());
+    public void testDirectProduct() {
+        HyperbolicPlane prj = new HyperbolicPlane("0001123", "1242534", "3654656");
+        HyperbolicPlane aff = new HyperbolicPlane("000011122236", "134534534547", "268787676858");
+        HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
+        HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
+        HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
+        HyperbolicPlane prod = directProduct(p13a, aff);
+        testCorrectness(prod, of(3));
+        System.out.println(prod.cardSubPlanes(true));
+        System.out.println(prod.cardSubSpaces(false));
+    }
+
+    private static HyperbolicPlane directProduct(HyperbolicPlane pl1, HyperbolicPlane pl2) {
+        GroupProduct cg = new GroupProduct(pl1.pointCount(), pl2.pointCount());
+        BitSet[] lines = Stream.of(IntStream.range(0, pl1.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, pl2.pointCount()).mapToObj(p2 -> {
+                    BitSet result = new BitSet();
+                    for (int p1 : pl1.points(l1)) {
+                        result.set(cg.fromArr(p1, p2));
+                    }
+                    return result;
+                })),
+                IntStream.range(0, pl2.lineCount()).boxed().flatMap(l2 -> IntStream.range(0, pl1.pointCount()).mapToObj(p1 -> {
+                    BitSet result = new BitSet();
+                    for (int p2 : pl2.points(l2)) {
+                        result.set(cg.fromArr(p1, p2));
+                    }
+                    return result;
+                })),
+                IntStream.range(0, pl1.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, pl2.lineCount()).boxed().flatMap(l2 -> {
+                    int[] arr1 = pl1.line(l1).stream().toArray();
+                    int[] arr2 = pl2.line(l2).stream().toArray();
+                    return GaloisField.permutations(new int[]{0, 1, 2}).map(perm -> {
+                        BitSet result = new BitSet();
+                        for (int i = 0; i < 3; i++) {
+                            result.set(cg.fromArr(arr1[i], arr2[perm[i]]));
+                        }
+                        return result;
+                    });
+                }))).flatMap(Function.identity()).toArray(BitSet[]::new);
+        return new HyperbolicPlane(lines);
     }
 
     @Test
@@ -965,7 +1001,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane bp = new HyperbolicPlane(lines);
         assertEquals(of(1), bp.hyperbolicIndex());
         assertEquals(of(9), bp.cardSubPlanes(true));
-        checkSpace(bp, bp.pointCount(), bp.pointCount());
+        assertEquals(of(bp.pointCount()), bp.cardSubSpaces(true));
     }
 
     private int operator(GaloisField fd, int x, int a, int b, int alpha) {
@@ -1083,33 +1119,5 @@ public class HyperbolicPlaneTest {
             }
             assertEquals(plane.pointCount() * beamCount, plane.lineCount() * perLine.stream().findAny().orElseThrow());
         }
-    }
-
-    public static void checkSpace(HyperbolicPlane plane, int minSpace, int maxSpace) {
-        int min = Integer.MAX_VALUE;
-        int max = Integer.MIN_VALUE;
-        for (int x : plane.points()) {
-            for (int y : plane.points()) {
-                if (x >= y) {
-                    continue;
-                }
-                for (int z : plane.points()) {
-                    if (y >= z || plane.collinear(x, y, z)) {
-                        continue;
-                    }
-                    BitSet hull = plane.hull(x, y, z);
-                    for (int w : plane.points()) {
-                        if (w >= z || hull.get(w)) {
-                            continue;
-                        }
-                        int sCard = plane.hull(x, y, z, w).cardinality();
-                        min = Math.min(min, sCard);
-                        max = Math.max(max, sCard);
-                    }
-                }
-            }
-        }
-        assertEquals(minSpace, min);
-        assertEquals(maxSpace, max);
     }
 }
