@@ -237,6 +237,54 @@ public class TaoPointTest {
     }
 
     @Test
+    public void testSubparallelity() {
+        BitSet l1 = TaoPoint.hull(0, 3, 7);
+        BitSet l2 = TaoPoint.hull(9, 10, 11);
+        assertEquals(3, l1.cardinality());
+        assertEquals(3, l2.cardinality());
+        System.out.println(l1.stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(", ")));
+        System.out.println(l2.stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(", ")));
+        System.out.println(TaoPoint.hull(0, 3, 7, 9));
+        System.out.println(TaoPoint.hull(0, 3, 7, 10));
+        System.out.println(TaoPoint.hull(0, 3, 7, 11));
+        System.out.println(TaoPoint.hull(9, 10, 11, 0).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(", ")));
+        System.out.println(TaoPoint.hull(9, 10, 11, 3).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(", ")));
+        System.out.println(TaoPoint.hull(9, 10, 11, 7).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(", ")));
+    }
+
+    @Test
+    public void findSubparallelitySymmetrityBreak() {
+        for (int a = 0; a < TaoPoint.SIZE; a++) {
+            for (int b = a + 1; b < TaoPoint.SIZE; b++) {
+                BitSet l1 = TaoPoint.hull(a, b);
+                for (int c = 0; c < TaoPoint.SIZE; c++) {
+                    for (int d = c + 1; d < TaoPoint.SIZE; d++) {
+                        BitSet l2 = TaoPoint.hull(c, d);
+                        if (l1.equals(l2)) {
+                            continue;
+                        }
+                        boolean l1Subl2 = l1.stream().allMatch(p1 -> {
+                            BitSet un = (BitSet) l2.clone();
+                            un.set(p1);
+                            BitSet hull = TaoPoint.hull(un.stream().toArray());
+                            return l1.stream().allMatch(hull::get);
+                        });
+                        boolean l2Subl1 = l2.stream().allMatch(p2 -> {
+                            BitSet un = (BitSet) l1.clone();
+                            un.set(p2);
+                            BitSet hull = TaoPoint.hull(un.stream().toArray());
+                            return l2.stream().allMatch(hull::get);
+                        });
+                        if (!l1Subl2 && l2Subl1) {
+                            System.out.println(l1 + " " + l2);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
     public void testHyperbolicIndex() {
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
