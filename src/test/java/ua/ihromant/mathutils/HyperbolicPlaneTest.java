@@ -722,15 +722,16 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testDirectProduct() {
+        HyperbolicPlane tr = new HyperbolicPlane("0", "1", "2");
         HyperbolicPlane prj = new HyperbolicPlane("0001123", "1242534", "3654656");
         HyperbolicPlane aff = new HyperbolicPlane("000011122236", "134534534547", "268787676858");
         HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
-        HyperbolicPlane prod = directProduct(p13a, aff);
+        HyperbolicPlane prod = directProduct(aff, tr);
         testCorrectness(prod, of(3));
         System.out.println(prod.cardSubPlanes(true));
-        System.out.println(prod.cardSubSpaces(false));
+        System.out.println(prod.cardSubSpaces(true));
     }
 
     private static HyperbolicPlane directProduct(HyperbolicPlane pl1, HyperbolicPlane pl2) {
