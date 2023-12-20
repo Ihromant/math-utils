@@ -455,6 +455,31 @@ public class HyperbolicPlaneTest {
         assertEquals(of(16), p2.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p2.hyperbolicIndex());
 
+        GroupProduct gp = new GroupProduct(5, 5, 5);
+        int[][] bs = new int[][] {
+                {gp.fromArr(0, 0, 1), gp.fromArr(0, 0, 4), gp.fromArr(1, 2, 2), gp.fromArr(1, 3, 3), gp.fromArr(4, 2, 1), gp.fromArr(4, 3, 4)},
+                {gp.fromArr(0, 0, 2), gp.fromArr(0, 0, 3), gp.fromArr(1, 4, 4), gp.fromArr(1, 1, 1), gp.fromArr(4, 4, 2), gp.fromArr(4, 1, 3)},
+                {gp.fromArr(0, 4, 3), gp.fromArr(0, 1, 2), gp.fromArr(2, 2, 0), gp.fromArr(2, 3, 0), gp.fromArr(3, 3, 2), gp.fromArr(3, 2, 3)},
+                {gp.fromArr(0, 3, 1), gp.fromArr(0, 2, 4), gp.fromArr(2, 4, 0), gp.fromArr(2, 1, 0), gp.fromArr(3, 1, 4), gp.fromArr(3, 4, 1)}
+        };
+        BitSet[] ls = Stream.concat(Arrays.stream(bs).flatMap(arr -> IntStream.range(0, gp.order()).mapToObj(idx -> {
+            BitSet result = new BitSet();
+            for (int i : arr) {
+                result.set(gp.op(i, idx));
+            }
+            return result;
+        })), IntStream.range(0, 25).mapToObj(idx -> {
+            BitSet result = new BitSet();
+            for (int i = 0; i < 5; i++) {
+                result.set(gp.op(i * 25, idx));
+            }
+            result.set(gp.order());
+            return result;
+        })).toArray(BitSet[]::new);
+        HyperbolicPlane p126 = new HyperbolicPlane(ls);
+        testCorrectness(p126, of(6));
+        assertEquals(of(1, 2, 3, 4), p126.hyperbolicIndex());
+
         CyclicGroup c3 = new CyclicGroup(3);
         CyclicGroup c45 = new CyclicGroup(45);
         GroupProduct pr135 = new GroupProduct(c3, c45);
