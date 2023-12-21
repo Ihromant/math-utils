@@ -1,9 +1,11 @@
 package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupProduct;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -355,6 +357,49 @@ public class HyperbolicPlane {
                             return result;
                         }
                     }
+                }
+            }
+        }
+        return result;
+    }
+
+    public HyperbolicPlane directProduct(HyperbolicPlane that) {
+        GroupProduct cg = new GroupProduct(this.pointCount(), that.pointCount());
+        BitSet[] lines = Stream.of(IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.pointCount()).mapToObj(p2 -> {
+                    BitSet result = new BitSet();
+                    for (int p1 : this.points(l1)) {
+                        result.set(cg.fromArr(p1, p2));
+                    }
+                    return result;
+                })),
+                IntStream.range(0, that.lineCount()).boxed().flatMap(l2 -> IntStream.range(0, this.pointCount()).mapToObj(p1 -> {
+                    BitSet result = new BitSet();
+                    for (int p2 : that.points(l2)) {
+                        result.set(cg.fromArr(p1, p2));
+                    }
+                    return result;
+                })),
+                IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.lineCount()).boxed().flatMap(l2 -> {
+                    int[] arr1 = this.line(l1).stream().toArray();
+                    int[] arr2 = that.line(l2).stream().toArray();
+                    return GaloisField.permutations(new int[]{0, 1, 2})//.filter(perm -> parity(perm) % 2 == 0)
+                            .map(perm -> {
+                        BitSet result = new BitSet();
+                        for (int i = 0; i < 3; i++) {
+                            result.set(cg.fromArr(arr1[i], arr2[perm[i]]));
+                        }
+                        return result;
+                    });
+                }))).flatMap(Function.identity()).toArray(BitSet[]::new);
+        return new HyperbolicPlane(lines);
+    }
+
+    private static int parity(int[] perm) {
+        int result = 0;
+        for (int i = 0; i < perm.length; i++) {
+            for (int j = i + 1; j < perm.length; j++) {
+                if (perm[i] > perm[j]) {
+                    result++;
                 }
             }
         }

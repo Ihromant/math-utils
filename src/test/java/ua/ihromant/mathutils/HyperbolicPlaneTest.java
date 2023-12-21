@@ -747,46 +747,17 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testDirectProduct() {
+        HyperbolicPlane tr1 = new HyperbolicPlane("0", "1", "2", "3");
         HyperbolicPlane tr = new HyperbolicPlane("0", "1", "2");
         HyperbolicPlane prj = new HyperbolicPlane("0001123", "1242534", "3654656");
         HyperbolicPlane aff = new HyperbolicPlane("000011122236", "134534534547", "268787676858");
         HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
-        HyperbolicPlane prod = directProduct(aff, tr);
+        HyperbolicPlane prod = aff.directProduct(tr);
         testCorrectness(prod, of(3));
         System.out.println(prod.cardSubPlanes(true));
         System.out.println(prod.cardSubSpaces(true));
-    }
-
-    private static HyperbolicPlane directProduct(HyperbolicPlane pl1, HyperbolicPlane pl2) {
-        GroupProduct cg = new GroupProduct(pl1.pointCount(), pl2.pointCount());
-        BitSet[] lines = Stream.of(IntStream.range(0, pl1.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, pl2.pointCount()).mapToObj(p2 -> {
-                    BitSet result = new BitSet();
-                    for (int p1 : pl1.points(l1)) {
-                        result.set(cg.fromArr(p1, p2));
-                    }
-                    return result;
-                })),
-                IntStream.range(0, pl2.lineCount()).boxed().flatMap(l2 -> IntStream.range(0, pl1.pointCount()).mapToObj(p1 -> {
-                    BitSet result = new BitSet();
-                    for (int p2 : pl2.points(l2)) {
-                        result.set(cg.fromArr(p1, p2));
-                    }
-                    return result;
-                })),
-                IntStream.range(0, pl1.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, pl2.lineCount()).boxed().flatMap(l2 -> {
-                    int[] arr1 = pl1.line(l1).stream().toArray();
-                    int[] arr2 = pl2.line(l2).stream().toArray();
-                    return GaloisField.permutations(new int[]{0, 1, 2}).map(perm -> {
-                        BitSet result = new BitSet();
-                        for (int i = 0; i < 3; i++) {
-                            result.set(cg.fromArr(arr1[i], arr2[perm[i]]));
-                        }
-                        return result;
-                    });
-                }))).flatMap(Function.identity()).toArray(BitSet[]::new);
-        return new HyperbolicPlane(lines);
     }
 
     @Test
