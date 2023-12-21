@@ -746,6 +746,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testDirectProduct() {
+        HyperbolicPlane tr5 = new HyperbolicPlane("0", "1", "2", "3", "4");
         HyperbolicPlane tr1 = new HyperbolicPlane("0", "1", "2", "3");
         HyperbolicPlane prj4 = new HyperbolicPlane("0000111223345", "1246257364789", "385a46b57689a", "9c7ba8cb9cabc");
         HyperbolicPlane uni = new HyperbolicPlane("0000000001111111122222222333333334444455556666777788899aabbcgko",
@@ -758,10 +759,28 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
-        HyperbolicPlane prod = uni.directProduct(tr1);
-        testCorrectness(prod, of(4));
-        System.out.println(prod.cardSubPlanes(false));
+        HyperbolicPlane prod = new HyperbolicPlane(new GaloisField(4).generatePlane()).directProduct(tr5);
+        testCorrectness(prod, of(5));
+        System.out.println(prod.cardSubPlanes(true));
         System.out.println(prod.cardSubSpaces(false));
+    }
+
+    @Test
+    public void testPermutations() {
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4}).collect(Collectors.groupingBy(HyperbolicPlaneTest::parity, Collectors.counting())));
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5}).collect(Collectors.groupingBy(HyperbolicPlaneTest::parity, Collectors.counting())));
+    }
+
+    private static int parity(int[] perm) {
+        int result = 0;
+        for (int i = 0; i < perm.length; i++) {
+            for (int j = i + 1; j < perm.length; j++) {
+                if (perm[i] > perm[j]) {
+                    result++;
+                }
+            }
+        }
+        return result;
     }
 
     @Test

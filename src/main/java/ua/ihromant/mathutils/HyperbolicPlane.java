@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.group.GroupProduct;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -371,6 +372,21 @@ public class HyperbolicPlane {
         if (Arrays.stream(that.lines).anyMatch(l -> l.cardinality() != length)) {
             throw new IllegalArgumentException("Not all lines of length " + length);
         }
+        Predicate<int[]> pred = arr -> switch (length) {
+            case 3 -> true;
+            case 4 -> parity(arr) % 2 == 0;
+            case 5 -> {
+                int d = arr[4] > arr[0] ? arr[4] - arr[0] : 5 - arr[0] + arr[4];
+                for (int i = 0; i < 4; i++) {
+                    int dd = arr[i] > arr[i + 1] ? arr[i] - arr[i + 1] : 5 - arr[i + 1] + arr[i];
+                    if (dd != d) {
+                        yield false;
+                    }
+                }
+                yield true;
+            }
+            default -> throw new IllegalStateException();
+        };
         int[] basePerm = IntStream.range(0, length).toArray();
         GroupProduct cg = new GroupProduct(this.pointCount(), that.pointCount());
         BitSet[] lines = Stream.of(IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.pointCount()).mapToObj(p2 -> {
@@ -390,7 +406,7 @@ public class HyperbolicPlane {
                 IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.lineCount()).boxed().flatMap(l2 -> {
                     int[] arr1 = this.line(l1).stream().toArray();
                     int[] arr2 = that.line(l2).stream().toArray();
-                    return GaloisField.permutations(basePerm).filter(perm -> parity(perm) % (length - 2) == 0).map(perm -> {
+                    return GaloisField.permutations(basePerm).filter(pred).map(perm -> {
                         BitSet result = new BitSet();
                         for (int i = 0; i < length; i++) {
                             result.set(cg.fromArr(arr1[i], arr2[perm[i]]));
