@@ -364,6 +364,14 @@ public class HyperbolicPlane {
     }
 
     public HyperbolicPlane directProduct(HyperbolicPlane that) {
+        int length = this.lines[0].cardinality();
+        if (Arrays.stream(this.lines).anyMatch(l -> l.cardinality() != length)) {
+            throw new IllegalStateException("Not all lines of length " + length);
+        }
+        if (Arrays.stream(that.lines).anyMatch(l -> l.cardinality() != length)) {
+            throw new IllegalArgumentException("Not all lines of length " + length);
+        }
+        int[] basePerm = IntStream.range(0, length).toArray();
         GroupProduct cg = new GroupProduct(this.pointCount(), that.pointCount());
         BitSet[] lines = Stream.of(IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.pointCount()).mapToObj(p2 -> {
                     BitSet result = new BitSet();
@@ -382,10 +390,9 @@ public class HyperbolicPlane {
                 IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.lineCount()).boxed().flatMap(l2 -> {
                     int[] arr1 = this.line(l1).stream().toArray();
                     int[] arr2 = that.line(l2).stream().toArray();
-                    return GaloisField.permutations(new int[]{0, 1, 2})//.filter(perm -> parity(perm) % 2 == 0)
-                            .map(perm -> {
+                    return GaloisField.permutations(basePerm).filter(perm -> parity(perm) % (length - 2) == 0).map(perm -> {
                         BitSet result = new BitSet();
-                        for (int i = 0; i < 3; i++) {
+                        for (int i = 0; i < length; i++) {
                             result.set(cg.fromArr(arr1[i], arr2[perm[i]]));
                         }
                         return result;
