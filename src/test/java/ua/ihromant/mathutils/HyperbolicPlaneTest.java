@@ -743,6 +743,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testDirectProduct() {
+        HyperbolicPlane tr11 = new HyperbolicPlane("0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "a");
         HyperbolicPlane tr7 = new HyperbolicPlane("0", "1", "2", "3", "4", "5", "6");
         HyperbolicPlane pl91 = new HyperbolicPlane(91, new int[][]{{0, 8, 29, 51, 54, 61, 63}, {0, 11, 16, 17, 31, 35, 58}, {0, 13, 26, 39, 52, 65, 78}});
         HyperbolicPlane tr5 = new HyperbolicPlane("0", "1", "2", "3", "4");
@@ -758,9 +759,9 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
-        HyperbolicPlane prod = pl91.directProduct(tr7);
-        testCorrectness(prod, of(7));
-        System.out.println(prod.cardSubPlanes(false));
+        HyperbolicPlane prod = tr11.directProduct(tr11);
+        testCorrectness(prod, of(11));
+        System.out.println(prod.cardSubPlanes(true));
         //System.out.println(prod.cardSubSpaces(false));
     }
 

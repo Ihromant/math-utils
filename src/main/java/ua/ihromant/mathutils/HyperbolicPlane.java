@@ -375,10 +375,10 @@ public class HyperbolicPlane {
         Predicate<int[]> pred = arr -> switch (length) {
             case 3 -> true;
             case 4 -> GaloisField.parity(arr) % 2 == 0;
-            case 5, 7 -> {
-                int d = arr[length - 1] > arr[0] ? arr[length - 1] - arr[0] : length - arr[0] + arr[length - 1];
+            case 5, 7, 11 -> {
+                int d = arr[length - 1] > arr[0] ? arr[length - 1] - arr[0] : length + arr[length - 1] - arr[0];
                 for (int i = 0; i < length - 1; i++) {
-                    int dd = arr[i] > arr[i + 1] ? arr[i] - arr[i + 1] : length - arr[i + 1] + arr[i];
+                    int dd = arr[i] > arr[i + 1] ? arr[i] - arr[i + 1] : length + arr[i] - arr[i + 1];
                     if (dd != d) {
                         yield false;
                     }
