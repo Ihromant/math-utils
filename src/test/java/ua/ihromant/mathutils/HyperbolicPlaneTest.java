@@ -127,11 +127,9 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void hyperbolicPlaneExample() {
-        HyperbolicPlane p2 = new HyperbolicPlane(new String[]{
-                "00000001111112222223333444455566678",
+        HyperbolicPlane p2 = new HyperbolicPlane("00000001111112222223333444455566678",
                 "13579bd3469ac34578b678a58ab78979c9a",
-                "2468ace578bde96aecdbcded9cebecaeddb"
-        });
+                "2468ace578bde96aecdbcded9cebecaeddb");
         assertEquals(15, p2.pointCount());
         assertEquals(35, p2.lineCount());
         testCorrectness(p2, of(3));
@@ -139,11 +137,10 @@ public class HyperbolicPlaneTest {
         assertEquals(of(1), p2.hyperbolicIndex());
         assertEquals(of(p2.pointCount()), p2.cardSubPlanes(true));
 
-        HyperbolicPlane p1 = new HyperbolicPlane(new String[]{
-                "0000000001111111122222222333333334444455556666777788899aabbcgko",
+        HyperbolicPlane p1 = new HyperbolicPlane("0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
-                "3cdefopqrghijrqopqrponmklporqklmn7romnqpnmqoklrplkbopporqqrfjnr"});
+                "3cdefopqrghijrqopqrponmklporqklmn7romnqpnmqoklrplkbopporqqrfjnr");
         assertEquals(28, p1.pointCount());
         assertEquals(63, p1.lineCount());
         testCorrectness(p1, of(4));
@@ -746,6 +743,8 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testDirectProduct() {
+        HyperbolicPlane tr7 = new HyperbolicPlane("0", "1", "2", "3", "4", "5", "6");
+        HyperbolicPlane pl91 = new HyperbolicPlane(91, new int[][]{{0, 8, 29, 51, 54, 61, 63}, {0, 11, 16, 17, 31, 35, 58}, {0, 13, 26, 39, 52, 65, 78}});
         HyperbolicPlane tr5 = new HyperbolicPlane("0", "1", "2", "3", "4");
         HyperbolicPlane tr1 = new HyperbolicPlane("0", "1", "2", "3");
         HyperbolicPlane prj4 = new HyperbolicPlane("0000111223345", "1246257364789", "385a46b57689a", "9c7ba8cb9cabc");
@@ -759,10 +758,10 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
-        HyperbolicPlane prod = new HyperbolicPlane(new GaloisField(4).generatePlane()).directProduct(tr5);
-        testCorrectness(prod, of(5));
-        System.out.println(prod.cardSubPlanes(true));
-        System.out.println(prod.cardSubSpaces(false));
+        HyperbolicPlane prod = pl91.directProduct(tr7);
+        testCorrectness(prod, of(7));
+        System.out.println(prod.cardSubPlanes(false));
+        //System.out.println(prod.cardSubSpaces(false));
     }
 
     @Test
