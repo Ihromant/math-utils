@@ -765,24 +765,6 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
-    public void testPermutations() {
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4}).collect(Collectors.groupingBy(HyperbolicPlaneTest::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5}).collect(Collectors.groupingBy(HyperbolicPlaneTest::parity, Collectors.counting())));
-    }
-
-    private static int parity(int[] perm) {
-        int result = 0;
-        for (int i = 0; i < perm.length; i++) {
-            for (int j = i + 1; j < perm.length; j++) {
-                if (perm[i] > perm[j]) {
-                    result++;
-                }
-            }
-        }
-        return result;
-    }
-
-    @Test
     public void testPlanesCorrectness() {
         HyperbolicPlane triPoints = new HyperbolicPlane(new int[]{0, 2, 7}, new int[]{0, 1, 4});
         HyperbolicPlane otherTriPoints = new HyperbolicPlane(new int[]{0, 8, 10}, new int[]{0, 1, 6}, new int[]{0, 3, 7});

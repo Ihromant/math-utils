@@ -458,6 +458,18 @@ public class GaloisField {
         return next;
     }
 
+    public static int parity(int[] perm) {
+        int result = 0;
+        for (int i = 0; i < perm.length; i++) {
+            for (int j = i + 1; j < perm.length; j++) {
+                if (perm[i] > perm[j]) {
+                    result++;
+                }
+            }
+        }
+        return result;
+    }
+
     public static Stream<int[]> choices(int n, int k) {
         return Stream.iterate(IntStream.range(0, k).toArray(), Objects::nonNull, prev -> nextChoice(n, prev));
     }

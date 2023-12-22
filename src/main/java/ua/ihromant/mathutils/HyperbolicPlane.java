@@ -374,7 +374,7 @@ public class HyperbolicPlane {
         }
         Predicate<int[]> pred = arr -> switch (length) {
             case 3 -> true;
-            case 4 -> parity(arr) % 2 == 0;
+            case 4 -> GaloisField.parity(arr) % 2 == 0;
             case 5, 7 -> {
                 int d = arr[length - 1] > arr[0] ? arr[length - 1] - arr[0] : length - arr[0] + arr[length - 1];
                 for (int i = 0; i < length - 1; i++) {
@@ -415,17 +415,5 @@ public class HyperbolicPlane {
                     });
                 }))).flatMap(Function.identity()).toArray(BitSet[]::new);
         return new HyperbolicPlane(lines);
-    }
-
-    private static int parity(int[] perm) {
-        int result = 0;
-        for (int i = 0; i < perm.length; i++) {
-            for (int j = i + 1; j < perm.length; j++) {
-                if (perm[i] > perm[j]) {
-                    result++;
-                }
-            }
-        }
-        return result;
     }
 }
