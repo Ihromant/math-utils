@@ -759,9 +759,9 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane p13 = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         HyperbolicPlane p13a = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         HyperbolicPlane p15aff = new HyperbolicPlane("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
-        HyperbolicPlane prod = tr11.directProduct(tr11);
-        testCorrectness(prod, of(11));
-        System.out.println(prod.cardSubPlanes(true));
+        HyperbolicPlane prod = pl91.directProduct(tr7);
+        testCorrectness(prod, of(prod.line(0).cardinality()));
+        System.out.println(prod.cardSubPlanes(false));
         //System.out.println(prod.cardSubSpaces(false));
     }
 

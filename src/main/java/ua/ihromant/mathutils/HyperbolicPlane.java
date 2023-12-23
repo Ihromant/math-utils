@@ -8,7 +8,6 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -409,22 +408,7 @@ public class HyperbolicPlane {
         if (Arrays.stream(that.lines).anyMatch(l -> l.cardinality() != length)) {
             throw new IllegalArgumentException("Not all lines of length " + length);
         }
-        Predicate<int[]> pred = arr -> switch (length) {
-            case 3 -> true;
-            case 4 -> GaloisField.parity(arr) % 2 == 0;
-            case 5, 7, 11 -> {
-                int d = arr[length - 1] > arr[0] ? arr[length - 1] - arr[0] : length + arr[length - 1] - arr[0];
-                for (int i = 0; i < length - 1; i++) {
-                    int dd = arr[i] > arr[i + 1] ? arr[i] - arr[i + 1] : length + arr[i] - arr[i + 1];
-                    if (dd != d) {
-                        yield false;
-                    }
-                }
-                yield true;
-            }
-            default -> throw new IllegalStateException();
-        };
-        int[] basePerm = IntStream.range(0, length).toArray();
+        HyperbolicPlane aff = new HyperbolicPlane(new GaloisField(length).generatePlane()).subPlane(IntStream.range(0, length * length).toArray());
         GroupProduct cg = new GroupProduct(this.pointCount(), that.pointCount());
         BitSet[] lines = Stream.of(IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.pointCount()).mapToObj(p2 -> {
                     BitSet result = new BitSet();
@@ -443,10 +427,14 @@ public class HyperbolicPlane {
                 IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.lineCount()).boxed().flatMap(l2 -> {
                     int[] arr1 = this.line(l1).stream().toArray();
                     int[] arr2 = that.line(l2).stream().toArray();
-                    return GaloisField.permutations(basePerm).filter(pred).map(perm -> {
+                    return IntStream.range(0, aff.lineCount()).mapToObj(aff::line).filter(l -> {
+                        int fst = l.nextSetBit(0);
+                        return l.stream().skip(1).allMatch(p -> p / length != fst / length && p % length != fst % length);
+                    }).map(l -> {
+                        int[] line = l.stream().toArray();
                         BitSet result = new BitSet();
                         for (int i = 0; i < length; i++) {
-                            result.set(cg.fromArr(arr1[i], arr2[perm[i]]));
+                            result.set(cg.fromArr(arr1[line[i] / length], arr2[line[i] % length]));
                         }
                         return result;
                     });
