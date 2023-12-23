@@ -39,7 +39,7 @@ public class HyperbolicPlaneTest {
                     .toArray(int[][]::new);
             HyperbolicPlane p = new HyperbolicPlane(v, ds);
             testCorrectness(p, of(6));
-            System.out.println(p.hyperbolicIndex() + " " + Arrays.deepToString(ds));
+            System.out.println(p.hyperbolicFreq() + " " + Arrays.deepToString(ds));
         });
     }
 

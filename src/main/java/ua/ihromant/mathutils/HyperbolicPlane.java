@@ -5,6 +5,8 @@ import ua.ihromant.mathutils.group.GroupProduct;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collector;
@@ -292,6 +294,41 @@ public class HyperbolicPlane {
                     }
                     if (result.cardinality() == maximum) {
                         return result;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public Map<Integer, Integer> hyperbolicFreq() {
+        Map<Integer, Integer> result = new HashMap<>();
+        for (int o = 0; o < pointCount; o++) {
+            for (int x = 0; x < pointCount; x++) {
+                if (o == x) {
+                    continue;
+                }
+                for (int y = 0; y < pointCount; y++) {
+                    if (collinear(o, x, y)) {
+                        continue;
+                    }
+                    BitSet xy = lines[line(x, y)];
+                    for (int p = xy.nextSetBit(0); p >= 0; p = xy.nextSetBit(p + 1)) {
+                        if (p == x || p == y) {
+                            continue;
+                        }
+                        int ox = line(o, x);
+                        BitSet oy = lines[line(o, y)];
+                        int counter = 0;
+                        for (int u = oy.nextSetBit(0); u >= 0; u = oy.nextSetBit(u + 1)) {
+                            if (u == o || u == y) {
+                                continue;
+                            }
+                            if (intersection(line(p, u), ox) == -1) {
+                                counter++;
+                            }
+                        }
+                        result.compute(counter, (k, v) -> v == null ? 1 : v + 1);
                     }
                 }
             }
