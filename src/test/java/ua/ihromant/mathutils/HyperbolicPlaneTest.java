@@ -9,8 +9,10 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -739,6 +741,36 @@ public class HyperbolicPlaneTest {
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
             assertEquals(of(25), p.cardSubPlanes(true));
         }
+    }
+
+    @Test
+    public void testOvals() {
+        int q = 9;
+        GaloisField fd = new GaloisField(q);
+        HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
+        BitSet set = new BitSet();
+        IntStream.range(0, q).forEach(i -> set.set(i * q + fd.mul(i, i)));
+        set.set(q * q + q);
+        int[] oval = set.stream().toArray();
+        Map<Integer, BitSet> tangents = new HashMap<>();
+        for (int p : oval) {
+            int t = -1;
+            q: for (int l : pl.lines(p)) {
+                BitSet line = pl.line(l);
+                for (int p1 : oval) {
+                    if (p != p1 && line.get(p1)) {
+                        continue q;
+                    }
+                }
+                t = l;
+            }
+            tangents.put(p, pl.line(t));
+        }
+        BitSet pts = new BitSet();
+        pts.set(0, q * q + q + 1);
+        tangents.values().forEach(t -> t.stream().forEach(i -> pts.set(i, false)));
+        HyperbolicPlane hyp = pl.subPlane(pts.stream().toArray());
+        testCorrectness(hyp, of(q / 2, q / 2 + 1));
     }
 
     @Test

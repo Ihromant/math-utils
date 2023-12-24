@@ -27,14 +27,14 @@ public class AuthomorphismsTest {
                     if (plane.collinear(x, y, z)) {
                         continue;
                     }
-//                    if (triple == null) {
-//                        BitSet hull = hull(x, y, z);
-//                        if (hull.cardinality() == plane.pointCount()) {
-//                            triple = new int[]{x, y, z};
-//                        } else {
-//                            continue;
-//                        }
-//                    }
+                    if (triple == null) {
+                        BitSet hull = plane.hull(x, y, z);
+                        if (hull.cardinality() == plane.pointCount()) {
+                            triple = new int[]{x, y, z};
+                        } else {
+                            continue;
+                        }
+                    }
                     int[] auth = new int[plane.pointCount()];
                     Arrays.fill(auth, -1);
                     BitSet used = of(x, y, z);
