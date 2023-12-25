@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -745,7 +746,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testOvals() {
-        int q = 9;
+        int q = 7;
         GaloisField fd = new GaloisField(q);
         HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
         BitSet set = new BitSet();
@@ -771,6 +772,34 @@ public class HyperbolicPlaneTest {
         tangents.values().forEach(t -> t.stream().forEach(i -> pts.set(i, false)));
         HyperbolicPlane hyp = pl.subPlane(pts.stream().toArray());
         testCorrectness(hyp, of(q / 2, q / 2 + 1));
+        System.out.println(hyp.hyperbolicIndex());
+        System.out.println(hyp.playfairIndex());
+    }
+
+    @Test
+    public void testRecursivePlane() {
+        int q = 7;
+        GaloisField fd = new GaloisField(q);
+        HyperbolicPlane aff = new HyperbolicPlane(fd.generatePlane()).subPlane(IntStream.range(0, q * q).toArray());
+        HyperbolicPlane subPl = new HyperbolicPlane("0001123", "1242534", "3654656");
+        //HyperbolicPlane subPl = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
+        Set<BitSet> lines = new LinkedHashSet<>();
+        for (int l : aff.lines()) {
+            int[] line = aff.line(l).stream().toArray();
+            for (int i = 0; i < q; i++) {
+                for (int j = i + 1; j < q; j++) {
+                    int[] sl = subPl.line(subPl.line(i, j)).stream().toArray();
+                    int[] nl = new int[sl.length];
+                    for (int k = 0; k < nl.length; k++) {
+                        nl[k] = line[sl[k]];
+                    }
+                    lines.add(of(nl));
+                }
+            }
+        }
+        HyperbolicPlane res = new HyperbolicPlane(lines.toArray(BitSet[]::new));
+        testCorrectness(res, of(3));
+        System.out.println(res.cardSubPlanes(false));
     }
 
     @Test
