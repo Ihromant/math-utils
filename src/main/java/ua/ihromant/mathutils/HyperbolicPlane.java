@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -351,6 +352,22 @@ public class HyperbolicPlane {
                     }
                 }
                 result.set(counter);
+            }
+        }
+        return result;
+    }
+
+    public Map<Integer, Integer> cardSubPlanesFreq() {
+        Map<Integer, Integer> result = new TreeMap<>();
+        for (int x = 0; x < pointCount; x++) {
+            for (int y = x + 1; y < pointCount; y++) {
+                for (int z = y + 1; z < pointCount; z++) {
+                    if (line(x, y) == line(y, z)) {
+                        continue;
+                    }
+                    int card = hull(x, y, z).cardinality();
+                    result.compute(card, (k, v) -> v == null ? 1 : v + 1);
+                }
             }
         }
         return result;

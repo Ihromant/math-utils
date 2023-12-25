@@ -785,6 +785,9 @@ public class HyperbolicPlaneTest {
         //HyperbolicPlane subPl = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         Set<BitSet> lines = new LinkedHashSet<>();
         for (int l : aff.lines()) {
+//            List<Integer> pts = new ArrayList<>(Arrays.asList(aff.line(l).stream().boxed().toArray(Integer[]::new)));
+//            Collections.shuffle(pts);
+//            Integer[] line = pts.toArray(Integer[]::new);
             int[] line = aff.line(l).stream().toArray();
             for (int i = 0; i < q; i++) {
                 for (int j = i + 1; j < q; j++) {
@@ -799,7 +802,7 @@ public class HyperbolicPlaneTest {
         }
         HyperbolicPlane res = new HyperbolicPlane(lines.toArray(BitSet[]::new));
         testCorrectness(res, of(3));
-        System.out.println(res.cardSubPlanes(false));
+        System.out.println(res.cardSubPlanesFreq());
     }
 
     @Test
