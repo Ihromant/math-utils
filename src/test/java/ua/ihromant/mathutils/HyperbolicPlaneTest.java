@@ -788,8 +788,65 @@ public class HyperbolicPlaneTest {
         tangents.values().forEach(t -> t.stream().forEach(i -> pts.set(i, false)));
         HyperbolicPlane hyp = pl.subPlane(pts.stream().toArray());
         testCorrectness(hyp, of(q / 2, q / 2 + 1));
+        System.out.println(hyp.pointCount());
+        System.out.println(hyp.cardSubPlanes(true));
+        BitSet bs = new BitSet();
+        System.out.println(hyp.hull(0, 1, 3).cardinality());
+        for (int p1 : hyp.points(hyp.line(0, 1))) {
+            for (int p2 : hyp.points(hyp.line(0, 3))) {
+                if (p1 == p2) {
+                    continue;
+                }
+                bs.or(hyp.line(hyp.line(p1, p2)));
+            }
+        }
+        System.out.println(bs.cardinality());
         System.out.println(hyp.hyperbolicIndex());
         System.out.println(hyp.playfairIndex());
+    }
+
+    @Test
+    public void testOvoids() {
+        int q = 7;
+        GaloisField fd = new GaloisField(q);
+        int a = fd.elements().filter(o -> fd.elements().noneMatch(x -> fd.add(fd.mul(x, x), x, o) == 0)).findAny().orElseThrow();
+        HyperbolicPlane sp = new HyperbolicPlane(fd.generateSpace());
+        testCorrectness(sp, of(q + 1));
+        BitSet set = new BitSet();
+        IntStream.range(0, q).forEach(s -> IntStream.range(0, q).forEach(t -> set.set(
+                q * q * fd.add(fd.mul(s, s), fd.mul(s, t), fd.mul(a, t, t)) + t * q + s)));
+        set.set(q * q * q);
+        int[] ovoid = set.stream().toArray();
+        Map<Integer, List<BitSet>> tangents = new HashMap<>();
+        for (int p : ovoid) {
+            q: for (int l : sp.lines(p)) {
+                BitSet line = sp.line(l);
+                for (int p1 : ovoid) {
+                    if (p != p1 && line.get(p1)) {
+                        continue q;
+                    }
+                }
+                tangents.computeIfAbsent(p, p1 -> new ArrayList<>()).add(line);
+            }
+        }
+        BitSet pts = new BitSet();
+        pts.set(0, q * q * q + q * q + q + 1);
+        System.out.println(pts.cardinality());
+        for (int x = 0; x < sp.pointCount(); x++) {
+            for (int y = x + 1; y < sp.pointCount(); y++) {
+                for (int z = y + 1; z < sp.pointCount(); z++) {
+                    if (sp.line(x, y) == sp.line(y, z)) {
+                        continue;
+                    }
+                    BitSet bs = sp.hull(x, y, z);
+                    bs.and(set);
+                    System.out.println(bs.cardinality());
+                }
+            }
+        }
+        tangents.forEach((k, v) -> System.out.println(k + " " + v.size()));
+        tangents.values().forEach(l -> l.forEach(t -> t.stream().forEach(i -> pts.set(i, false))));
+        System.out.println(pts.cardinality());
     }
 
     @Test
