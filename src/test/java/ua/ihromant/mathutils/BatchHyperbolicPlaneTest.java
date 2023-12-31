@@ -386,51 +386,66 @@ public class BatchHyperbolicPlaneTest {
         return true;
     }
 
-    private boolean checkThales(HyperbolicPlane p, int dl) {
-        BitSet droppedLine = p.line(dl);
-        System.out.println(dl);
-        for (int infty : p.points(dl)) {
-            for (int la : p.lines(infty)) {
-                if (la == dl) {
+    @Test
+    public void testAffinePappus() {
+        HyperbolicPlane pl = new HyperbolicPlane(15, new int[][]{{0, 1, 4}, {0, 6, 8}, {0, 5, 10}});
+        System.out.println(pl.cardSubPlanes(true));
+        System.out.println(pl.hyperbolicIndex());
+        for (int l1 = 0; l1 < pl.lineCount(); l1++) {
+            for (int l2 = l1 + 1; l2 < pl.lineCount(); l2++) {
+                if (pl.intersection(l1, l2) >= 0) {
                     continue;
                 }
-                for (int lb : p.lines(infty)) {
-                    if (lb == dl || la >= lb) {
+                int[] pts1 = pl.line(l1).stream().toArray();
+                int[] pts2 = pl.line(l2).stream().toArray();
+                GaloisField.permutations(pts1).forEach(prm1 -> GaloisField.permutations(pts2).forEach(prm2 -> {
+                    if (pl.intersection(pl.line(prm1[0], prm2[1]), pl.line(prm1[2], prm2[1])) < 0
+                            && pl.intersection(pl.line(prm2[0], prm1[1]), pl.line(prm2[2], prm1[1])) < 0
+                            && pl.intersection(pl.line(prm1[0], prm2[0]), pl.line(prm1[2], prm2[2])) >= 0) {
+                        System.out.println("Fail Pappus");
+                    }
+                }));
+            }
+        }
+        System.out.println("Lines");
+        for (int l : pl.lines()) {
+            System.out.println(pl.line(l));
+        }
+        for (int l1 = 0; l1 < pl.lineCount(); l1++) {
+            for (int l2 = l1 + 1; l2 < pl.lineCount(); l2++) {
+                if (pl.intersection(l1, l2) >= 0) {
+                    continue;
+                }
+                for (int l3 = l2 + 1; l3 < pl.lineCount(); l3++) {
+                    if (pl.intersection(l1, l3) >= 0 || pl.intersection(l2, l3) >= 0) {
                         continue;
                     }
-                    for (int lc : p.lines(infty)) {
-                        if (lc == dl || lb >= lc) {
-                            continue;
-                        }
-                        for (int a1 : p.points(la)) {
-                            if (a1 == infty) {
-                                continue;
-                            }
-                            for (int a2 : p.points(la)) {
-                                if (a1 == a2 || a2 == infty) {
-                                    continue;
-                                }
-                                for (int b1 : p.points(lb)) {
-                                    if (b1 == infty) {
-                                        continue;
-                                    }
-                                    for (int b2 : p.points(lb)) {
-                                        if (b1 == b2 || b2 == infty) {
-                                            continue;
-                                        }
-                                        for (int c1 : p.points(lc)) {
-                                            if (c1 == infty) {
-                                                continue;
-                                            }
-                                            for (int c2 : p.points(lc)) {
-                                                if (c1 == c2 || c2 == infty) {
-                                                    continue;
-                                                }
-                                                if (droppedLine.get(p.intersection(p.line(a1, c1), p.line(a2, c2)))
-                                                        && droppedLine.get(p.intersection(p.line(a1, b1), p.line(a2, b2)))
-                                                        && !droppedLine.get(p.intersection(p.line(b1, c1), p.line(b2, c2)))) {
-                                                    return false;
-                                                }
+                    for (int a1 : pl.points(l1)) {
+                        for (int b1 : pl.points(l1)) {
+                            for (int a2 : pl.points(l2)) {
+                                for (int b2 : pl.points(l2)) {
+                                    for (int a3 : pl.points(l3)) {
+                                        for (int b3 : pl.points(l3)) {
+                                            if (pl.intersection(pl.line(a1, a2), pl.line(b1, b2)) < 0
+                                                    && pl.intersection(pl.line(a3, a2), pl.line(b3, b2)) < 0
+                                                    && pl.intersection(pl.line(a1, a3), pl.line(b1, b3)) >= 0) {
+                                                System.out.println("Fail Desargues");
+                                                System.out.println("l1 " + pl.line(l1));
+                                                System.out.println("l2 " + pl.line(l2));
+                                                System.out.println("l3 " + pl.line(l3));
+                                                System.out.println("a1 " + a1);
+                                                System.out.println("a2 " + a2);
+                                                System.out.println("a3 " + a3);
+                                                System.out.println("b1 " + b1);
+                                                System.out.println("b2 " + b2);
+                                                System.out.println("b3 " + b3);
+                                                System.out.println("a1a2 " + pl.line(pl.line(a1, a2)));
+                                                System.out.println("b1b2 " + pl.line(pl.line(b1, b2)));
+                                                System.out.println("a2a3 " + pl.line(pl.line(a2, a3)));
+                                                System.out.println("b2b3 " + pl.line(pl.line(b2, b3)));
+                                                System.out.println("a1a3 " + pl.line(pl.line(a1, a3)));
+                                                System.out.println("b1b3 " + pl.line(pl.line(b1, b3)));
+                                                return;
                                             }
                                         }
                                     }
@@ -441,6 +456,5 @@ public class BatchHyperbolicPlaneTest {
                 }
             }
         }
-        return true;
     }
 }
