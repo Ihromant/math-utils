@@ -233,6 +233,66 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
+    public void testFixed() throws IOException {
+        String name = "semi4";
+        try (InputStream is = getClass().getResourceAsStream("/proj/" + name + ".uni");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(name);
+            String[] first = br.readLine().trim().split(" ");
+            int v = Integer.parseInt(first[0]);
+            int b = Integer.parseInt(first[1]);
+            br.readLine();
+            String next = br.readLine();
+            HyperbolicPlane projective = readPlane(v, b, next, br);
+            for (int dl : projective.lines()) {
+                System.out.println(projective.line(dl) + " " + testThalesVectors(projective, dl));
+            }
+        }
+    }
+
+    private static int parallel(HyperbolicPlane pl, int dl, int line, int p) {
+        return pl.line(p, pl.intersection(line, dl));
+    }
+
+    private static BitSet testThalesVectors(HyperbolicPlane pl, int droppedLine) {
+        BitSet result = new BitSet();
+        BitSet dl = pl.line(droppedLine);
+        int base = IntStream.range(0, pl.pointCount()).filter(p -> !dl.get(p)).findFirst().orElseThrow();
+        for (int end = base + 1; end < pl.pointCount(); end++) {
+            if (!dl.get(end) && testThales(pl, droppedLine, base, end)) {
+                result.set(end);
+            }
+        }
+        return result;
+    }
+
+    private static boolean testThales(HyperbolicPlane pl, int droppedLine, int base, int end) {
+        BitSet dl = pl.line(droppedLine);
+        int infty = pl.intersection(droppedLine, pl.line(base, end));
+        int bl = pl.line(base, infty);
+        BitSet baseLine = pl.line(bl);
+        for (int fst : pl.points()) {
+            if (dl.get(fst) || baseLine.get(fst)) {
+                continue;
+            }
+            BitSet fstLine = pl.line(pl.line(fst, infty));
+            int fstEnd = pl.intersection(parallel(pl, droppedLine, bl, fst), parallel(pl, droppedLine, pl.line(base, fst), end));
+            for (int snd : pl.points()) {
+                if (dl.get(snd) || baseLine.get(snd) || fstLine.get(snd)) {
+                    continue;
+                }
+                int sndEnd = pl.intersection(parallel(pl, droppedLine, bl, snd), parallel(pl, droppedLine, pl.line(base, snd), end));
+                int fstEndAlt = pl.intersection(parallel(pl, droppedLine, pl.line(snd, sndEnd), fst), parallel(pl, droppedLine, pl.line(fst, snd), sndEnd));
+                if (fstEndAlt != fstEnd) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Test
     public void testProjectiveAndUnitals7() throws IOException {
         String name = "semi4";
         try (InputStream is = getClass().getResourceAsStream("/proj/" + name + ".uni");
