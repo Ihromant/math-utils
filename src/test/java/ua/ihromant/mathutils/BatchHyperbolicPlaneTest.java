@@ -429,7 +429,7 @@ public class BatchHyperbolicPlaneTest {
                                             if (pl.intersection(pl.line(a1, a2), pl.line(b1, b2)) < 0
                                                     && pl.intersection(pl.line(a3, a2), pl.line(b3, b2)) < 0
                                                     && pl.intersection(pl.line(a1, a3), pl.line(b1, b3)) >= 0) {
-                                                System.out.println("Fail Desargues");
+                                                System.out.println("Fail Par Desargues");
                                                 System.out.println("l1 " + pl.line(l1));
                                                 System.out.println("l2 " + pl.line(l2));
                                                 System.out.println("l3 " + pl.line(l3));
@@ -445,7 +445,70 @@ public class BatchHyperbolicPlaneTest {
                                                 System.out.println("b2b3 " + pl.line(pl.line(b2, b3)));
                                                 System.out.println("a1a3 " + pl.line(pl.line(a1, a3)));
                                                 System.out.println("b1b3 " + pl.line(pl.line(b1, b3)));
-                                                return;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (int o : pl.points()) {
+            for (int l1 : pl.lines(o)) {
+                for (int l2 : pl.lines(o)) {
+                    if (l2 <= l1) {
+                        continue;
+                    }
+                    for (int l3 : pl.lines(o)) {
+                        if (l3 <= l2) {
+                            continue;
+                        }
+                        for (int a1 : pl.points(l1)) {
+                            if (a1 == o) {
+                                continue;
+                            }
+                            for (int b1 : pl.points(l1)) {
+                                if (b1 == o) {
+                                    continue;
+                                }
+                                for (int a2 : pl.points(l2)) {
+                                    if (a2 == o) {
+                                        continue;
+                                    }
+                                    for (int b2 : pl.points(l2)) {
+                                        if (b2 == o) {
+                                            continue;
+                                        }
+                                        for (int a3 : pl.points(l3)) {
+                                            if (a3 == o) {
+                                                continue;
+                                            }
+                                            for (int b3 : pl.points(l3)) {
+                                                if (b3 == o) {
+                                                    continue;
+                                                }
+                                                if (pl.intersection(pl.line(a1, a2), pl.line(b1, b2)) < 0
+                                                        && pl.intersection(pl.line(a3, a2), pl.line(b3, b2)) < 0
+                                                        && pl.intersection(pl.line(a1, a3), pl.line(b1, b3)) >= 0) {
+                                                    System.out.println("Fail Conc Desargues");
+                                                    System.out.println("l1 " + pl.line(l1));
+                                                    System.out.println("l2 " + pl.line(l2));
+                                                    System.out.println("l3 " + pl.line(l3));
+                                                    System.out.println("a1 " + a1);
+                                                    System.out.println("a2 " + a2);
+                                                    System.out.println("a3 " + a3);
+                                                    System.out.println("b1 " + b1);
+                                                    System.out.println("b2 " + b2);
+                                                    System.out.println("b3 " + b3);
+                                                    System.out.println("a1a2 " + pl.line(pl.line(a1, a2)));
+                                                    System.out.println("b1b2 " + pl.line(pl.line(b1, b2)));
+                                                    System.out.println("a2a3 " + pl.line(pl.line(a2, a3)));
+                                                    System.out.println("b2b3 " + pl.line(pl.line(b2, b3)));
+                                                    System.out.println("a1a3 " + pl.line(pl.line(a1, a3)));
+                                                    System.out.println("b1b3 " + pl.line(pl.line(b1, b3)));
+                                                }
                                             }
                                         }
                                     }
