@@ -52,17 +52,57 @@ public class TaoPoint {
         return 1;
     }
 
+    public static BitSet line(int a, int b) {
+        if (a == b) {
+            throw new IllegalArgumentException();
+        }
+        BitSet result = new BitSet();
+        result.set(a);
+        result.set(b);
+        result.set(add(a, b));
+        return result;
+    }
+
+    public static boolean parallel(BitSet fst, BitSet snd) {
+        boolean fstMatch = fst.stream().allMatch(a -> {
+            BitSet cl = (BitSet) snd.clone();
+            cl.set(a);
+            BitSet hull = hull(cl);
+            return fst.stream().allMatch(hull::get);
+        });
+        boolean sndMatch = snd.stream().allMatch(b -> {
+            BitSet cl = (BitSet) fst.clone();
+            cl.set(b);
+            BitSet hull = hull(cl);
+            return snd.stream().allMatch(hull::get);
+        });
+        return !fst.equals(snd) && fstMatch && sndMatch;
+    }
+
+    public static int lineCount() {
+        return SIZE * (SIZE - 1) / 6;
+    }
+
+    public static Iterable<BitSet> lines() {
+        return () -> IntStream.range(0, SIZE).boxed().flatMap(a -> IntStream.range(a + 1, SIZE)
+                .filter(b -> add(a, b) > b).mapToObj(b -> line(a, b))).iterator();
+    }
+
+    public static BitSet hull(BitSet pts) {
+        BitSet next = next(pts);
+        while (next.cardinality() > pts.cardinality()) {
+            pts = next;
+            next = next(pts);
+        }
+        return pts;
+    }
+
     public static BitSet hull(int... points) {
         BitSet base = new BitSet(SIZE);
         for (int point : points) {
             base.set(point);
         }
-        BitSet next = next(base);
-        while (next.cardinality() > base.cardinality()) {
-            base = next;
-            next = next(base);
-        }
-        return base;
+        return hull(base);
     }
 
     public static BitSet next(BitSet base) {
