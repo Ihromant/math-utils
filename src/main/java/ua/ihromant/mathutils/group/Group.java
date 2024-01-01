@@ -98,6 +98,28 @@ public interface Group {
         return base;
     }
 
+    static long[] factorize(long base) {
+        List<Long> result = new ArrayList<>();
+        long from = 2;
+        while (base != 1) {
+            long factor = factor(from, base);
+            from = factor;
+            base = base / factor;
+            result.add(factor);
+        }
+        return result.stream().mapToLong(Long::longValue).toArray();
+    }
+
+    private static long factor(long from, long base) {
+        long sqrt = (long) Math.ceil(Math.sqrt(base + 1));
+        for (long i = from; i <= sqrt; i++) {
+            if (base % i == 0) {
+                return i;
+            }
+        }
+        return base;
+    }
+
     static int gcd(int a, int b) {
         if (b == 0) {
             return a;

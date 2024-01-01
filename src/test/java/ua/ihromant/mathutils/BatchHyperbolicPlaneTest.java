@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.Group;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -517,6 +518,35 @@ public class BatchHyperbolicPlaneTest {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    public void findSuitable() {
+        for (long k = 3; k < 300; k++) {
+            long den = k * (k - 1);
+            for (long kp = 2; kp < 1000000; kp++) {
+                long beam = k + kp - 1;
+                long p = 1 + (k - 1) * (1 + beam);
+                if ((p * (p - 1)) % den != 0) {
+                    continue;
+                }
+                long vp = p * (p - 1) / den;
+                long gp = vp * (p - k);
+                long s = 1 + (k - 1) * (1 + beam + beam * beam);
+                if ((s * (s - 1)) % den != 0) {
+                    continue;
+                }
+                long vs = s * (s - 1) / den;
+                long gs = vs * (s - k);
+                if (gs % gp != 0) {
+                    continue;
+                }
+                long planes = gs / gp;
+                long[] factors = Group.factorize(beam);
+                boolean primePower = Arrays.stream(factors).allMatch(f -> f == factors[0]);
+                System.out.println("Prime power: " + primePower + ", k: " + k + ", kappa: " + kp + ", p: " + p + ", vp: " + vp + ", s: " + s + ", vs: " + vs + ", planes: " + planes);
             }
         }
     }
