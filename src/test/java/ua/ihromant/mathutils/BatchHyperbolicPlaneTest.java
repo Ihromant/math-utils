@@ -545,9 +545,27 @@ public class BatchHyperbolicPlaneTest {
                 }
                 long planes = gs / gp;
                 long[] factors = Group.factorize(beam);
-                boolean primePower = Arrays.stream(factors).allMatch(f -> f == factors[0]);
-                System.out.println("Prime power: " + primePower + ", k: " + k + ", kappa: " + kp + ", p: " + p + ", vp: " + vp + ", s: " + s + ", vs: " + vs + ", planes: " + planes);
+                boolean fitsForProjective = Arrays.stream(factors).allMatch(f -> f == factors[0]) || bruckRyser(beam);
+                if (!fitsForProjective) {
+                    continue;
+                }
+                System.out.println("k: " + k + ", kappa: " + kp + ", p: " + p + ", vp: " + vp + ", s: " + s + ", vs: " + vs + ", planes: " + planes);
             }
         }
+    }
+
+    private static boolean bruckRyser(long val) {
+        if (val % 4 == 0 || val % 4 == 3) {
+            return true;
+        }
+        long sqrt = (long) Math.ceil(Math.sqrt(val));
+        for (long i = 0; i <= sqrt; i++) {
+            for (long j = 0; j <= sqrt; j++) {
+                if (val == i * i + j * j) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
