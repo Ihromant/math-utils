@@ -1058,6 +1058,24 @@ public class HyperbolicPlaneTest {
         System.out.println(plane.cardSubPlanes(true));
     }
 
+    @Test
+    public void generateBeltramiKlein() {
+        int q = 7;
+        GaloisField fd = new GaloisField(q);
+        HyperbolicPlane prSp = new HyperbolicPlane(fd.generateSpace());
+        BitSet pts = new BitSet();
+        for (int p : prSp.points()) {
+            int[] crds = getHomogenousSpace(p, q);
+            if (Arrays.stream(crds).allMatch(c -> c != 0)) {
+                pts.set(p);
+            }
+        }
+        HyperbolicPlane bk = prSp.subPlane(pts.stream().toArray());
+        testCorrectness(bk, of(q - 3, q - 2, q - 1));
+        assertEquals(of(30, 31, 36), bk.cardSubPlanes(true));
+        assertEquals((q - 1) * (q - 1) * (q - 1), bk.pointCount());
+    }
+
     private int[] getHomogenousSpace(int p, int ord) {
         int cb = ord * ord * ord;
         if (p < cb) {
