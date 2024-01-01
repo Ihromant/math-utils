@@ -545,27 +545,35 @@ public class BatchHyperbolicPlaneTest {
                 }
                 long planes = gs / gp;
                 long[] factors = Group.factorize(beam);
-                boolean fitsForProjective = Arrays.stream(factors).allMatch(f -> f == factors[0]) || bruckRyser(beam);
-                if (!fitsForProjective) {
+                if (Arrays.stream(factors).anyMatch(f -> f != factors[0]) && bruckRyser(beam)) {
                     continue;
                 }
-                System.out.println("k: " + k + ", kappa: " + kp + ", p: " + p + ", vp: " + vp + ", s: " + s + ", vs: " + vs + ", planes: " + planes);
+                long hs = 1 + (k - 1) * (1 + beam + beam * beam + beam * beam * beam);
+                boolean fits = (hs * (hs - 1)) % den == 0;
+                long vhs = (hs * (hs - 1)) / den;
+                long ghs = vhs * (hs - k);
+                fits = fits && ghs % gp == 0;
+                long fourDimPlanesCount = ghs / gp;
+                long fourDimPlanePointPairs = fourDimPlanesCount * (hs - p);
+                long triDimPlanePointPairs = planes * (s - p);
+                fits = fits && fourDimPlanePointPairs % triDimPlanePointPairs == 0;
+                System.out.println("k: " + k + ", kappa: " + kp + ", p: " + p + ", vp: " + vp + ", s: " + s + ", vs: " + vs + ", planes: " + planes + ", 4-dim: " + fits);
             }
         }
     }
 
     private static boolean bruckRyser(long val) {
         if (val % 4 == 0 || val % 4 == 3) {
-            return true;
+            return false;
         }
         long sqrt = (long) Math.ceil(Math.sqrt(val));
         for (long i = 0; i <= sqrt; i++) {
             for (long j = 0; j <= sqrt; j++) {
                 if (val == i * i + j * j) {
-                    return true;
+                    return false;
                 }
             }
         }
-        return false;
+        return true;
     }
 }
