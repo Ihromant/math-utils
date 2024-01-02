@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.HyperbolicPlane;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -10,32 +11,41 @@ import java.util.stream.Stream;
 public class FinderTest {
     @Test
     public void generateByPartial() {
-        int v = 28;
-        int k = 4;
-        int[][] base = new int[][] {
-                {0, 1, 2, 3},
-                {4, 5, 6, 7},
-                {8, 9, 10, 11},
-                {12, 13, 14, 15},
-                {0, 5, 10, 15},
-                {3, 6, 9, 12},
-                {2, 4, 11, 13},
-                {1, 7, 8, 14},
-                {3, 7, 11, 15},
-                {2, 6, 10, 14},
-                {1, 5, 9, 13},
-                {0, 4, 8, 12},
+        int v = 31;
+        int k = 3;
+        int[][] pr = new int[][] {
+                {1, 2, 4},
+                {1, 5, 6},
+                {2, 3, 5},
+                {3, 4, 6},
+                {0, 1, 3},
+                {0, 2, 6},
+                {0, 4, 5}
         };
+        int[][] base = Stream.concat(IntStream.range(0, 4).map(i -> i * 6).boxed().flatMap(sh -> Arrays.stream(pr).map(arr -> {
+            int[] res = new int[3];
+            for (int i = 0; i < 3; i++) {
+                res[i] = arr[i] == 0 ? 0 : arr[i] + sh;
+            }
+            return res;
+        })), Stream.of(new int[]{0, 25, 26}, new int[]{0, 27, 28}, new int[]{0, 29, 30})).toArray(int[][]::new);
         BitSet[] blocks = Arrays.stream(base).map(FinderTest::of).toArray(BitSet[]::new);
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         Arrays.stream(blocks).forEach(line -> enhanceFrequencies(frequencies, line));
-        designs(v, k, blocks, v * (v - 1) / k / (k - 1) - base.length, frequencies).forEach(arr -> System.out.println(Arrays.toString(arr)));
+        designs(v, k, blocks, v * (v - 1) / k / (k - 1) - base.length, frequencies)
+                .forEach(arr -> {
+                    HyperbolicPlane pl = new HyperbolicPlane(arr);
+                    BitSet csp = pl.cardSubPlanes(false);
+                    //if (!csp.get(v) && csp.cardinality() == 1) {
+                        System.out.println(csp + " " + pl.cardSubSpaces(false) + " " + Arrays.toString(arr));
+                    //}
+                });
     }
 
     @Test
     public void generate() {
-        int v = 25;
-        int k = 5;
+        int v = 31;
+        int k = 3;
         int r = (v - 1) / (k - 1);
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         BitSet[] blocks = new BitSet[r + 1];
@@ -48,9 +58,15 @@ public class FinderTest {
         enhanceFrequencies(frequencies, initial);
         blocks[r] = initial;
         long time = System.currentTimeMillis();
-        System.out.println(designs(v, k, blocks, v * (v - 1) / k / (k - 1) - r - 1, frequencies)
-                .peek(d -> System.out.println(Arrays.toString(d)))
-                .count() + " " + (System.currentTimeMillis() - time));
+        designs(v, k, blocks, v * (v - 1) / k / (k - 1) - r - 1, frequencies)
+                .forEach(arr -> {
+                    HyperbolicPlane pl = new HyperbolicPlane(arr);
+                    BitSet csp = pl.cardSubPlanes(false);
+                    if (!csp.get(v) && csp.cardinality() == 1) {
+                        System.out.println(csp + " " + pl.cardSubSpaces(true) + " " + Arrays.toString(arr));
+                    }
+                });
+        System.out.println(System.currentTimeMillis() - time);
     }
 
     private static Stream<BitSet> blocks(int prev, BitSet curr, int needed, BitSet possible, BitSet[] frequencies) {
