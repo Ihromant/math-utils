@@ -606,4 +606,44 @@ public class BatchHyperbolicPlaneTest {
             }
         }
     }
+
+    @Test
+    public void readSts15() throws IOException {
+        String[][] designs = new String[80][3];
+        try (InputStream is = getClass().getResourceAsStream("/S(2,3,15).txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int counter = 0;
+            while ((line = br.readLine()) != null) {
+                designs[counter][0] = line;
+                designs[counter][1] = br.readLine();
+                designs[counter][2] = br.readLine();
+                counter++;
+            }
+        }
+        ex: for (int i = 0; i < 80; i++) {
+            HyperbolicPlane hp = new HyperbolicPlane(designs[i]);
+            for (int l1 = 0; l1 < hp.lineCount(); l1++) {
+                for (int l2 = l1 + 1; l2 < hp.lineCount(); l2++) {
+                    if (hp.intersection(l1, l2) >= 0) {
+                        continue;
+                    }
+                    for (int l3 = l2 + 1; l3 < hp.lineCount(); l3++) {
+                        if (hp.intersection(l1, l3) >= 0 || hp.intersection(l2, l3) >= 0) {
+                            continue;
+                        }
+                        for (int l4 = l3 + 1; l4 < hp.lineCount(); l4++) {
+                            if (hp.intersection(l1, l4) >= 0 || hp.intersection(l2, l4) >= 0 || hp.intersection(l3, l4) >= 0) {
+                                continue;
+                            }
+                            System.out.println("Has " + i);
+                            continue ex;
+                        }
+                    }
+                }
+                System.out.println("Has not " + i);
+            }
+        }
+    }
 }
