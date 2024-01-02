@@ -576,4 +576,34 @@ public class BatchHyperbolicPlaneTest {
         }
         return true;
     }
+
+    @Test
+    public void findSuitableNotWeaklyRegular() {
+        for (int k = 3; k < 10; k++) {
+            int den = k * (k - 1);
+            for (int vp = den + 1; vp < 300; vp++) {
+                if ((vp - 1) % (k - 1) != 0 || (vp * (vp - 1)) % den != 0) {
+                    continue;
+                }
+                int bp = vp * (vp - 1) / den;
+                int rp = (vp - 1) / (k - 1);
+                int gp = bp * (vp - k);
+                for (int vs = vp + 1; vs < 1000; vs++) {
+                    if ((vs - 1) % (k - 1) != 0 || (vs * (vs - 1)) % den != 0) {
+                        continue;
+                    }
+                    int bs = vs * (vs - 1) / den;
+                    int rs = (vs - 1) / (k - 1);
+                    if ((rs - 1) % (rp - 1) != 0 || (rs * (rs - 1)) % (rp * (rp - 1)) != 0) {
+                        continue;
+                    }
+                    int gs = bs * (vs - k);
+                    if (gs % gp != 0) {
+                        continue;
+                    }
+                    System.out.println(k + " " + vp + " " + vs);
+                }
+            }
+        }
+    }
 }
