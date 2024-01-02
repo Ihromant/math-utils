@@ -390,4 +390,139 @@ public class HallPointTest {
         }
         System.out.println("Satisfies. Time elapsed: " + (System.currentTimeMillis() - time));
     }
+
+    @Test
+    public void testPappusDesargues() {
+        for (BitSet l1 : HallPoint.lines()) {
+            for (BitSet l2 : HallPoint.lines()) {
+                if (!HallPoint.parallel(l1, l2)) {
+                    continue;
+                }
+                int[] pts1 = l1.stream().toArray();
+                int[] pts2 = l2.stream().toArray();
+                GaloisField.permutations(pts1).forEach(prm1 -> GaloisField.permutations(pts2).forEach(prm2 -> {
+                    if (HallPoint.parallel(HallPoint.line(prm1[0], prm2[1]), HallPoint.line(prm1[2], prm2[1]))
+                            && HallPoint.parallel(HallPoint.line(prm2[0], prm1[1]), HallPoint.line(prm2[2], prm1[1]))
+                            && !HallPoint.parallel(HallPoint.line(prm1[0], prm2[0]), HallPoint.line(prm1[2], prm2[2]))) {
+                        System.out.println("Fail Pappus");
+                    }
+                }));
+            }
+        }
+        System.out.println("Lines");
+        for (BitSet l : HallPoint.lines()) {
+            System.out.println(l);
+        }
+        for (BitSet l1 : HallPoint.lines()) {
+            for (BitSet l2 : HallPoint.lines()) {
+                if (!HallPoint.parallel(l1, l2)) {
+                    continue;
+                }
+                for (BitSet l3 : HallPoint.lines()) {
+                    if (!HallPoint.parallel(l1, l3) || !HallPoint.parallel(l2, l3)) {
+                        continue;
+                    }
+                    for (int a1 : l1.stream().toArray()) {
+                        for (int b1 : l1.stream().toArray()) {
+                            for (int a2 : l2.stream().toArray()) {
+                                for (int b2 : l2.stream().toArray()) {
+                                    for (int a3 : l3.stream().toArray()) {
+                                        for (int b3 : l3.stream().toArray()) {
+                                            if (HallPoint.parallel(HallPoint.line(a1, a2), HallPoint.line(b1, b2))
+                                                    && HallPoint.parallel(HallPoint.line(a3, a2), HallPoint.line(b3, b2))
+                                                    && !HallPoint.parallel(HallPoint.line(a1, a3), HallPoint.line(b1, b3))) {
+                                                System.out.println("Fail Par Desargues");
+                                                System.out.println("l1 " + l1);
+                                                System.out.println("l2 " + l2);
+                                                System.out.println("l3 " + l3);
+                                                System.out.println("a1 " + a1);
+                                                System.out.println("a2 " + a2);
+                                                System.out.println("a3 " + a3);
+                                                System.out.println("b1 " + b1);
+                                                System.out.println("b2 " + b2);
+                                                System.out.println("b3 " + b3);
+                                                System.out.println("a1a2 " + HallPoint.line(a1, a2));
+                                                System.out.println("b1b2 " + HallPoint.line(b1, b2));
+                                                System.out.println("a2a3 " + HallPoint.line(a2, a3));
+                                                System.out.println("b2b3 " + HallPoint.line(b2, b3));
+                                                System.out.println("a1a3 " + HallPoint.line(a1, a3));
+                                                System.out.println("b1b3 " + HallPoint.line(b1, b3));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        for (int o : HallPoint.points()) {
+            for (BitSet l1 : HallPoint.lines()) {
+                if (!l1.get(o)) {
+                    continue;
+                }
+                for (BitSet l2 : HallPoint.lines()) {
+                    if (!l2.get(o) || l2.equals(l1)) {
+                        continue;
+                    }
+                    for (BitSet l3 : HallPoint.lines()) {
+                        if (!l3.get(o) || l3.equals(l2) || l3.equals(l1)) {
+                            continue;
+                        }
+                        for (int a1 : l1.stream().toArray()) {
+                            if (a1 == o) {
+                                continue;
+                            }
+                            for (int b1 : l1.stream().toArray()) {
+                                if (b1 == o) {
+                                    continue;
+                                }
+                                for (int a2 : l2.stream().toArray()) {
+                                    if (a2 == o) {
+                                        continue;
+                                    }
+                                    for (int b2 : l2.stream().toArray()) {
+                                        if (b2 == o) {
+                                            continue;
+                                        }
+                                        for (int a3 : l3.stream().toArray()) {
+                                            if (a3 == o) {
+                                                continue;
+                                            }
+                                            for (int b3 : l3.stream().toArray()) {
+                                                if (b3 == o) {
+                                                    continue;
+                                                }
+                                                if (HallPoint.parallel(HallPoint.line(a1, a2), HallPoint.line(b1, b2))
+                                                        && HallPoint.parallel(HallPoint.line(a3, a2), HallPoint.line(b3, b2))
+                                                        && !HallPoint.parallel(HallPoint.line(a1, a3), HallPoint.line(b1, b3))) {
+                                                    System.out.println("Fail Conc Desargues");
+                                                    System.out.println("l1 " + l1);
+                                                    System.out.println("l2 " + l2);
+                                                    System.out.println("l3 " + l3);
+                                                    System.out.println("a1 " + a1);
+                                                    System.out.println("a2 " + a2);
+                                                    System.out.println("a3 " + a3);
+                                                    System.out.println("b1 " + b1);
+                                                    System.out.println("b2 " + b2);
+                                                    System.out.println("b3 " + b3);
+                                                    System.out.println("a1a2 " + HallPoint.line(a1, a2));
+                                                    System.out.println("b1b2 " + HallPoint.line(b1, b2));
+                                                    System.out.println("a2a3 " + HallPoint.line(a2, a3));
+                                                    System.out.println("b2b3 " + HallPoint.line(b2, b3));
+                                                    System.out.println("a1a3 " + HallPoint.line(a1, a3));
+                                                    System.out.println("b1b3 " + HallPoint.line(b1, b3));
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
