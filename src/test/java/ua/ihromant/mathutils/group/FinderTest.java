@@ -28,7 +28,7 @@ public class FinderTest {
                 res[i] = arr[i] == 0 ? 0 : arr[i] + sh;
             }
             return res;
-        })), Stream.of(new int[]{0, 25, 26}, new int[]{0, 27, 28}, new int[]{0, 29, 30})).toArray(int[][]::new);
+        })), Stream.of(new int[]{0, 25, 26}, new int[]{0, 27, 28}, new int[]{0, 29, 30}, new int[]{1, 7, 13})).toArray(int[][]::new);
         BitSet[] blocks = Arrays.stream(base).map(FinderTest::of).toArray(BitSet[]::new);
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         Arrays.stream(blocks).forEach(line -> enhanceFrequencies(frequencies, line));
