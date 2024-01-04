@@ -1050,10 +1050,29 @@ public class HyperbolicPlaneTest {
                 }
             }
         }
-        HyperbolicPlane plane = new HyperbolicPlane(lines.toArray(BitSet[]::new));
-        testCorrectness(plane, of(3));
-        System.out.println(plane.hyperbolicIndex());
-        System.out.println(plane.cardSubPlanes(true));
+        HyperbolicPlane sp = new HyperbolicPlane(lines.toArray(BitSet[]::new));
+        testCorrectness(sp, of(3));
+        BitSet[] planes = new BitSet[(max - 1) / 7];
+        beg: for (int idx = 0; idx < (max - 1) / 7; idx++) {
+            for (int x = 0; x < max - 1; x++) {
+                for (int y = x + 1; y < max - 1; y++) {
+                    for (int z = y + 1; z < max - 1; z++) {
+                        if (sp.line(x, y) == sp.line(y, z)) {
+                            continue;
+                        }
+                        BitSet pl = sp.hull(x, y, z);
+                        if (pl.get(max - 1)) {
+                            continue;
+                        }
+                        if (Arrays.stream(planes).noneMatch(p -> p != null && pl.intersects(p))) {
+                            planes[idx] = pl;
+                            continue beg;
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println(Arrays.toString(planes));
     }
 
     @Test
