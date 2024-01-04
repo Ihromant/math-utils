@@ -1037,16 +1037,14 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
-    public void generateDerived1() {
-        GaloisField fd = new GaloisField(4);
+    public void generateDerived() {
+        int ord = 7;
         List<BitSet> lines = new ArrayList<>();
-        for (int i = 0; i < 255; i++) {
-            for (int j = i + 1; j < 255; j++) {
-                for (int k = j + 1; k < 255; k++) {
-                    if (fd.add(i % 4, j % 4, k % 4, 3) == 0
-                            && fd.add(i / 4 % 4, j / 4 % 4, k / 4 % 4, 3) == 0
-                        && fd.add(i / 16 % 4, j / 16 % 4, k / 16 % 4, 3) == 0
-                            && fd.add(i / 64, j / 64, k / 64, 3) == 0) {
+        int max = (1 << ord) - 1;
+        for (int i = 0; i < max; i++) {
+            for (int j = i + 1; j < max; j++) {
+                for (int k = j + 1; k < max; k++) {
+                    if (((i ^ j) ^ (k ^ max)) == 0) {
                         lines.add(of(i, j, k));
                     }
                 }
