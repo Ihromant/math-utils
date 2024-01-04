@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -1052,29 +1053,36 @@ public class HyperbolicPlaneTest {
         }
         HyperbolicPlane sp = new HyperbolicPlane(lines.toArray(BitSet[]::new));
         testCorrectness(sp, of(3));
-        BitSet[] planes = new BitSet[max / 6];
-        beg: for (int idx = 0; idx < max / 6; idx++) {
-            for (int x = 1; x < max; x++) {
-                for (int y = x + 1; y < max; y++) {
-                    if (sp.line(x, y) == sp.line(y, 0)) {
-                        continue;
-                    }
-                    BitSet pl = sp.hull(x, y, 0);
-                    if (Arrays.stream(planes).noneMatch(p -> {
-                        if (p == null) {
-                            return false;
+        BitSet[][] planes = new BitSet[max][max / 6];
+        for (int curr = 0; curr < max; curr++) {
+            beg: for (int idx = findFirstNull(planes[curr]); idx < max / 6; idx++) {
+                for (int x = curr + 1; x < max; x++) {
+                    for (int y = x + 1; y < max; y++) {
+                        if (sp.line(x, y) == sp.line(y, curr)) {
+                            continue;
                         }
-                        BitSet bs = (BitSet) pl.clone();
-                        bs.and(p);
-                        return bs.cardinality() != 1;
-                    })) {
-                        planes[idx] = pl;
-                        continue beg;
+                        BitSet pl = sp.hull(x, y, curr);
+                        if (Arrays.stream(planes).flatMap(arr -> Arrays.stream(arr).filter(Objects::nonNull)).noneMatch(p -> {
+                            BitSet bs = (BitSet) pl.clone();
+                            bs.and(p);
+                            return bs.cardinality() != 1;
+                        })) {
+                            for (int p : pl.stream().toArray()) {
+                                int pIdx = findFirstNull(planes[p]);
+                                planes[p][pIdx] = pl;
+                            }
+                            continue beg;
+                        }
                     }
                 }
+                throw new IllegalStateException(curr + " " + idx + " " + Arrays.deepToString(planes));
             }
         }
-        System.out.println(Arrays.toString(planes));
+        System.out.println(Arrays.deepToString(planes));
+    }
+
+    private int findFirstNull(Object[] arr) {
+        return IntStream.range(0, arr.length).filter(i -> arr[i] == null).findFirst().orElse(arr.length);
     }
 
     @Test
