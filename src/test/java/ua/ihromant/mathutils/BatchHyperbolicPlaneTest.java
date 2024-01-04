@@ -527,37 +527,37 @@ public class BatchHyperbolicPlaneTest {
         for (long k = 3; k < 300; k++) {
             long den = k * (k - 1);
             for (long kp = 2; kp < 1000000; kp++) {
-                long beam = k + kp - 1;
-                long p = 1 + (k - 1) * (1 + beam);
-                if ((p * (p - 1)) % den != 0) {
+                long order = k + kp - 1;
+                long v2 = 1 + (k - 1) * (1 + order);
+                if ((v2 * (v2 - 1)) % den != 0) {
                     continue;
                 }
-                long vp = p * (p - 1) / den;
-                long gp = vp * (p - k);
-                long s = 1 + (k - 1) * (1 + beam + beam * beam);
-                if ((s * (s - 1)) % den != 0) {
+                long b2 = v2 * (v2 - 1) / den;
+                long af2 = b2 * (v2 - k);
+                long v3 = 1 + (k - 1) * (1 + order + order * order);
+                if ((v3 * (v3 - 1)) % den != 0) {
                     continue;
                 }
-                long vs = s * (s - 1) / den;
-                long gs = vs * (s - k);
-                if (gs % gp != 0) {
+                long b3 = v3 * (v3 - 1) / den;
+                long af3 = b3 * (v3 - k);
+                if (af3 % af2 != 0) {
                     continue;
                 }
-                long planes = gs / gp;
-                long[] factors = Group.factorize(beam);
-                if (Arrays.stream(factors).anyMatch(f -> f != factors[0]) && bruckRyser(beam)) {
+                long planes = af3 / af2;
+                long[] factors = Group.factorize(order);
+                if (Arrays.stream(factors).anyMatch(f -> f != factors[0]) && bruckRyser(order)) {
                     continue;
                 }
-                long hs = 1 + (k - 1) * (1 + beam + beam * beam + beam * beam * beam);
-                boolean fits = (hs * (hs - 1)) % den == 0;
-                long vhs = (hs * (hs - 1)) / den;
-                long ghs = vhs * (hs - k);
-                fits = fits && ghs % gp == 0;
-                long fourDimPlanesCount = ghs / gp;
-                long fourDimPlanePointPairs = fourDimPlanesCount * (hs - p);
-                long triDimPlanePointPairs = planes * (s - p);
+                long v4 = 1 + (k - 1) * (1 + order + order * order + order * order * order);
+                boolean fits = (v4 * (v4 - 1)) % den == 0;
+                long b4 = (v4 * (v4 - 1)) / den;
+                long af4 = b4 * (v4 - k);
+                fits = fits && af4 % af2 == 0;
+                long fourDimPlanesCount = af4 / af2;
+                long fourDimPlanePointPairs = fourDimPlanesCount * (v4 - v2);
+                long triDimPlanePointPairs = planes * (v3 - v2);
                 fits = fits && fourDimPlanePointPairs % triDimPlanePointPairs == 0;
-                System.out.println("k: " + k + ", kappa: " + kp + ", p: " + p + ", vp: " + vp + ", s: " + s + ", vs: " + vs + ", planes: " + planes + ", 4-dim: " + fits);
+                System.out.println("k: " + k + ", kappa: " + kp + ", v2: " + v2 + ", b2: " + b2 + ", v3: " + v3 + ", b3: " + b3 + ", planes: " + planes + ", 4-dim: " + fits);
             }
         }
     }
@@ -581,27 +581,27 @@ public class BatchHyperbolicPlaneTest {
     public void findSuitableNotWeaklyRegular() {
         for (int k = 3; k < 10; k++) {
             int den = k * (k - 1);
-            for (int vp = den + 1; vp < 300; vp++) {
-                if ((vp - 1) % (k - 1) != 0 || (vp * (vp - 1)) % den != 0) {
+            for (int v2 = den + 1; v2 < 300; v2++) {
+                if ((v2 - 1) % (k - 1) != 0 || (v2 * (v2 - 1)) % den != 0) {
                     continue;
                 }
-                int bp = vp * (vp - 1) / den;
-                int rp = (vp - 1) / (k - 1);
-                int gp = bp * (vp - k);
-                for (int vs = vp + 1; vs < 1000; vs++) {
-                    if ((vs - 1) % (k - 1) != 0 || (vs * (vs - 1)) % den != 0) {
+                int b2 = v2 * (v2 - 1) / den;
+                int r2 = (v2 - 1) / (k - 1);
+                int af2 = b2 * (v2 - k);
+                for (int v3 = v2 + 1; v3 < 1000; v3++) {
+                    if ((v3 - 1) % (k - 1) != 0 || (v3 * (v3 - 1)) % den != 0) {
                         continue;
                     }
-                    int bs = vs * (vs - 1) / den;
-                    int rs = (vs - 1) / (k - 1);
-                    if ((rs - 1) % (rp - 1) != 0 || (rs * (rs - 1)) % (rp * (rp - 1)) != 0) {
+                    int b3 = v3 * (v3 - 1) / den;
+                    int r3 = (v3 - 1) / (k - 1);
+                    if ((r3 - 1) % (r2 - 1) != 0 || (r3 * (r3 - 1)) % (r2 * (r2 - 1)) != 0) {
                         continue;
                     }
-                    int gs = bs * (vs - k);
-                    if (gs % gp != 0) {
+                    int af3 = b3 * (v3 - k);
+                    if (af3 % af2 != 0) {
                         continue;
                     }
-                    System.out.println(k + " " + vp + " " + vs);
+                    System.out.println(k + " " + v2 + " " + v3);
                 }
             }
         }
