@@ -1038,7 +1038,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void generateDerived() {
-        int ord = 6;
+        int ord = 7;
         List<BitSet> lines = new ArrayList<>();
         int max = (1 << ord) - 1;
         for (int i = 0; i < max; i++) {
@@ -1052,19 +1052,24 @@ public class HyperbolicPlaneTest {
         }
         HyperbolicPlane sp = new HyperbolicPlane(lines.toArray(BitSet[]::new));
         testCorrectness(sp, of(3));
-        BitSet[] planes = new BitSet[max / 7];
-        beg: for (int idx = 0; idx < max / 7; idx++) {
-            for (int x = 0; x < max; x++) {
+        BitSet[] planes = new BitSet[max / 6];
+        beg: for (int idx = 0; idx < max / 6; idx++) {
+            for (int x = 1; x < max; x++) {
                 for (int y = x + 1; y < max; y++) {
-                    for (int z = y + 1; z < max; z++) {
-                        if (sp.line(x, y) == sp.line(y, z)) {
-                            continue;
+                    if (sp.line(x, y) == sp.line(y, 0)) {
+                        continue;
+                    }
+                    BitSet pl = sp.hull(x, y, 0);
+                    if (Arrays.stream(planes).noneMatch(p -> {
+                        if (p == null) {
+                            return false;
                         }
-                        BitSet pl = sp.hull(x, y, z);
-                        if (Arrays.stream(planes).noneMatch(p -> p != null && pl.intersects(p))) {
-                            planes[idx] = pl;
-                            continue beg;
-                        }
+                        BitSet bs = (BitSet) pl.clone();
+                        bs.and(p);
+                        return bs.cardinality() != 1;
+                    })) {
+                        planes[idx] = pl;
+                        continue beg;
                     }
                 }
             }
