@@ -1103,6 +1103,16 @@ public class HyperbolicPlaneTest {
         assertEquals((q - 1) * (q - 1) * (q - 1), bk.pointCount());
     }
 
+    @Test
+    public void testResidue() {
+        int q = 3;
+        GaloisField fd = new GaloisField(q);
+        HyperbolicPlane sp = new HyperbolicPlane(fd.generateSpace());
+        HyperbolicPlane res = new HyperbolicPlane(sp.pointResidue(0));
+        testCorrectness(res, of(q + 1));
+        assertEquals(q * q + q + 1, res.pointCount());
+    }
+
     private int[] getHomogenousSpace(int p, int ord) {
         int cb = ord * ord * ord;
         if (p < cb) {

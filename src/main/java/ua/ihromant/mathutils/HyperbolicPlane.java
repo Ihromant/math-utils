@@ -6,7 +6,9 @@ import ua.ihromant.mathutils.group.GroupProduct;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collector;
@@ -477,5 +479,38 @@ public class HyperbolicPlane {
             }
         }
         return true;
+    }
+
+    public BitSet[] pointResidue(int p) {
+        Set<BitSet> sets = new HashSet<>();
+        BitSet points = new BitSet();
+        for (int i = 0; i < lineCount(); i++) {
+            if (lines[i].get(p)) {
+                points.set(i);
+            }
+        }
+        for (int i = 0; i < pointCount; i++) {
+            if (i == p) {
+                continue;
+            }
+            for (int j = i + 1; j < pointCount; j++) {
+                if (j == p || line(i, p) == line(j, p)) {
+                    continue;
+                }
+                BitSet hull = hull(p, i, j);
+                BitSet line = new BitSet();
+                for (int pt = points.nextSetBit(0); pt >= 0; pt = points.nextSetBit(pt + 1)) {
+                    BitSet l = lines[pt];
+                    if (l.stream().allMatch(hull::get)) {
+                        line.set(pt);
+                    }
+                }
+                sets.add(line);
+            }
+        }
+        int[] pointArray = points.stream().toArray();
+        return sets.stream().map(l -> l.stream()
+                        .map(pt -> Arrays.binarySearch(pointArray, pt)).filter(pt -> pt >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
+                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
     }
 }
