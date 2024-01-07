@@ -1,6 +1,8 @@
 package ua.ihromant.mathutils;
 
+import java.util.ArrayList;
 import java.util.BitSet;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -124,5 +126,22 @@ public class TaoPoint {
 
     public static Iterable<Integer> points() {
         return () -> IntStream.range(0, SIZE).iterator();
+    }
+
+    public static HyperbolicPlane toPlane() {
+        List<BitSet> lines = new ArrayList<>();
+        for (int i = 0; i < SIZE; i++) {
+            for (int j = i + 1; j < SIZE; j++) {
+                int k = add(i, j);
+                if (k > j) {
+                    BitSet line = new BitSet();
+                    line.set(i);
+                    line.set(j);
+                    line.set(k);
+                    lines.add(line);
+                }
+            }
+        }
+        return new HyperbolicPlane(lines.toArray(BitSet[]::new));
     }
 }

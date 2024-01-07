@@ -1111,6 +1111,10 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane res = new HyperbolicPlane(sp.pointResidue(0));
         testCorrectness(res, of(q + 1));
         assertEquals(q * q + q + 1, res.pointCount());
+        System.out.println(Arrays.toString(TaoPoint.toPlane().pointResidue(0)));
+        HyperbolicPlane hallResidue = new HyperbolicPlane(HallPoint.toPlane().pointResidue(0));
+        testCorrectness(hallResidue, of(4));
+        System.out.println(hallResidue.cardSubPlanesFreq());
     }
 
     private int[] getHomogenousSpace(int p, int ord) {
