@@ -458,4 +458,24 @@ public class HyperbolicPlane {
                 }))).flatMap(Function.identity()).toArray(BitSet[]::new);
         return new HyperbolicPlane(lines);
     }
+
+    public boolean isRegular() {
+        for (int i = 0; i < lines.length; i++) {
+            for (int j = i + 1; j < lines.length; j++) {
+                BitSet pts = new BitSet();
+                for (int p1 : points(i)) {
+                    for (int p2 : points(j)) {
+                        if (p1 == p2) {
+                            continue;
+                        }
+                        pts.or(lines[line(p1, p2)]);
+                    }
+                }
+                if (pts.cardinality() != pointCount) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
