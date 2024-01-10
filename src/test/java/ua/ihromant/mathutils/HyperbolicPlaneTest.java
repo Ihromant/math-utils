@@ -700,15 +700,16 @@ public class HyperbolicPlaneTest {
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
         HyperbolicPlane pl19 = new HyperbolicPlane(lines19);
         testCorrectness(pl19, of(3));
+        assertEquals(of(0, 1), pl19.hyperbolicIndex());
 
-        SemiDirectProduct sdp24 = new SemiDirectProduct(new CyclicGroup(12), new CyclicGroup(2));
+        SemiDirectProduct sdp24 = new SemiDirectProduct(new CyclicGroup(12), new CyclicGroup(2), 7);
         int[][][] base24 = new int[][][] {
                 {{0, 0}, {6, 0}, {0, 1}, {6, 1}},
                 {{0, 0}, {1, 0}, {3, 1}, {10, 1}},
                 {{0, 0}, {2, 0}, {5, 0}, {1, 1}}
         };
         BitSet[] lines24 = Stream.concat(Arrays.stream(base24).flatMap(arr -> {
-            int[] bl = Arrays.stream(arr).mapToInt(pair -> sdp24.fromAB(pair[0], pair[1])).toArray();
+            int[] bl = Arrays.stream(arr).mapToInt(pair -> sdp24.op(sdp24.fromAB(0, pair[1]), sdp24.fromAB(pair[0], 0))).toArray();
             return IntStream.range(0, sdp24.order()).mapToObj(s -> {
                 BitSet result = new BitSet();
                 for (int i : bl) {
@@ -726,6 +727,39 @@ public class HyperbolicPlaneTest {
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
         HyperbolicPlane pl25 = new HyperbolicPlane(lines24);
         testCorrectness(pl25, of(4));
+        assertEquals(of(1, 2), pl25.hyperbolicIndex());
+
+        SemiDirectProduct sdp42 = new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(3), 11);
+        int[][][] base42 = new int[][][] {
+                {{0, 0}, {0, 1}, {0, 2}},
+                {{0, 0}, {2, 1}, {6, 2}},
+                {{0, 0}, {1, 0}, {4, 1}},
+                {{0, 0}, {2, 0}, {9, 1}},
+                {{0, 0}, {3, 0}, {13, 1}},
+                {{0, 0}, {4, 0}, {12, 1}},
+                {{0, 0}, {5, 0}, {6, 1}},
+                {{0, 0}, {6, 0}, {11, 1}}
+        };
+        BitSet[] lines42 = Stream.concat(Arrays.stream(base42).flatMap(arr -> {
+            int[] bl = Arrays.stream(arr).mapToInt(pair -> sdp42.op(sdp42.fromAB(0, pair[1]), sdp42.fromAB(pair[0], 0))).toArray();
+            return IntStream.range(0, sdp42.order()).mapToObj(s -> {
+                BitSet result = new BitSet();
+                for (int i : bl) {
+                    result.set(sdp42.op(i, s));
+                }
+                return result;
+            });
+        }), IntStream.range(0, sdp42.order()).mapToObj(s -> {
+            BitSet result = new BitSet();
+            result.set(sdp42.order());
+            result.set(sdp42.op(sdp42.fromAB(0, 0), s));
+            result.set(sdp42.op(sdp42.fromAB(7, 0), s));
+            return result;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane pl43 = new HyperbolicPlane(lines42);
+        testCorrectness(pl43, of(3));
+        assertEquals(of(43), pl43.cardSubPlanes(true));
+        assertEquals(of(0, 1), pl43.hyperbolicIndex());
     }
 
     @Test
