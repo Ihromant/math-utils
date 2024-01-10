@@ -608,6 +608,33 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
+    public void test25_4() throws IOException {
+        String[][] designs = new String[18][4];
+        try (InputStream is = getClass().getResourceAsStream("/S(2,4,25).txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int counter = 0;
+            while ((line = br.readLine()) != null) {
+                designs[counter][0] = line;
+                designs[counter][1] = br.readLine();
+                designs[counter][2] = br.readLine();
+                designs[counter][3] = br.readLine();
+                counter++;
+            }
+        }
+        for (int i = 0; i < designs.length; i++) {
+            HyperbolicPlane p = new HyperbolicPlane(designs[i]);
+            assertEquals(25, p.pointCount());
+            assertEquals(50, p.lineCount());
+            HyperbolicPlaneTest.testCorrectness(p, of(4));
+            assertEquals(of(4), p.playfairIndex());
+            assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
+            assertEquals(of(25), p.cardSubPlanes(true));
+        }
+    }
+
+    @Test
     public void readSts15() throws IOException {
         String[][] designs = new String[80][3];
         try (InputStream is = getClass().getResourceAsStream("/S(2,3,15).txt");
