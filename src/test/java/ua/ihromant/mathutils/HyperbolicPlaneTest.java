@@ -674,6 +674,61 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
+    public void testRotational() {
+        GroupProduct gp = new GroupProduct(3, 6);
+        int[][][] base19 = new int[][][] {
+                {{0, 0}, {1, 0}, {2, 0}},
+                {{0, 0}, {1, 2}, {2, 4}},
+                {{0, 0}, {0, 1}, {1, 5}},
+                {{0, 0}, {0, 2}, {1, 3}}
+        };
+        BitSet[] lines19 = Stream.concat(Arrays.stream(base19).flatMap(arr -> {
+            int[] bl = Arrays.stream(arr).mapToInt(gp::fromArr).toArray();
+            return IntStream.range(0, gp.order()).mapToObj(s -> {
+               BitSet result = new BitSet();
+               for (int i : bl) {
+                   result.set(gp.op(i, s));
+               }
+               return result;
+            });
+        }), IntStream.range(0, gp.order()).mapToObj(s -> {
+            BitSet result = new BitSet();
+            result.set(gp.order());
+            result.set(gp.op(gp.fromArr(0, 0), s));
+            result.set(gp.op(gp.fromArr(0, 3), s));
+            return result;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane pl19 = new HyperbolicPlane(lines19);
+        testCorrectness(pl19, of(3));
+
+        SemiDirectProduct sdp24 = new SemiDirectProduct(new CyclicGroup(12), new CyclicGroup(2));
+        int[][][] base24 = new int[][][] {
+                {{0, 0}, {6, 0}, {0, 1}, {6, 1}},
+                {{0, 0}, {1, 0}, {3, 1}, {10, 1}},
+                {{0, 0}, {2, 0}, {5, 0}, {1, 1}}
+        };
+        BitSet[] lines24 = Stream.concat(Arrays.stream(base24).flatMap(arr -> {
+            int[] bl = Arrays.stream(arr).mapToInt(pair -> sdp24.fromAB(pair[0], pair[1])).toArray();
+            return IntStream.range(0, sdp24.order()).mapToObj(s -> {
+                BitSet result = new BitSet();
+                for (int i : bl) {
+                    result.set(sdp24.op(i, s));
+                }
+                return result;
+            });
+        }), IntStream.range(0, sdp24.order()).mapToObj(s -> {
+            BitSet result = new BitSet();
+            result.set(sdp24.order());
+            result.set(sdp24.op(sdp24.fromAB(0, 0), s));
+            result.set(sdp24.op(sdp24.fromAB(4, 0), s));
+            result.set(sdp24.op(sdp24.fromAB(8, 0), s));
+            return result;
+        })).collect(Collectors.toSet()).toArray(BitSet[]::new);
+        HyperbolicPlane pl25 = new HyperbolicPlane(lines24);
+        testCorrectness(pl25, of(4));
+    }
+
+    @Test
     public void testOvals() {
         int q = 7;
         GaloisField fd = new GaloisField(q);

@@ -11,8 +11,8 @@ public class SemiDirectProduct implements Group {
         this.left = left;
         this.right = right;
         int[] orders = left.elements().map(left::expOrder).toArray();
-        this.i = IntStream.range(0, left.order()).filter(i -> orders[i] == right.order()).findAny()
-                .orElseThrow(() -> new IllegalArgumentException(left + " " + right));
+        this.i = IntStream.range(0, left.order()).filter(i -> Group.gcd(i, left.order()) == 1 && orders[i] == right.order())
+                .findAny().orElseThrow(() -> new IllegalArgumentException(left + " " + right));
     }
 
     public SemiDirectProduct(CyclicGroup left, CyclicGroup right, int i) {

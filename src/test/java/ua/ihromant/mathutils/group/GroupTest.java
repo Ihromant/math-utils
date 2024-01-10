@@ -23,6 +23,7 @@ public class GroupTest {
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(11), new CyclicGroup(5)), false);
+        testCorrectness(new SemiDirectProduct(new CyclicGroup(12), new CyclicGroup(2)), false);
         testCorrectness(new BurnsideGroup(), false);
     }
 
