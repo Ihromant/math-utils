@@ -10,25 +10,24 @@ import java.util.stream.Stream;
 
 public class FinderTest {
     @Test
-    public void generateByPartial() {
-        int v = 31;
+    public void generateByPartial2() {
+        int v = 63;
         int k = 3;
         int[][] pr = new int[][] {
-                {1, 2, 4},
+                {0, 3, 5},
+                {0, 4, 6},
+                {1, 3, 4},
                 {1, 5, 6},
-                {2, 3, 5},
-                {3, 4, 6},
-                {0, 1, 3},
-                {0, 2, 6},
-                {0, 4, 5}
+                {2, 3, 6},
+                {2, 4, 5}
         };
-        int[][] base = Stream.concat(IntStream.range(0, 4).map(i -> i * 6).boxed().flatMap(sh -> Arrays.stream(pr).map(arr -> {
+        int[][] base = Stream.concat(IntStream.range(0, 10).map(i -> i * 4).boxed().flatMap(sh -> Arrays.stream(pr).map(arr -> {
             int[] res = new int[3];
             for (int i = 0; i < 3; i++) {
-                res[i] = arr[i] == 0 ? 0 : arr[i] + sh;
+                res[i] = arr[i] < 3 ? arr[i] : arr[i] + sh;
             }
             return res;
-        })), Stream.of(new int[]{0, 25, 26}, new int[]{0, 27, 28}, new int[]{0, 29, 30}, new int[]{1, 7, 13})).toArray(int[][]::new);
+        })), Stream.of(new int[]{0, 1, 2})).toArray(int[][]::new);
         BitSet[] blocks = Arrays.stream(base).map(FinderTest::of).toArray(BitSet[]::new);
         BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         Arrays.stream(blocks).forEach(line -> enhanceFrequencies(frequencies, line));
@@ -36,9 +35,9 @@ public class FinderTest {
                 .forEach(arr -> {
                     HyperbolicPlane pl = new HyperbolicPlane(arr);
                     BitSet csp = pl.cardSubPlanes(false);
-                    //if (!csp.get(v) && csp.cardinality() == 1) {
-                        System.out.println(csp + " " + pl.cardSubSpaces(false) + " " + Arrays.toString(arr));
-                    //}
+                    if (!csp.get(v) && csp.cardinality() == 1) {
+                        System.out.println(csp + " " + pl.cardSubSpaces(true) + " " + Arrays.toString(arr));
+                    }
                 });
     }
 

@@ -464,6 +464,9 @@ public class HyperbolicPlane {
     public boolean isRegular() {
         for (int i = 0; i < lines.length; i++) {
             for (int j = i + 1; j < lines.length; j++) {
+                if (intersection(i, j) < 0) {
+                    continue;
+                }
                 BitSet pts = new BitSet();
                 for (int p1 : points(i)) {
                     for (int p2 : points(j)) {
@@ -474,6 +477,7 @@ public class HyperbolicPlane {
                     }
                 }
                 if (pts.cardinality() != pointCount) {
+                    System.out.println(pts.cardinality() + " " + pointCount);
                     return false;
                 }
             }

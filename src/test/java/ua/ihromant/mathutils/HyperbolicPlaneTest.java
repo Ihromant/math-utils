@@ -915,6 +915,7 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane arc = pl.subPlane(pts.stream().toArray());
         testCorrectness(arc, of(n));
         assertEquals(k, arc.pointCount());
+        System.out.println(arc.isRegular());
         System.out.println(arc.hyperbolicIndex());
     }
 
