@@ -913,6 +913,15 @@ public class HyperbolicPlaneTest {
         GaloisField fd = new GaloisField(q);
         HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
         BitSet pts = generatePts(fd, q, n, k);
+//        System.out.println(pts);
+//        List<BitSet> lines = new ArrayList<>();
+//        for (int l : pl.lines()) {
+//            BitSet line = of(pl.line(l).stream().filter(p -> pts.get(p)).toArray());
+//            if (line.cardinality() > 1) {
+//                lines.add(line);
+//            }
+//        }
+//        System.out.println(lines);
         HyperbolicPlane arc = pl.subPlane(pts.stream().toArray());
         testCorrectness(arc, of(n));
         assertEquals(k, arc.pointCount());
