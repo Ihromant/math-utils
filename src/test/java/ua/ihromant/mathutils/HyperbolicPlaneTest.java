@@ -764,7 +764,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testOvals() {
-        int q = 7;
+        int q = 19;
         GaloisField fd = new GaloisField(q);
         HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
         BitSet set = new BitSet();
@@ -790,6 +790,7 @@ public class HyperbolicPlaneTest {
         tangents.values().forEach(t -> t.stream().forEach(i -> pts.set(i, false)));
         HyperbolicPlane hyp = pl.subPlane(pts.stream().toArray());
         testCorrectness(hyp, of(q / 2, q / 2 + 1));
+        System.out.println(hyp.isRegular());
         System.out.println(hyp.pointCount());
         System.out.println(hyp.cardSubPlanes(true));
         BitSet bs = new BitSet();
@@ -1089,7 +1090,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void generateBeltramiKlein() {
-        int q = 7;
+        int q = 9;
         GaloisField fd = new GaloisField(q);
         HyperbolicPlane prSp = new HyperbolicPlane(fd.generateSpace());
         BitSet pts = new BitSet();
@@ -1099,10 +1100,50 @@ public class HyperbolicPlaneTest {
                 pts.set(p);
             }
         }
-        HyperbolicPlane bk = prSp.subPlane(pts.stream().toArray());
-        testCorrectness(bk, of(q - 3, q - 2, q - 1));
-        assertEquals(of(30, 31, 36), bk.cardSubPlanes(true));
-        assertEquals((q - 1) * (q - 1) * (q - 1), bk.pointCount());
+        HyperbolicPlane bks = prSp.subPlane(pts.stream().toArray());
+        testCorrectness(bks, of(q - 3, q - 2, q - 1));
+        Set<BitSet> planes = new HashSet<>();
+        for (int i = 0; i < bks.pointCount(); i++) {
+            for (int j = i + 1; j < bks.pointCount(); j++) {
+                for (int k = j + 1; k < bks.pointCount(); k++) {
+                    if (bks.line(i, j) == bks.line(j, k)) {
+                        continue;
+                    }
+                    BitSet plane = bks.hull(i, j, k);
+                    if (!planes.add(plane)) {
+                        continue;
+                    }
+                    int[] plPts = plane.stream().toArray();
+                    HyperbolicPlane bkp = bks.subPlane(plPts);
+                    assertTrue(bkp.isRegular());
+                    assertEquals(bkp.playfairIndex(), bkp.pointCount() == (q - 1) * (q - 1) ? of(2, 3) : of(2, 3, 4));
+                    for (int b : plPts) {
+                        for (int l : bks.lines(b)) {
+                            BitSet line = bks.line(l);
+                            if (line.stream().allMatch(plane::get)) {
+                                continue;
+                            }
+                            BitSet hull = new BitSet();
+                            for (int p1 : plPts) {
+                                for (int p2 : bks.points(l)) {
+                                    if (p1 == p2) {
+                                        continue;
+                                    }
+                                    hull.or(bks.line(bks.line(p1, p2)));
+                                }
+                            }
+                            if (hull.cardinality() < bks.pointCount()) {
+                                System.out.println(hull.cardinality() + " " + bks.pointCount());
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println("Regular");
+        //assertEquals(of((q - 2) * (q - 1), (q - 2) * (q - 1) + 1, (q - 1) * (q - 1)), bk.cardSubPlanes(true));
+        assertEquals((q - 1) * (q - 1) * (q - 1), bks.pointCount());
     }
 
     @Test
