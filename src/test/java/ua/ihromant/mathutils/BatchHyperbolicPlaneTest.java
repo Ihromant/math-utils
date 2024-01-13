@@ -394,7 +394,7 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testAffinePappus() throws IOException {
-        String name = "andre";
+        String name = "dandre";
         int k = 27;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -413,6 +413,26 @@ public class BatchHyperbolicPlaneTest {
         }
     }
 
+    @Test
+    public void testBoolean() throws IOException {
+        String name = "a";
+        int k = 32;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(name);
+            HyperbolicPlane projective = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
+            for (int dl : projective.lines()) {
+                boolean b = checkBooleanPlane(projective, dl);
+                if (b) {
+                    System.out.println("Dropped " + dl + " Boolean " + b);
+                    System.out.println("Dropped " + dl + " Boolean " + b + " Para desargues " + checkParaDesargues(projective, dl));
+                }
+            }
+        }
+    }
+
     private HyperbolicPlane readUni(BufferedReader br) throws IOException {
         String[] first = br.readLine().trim().split(" ");
         int v = Integer.parseInt(first[0]);
@@ -420,6 +440,32 @@ public class BatchHyperbolicPlaneTest {
         br.readLine();
         String next = br.readLine();
         return readPlane(v, b, next, br);
+    }
+
+    private static boolean checkBooleanPlane(HyperbolicPlane proj, int dl) {
+        BitSet droppedLine = proj.line(dl);
+        for (int p1 : proj.points()) {
+            if (droppedLine.get(p1)) {
+                continue;
+            }
+            for (int p2 : proj.points()) {
+                if (droppedLine.get(p2) || p1 == p2) {
+                    continue;
+                }
+                int p1p2 = proj.line(p1, p2);
+                for (int p3 : proj.points()) {
+                    int p1p3 = proj.line(p1, p3);
+                    if (droppedLine.get(p3) || p1 == p3 || p3 == p2 || p1p3 == proj.line(p2, p3)) {
+                        continue;
+                    }
+                    int p4 = proj.intersection(proj.line(p3, proj.intersection(p1p2, dl)), proj.line(p2, proj.intersection(p1p3, dl)));
+                    if (!droppedLine.get(proj.intersection(proj.line(p1, p4), proj.line(p2, p3)))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     private static boolean checkParaDesargues(HyperbolicPlane proj, int dl) {
