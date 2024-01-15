@@ -1,22 +1,30 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 import java.util.zip.ZipInputStream;
 
@@ -431,6 +439,80 @@ public class BatchHyperbolicPlaneTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void filterIsomorphic() throws IOException {
+        int v = 121;
+        int k = 6;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", "list-" + v + "-" + k + ".txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + "?.txt"));
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            String line = br.readLine();
+            CyclicGroup gr = new CyclicGroup(v);
+            int[][] auths = gr.auth();
+            Set<Set<BitSet>> unique = new HashSet<>();
+            long time = System.currentTimeMillis();
+            AtomicLong counter = new AtomicLong();
+            ps.println(v + " " + k);
+            while ((line = br.readLine()) != null) {
+                if (line.length() < 20) {
+                    continue;
+                }
+                String cut = line.replace("}}", "");
+                String[] arrays = Arrays.stream(cut.split("\\}, \\{")).map(s -> s.substring(s.indexOf("={") + 2)).toArray(String[]::new);
+                int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                        .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
+                IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+                    int[][] diffs = IntStream.range(0, diffSet.length)
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i].clone() : mirrorTuple(gr, diffSet[i]))
+                            .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                    if (Arrays.stream(auths).noneMatch(auth -> {
+                        Set<BitSet> result = new HashSet<>();
+                        for (int[] arr : diffs) {
+                            result.add(of(minimalTuple(applyAuth(arr, auth), v)));
+                        }
+                        return unique.contains(result);
+                    })) {
+                        unique.add(Arrays.stream(diffs).map(BatchHyperbolicPlaneTest::of).collect(Collectors.toSet()));
+                        ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
+                                .collect(Collectors.joining(", ", "{", "}")));
+                        counter.incrementAndGet();
+                    }
+                });
+            }
+            System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
+        }
+    }
+
+    private static int[] mirrorTuple(Group g, int[] tuple) {
+        return IntStream.concat(IntStream.of(tuple[0], tuple[1]), IntStream.range(2, tuple.length).map(i -> g.op(tuple[1], g.inv(tuple[i])))).toArray();
+    }
+
+    private static int[] minimalTuple(int[] arr, int v) {
+        Arrays.sort(arr);
+        int l = arr.length;
+        int[] diffs = new int[l];
+        for (int i = 0; i < l; i++) {
+            diffs[i] = diff(arr[i], arr[(l + i + 1) % l], v);
+        }
+        int minIdx = IntStream.range(0, l).boxed().max(Comparator.comparing(i -> diffs[i])).orElseThrow();
+        int val = arr[minIdx];
+        int[] res = Arrays.stream(arr).map(i -> i >= val ? i - val : v + i - val).toArray();
+        Arrays.sort(res);
+        return res;
+    }
+
+    private static int diff(int a, int b, int size) {
+        int d = Math.abs(a - b);
+        return Math.min(d, size - d);
+    }
+
+    private static int[] applyAuth(int[] arr, int[] auth) {
+        return Arrays.stream(arr).map(i -> auth[i]).toArray();
     }
 
     private HyperbolicPlane readUni(BufferedReader br) throws IOException {
