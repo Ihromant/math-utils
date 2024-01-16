@@ -225,15 +225,16 @@ public class BibdFinderTest {
         }
     }
 
+    // 2819828
     @Test
     public void testCycles() {
-        int v = 52;
-        int k = 4;
+        int v = 120;
+        int k = 8;
         BitSet filter = v % k == 0 ? IntStream.range(0, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(0);
         Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
-        System.out.println(calcCyclesAlt(52, 4, filter)
+        System.out.println(calcCyclesAlt(v, k, filter)
                 .filter(e -> dedup.add(e.getKey()))
-                .peek(System.out::println)
+                //.peek(System.out::println)
                 .count());
         //generateDiffSets(new GroupProduct(new CyclicGroup(9), new CyclicGroup(9)), 5);
     }
