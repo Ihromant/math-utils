@@ -423,18 +423,26 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testZigZag() throws IOException {
-        String name = "hughes9";
-        int k = 9;
+        String name = "twisted";
+        int k = 27;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             HyperbolicPlane projective = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
+            Set<Set<Pair>> configs = new HashSet<>();
             for (int dl : projective.lines()) {
                 Set<Pair> pairs = new HashSet<>();
                 BitSet droppedLine = projective.line(dl);
-                System.out.println("Dropped " + dl);
+                boolean pappus = checkParaPappus(projective, dl);
+                boolean diagonal = isDiagonal(projective, dl);
+                if (!diagonal) {
+                    if (pappus) {
+                        System.out.println(pappus);
+                    }
+                    continue;
+                }
                 for (int o : projective.points()) {
                     if (droppedLine.get(o)) {
                         continue;
@@ -448,17 +456,50 @@ public class BatchHyperbolicPlaneTest {
                                 continue;
                             }
                             Pair p = new Pair(zigZagNumber(projective, dl, o, x, y), zigZagNumber(projective, dl, o, y, x));
-                            if (pairs.add(p)) {
-                                System.out.println(p);
-                            }
+                            pairs.add(p);
                         }
                     }
+                }
+                if (configs.add(pairs)) {
+                    System.out.println("Dropped " + dl + " diagonal " + diagonal + " pappus " + pappus + " config " + pairs);
                 }
             }
         }
     }
 
-    private record Pair(int a, int b) {}
+    private record Pair(int a, int b) {
+        private Pair(int a, int b) {
+            this.a = Math.min(a, b);
+            this.b = Math.max(a, b);
+        }
+    }
+
+    private boolean isDiagonal(HyperbolicPlane plane, int dl) {
+        BitSet droppedLine = plane.line(dl);
+        for (int x00 : plane.points()) {
+            if (droppedLine.get(x00)) {
+                continue;
+            }
+            for (int x01 : plane.points()) {
+                if (droppedLine.get(x01) || x01 == x00) {
+                    continue;
+                }
+                for (int x10 : plane.points()) {
+                    if (droppedLine.get(x10) || x10 == x00 || x10 == x01 || plane.line(x10, x00) == plane.line(x10, x01)) {
+                        continue;
+                    }
+                    int x11 = plane.intersection(parallel(plane, dl, plane.line(x00, x01), x10), parallel(plane, dl, plane.line(x00, x10), x01));
+                    int x12 = plane.intersection(parallel(plane, dl, plane.line(x00, x11), x01), plane.line(x10, x11));
+                    int x21 = plane.intersection(parallel(plane, dl, plane.line(x00, x11), x10), plane.line(x01, x11));
+                    int x22 = plane.intersection(parallel(plane, dl, plane.line(x00, x01), x21), parallel(plane, dl, plane.line(x00, x10), x12));
+                    if (!plane.line(plane.line(x00, x11)).get(x22)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
 
     private int zigZagNumber(HyperbolicPlane plane, int dl, int o, int x, int y) {
         int counter = 0;
