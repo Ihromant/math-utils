@@ -952,62 +952,6 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
-    public void generateUnital() {
-        int q = 4;
-        int ord = q * q;
-        int v = ord * ord + ord + 1;
-        GaloisField fd = new GaloisField(ord);
-        HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
-        assertEquals(v, pl.pointCount());
-        assertEquals(v, pl.lineCount());
-        BitSet unital = new BitSet();
-        for (int p : pl.points()) {
-            int[] hom = getHomogenous(p, ord);
-            int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
-            if (val == 0) {
-                unital.set(p);
-            }
-        }
-        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
-        assertEquals(ord * q + 1, uni.pointCount());
-        testCorrectness(uni, of(q + 1));
-        System.out.println(uni.hyperbolicIndex());
-    }
-
-    @Test
-    public void generate3DUnital() {
-        int q = 3;
-        int ord = q * q;
-        GaloisField fd = new GaloisField(ord);
-        HyperbolicPlane pl = new HyperbolicPlane(fd.generateSpace());
-        testCorrectness(pl, of(ord + 1));
-        //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
-        //checkSpace(pl, pl.pointCount(), pl.pointCount());
-        BitSet unital = new BitSet();
-        for (int p : pl.points()) {
-            int[] hom = getHomogenousSpace(p, ord);
-            int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
-            if (val == 0) {
-                unital.set(p);
-            }
-        }
-        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
-        assertEquals(280, uni.pointCount());
-        //HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
-        //assertEquals(of(28, 37), uni.cardSubPlanes(true));
-        //checkSpace(uni, 280, 280);
-        //System.out.println(uni.hyperbolicIndex());
-        int[] point37Array = of(0, 1, 2, 3, 31, 32, 33, 34, 68, 69, 70, 71, 83, 84, 85, 86, 117, 118, 119, 120, 130, 131, 132, 133, 178, 179, 180, 181, 191, 192, 193, 194, 228, 229, 230, 231, 268).stream().toArray();
-        int[] point28Array = of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 276, 277, 278, 279).stream().toArray();
-        HyperbolicPlane pl37 = uni.subPlane(point37Array);
-        HyperbolicPlane pl28 = uni.subPlane(point28Array);
-        testCorrectness(pl37, of(q + 1, ord + 1));
-        testCorrectness(pl28, of(q + 1));
-        System.out.println(pl37.hyperbolicIndex());
-        System.out.println(pl28.hyperbolicIndex());
-    }
-
-    @Test
     public void testBurnside() {
         BurnsideGroup bg = new BurnsideGroup();
         BitSet[] lines = IntStream.range(0, bg.order()).boxed().flatMap(x -> IntStream.range(x + 1, bg.order()).mapToObj(y -> {
@@ -1098,64 +1042,6 @@ public class HyperbolicPlaneTest {
     }
 
     @Test
-    public void generateBeltramiKlein() {
-        int q = 9;
-        GaloisField fd = new GaloisField(q);
-        HyperbolicPlane prSp = new HyperbolicPlane(fd.generateSpace());
-        BitSet pts = new BitSet();
-        for (int p : prSp.points()) {
-            int[] crds = getHomogenousSpace(p, q);
-            if (Arrays.stream(crds).allMatch(c -> c != 0)) {
-                pts.set(p);
-            }
-        }
-        HyperbolicPlane bks = prSp.subPlane(pts.stream().toArray());
-        testCorrectness(bks, of(q - 3, q - 2, q - 1));
-        Set<BitSet> planes = new HashSet<>();
-        for (int i = 0; i < bks.pointCount(); i++) {
-            for (int j = i + 1; j < bks.pointCount(); j++) {
-                for (int k = j + 1; k < bks.pointCount(); k++) {
-                    if (bks.line(i, j) == bks.line(j, k)) {
-                        continue;
-                    }
-                    BitSet plane = bks.hull(i, j, k);
-                    if (!planes.add(plane)) {
-                        continue;
-                    }
-                    int[] plPts = plane.stream().toArray();
-                    HyperbolicPlane bkp = bks.subPlane(plPts);
-                    assertTrue(bkp.isRegular());
-                    assertEquals(bkp.playfairIndex(), bkp.pointCount() == (q - 1) * (q - 1) ? of(2, 3) : of(2, 3, 4));
-                    for (int b : plPts) {
-                        for (int l : bks.lines(b)) {
-                            BitSet line = bks.line(l);
-                            if (line.stream().allMatch(plane::get)) {
-                                continue;
-                            }
-                            BitSet hull = new BitSet();
-                            for (int p1 : plPts) {
-                                for (int p2 : bks.points(l)) {
-                                    if (p1 == p2) {
-                                        continue;
-                                    }
-                                    hull.or(bks.line(bks.line(p1, p2)));
-                                }
-                            }
-                            if (hull.cardinality() < bks.pointCount()) {
-                                System.out.println(hull.cardinality() + " " + bks.pointCount());
-                                return;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        System.out.println("Regular");
-        //assertEquals(of((q - 2) * (q - 1), (q - 2) * (q - 1) + 1, (q - 1) * (q - 1)), bk.cardSubPlanes(true));
-        assertEquals((q - 1) * (q - 1) * (q - 1), bks.pointCount());
-    }
-
-    @Test
     public void testResidue() {
         int q = 3;
         GaloisField fd = new GaloisField(q);
@@ -1167,37 +1053,6 @@ public class HyperbolicPlaneTest {
         HyperbolicPlane hallResidue = new HyperbolicPlane(HallPoint.toPlane().pointResidue(0));
         testCorrectness(hallResidue, of(4));
         System.out.println(hallResidue.cardSubPlanesFreq());
-    }
-
-    private int[] getHomogenousSpace(int p, int ord) {
-        int cb = ord * ord * ord;
-        if (p < cb) {
-            return new int[]{p / ord / ord, p / ord % ord, p % ord, 1};
-        }
-        p = p - cb;
-        int sqr = ord * ord;
-        if (p < sqr) {
-            return new int[]{0, p / ord, p % ord, 1};
-        }
-        p = p - sqr;
-        if (p < ord) {
-            return new int[]{0, 1, p, 0};
-        } else {
-            return new int[]{0, 1, 0, 0};
-        }
-    }
-
-    private int[] getHomogenous(int p, int ord) {
-        int sqr = ord * ord;
-        if (p < sqr) {
-            return new int[]{p / ord, p % ord, 1};
-        }
-        p = p - sqr;
-        if (p < ord) {
-            return new int[]{1, p, 0};
-        } else {
-            return new int[]{1, 0, 0};
-        }
     }
 
     private static BitSet of(int... values) {

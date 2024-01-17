@@ -402,8 +402,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testAffinePappus() throws IOException {
-        String name = "dandre";
-        int k = 27;
+        String name = "fig";
+        int k = 64;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -423,8 +423,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testZigZag() throws IOException {
-        String name = "twisted";
-        int k = 27;
+        String name = "fig";
+        int k = 64;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
