@@ -422,9 +422,9 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
-    public void testBoolean() throws IOException {
-        String name = "a";
-        int k = 32;
+    public void testZigZag() throws IOException {
+        String name = "hughes9";
+        int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -432,13 +432,47 @@ public class BatchHyperbolicPlaneTest {
             HyperbolicPlane projective = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
             for (int dl : projective.lines()) {
-                boolean b = checkBooleanPlane(projective, dl);
-                if (b) {
-                    System.out.println("Dropped " + dl + " Boolean " + b);
-                    System.out.println("Dropped " + dl + " Boolean " + b + " Para desargues " + checkParaDesargues(projective, dl));
+                Set<Pair> pairs = new HashSet<>();
+                BitSet droppedLine = projective.line(dl);
+                System.out.println("Dropped " + dl);
+                for (int o : projective.points()) {
+                    if (droppedLine.get(o)) {
+                        continue;
+                    }
+                    for (int x : projective.points()) {
+                        if (droppedLine.get(x) || x == o) {
+                            continue;
+                        }
+                        for (int y : projective.points()) {
+                            if (droppedLine.get(y) || y == o || y == x || projective.line(y, o) == projective.line(y, x)) {
+                                continue;
+                            }
+                            Pair p = new Pair(zigZagNumber(projective, dl, o, x, y), zigZagNumber(projective, dl, o, y, x));
+                            if (pairs.add(p)) {
+                                System.out.println(p);
+                            }
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private record Pair(int a, int b) {}
+
+    private int zigZagNumber(HyperbolicPlane plane, int dl, int o, int x, int y) {
+        int counter = 0;
+        int base = o;
+        while (x != base) {
+            counter++;
+            int ox = plane.line(o, x);
+            int yPar = parallel(plane, dl, ox, y);
+            y = plane.intersection(yPar, parallel(plane, dl, plane.line(o, y), x));
+            int y1 = plane.intersection(parallel(plane, dl, plane.line(o, y), x), yPar);
+            o = x;
+            x = plane.intersection(parallel(plane, dl, plane.line(o, y), y1), ox);
+        }
+        return counter + 1;
     }
 
     @Test
