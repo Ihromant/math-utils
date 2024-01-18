@@ -467,6 +467,102 @@ public class BatchHyperbolicPlaneTest {
         }
     }
 
+    @Test
+    public void testCharacteristics() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(name);
+            HyperbolicPlane proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl : proj.lines()) {
+                BitSet droppedLine = proj.line(dl);
+                for (int o : proj.points()) {
+                    if (droppedLine.get(o)) {
+                        continue;
+                    }
+                    Set<Pair> pairs = new HashSet<>();
+                    for (int x : proj.points()) {
+                        if (droppedLine.get(x) || o == x) {
+                            continue;
+                        }
+                        for (int y : proj.points()) {
+                            if (droppedLine.get(y) || o == y || y == x || proj.line(o, y) == proj.line(o, x)) {
+                                continue;
+                            }
+                            Pair p = new Pair(zigZagNumber(proj, dl, o, x, y), zigZagNumber(proj, dl, o, y, x));
+                            pairs.add(p);
+                        }
+                    }
+                    System.out.println("Dropped " + dl + " point " + o + " char " + pairs);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testClosure() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(name);
+            HyperbolicPlane proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl : proj.lines()) {
+                BitSet droppedLine = proj.line(dl);
+                Set<Integer> closures = new HashSet<>();
+                for (int a = 0; a < proj.pointCount(); a++) {
+                    if (droppedLine.get(a)) {
+                        continue;
+                    }
+                    for (int b = a + 1; b < proj.pointCount(); b++) {
+                        if (droppedLine.get(b)) {
+                            continue;
+                        }
+                        for (int c = b + 1; c < proj.pointCount(); c++) {
+                            if (droppedLine.get(c) || proj.line(a, c) == proj.line(b, c)) {
+                                continue;
+                            }
+                            BitSet base = of(a, b, c);
+                            BitSet closure = closure(proj, dl, base);
+                            if (closures.add(closure.cardinality())) {
+                                System.out.println(closure.cardinality());
+                            }
+                        }
+                    }
+                }
+                System.out.println("Dropped " + dl + " closures " + closures);
+            }
+        }
+    }
+
+    private static BitSet closure(HyperbolicPlane plane, int dl, BitSet base) {
+        BitSet additional;
+        while ((additional = additional(plane, dl, base)).cardinality() > base.cardinality()) {
+            base = additional;
+        }
+        return base;
+    }
+
+    public static BitSet additional(HyperbolicPlane plane, int dl, BitSet base) {
+        BitSet result = new BitSet();
+        BitSet droppedLine = plane.line(dl);
+        base.stream().filter(a -> !droppedLine.get(a)).forEach(a -> base.stream().filter(b -> !droppedLine.get(b) && b != a).forEach(b -> base.stream().forEach(c -> {
+            if (droppedLine.get(c) || c == b || c == a || plane.line(a, c) == plane.line(b, c)) {
+                return;
+            }
+            result.set(closure(plane, dl, a, b, c));
+            result.set(closure(plane, dl, b, c, a));
+            result.set(closure(plane, dl, c, a, b));
+        })));
+        result.or(base);
+        return result;
+    }
+
     private record Pair(int a, int b) {
         private Pair(int a, int b) {
             this.a = Math.min(a, b);
@@ -514,6 +610,10 @@ public class BatchHyperbolicPlaneTest {
             x = plane.intersection(parallel(plane, dl, plane.line(o, y), y1), ox);
         }
         return counter + 1;
+    }
+
+    private static int closure(HyperbolicPlane plane, int dl, int o, int x, int y) {
+        return plane.intersection(parallel(plane, dl, plane.line(o, x), y), parallel(plane, dl, plane.line(o, y), x));
     }
 
     @Test
