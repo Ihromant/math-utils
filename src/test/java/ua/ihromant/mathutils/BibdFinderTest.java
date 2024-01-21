@@ -37,8 +37,8 @@ public class BibdFinderTest {
     // 1428546
     @Test
     public void filterIsomorphic() throws IOException {
-        int v = 85;
-        int k = 5;
+        int v = 73;
+        int k = 4;
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
@@ -59,8 +59,8 @@ public class BibdFinderTest {
                         .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
                 IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                     int[][] diffs = IntStream.range(0, diffSet.length)
-                            .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i].clone() : mirrorTuple(gr, diffSet[i]))
-                            .map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? minimalTuple(diffSet[i].clone(), v) : mirrorTuple(gr, minimalTuple(diffSet[i], v)))
+                            .toArray(int[][]::new);
                     if (Arrays.stream(auths).noneMatch(auth -> {
                         Set<BitSet> result = new HashSet<>();
                         for (int[] arr : diffs) {
@@ -68,6 +68,7 @@ public class BibdFinderTest {
                         }
                         return unique.contains(result);
                     })) {
+                        HyperbolicPlaneTest.testCorrectness(new HyperbolicPlane(v, diffs), of(k));
                         unique.add(Arrays.stream(diffs).map(BibdFinderTest::of).collect(Collectors.toSet()));
                         ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
                                 .collect(Collectors.joining(", ", "{", "}")));
@@ -582,7 +583,7 @@ public class BibdFinderTest {
     }
 
     private static int[] mirrorTuple(Group g, int[] tuple) {
-        return Arrays.stream(tuple).map(g::inv).toArray();
+        return IntStream.concat(IntStream.of(tuple[0], tuple[1]), IntStream.range(2, tuple.length).map(i -> g.op(tuple[1], g.inv(tuple[i])))).toArray();
     }
 
     private static BitSet mirrorTuple(BitSet tuple) {
@@ -623,7 +624,7 @@ public class BibdFinderTest {
         int l = arr.length;
         int[] diffs = new int[l];
         for (int i = 0; i < l; i++) {
-            diffs[i] = diff(arr[i], arr[(l + i - 1) % l], v);
+            diffs[i] = diff(arr[i], arr[(l + i + 1) % l], v);
         }
         int minIdx = IntStream.range(0, l).boxed().max(Comparator.comparing(i -> diffs[i])).orElseThrow();
         int val = arr[minIdx];
