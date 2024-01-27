@@ -939,28 +939,69 @@ public class BatchHyperbolicPlaneTest {
                 counter++;
             }
         }
-        ex: for (int i = 0; i < 80; i++) {
+        HyperbolicPlane p = new HyperbolicPlane("00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95acbbacc9bbac9");
+        System.out.println(checkDesargues(p));
+        p = new HyperbolicPlane("00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95abcbcac9babc9");
+        System.out.println(checkDesargues(p));
+        for (int i = 0; i < 80; i++) {
             HyperbolicPlane hp = new HyperbolicPlane(designs[i]);
-            for (int l1 = 0; l1 < hp.lineCount(); l1++) {
-                for (int l2 = l1 + 1; l2 < hp.lineCount(); l2++) {
-                    if (hp.intersection(l1, l2) >= 0) {
+            boolean checkDesargues = checkDesargues(hp);
+            if (!checkDesargues) {
+                System.out.print((i + 1) + " ");
+            }
+        }
+        System.out.println();
+        HyperbolicPlane tp = TaoPoint.toPlane();
+        System.out.println(checkDesargues(tp));
+    }
+
+    public static boolean checkDesargues(HyperbolicPlane pl) {
+        for (int o : pl.points()) {
+            for (int la : pl.lines(o)) {
+                for (int lb : pl.lines(o)) {
+                    if (la == lb) {
                         continue;
                     }
-                    for (int l3 = l2 + 1; l3 < hp.lineCount(); l3++) {
-                        if (hp.intersection(l1, l3) >= 0 || hp.intersection(l2, l3) >= 0) {
+                    for (int lc : pl.lines(o)) {
+                        if (la == lc || lb == lc) {
                             continue;
                         }
-                        for (int l4 = l3 + 1; l4 < hp.lineCount(); l4++) {
-                            if (hp.intersection(l1, l4) >= 0 || hp.intersection(l2, l4) >= 0 || hp.intersection(l3, l4) >= 0) {
+                        for (int a : pl.points(la)) {
+                            if (a == o) {
                                 continue;
                             }
-                            System.out.println("Has " + i);
-                            continue ex;
+                            for (int b : pl.points(lb)) {
+                                if (b == o) {
+                                    continue;
+                                }
+                                for (int c : pl.points(lc)) {
+                                    if (c == o) {
+                                        continue;
+                                    }
+                                    int a1 = quasiOp(pl, a, o);
+                                    int b1 = quasiOp(pl, b, o);
+                                    int c1 = quasiOp(pl, c, o);
+                                    int c2 = pl.intersection(pl.line(a1, b1), pl.line(a, b));
+                                    int a2 = pl.intersection(pl.line(b1, c1), pl.line(b, c));
+                                    int b2 = pl.intersection(pl.line(a1, c1), pl.line(a, c));
+                                    if (a2 >= 0 && b2 >= 0 && c2 >= 0 && a2 != b2 && a2 != c2 && b2 != c2 && quasiOp(pl, a2, b2) != c2) {
+                                        return false;
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                System.out.println("Has not " + i);
             }
         }
+        return true;
+    }
+
+    private static int quasiOp(HyperbolicPlane pl, int x, int y) {
+        return pl.line(pl.line(x, y)).stream().filter(p -> p != x && p != y).findAny().orElseThrow();
     }
 }
