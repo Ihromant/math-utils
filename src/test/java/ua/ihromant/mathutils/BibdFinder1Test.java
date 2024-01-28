@@ -21,10 +21,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BibdFinder1Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54};
-    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed, BitSet filter, BitSet blackList, BitSet tuple) {
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed,
+                                                                BitSet filter, BitSet blackList, BitSet tuple, int blocksNeeded) {
         int tLength = tuple.length();
         return IntStream.range(tLength == 1 ? prev : needed == 1 ? Math.max(variants - max + 1, tLength) : tLength,
-                        tLength == 1 ? variants - bounds[needed] : Math.min(variants, tLength + max - 1))
+                        tLength == 1 ? variants - blocksNeeded * bounds[needed] : Math.min(variants, tLength + max - 1))
                 .filter(idx -> !blackList.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
                     BitSet nextTuple = (BitSet) tuple.clone();
@@ -55,7 +56,7 @@ public class BibdFinder1Test {
                         newBlackList.set((idx + diff) % variants);
                         newBlackList.set((idx + variants - diff) % variants);
                     }
-                    calcCycles(variants, tLength == 1 ? idx : max, prev, needed - 1, newFilter, newBlackList, nextTuple).forEach(sink);
+                    calcCycles(variants, tLength == 1 ? idx : max, prev, needed - 1, newFilter, newBlackList, nextTuple, blocksNeeded).forEach(sink);
                     if (tLength == 1 && filter.cardinality() <= needed) {
                         System.out.println(idx);
                     }
@@ -72,14 +73,14 @@ public class BibdFinder1Test {
         return result;
     }
 
-    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter) {
+    private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int size, int prev, BitSet filter, int blocksNeeded) {
         Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
         BitSet blackList = new BitSet(variants);
         for (int i = filter.nextSetBit(1); i >= 0; i = filter.nextSetBit(i + 1)) {
             blackList.set(i);
             blackList.set(variants - i);
         }
-        return calcCycles(variants, 0, prev, size - 1, filter, blackList, of(0)).filter(e -> dedup.add(e.getKey()));
+        return calcCycles(variants, 0, prev, size - 1, filter, blackList, of(0), blocksNeeded).filter(e -> dedup.add(e.getKey()));
     }
 
     private static int start(int v, int k) {
@@ -92,7 +93,7 @@ public class BibdFinder1Test {
         int k = 8;
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        System.out.println(calcCycles(v, k, start(v, k), filter)
+        System.out.println(calcCycles(v, k, start(v, k), filter, 1)
                 //.peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
@@ -140,9 +141,9 @@ public class BibdFinder1Test {
     }
 
     @Test
-    public void testDiffFamilies3() {
-        int v = 169;
-        int k = 8;
+    public void testDiffFamilies() {
+        int v = 91;
+        int k = 6;
         System.out.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
@@ -158,8 +159,8 @@ public class BibdFinder1Test {
         int prev = curr.isEmpty() ? start(variants, k) : IntStream.range(curr.lastEntry().getValue().nextSetBit(1) + 1, variants)
                 .filter(i -> i > half ? !filter.get(variants - i) : !filter.get(i)).findFirst().orElse(variants);
         return (needed == variants / k / (k - 1) ?
-                calcCycles(variants, k, prev, filter).parallel()
-                : calcCycles(variants, k, prev, filter)).mapMulti((pair, sink) -> {
+                calcCycles(variants, k, prev, filter, needed).parallel()
+                : calcCycles(variants, k, prev, filter, needed)).mapMulti((pair, sink) -> {
             SequencedMap<BitSet, BitSet> nextCurr = new LinkedHashMap<>(curr);
             nextCurr.put(pair.getKey(), pair.getValue());
             if (needed == 1) {
