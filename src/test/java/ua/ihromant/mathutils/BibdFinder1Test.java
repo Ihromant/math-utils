@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BibdFinder1Test {
-    private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54};
+    private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105};
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed,
                                                                 BitSet filter, BitSet blackList, BitSet tuple, int blocksNeeded) {
         int tLength = tuple.length();
@@ -158,7 +158,7 @@ public class BibdFinder1Test {
         int half = variants / 2;
         int prev = curr.isEmpty() ? start(variants, k) : IntStream.range(curr.lastEntry().getValue().nextSetBit(1) + 1, variants)
                 .filter(i -> i > half ? !filter.get(variants - i) : !filter.get(i)).findFirst().orElse(variants);
-        return (needed == variants / k / (k - 1) ?
+        return (needed > 1 ?
                 calcCycles(variants, k, prev, filter, needed).parallel()
                 : calcCycles(variants, k, prev, filter, needed)).mapMulti((pair, sink) -> {
             SequencedMap<BitSet, BitSet> nextCurr = new LinkedHashMap<>(curr);
