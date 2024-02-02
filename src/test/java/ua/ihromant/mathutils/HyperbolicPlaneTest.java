@@ -42,7 +42,7 @@ public class HyperbolicPlaneTest {
                             : IntStream.concat(IntStream.of(0), IntStream.range(1, k).map(idx -> k - idx).map(idx -> v - diffSet[i][idx])).toArray())
                     .toArray(int[][]::new);
             HyperbolicPlane p = new HyperbolicPlane(v, ds);
-            testCorrectness(p, of(6));
+            testCorrectness(p, of(k));
             System.out.println(p.hyperbolicFreq() + " " + Arrays.deepToString(ds));
         });
     }
