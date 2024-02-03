@@ -956,7 +956,61 @@ public class BatchHyperbolicPlaneTest {
         }
         System.out.println();
         HyperbolicPlane tp = TaoPoint.toPlane();
-        System.out.println(checkDesargues(tp));
+        System.out.println("Tao" + parallelCheck(tp));
+    }
+
+    private static boolean parallelCheck(HyperbolicPlane pl) {
+        for (int a = 0; a < pl.lineCount(); a++) {
+            for (int b = a + 1; b < pl.lineCount(); b++) {
+                if (pl.intersection(a, b) >= 0 || !isParallel(pl, a, b)) {
+                    continue;
+                }
+                for (int a1 : pl.points(a)) {
+                    for (int a2 : pl.points(a)) {
+                        if (a1 == a2) {
+                            continue;
+                        }
+                        for (int b1 : pl.points(b)) {
+                            for (int b2 : pl.points(b)) {
+                                int l1 = pl.line(a1, b1);
+                                int l2 = pl.line(a2, b2);
+                                if (b1 == b2 || pl.intersection(l1, l2) >= 0) {
+                                    continue;
+                                }
+                                if (!isParallel(pl, l1, l2)) {
+                                    System.out.println(TaoPoint.toString(a1) + " " + TaoPoint.toString(a2) + " "
+                                            + pl.line(pl.line(a1, a2)).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(",")) + " "
+                                    + TaoPoint.toString(b1) + " " + TaoPoint.toString(b2) + " "
+                                            + pl.line(pl.line(b1, b2)).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(",")) + " "
+                                    + pl.line(pl.line(a1, b1)).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(",")) + " "
+                                            + pl.line(pl.line(a2, b2)).stream().mapToObj(TaoPoint::toString).collect(Collectors.joining(",")));
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static boolean isParallel(HyperbolicPlane pl, int a, int b) {
+        BitSet l1 = pl.line(a);
+        BitSet l2 = pl.line(b);
+        boolean l1Subl2 = l1.stream().allMatch(p1 -> {
+            BitSet un = (BitSet) l2.clone();
+            un.set(p1);
+            BitSet hull = pl.hull(un.stream().toArray());
+            return l1.stream().allMatch(hull::get);
+        });
+        boolean l2Subl1 = l2.stream().allMatch(p2 -> {
+            BitSet un = (BitSet) l1.clone();
+            un.set(p2);
+            BitSet hull = pl.hull(un.stream().toArray());
+            return l2.stream().allMatch(hull::get);
+        });
+        return l2Subl1 && l1Subl2;
     }
 
     public static boolean checkDesargues(HyperbolicPlane pl) {
