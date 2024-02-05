@@ -25,7 +25,7 @@ public class BibdFinder1Test {
                                                                 BitSet filter, BitSet blackList, BitSet tuple, int blocksNeeded) {
         int tLength = tuple.length();
         return IntStream.range(tLength == 1 ? prev : needed == 1 ? Math.max(variants - max + 1, tLength) : tLength,
-                        tLength == 1 ? variants - blocksNeeded * bounds[needed] : Math.min(variants, tLength + max - 1))
+                        tLength == 1 ? variants - blocksNeeded * bounds[needed] : Math.min(variants - bounds[needed], tLength + max - 1))
                 .filter(idx -> !blackList.get(idx))
                 .boxed().mapMulti((idx, sink) -> {
                     BitSet nextTuple = (BitSet) tuple.clone();
