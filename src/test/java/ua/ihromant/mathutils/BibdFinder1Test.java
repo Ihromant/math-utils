@@ -20,7 +20,7 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BibdFinder1Test {
-    private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105};
+    private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
     private static Stream<Map.Entry<BitSet, BitSet>> calcCycles(int variants, int max, int prev, int needed,
                                                                 BitSet filter, BitSet blackList, BitSet tuple, int blocksNeeded) {
         int tLength = tuple.length();
@@ -93,8 +93,8 @@ public class BibdFinder1Test {
         int k = 8;
         long time = System.currentTimeMillis();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        System.out.println(calcCycles(v, k, start(v, k), filter, 1)
-                //.peek(System.out::println)
+        System.out.println(calcCycles(v, k, 242, filter, 1)
+                .peek(System.out::println)
                 .count() + " " + (System.currentTimeMillis() - time));
     }
 
