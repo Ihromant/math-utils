@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.SequencedMap;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -76,31 +77,29 @@ public class BibdFinder2Test {
                 sink.accept(block);
             }
         };
-        IntStream.range(prev, variants - blocksNeeded * bounds[size - 1]).filter(whiteList::get)
-                //.parallel()
-                .forEach(idx -> {
-                    BitSet newWhiteList = (BitSet) whiteList.clone();
-                    BitSet newFilter = (BitSet) filter.clone();
-                    BitSet block = of(0, idx);
-                    newWhiteList.set(idx, false);
-                    newWhiteList.set(variants - idx, false);
-                    if (idx % 2 == 0) {
-                        newWhiteList.set(idx / 2, false);
-                    }
-                    int rev = variants - idx;
-                    if (rev % 2 == 0) {
-                        newWhiteList.set(idx + rev / 2, false);
-                    }
-                    newFilter.set(idx <= (variants + 1) / 2 ? idx : rev);
-                    for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                        newWhiteList.set((idx + diff) % variants, false);
-                        newWhiteList.set((idx + variants - diff) % variants, false);
-                    }
-                    calcCycles(variants, idx, size - 2, newFilter, newWhiteList, block, filterSink);
-                    if (newFilter.cardinality() <= size) {
-                        System.out.println(idx);
-                    }
-                });
+        IntStream.range(prev, variants - blocksNeeded * bounds[size - 1]).filter(whiteList::get).parallel().forEach(idx -> {
+            BitSet newWhiteList = (BitSet) whiteList.clone();
+            BitSet newFilter = (BitSet) filter.clone();
+            BitSet block = of(0, idx);
+            newWhiteList.set(idx, false);
+            newWhiteList.set(variants - idx, false);
+            if (idx % 2 == 0) {
+                newWhiteList.set(idx / 2, false);
+            }
+            int rev = variants - idx;
+            if (rev % 2 == 0) {
+                newWhiteList.set(idx + rev / 2, false);
+            }
+            newFilter.set(idx <= (variants + 1) / 2 ? idx : rev);
+            for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                newWhiteList.set((idx + diff) % variants, false);
+                newWhiteList.set((idx + variants - diff) % variants, false);
+            }
+            calcCycles(variants, idx, size - 2, newFilter, newWhiteList, block, filterSink);
+            if (newFilter.cardinality() <= size) {
+                System.out.println(idx);
+            }
+        });
     }
 
     private static int start(int v, int k) {
@@ -112,17 +111,19 @@ public class BibdFinder2Test {
         int v = 91;
         int k = 6;
         System.out.println(v + " " + k);
+        AtomicInteger counter = new AtomicInteger();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
         long time = System.currentTimeMillis();
         Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
         Consumer<Map<BitSet, BitSet>> designConsumer = design -> {
             if (dedup.add(design.keySet())) {
+                counter.incrementAndGet();
                 System.out.println(design);
             }
         };
         allDifferenceSets(v, k, curr, v / k / (k - 1), filter, designConsumer);
-        System.out.println("Time elapsed: " + (System.currentTimeMillis() - time));
+        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     private static void allDifferenceSets(int variants, int k, SequencedMap<BitSet, BitSet> curr, int needed, BitSet filter,
