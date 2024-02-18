@@ -77,12 +77,8 @@ public class BibdFinder2Test {
             BitSet newWhiteList = (BitSet) whiteList.clone();
             BitSet newFilter = (BitSet) filter.clone();
             BitSet block = of(0, idx);
-            newWhiteList.set(idx, false);
-            newWhiteList.set(variants - idx, false);
-            if (idx % 2 == 0) {
-                newWhiteList.set(idx / 2, false);
-            }
             int rev = variants - idx;
+            newWhiteList.set(rev, false);
             if (rev % 2 == 0) {
                 newWhiteList.set(idx + rev / 2, false);
             }

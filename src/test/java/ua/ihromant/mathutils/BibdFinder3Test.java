@@ -74,19 +74,15 @@ public class BibdFinder3Test {
             BitSet newWhiteList = (BitSet) whiteList.clone();
             BitSet newFilter = (BitSet) filter.clone();
             BitSet block = of(0, idx);
-            newWhiteList.set(idx, false);
-            newWhiteList.set(variants - idx, false);
-            if (idx % 2 == 0) {
-                newWhiteList.set(idx / 2, false);
-            }
             int rev = variants - idx;
+            newWhiteList.set(rev, false);
             if (rev % 2 == 0) {
                 newWhiteList.set(idx + rev / 2, false);
             }
-            newFilter.set(idx <= (variants + 1) / 2 ? idx : rev);
+            newFilter.set(idx);
+            newFilter.set(rev);
             for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
                 newWhiteList.set((idx + diff) % variants, false);
-                newWhiteList.set((idx + variants - diff) % variants, false);
             }
             calcCycles(variants, size - 2, newFilter, newWhiteList, block, sink);
             if (newFilter.cardinality() <= size) {
