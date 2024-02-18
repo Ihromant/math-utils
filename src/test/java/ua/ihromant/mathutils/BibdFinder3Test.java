@@ -12,13 +12,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class BibdFinder2Test {
+public class BibdFinder3Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
-    private static void calcCycles(int variants, int max, int needed, BitSet filter, BitSet whiteList,
+    private static void calcCycles(int variants, int needed, BitSet filter, BitSet whiteList,
                                    BitSet tuple, Consumer<Map.Entry<BitSet, BitSet>> sink) {
         int tLength = tuple.length();
-        for (int idx = whiteList.nextSetBit(needed == 1 ? Math.max(variants - max + 1, tLength) : tLength);
-             idx >= 0 && idx < Math.min(variants - bounds[needed], tLength + max - 1); idx = whiteList.nextSetBit(idx + 1)) {
+        int second = tuple.nextSetBit(1);
+        int min = needed == 1 ? Math.max(variants - second + 1, tLength) : tLength;
+        int max = Math.min(variants - bounds[needed], tLength + second - 1);
+        for (int idx = whiteList.nextSetBit(min); idx >= 0 && idx < max; idx = whiteList.nextSetBit(idx + 1)) {
             BitSet nextTuple = (BitSet) tuple.clone();
             nextTuple.set(idx);
             if (needed == 1) {
@@ -43,7 +45,7 @@ public class BibdFinder2Test {
                 newWhiteList.set((idx + diff) % variants, false);
                 newWhiteList.set((idx + variants - diff) % variants, false);
             }
-            calcCycles(variants, tLength == 1 ? idx : max, needed - 1, newFilter, newWhiteList, nextTuple, sink);
+            calcCycles(variants, needed - 1, newFilter, newWhiteList, nextTuple, sink);
             if (tLength == 1 && filter.cardinality() <= needed) {
                 System.out.println(idx);
             }
@@ -91,7 +93,7 @@ public class BibdFinder2Test {
                 newWhiteList.set((idx + diff) % variants, false);
                 newWhiteList.set((idx + variants - diff) % variants, false);
             }
-            calcCycles(variants, idx, size - 2, newFilter, newWhiteList, block, filterSink);
+            calcCycles(variants, size - 2, newFilter, newWhiteList, block, filterSink);
             if (newFilter.cardinality() <= size) {
                 System.out.println(idx);
             }
