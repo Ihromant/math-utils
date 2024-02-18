@@ -30,20 +30,20 @@ public class BibdFinder3Test {
             BitSet newFilter = (BitSet) filter.clone();
             BitSet newWhiteList = (BitSet) whiteList.clone();
             for (int val = tuple.nextSetBit(0); val >= 0; val = tuple.nextSetBit(val + 1)) {
-                int outMid = val + variants - idx;
-                if (outMid % 2 == 0) {
-                    newWhiteList.set((idx + outMid / 2) % variants, false);
+                int diff = idx - val;
+                int outDiff = variants - idx + val;
+                if (outDiff % 2 == 0) {
+                    newWhiteList.set((idx + outDiff / 2) % variants, false);
                 }
-                int diff = diff(val, idx, variants);
                 newFilter.set(diff);
+                newFilter.set(outDiff);
                 for (int nv = nextTuple.nextSetBit(0); nv >= 0; nv = nextTuple.nextSetBit(nv + 1)) {
                     newWhiteList.set((nv + diff) % variants, false);
-                    newWhiteList.set((nv + variants - diff) % variants, false);
+                    newWhiteList.set((nv + outDiff) % variants, false);
                 }
             }
             for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
                 newWhiteList.set((idx + diff) % variants, false);
-                newWhiteList.set((idx + variants - diff) % variants, false);
             }
             calcCycles(variants, needed - 1, newFilter, newWhiteList, nextTuple, sink);
             if (tLength == 1 && filter.cardinality() <= needed) {
@@ -56,7 +56,8 @@ public class BibdFinder3Test {
         BitSet result = new BitSet();
         for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
             for (int j = block.nextSetBit(i + 1); j >= 0; j = block.nextSetBit(j + 1)) {
-                result.set(diff(i, j, v));
+                result.set(j - i);
+                result.set(v - j + i);
             }
         }
         return result;
@@ -64,12 +65,8 @@ public class BibdFinder3Test {
 
     private static void calcCycles(int variants, int size, int prev, BitSet filter, int blocksNeeded, Consumer<Map.Entry<BitSet, BitSet>> sink) {
         Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
-        BitSet whiteList = new BitSet(variants);
-        whiteList.set(1, variants);
-        for (int i = filter.nextSetBit(1); i >= 0; i = filter.nextSetBit(i + 1)) {
-            whiteList.set(i, false);
-            whiteList.set(variants - i, false);
-        }
+        BitSet whiteList = (BitSet) filter.clone();
+        whiteList.flip(1, variants);
         Consumer<Map.Entry<BitSet, BitSet>> filterSink = block -> {
             if (dedup.add(block.getKey())) {
                 sink.accept(block);
@@ -140,11 +137,6 @@ public class BibdFinder3Test {
             allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
         };
         calcCycles(variants, k, prev, filter, needed, blockSink);
-    }
-
-    private static int diff(int a, int b, int size) {
-        int d = Math.abs(a - b);
-        return Math.min(d, size - d);
     }
 
     private static BitSet of(int... values) {
