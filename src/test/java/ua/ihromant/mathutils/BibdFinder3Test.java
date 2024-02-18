@@ -2,12 +2,8 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.BitSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.SequencedMap;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -15,16 +11,24 @@ import java.util.stream.IntStream;
 public class BibdFinder3Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
     private static void calcCycles(int variants, int needed, BitSet filter, BitSet whiteList,
-                                   BitSet tuple, Consumer<Map.Entry<BitSet, BitSet>> sink) {
+                                   BitSet tuple, Consumer<BitSet> sink) {
         int tLength = tuple.length();
         int second = tuple.nextSetBit(1);
+        int third = tuple.nextSetBit(second + 1);
         int min = needed == 1 ? Math.max(variants - second + 1, tLength) : tLength;
         int max = Math.min(variants - bounds[needed], tLength + second - 1);
+        if (third < 0) {
+            if (needed == 1) {
+                max = Math.min(max, (variants + second) / 2 + 1);
+            }
+        } else {
+            max = Math.min(max, variants - third + second - bounds[needed - 1]);
+        }
         for (int idx = whiteList.nextSetBit(min); idx >= 0 && idx < max; idx = whiteList.nextSetBit(idx + 1)) {
             BitSet nextTuple = (BitSet) tuple.clone();
             nextTuple.set(idx);
             if (needed == 1) {
-                sink.accept(Map.entry(diff(nextTuple, variants), nextTuple));
+                sink.accept(nextTuple);
                 continue;
             }
             BitSet newFilter = (BitSet) filter.clone();
@@ -63,15 +67,9 @@ public class BibdFinder3Test {
         return result;
     }
 
-    private static void calcCycles(int variants, int size, int prev, BitSet filter, int blocksNeeded, Consumer<Map.Entry<BitSet, BitSet>> sink) {
-        Set<BitSet> dedup = ConcurrentHashMap.newKeySet();
+    private static void calcCycles(int variants, int size, int prev, BitSet filter, int blocksNeeded, Consumer<BitSet> sink) {
         BitSet whiteList = (BitSet) filter.clone();
         whiteList.flip(1, variants);
-        Consumer<Map.Entry<BitSet, BitSet>> filterSink = block -> {
-            if (dedup.add(block.getKey())) {
-                sink.accept(block);
-            }
-        };
         IntStream.range(prev, variants - blocksNeeded * bounds[size - 1]).filter(whiteList::get).parallel().forEach(idx -> {
             BitSet newWhiteList = (BitSet) whiteList.clone();
             BitSet newFilter = (BitSet) filter.clone();
@@ -90,7 +88,7 @@ public class BibdFinder3Test {
                 newWhiteList.set((idx + diff) % variants, false);
                 newWhiteList.set((idx + variants - diff) % variants, false);
             }
-            calcCycles(variants, size - 2, newFilter, newWhiteList, block, filterSink);
+            calcCycles(variants, size - 2, newFilter, newWhiteList, block, sink);
             if (newFilter.cardinality() <= size) {
                 System.out.println(idx);
             }
@@ -108,32 +106,28 @@ public class BibdFinder3Test {
         System.out.println(v + " " + k);
         AtomicInteger counter = new AtomicInteger();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
-        SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
         long time = System.currentTimeMillis();
-        Set<Set<BitSet>> dedup = ConcurrentHashMap.newKeySet();
-        Consumer<Map<BitSet, BitSet>> designConsumer = design -> {
-            if (dedup.add(design.keySet())) {
-                counter.incrementAndGet();
-                System.out.println(design);
-            }
+        Consumer<BitSet[]> designConsumer = design -> {
+            counter.incrementAndGet();
+            System.out.println(Arrays.toString(design));
         };
-        allDifferenceSets(v, k, curr, v / k / (k - 1), filter, designConsumer);
+        allDifferenceSets(v, k, new BitSet[0], v / k / (k - 1), filter, designConsumer);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
-    private static void allDifferenceSets(int variants, int k, SequencedMap<BitSet, BitSet> curr, int needed, BitSet filter,
-                                                                 Consumer<Map<BitSet, BitSet>> designSink) {
-        int half = variants / 2;
-        int prev = curr.isEmpty() ? start(variants, k) : IntStream.range(curr.lastEntry().getValue().nextSetBit(1) + 1, variants)
-                .filter(i -> i > half ? !filter.get(variants - i) : !filter.get(i)).findFirst().orElse(variants);
-        Consumer<Map.Entry<BitSet, BitSet>> blockSink = block -> {
-            SequencedMap<BitSet, BitSet> nextCurr = new LinkedHashMap<>(curr);
-            nextCurr.put(block.getKey(), block.getValue());
+    private static void allDifferenceSets(int variants, int k, BitSet[] curr, int needed, BitSet filter,
+                                          Consumer<BitSet[]> designSink) {
+        int prev = curr.length == 0 ? start(variants, k) : IntStream.range(curr[curr.length - 1].nextSetBit(1) + 1, variants)
+                .filter(i -> !filter.get(i)).findFirst().orElse(variants);
+        Consumer<BitSet> blockSink = block -> {
+            BitSet[] nextCurr = new BitSet[curr.length + 1];
+            System.arraycopy(curr, 0, nextCurr, 0, curr.length);
+            nextCurr[curr.length] = block;
             if (needed == 1) {
                 designSink.accept(nextCurr);
             }
             BitSet nextFilter = (BitSet) filter.clone();
-            nextFilter.or(block.getKey());
+            nextFilter.or(diff(block, variants));
             allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
         };
         calcCycles(variants, k, prev, filter, needed, blockSink);
