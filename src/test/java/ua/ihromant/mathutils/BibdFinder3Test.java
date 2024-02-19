@@ -12,11 +12,12 @@ public class BibdFinder3Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
     private static void calcCycles(int variants, int needed, BitSet filter, BitSet whiteList,
                                    int[] tuple, Consumer<int[]> sink) {
-        int tLength = tuple[tuple.length - 1] + 1;
+        int tl = tuple.length;
+        int last = tuple[tl - 1];
         int second = tuple[1];
-        int min = needed == 1 ? Math.max(variants - second + 1, tLength) : tLength;
-        int max = Math.min(variants - bounds[needed], tLength + second - 1);
-        if (tuple.length < 3) {
+        int min = needed == 1 ? Math.max(variants - second + 1, last + 1) : last + 1;
+        int max = Math.min(variants - bounds[needed], last + second);
+        if (tl < 3) {
             if (needed == 1) {
                 max = Math.min(max, (variants + second) / 2 + 1);
             }
@@ -24,8 +25,8 @@ public class BibdFinder3Test {
             max = Math.min(max, variants - tuple[2] + second - bounds[needed - 1]);
         }
         for (int idx = whiteList.nextSetBit(min); idx >= 0 && idx < max; idx = whiteList.nextSetBit(idx + 1)) {
-            int[] nextTuple = Arrays.copyOf(tuple, tuple.length + 1);
-            nextTuple[tuple.length] = idx;
+            int[] nextTuple = Arrays.copyOf(tuple, tl + 1);
+            nextTuple[tl] = idx;
             if (needed == 1) {
                 sink.accept(nextTuple);
                 continue;
@@ -111,11 +112,11 @@ public class BibdFinder3Test {
 
     private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, BitSet filter,
                                           Consumer<int[][]> designSink) {
-        int prev = curr.length == 0 ? start(variants, k) : IntStream.range(curr[curr.length - 1][1] + 1, variants)
-                .filter(i -> !filter.get(i)).findFirst().orElse(variants);
+        int cl = curr.length;
+        int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
         Consumer<int[]> blockSink = block -> {
-            int[][] nextCurr = Arrays.copyOf(curr, curr.length + 1);
-            nextCurr[curr.length] = block;
+            int[][] nextCurr = Arrays.copyOf(curr, cl + 1);
+            nextCurr[cl] = block;
             if (needed == 1) {
                 designSink.accept(nextCurr);
             }
@@ -124,13 +125,5 @@ public class BibdFinder3Test {
             allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
         };
         calcCycles(variants, k, prev, filter, needed, blockSink);
-    }
-
-    private static BitSet of(int... values) {
-        BitSet bs = new BitSet(values[values.length - 1] + 1);
-        for (int v : values) {
-            bs.set(v);
-        }
-        return bs;
     }
 }
