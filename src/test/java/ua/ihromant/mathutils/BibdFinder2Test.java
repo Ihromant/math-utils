@@ -44,9 +44,6 @@ public class BibdFinder2Test {
                 newWhiteList.set((idx + variants - diff) % variants, false);
             }
             calcCycles(variants, tLength == 1 ? idx : max, needed - 1, newFilter, newWhiteList, nextTuple, sink);
-            if (tLength == 1 && filter.cardinality() <= needed) {
-                System.out.println(idx);
-            }
         }
     }
 

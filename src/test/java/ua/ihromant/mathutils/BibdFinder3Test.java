@@ -49,9 +49,6 @@ public class BibdFinder3Test {
                 newWhiteList.set((idx + diff) % variants, false);
             }
             calcCycles(variants, needed - 1, newFilter, newWhiteList, nextTuple, sink);
-            if (tLength == 1 && filter.cardinality() <= needed) {
-                System.out.println(idx);
-            }
         }
     }
 
@@ -86,7 +83,7 @@ public class BibdFinder3Test {
                 newWhiteList.set((idx + diff) % variants, false);
             }
             calcCycles(variants, size - 2, newFilter, newWhiteList, new int[]{0, idx}, sink);
-            if (newFilter.cardinality() <= size) {
+            if (filter.cardinality() <= size) {
                 System.out.println(idx);
             }
         });
