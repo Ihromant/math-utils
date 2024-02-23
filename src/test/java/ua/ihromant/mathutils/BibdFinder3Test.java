@@ -85,8 +85,8 @@ public class BibdFinder3Test {
         int v = 91;
         int k = 6;
         System.out.println(v + " " + k);
-        AtomicInteger counter = new AtomicInteger();
         BitSet filter = v % k == 0 ? IntStream.range(1, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v);
+        AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
         Consumer<int[][]> designConsumer = design -> {
             counter.incrementAndGet();
@@ -118,5 +118,33 @@ public class BibdFinder3Test {
             allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
         };
         calcCycles(variants, k, prev, filter, needed, blockSink);
+    }
+
+    @Test
+    public void byHint() {
+        findByHint(new int[]{0, 68, 69, 105, 135, 156, 160}, 217, 7);
+        //findByHint(new int[]{0, 34, 36, 42, 66, 71, 80}, 91, 7);
+    }
+
+    private static void findByHint(int[] hint, int v, int k) {
+        System.out.println(v + " " + k + " " + Arrays.toString(hint));
+        BitSet filter = v % k == 0 ? IntStream.range(1, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v);
+        for (int i : hint) {
+            for (int j : hint) {
+                if (i >= j) {
+                    continue;
+                }
+                filter.set(j - i);
+                filter.set(v - j + i);
+            }
+        }
+        AtomicInteger counter = new AtomicInteger();
+        long time = System.currentTimeMillis();
+        Consumer<int[][]> designConsumer = design -> {
+            counter.incrementAndGet();
+            System.out.println(Arrays.deepToString(design));
+        };
+        allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer);
+        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 }
