@@ -2,6 +2,11 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -81,16 +86,35 @@ public class BibdFinder3Test {
     }
 
     @Test
-    public void testDiffFamilies() {
+    public void toFile() throws IOException {
+        int v = 105;
+        int k = 5;
+        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logResults(ps, v, k);
+        }
+    }
+
+    @Test
+    public void toConsole() {
         int v = 91;
         int k = 6;
-        System.out.println(v + " " + k);
+        logResults(System.out, v, k);
+    }
+
+    private static void logResults(PrintStream destination, int v, int k) {
+        if (destination != System.out) {
+            System.out.println(v + " " + k);
+        }
+        destination.println(v + " " + k);
         BitSet filter = v % k == 0 ? IntStream.range(1, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
         Consumer<int[][]> designConsumer = design -> {
             counter.incrementAndGet();
-            System.out.println(Arrays.deepToString(design));
+            destination.println(Arrays.deepToString(design));
         };
         allDifferenceSets(v, k, new int[0][], v / k / (k - 1), filter, designConsumer);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));

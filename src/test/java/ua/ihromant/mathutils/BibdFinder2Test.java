@@ -2,6 +2,11 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.BitSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -96,10 +101,29 @@ public class BibdFinder2Test {
     }
 
     @Test
-    public void testDiffFamilies() {
-        int v = 91;
-        int k = 6;
-        System.out.println(v + " " + k);
+    public void toFile() throws IOException {
+        int v = 105;
+        int k = 5;
+        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logResults(ps, v, k);
+        }
+    }
+
+    @Test
+    public void toConsole() {
+        int v = 85;
+        int k = 5;
+        logResults(System.out, v, k);
+    }
+
+    private static void logResults(PrintStream destination, int v, int k) {
+        if (destination != System.out) {
+            System.out.println(v + " " + k);
+        }
+        destination.println(v + " " + k);
         AtomicInteger counter = new AtomicInteger();
         BitSet filter = v % k == 0 ? IntStream.rangeClosed(0, k / 2).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v / 2 + 1);
         SequencedMap<BitSet, BitSet> curr = new LinkedHashMap<>();
@@ -108,7 +132,7 @@ public class BibdFinder2Test {
         Consumer<Map<BitSet, BitSet>> designConsumer = design -> {
             if (dedup.add(design.keySet())) {
                 counter.incrementAndGet();
-                System.out.println(design);
+                destination.println(design);
             }
         };
         allDifferenceSets(v, k, curr, v / k / (k - 1), filter, designConsumer);
