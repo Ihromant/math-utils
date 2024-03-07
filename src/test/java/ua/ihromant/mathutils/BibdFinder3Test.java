@@ -119,7 +119,7 @@ public class BibdFinder3Test {
     }
 
     @Test
-    public void toConsole1() {
+    public void toConsole() {
         int v = 175;
         int k = 7;
         logResults(System.out, v, k, 32);
