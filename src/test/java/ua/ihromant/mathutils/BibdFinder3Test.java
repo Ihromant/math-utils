@@ -81,6 +81,27 @@ public class BibdFinder3Test {
         });
     }
 
+    private static void calcCyclesSingle(int variants, int size, int idx, BitSet filter, Consumer<int[]> sink) {
+        BitSet whiteList = (BitSet) filter.clone();
+        whiteList.flip(1, variants);
+        BitSet newWhiteList = (BitSet) whiteList.clone();
+        BitSet newFilter = (BitSet) filter.clone();
+        int rev = variants - idx;
+        newWhiteList.set(rev, false);
+        if (rev % 2 == 0) {
+            newWhiteList.set(idx + rev / 2, false);
+        }
+        newFilter.set(idx);
+        newFilter.set(rev);
+        for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+            newWhiteList.set((idx + diff) % variants, false);
+        }
+        calcCycles(variants, size - 2, newFilter, newWhiteList, new int[]{0, idx}, sink);
+        if (filter.cardinality() <= size) {
+            System.out.println(idx);
+        }
+    }
+
     private static int start(int v, int k) {
         return v / k + (k + 1) / 2;
     }
@@ -93,18 +114,18 @@ public class BibdFinder3Test {
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logResults(ps, v, k);
+            logResults(ps, v, k, null);
         }
     }
 
     @Test
-    public void toConsole() {
-        int v = 91;
-        int k = 6;
-        logResults(System.out, v, k);
+    public void toConsole1() {
+        int v = 175;
+        int k = 7;
+        logResults(System.out, v, k, 32);
     }
 
-    private static void logResults(PrintStream destination, int v, int k) {
+    private static void logResults(PrintStream destination, int v, int k, Integer single) {
         if (destination != System.out) {
             System.out.println(v + " " + k);
         }
@@ -116,12 +137,12 @@ public class BibdFinder3Test {
             counter.incrementAndGet();
             destination.println(Arrays.deepToString(design));
         };
-        allDifferenceSets(v, k, new int[0][], v / k / (k - 1), filter, designConsumer);
+        allDifferenceSets(v, k, new int[0][], v / k / (k - 1), filter, designConsumer, single);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, BitSet filter,
-                                          Consumer<int[][]> designSink) {
+                                          Consumer<int[][]> designSink, Integer single) {
         int cl = curr.length;
         int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
         Consumer<int[]> blockSink = block -> {
@@ -139,9 +160,13 @@ public class BibdFinder3Test {
                     nextFilter.set(variants - l + s);
                 }
             }
-            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
+            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink, null);
         };
-        calcCycles(variants, k, prev, filter, needed, blockSink);
+        if (single != null) {
+            calcCyclesSingle(variants, k, single, filter, blockSink);
+        } else {
+            calcCycles(variants, k, prev, filter, needed, blockSink);
+        }
     }
 
     @Test
@@ -168,7 +193,7 @@ public class BibdFinder3Test {
             counter.incrementAndGet();
             System.out.println(Arrays.deepToString(design));
         };
-        allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer);
+        allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer, null);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 }
