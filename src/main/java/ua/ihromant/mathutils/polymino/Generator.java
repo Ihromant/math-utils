@@ -1,9 +1,5 @@
 package ua.ihromant.mathutils.polymino;
 
-import ua.ihromant.mathutils.GaloisField;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -49,8 +45,9 @@ public class Generator {
         //System.out.println(lesser.size() + " " + bigger.size());
         Set<Set<Polymino>> sets = Set.of(lesser);
         for (int i = lesser.size(); i > 1; i--) {
+            Set<Set<Polymino>> checked = new HashSet<>();
             Set<Set<Polymino>> next = sets.stream().flatMap(Generator::partials)
-                    .filter(part -> extension(part).size() == bigger.size()).collect(Collectors.toSet());
+                    .filter(part -> checked.add(part) && extension(part).size() == bigger.size()).collect(Collectors.toSet());
             System.out.println((i - 1) + " " + next.size());
             if (next.isEmpty()) {
                 for (Set<Polymino> polys : sets) {
