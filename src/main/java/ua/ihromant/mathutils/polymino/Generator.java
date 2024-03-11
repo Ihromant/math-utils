@@ -2,10 +2,14 @@ package ua.ihromant.mathutils.polymino;
 
 import ua.ihromant.mathutils.GaloisField;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Generator {
     public static Set<Polymino> generate(int n) {
@@ -22,27 +26,44 @@ public class Generator {
         return result;
     }
 
-    public static void main(String[] args) {
-        List<Polymino> hexaminos = generate(6).stream().toList();
-        Set<Polymino> heptominos = generate(7);
-        System.out.println(hexaminos.size() + " " + heptominos.size());
-        GaloisField.choices(hexaminos.size(), 25).parallel().forEach(ch -> {
-            List<Polymino> choice = Arrays.stream(ch).mapToObj(hexaminos::get).toList();
-            Set<Polymino> result = new HashSet<>();
-            choice.stream().flatMap(Polymino::extended).forEach(ext -> {
-                if (ext.variations().noneMatch(result::contains)) {
-                    result.add(ext);
-                }
-            });
-            if (heptominos.size() == result.size()) {
-                synchronized (System.out) {
-                    System.out.println("Solution: ");
-                    for (Polymino polymino : choice) {
-                        System.out.println(polymino);
-                    }
-                }
+    private static Set<Polymino> extension(Set<Polymino> base) {
+        Set<Polymino> result = new HashSet<>();
+        base.stream().flatMap(Polymino::extended).forEach(ext -> {
+            if (ext.variations().noneMatch(result::contains)) {
+                result.add(ext);
             }
         });
+        return result;
+    }
+
+    private static Stream<Set<Polymino>> partials(Set<Polymino> base) {
+        List<Polymino> list = base.stream().toList();
+        return IntStream.range(0, list.size()).mapToObj(i ->
+                IntStream.range(0, list.size()).filter(j -> j != i).mapToObj(list::get).collect(Collectors.toSet()));
+    }
+
+    public static void main(String[] args) {
+        int size = 7;
+        Set<Polymino> lesser = generate(size - 1);
+        Set<Polymino> bigger = generate(size);
+        //System.out.println(lesser.size() + " " + bigger.size());
+        Set<Set<Polymino>> sets = Set.of(lesser);
+        for (int i = lesser.size(); i > 1; i--) {
+            Set<Set<Polymino>> next = sets.stream().flatMap(Generator::partials)
+                    .filter(part -> extension(part).size() == bigger.size()).collect(Collectors.toSet());
+            System.out.println((i - 1) + " " + next.size());
+            if (next.isEmpty()) {
+                for (Set<Polymino> polys : sets) {
+                    System.out.println("Solution: ");
+                    for (Polymino p : polys) {
+                        System.out.println(p);
+                    }
+                }
+                return;
+            } else {
+                sets = next;
+            }
+        }
 //        generate(5).forEach(System.out::println);
     }
 }
