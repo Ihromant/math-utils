@@ -422,6 +422,24 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
+    public void testCubeDesargues10() throws IOException {
+        String name = "semi4";
+        int k = 16;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(name);
+            HyperbolicPlane projective = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
+            for (int dl : projective.lines()) {
+                System.out.println("Dropped " + dl);
+                System.out.println("ParaDesargues " + checkParaDesargues(projective, dl));
+                System.out.println("Cube " + checkCubeDesargues(projective, dl));
+            }
+        }
+    }
+
+    @Test
     public void testZigZag() throws IOException {
         String name = "fig";
         int k = 64;
@@ -718,6 +736,69 @@ public class BatchHyperbolicPlaneTest {
                     int p4 = proj.intersection(proj.line(p3, proj.intersection(p1p2, dl)), proj.line(p2, proj.intersection(p1p3, dl)));
                     if (!droppedLine.get(proj.intersection(proj.line(p1, p4), proj.line(p2, p3)))) {
                         return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private static boolean checkCubeDesargues(HyperbolicPlane proj, int dl) {
+        BitSet droppedLine = proj.line(dl);
+        for (int infl : proj.points(dl)) {
+            for (int infp : proj.points(dl)) {
+                if (infl == infp) {
+                    continue;
+                }
+                for (int l1 : proj.lines(infl)) {
+                    if (l1 == dl) {
+                        continue;
+                    }
+                    for (int l2 : proj.lines(infl)) {
+                        if (l2 == dl || l1 == l2) {
+                            continue;
+                        }
+                        for (int l3 : proj.lines(infl)) {
+                            if (l3 == dl || l3 == l2 || l3 == l1) {
+                                continue;
+                            }
+                            for (int l4 : proj.lines(infl)) {
+                                if (l4 == dl ||l4 == l3 || l4 == l2 || l4 == l1) {
+                                    continue;
+                                }
+                                for (int p1 : proj.lines(infp)) {
+                                    if (p1 == dl) {
+                                        continue;
+                                    }
+                                    for (int p2 : proj.lines(infp)) {
+                                        if (p2 == dl || p1 == p2) {
+                                            continue;
+                                        }
+                                        for (int p3 : proj.lines(infp)) {
+                                            if (p3 == dl || p3 == p2 || p3 == p1) {
+                                                continue;
+                                            }
+                                            for (int p4 : proj.lines(infp)) {
+                                                if (p4 == dl || p4 == p3 || p4 == p2 || p4 == p1) {
+                                                    continue;
+                                                }
+                                                int a = proj.line(proj.intersection(p1, l3), proj.intersection(p2, l4));
+                                                int b = proj.line(proj.intersection(p1, l1), proj.intersection(p2, l2));
+                                                int c = proj.line(proj.intersection(l1, p3), proj.intersection(l2, p4));
+                                                int d = proj.line(proj.intersection(l3, p3), proj.intersection(l4, p4));
+                                                if (a == b || a == c || a == d || b == c || b == d || c == d) {
+                                                    continue;
+                                                }
+                                                if (droppedLine.get(proj.intersection(a, b)) && droppedLine.get(proj.intersection(a, c))
+                                                    && !droppedLine.get(proj.intersection(a, d))) {
+                                                    return false;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
