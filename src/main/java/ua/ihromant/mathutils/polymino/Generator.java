@@ -1,7 +1,11 @@
 package ua.ihromant.mathutils.polymino;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -22,10 +26,10 @@ public class Generator {
         return result;
     }
 
-    private static Set<Polymino> extension(Set<Polymino> base) {
+    private static Set<Polymino> extension(Set<Polymino> base, Set<Polymino> filter) {
         Set<Polymino> result = new HashSet<>();
         base.stream().flatMap(Polymino::extended).forEach(ext -> {
-            if (ext.variations().noneMatch(result::contains)) {
+            if (!filter.contains(ext) && ext.variations().noneMatch(result::contains)) {
                 result.add(ext);
             }
         });
@@ -42,12 +46,19 @@ public class Generator {
         int size = 7;
         Set<Polymino> lesser = generate(size - 1);
         Set<Polymino> bigger = generate(size);
+        Map<Polymino, Polymino> defaults = new HashMap<>();
+        bigger.forEach(big -> big.variations().forEach(var -> defaults.put(var, big)));
+        Map<Polymino, Polymino> ancestors = calculateSingleAncestors(lesser);
+        Set<Polymino> necessary = new HashSet<>(ancestors.values());
+        Set<Polymino> biggerFilter = extension(necessary, Set.of()).stream().flatMap(Polymino::variations).collect(Collectors.toSet());
+        Set<Polymino> biggerFiltered = bigger.stream().filter(big -> !biggerFilter.contains(big)).collect(Collectors.toSet());
+        Set<Polymino> lesserFiltered = lesser.stream().filter(l -> !necessary.contains(l)).collect(Collectors.toSet());
         //System.out.println(lesser.size() + " " + bigger.size());
-        Set<Set<Polymino>> sets = Set.of(lesser);
-        for (int i = lesser.size(); i > 1; i--) {
+        Set<Set<Polymino>> sets = Set.of(lesserFiltered);
+        for (int i = lesserFiltered.size(); i > 1; i--) {
             Set<Set<Polymino>> checked = new HashSet<>();
             Set<Set<Polymino>> next = sets.stream().flatMap(Generator::partials)
-                    .filter(part -> checked.add(part) && extension(part).size() == bigger.size()).collect(Collectors.toSet());
+                    .filter(part -> checked.add(part) && extension(part, biggerFilter).size() == biggerFiltered.size()).collect(Collectors.toSet());
             System.out.println((i - 1) + " " + next.size());
             if (next.isEmpty()) {
                 for (Set<Polymino> polys : sets) {
@@ -62,5 +73,33 @@ public class Generator {
             }
         }
 //        generate(5).forEach(System.out::println);
+    }
+
+    private static Map<Polymino, Polymino> calculateSingleAncestors(Set<Polymino> lesser) {
+        Map<Polymino, Set<Polymino>> result = new HashMap<>();
+        List<Polymino> bigger = new ArrayList<>();
+        for (Polymino single : lesser) {
+            Set<Polymino> descendants = new HashSet<>();
+            extension(Set.of(single), Set.of()).forEach(ext -> {
+                if (ext.variations().noneMatch(descendants::contains)) {
+                    Optional<Polymino> same = bigger.stream().filter(big -> ext.variations().anyMatch(big::equals)).findAny();
+                    if (same.isPresent()) {
+                        descendants.add(same.get());
+                    } else {
+                        bigger.add(ext);
+                        descendants.add(ext);
+                    }
+                }
+            });
+            result.put(single, descendants);
+        }
+        Map<Polymino, Set<Polymino>> reversed = new HashMap<>();
+        for (Map.Entry<Polymino, Set<Polymino>> e : result.entrySet()) {
+            for (Polymino big : e.getValue()) {
+                reversed.computeIfAbsent(big, kk -> new HashSet<>()).add(e.getKey());
+            }
+        }
+        return reversed.entrySet().stream().filter(e -> e.getValue().size() == 1)
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().stream().iterator().next()));
     }
 }
