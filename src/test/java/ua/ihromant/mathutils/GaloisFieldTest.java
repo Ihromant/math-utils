@@ -365,6 +365,38 @@ public class GaloisFieldTest {
     }
 
     @Test
+    public void generate3DUnital1() {
+        int q = 2;
+        int ord = q * q;
+        GaloisField fd = new GaloisField(ord);
+        HyperbolicPlane pl = new HyperbolicPlane(fd.generateSpace());
+        HyperbolicPlaneTest.testCorrectness(pl, of(ord + 1));
+        //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
+        //checkSpace(pl, pl.pointCount(), pl.pointCount());
+        BitSet unital = new BitSet();
+        for (int p : pl.points()) {
+            int[] hom = getHomogenousSpace(p, ord);
+            int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
+            if (val == 0) {
+                unital.set(p);
+            }
+        }
+        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
+        assertEquals(45, uni.pointCount());
+        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
+        assertEquals(of(9, 13), uni.cardSubPlanes(true));
+        System.out.println(uni.hyperbolicIndex());
+        int[] point13Array = of(0, 1, 2, 7, 8, 9, 20, 21, 22, 33, 34, 35, 39).stream().toArray();
+        int[] point9Array = of(0, 1, 2, 3, 4, 5, 42, 43, 44).stream().toArray();
+        HyperbolicPlane pl13 = uni.subPlane(point13Array);
+        HyperbolicPlane pl9 = uni.subPlane(point9Array);
+        HyperbolicPlaneTest.testCorrectness(pl13, of(q + 1, ord + 1));
+        HyperbolicPlaneTest.testCorrectness(pl9, of(q + 1));
+        System.out.println(pl13.hyperbolicIndex());
+        System.out.println(pl9.hyperbolicIndex());
+    }
+
+    @Test
     public void generateBeltramiKlein() {
         int q = 9;
         GaloisField fd = new GaloisField(q);
