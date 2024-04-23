@@ -555,18 +555,19 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testVectors() throws IOException {
-        String name = "hughes9";
-        int k = 9;
+        String name = "bbh1";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            for (int dl : dropped.get(name)) {
-                System.out.println("Dropped " + dl);
+            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 int base = aff.points().iterator().next();
+                BitSet vectorSub = new BitSet();
+                vectorSub.set(base);
                 br: for (int end : aff.points()) {
                     if (base == end) {
                         continue;
@@ -592,8 +593,13 @@ public class BatchHyperbolicPlaneTest {
                             }
                         }
                     }
-                    System.out.println(new Pair(base, end));
+                    vectorSub.set(end);
                 }
+                Liner subliner = proj.subPlane(vectorSub.stream().toArray());
+                if (vectorSub.cardinality() == 1) {
+                    continue;
+                }
+                System.out.println("Dropped " + dl + " size: " + vectorSub.cardinality() + " points " + vectorSub);
             }
         }
     }
