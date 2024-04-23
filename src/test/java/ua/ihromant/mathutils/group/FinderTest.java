@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.HyperbolicPlane;
+import ua.ihromant.mathutils.Liner;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -33,7 +33,7 @@ public class FinderTest {
         Arrays.stream(blocks).forEach(line -> enhanceFrequencies(frequencies, line));
         designs(v, k, blocks, v * (v - 1) / k / (k - 1) - base.length, frequencies)
                 .forEach(arr -> {
-                    HyperbolicPlane pl = new HyperbolicPlane(arr);
+                    Liner pl = new Liner(arr);
                     BitSet csp = pl.cardSubPlanes(false);
                     if (!csp.get(v) && csp.cardinality() == 1) {
                         System.out.println(csp + " " + pl.cardSubSpaces(true) + " " + Arrays.toString(arr));
@@ -59,7 +59,7 @@ public class FinderTest {
         long time = System.currentTimeMillis();
         designs(v, k, blocks, v * (v - 1) / k / (k - 1) - r - 1, frequencies)
                 .forEach(arr -> {
-                    HyperbolicPlane pl = new HyperbolicPlane(arr);
+                    Liner pl = new Liner(arr);
                     BitSet csp = pl.cardSubPlanes(false);
                     if (!csp.get(v) && csp.cardinality() == 1) {
                         System.out.println(csp + " " + pl.cardSubSpaces(true) + " " + Arrays.toString(arr));

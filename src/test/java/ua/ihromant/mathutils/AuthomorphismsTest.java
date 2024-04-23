@@ -16,7 +16,7 @@ public class AuthomorphismsTest {
     @Test
     public void testPlaneAuthomorphisms() {
         BitSet[] lines = new BitSet[0];
-        HyperbolicPlane plane = new HyperbolicPlane(lines);
+        Liner plane = new Liner(lines);
         int[] triple = null;
         for (int x : plane.points()) {
             for (int y : plane.points()) {
@@ -51,15 +51,15 @@ public class AuthomorphismsTest {
         }
     }
 
-    private static int quasiOp(HyperbolicPlane pl, int x, int y) {
+    private static int quasiOp(Liner pl, int x, int y) {
         return pl.line(pl.line(x, y)).stream().filter(p -> p != x && p != y).findAny().orElseThrow();
     }
 
-    private static BitSet next(HyperbolicPlane plane, BitSet prev) {
+    private static BitSet next(Liner plane, BitSet prev) {
         return of(prev.stream().flatMap(x -> prev.stream().filter(y -> y > x).map(y -> quasiOp(plane, x, y))));
     }
 
-    private List<BitSet> iterate(HyperbolicPlane plane, BitSet set) {
+    private List<BitSet> iterate(Liner plane, BitSet set) {
         List<BitSet> result = new ArrayList<>();
         do {
             result.add(set);
@@ -71,7 +71,7 @@ public class AuthomorphismsTest {
 
     @Test
     public void testCycles() {
-        HyperbolicPlane plane = new HyperbolicPlane(new String[] {
+        Liner plane = new Liner(new String[] {
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"});

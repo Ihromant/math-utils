@@ -16,14 +16,14 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class HyperbolicPlane {
+public class Liner {
     private final int pointCount;
     private final BitSet[] lines;
     private final int[][] lookup;
     private final BitSet[] points;
     private final int[][] intersections;
 
-    public HyperbolicPlane(BitSet[] lines) {
+    public Liner(BitSet[] lines) {
         this.pointCount = Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality();
         this.lines = lines;
         this.lookup = generateLookup();
@@ -31,7 +31,7 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
-    public HyperbolicPlane(int v, int[] base) {
+    public Liner(int v, int[] base) {
         this.pointCount = v;
         int k = base.length;
         int t = (v - 1) / k / (k - 1);
@@ -53,7 +53,7 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
-    public HyperbolicPlane(int[]... base) {
+    public Liner(int[]... base) {
         this.pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;
         this.lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
             BitSet res = new BitSet();
@@ -67,7 +67,7 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
-    public HyperbolicPlane(int pointCount, int[]... base) {
+    public Liner(int pointCount, int[]... base) {
         this.pointCount = pointCount;
         int k = base[0].length; // assuming that difference set is correct
         this.lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
@@ -89,7 +89,7 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
-    public HyperbolicPlane(Group g, int[]... base) {
+    public Liner(Group g, int[]... base) {
         this.pointCount = g.order();
         int k = base[0].length; // assuming that difference set is correct
         this.lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
@@ -111,7 +111,7 @@ public class HyperbolicPlane {
         this.intersections = generateIntersections();
     }
 
-    public HyperbolicPlane(String... design) {
+    public Liner(String... design) {
         this.pointCount = Arrays.stream(design).flatMap(s -> s.chars().boxed()).collect(Collectors.toSet()).size();
         this.lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
             BitSet res = new BitSet();
@@ -258,8 +258,8 @@ public class HyperbolicPlane {
         return result;
     }
 
-    public HyperbolicPlane subPlane(int[] pointArray) {
-        return new HyperbolicPlane(Arrays.stream(lines).map(l -> l.stream()
+    public Liner subPlane(int[] pointArray) {
+        return new Liner(Arrays.stream(lines).map(l -> l.stream()
                         .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new));
     }
@@ -419,7 +419,7 @@ public class HyperbolicPlane {
         return result;
     }
 
-    public HyperbolicPlane directProduct(HyperbolicPlane that) {
+    public Liner directProduct(Liner that) {
         int length = this.lines[0].cardinality();
         if (Arrays.stream(this.lines).anyMatch(l -> l.cardinality() != length)) {
             throw new IllegalStateException("Not all lines of length " + length);
@@ -427,7 +427,7 @@ public class HyperbolicPlane {
         if (Arrays.stream(that.lines).anyMatch(l -> l.cardinality() != length)) {
             throw new IllegalArgumentException("Not all lines of length " + length);
         }
-        HyperbolicPlane aff = new HyperbolicPlane(new GaloisField(length).generatePlane()).subPlane(IntStream.range(0, length * length).toArray());
+        Liner aff = new Liner(new GaloisField(length).generatePlane()).subPlane(IntStream.range(0, length * length).toArray());
         GroupProduct cg = new GroupProduct(this.pointCount(), that.pointCount());
         BitSet[] lines = Stream.of(IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.pointCount()).mapToObj(p2 -> {
                     BitSet result = new BitSet();
@@ -458,7 +458,7 @@ public class HyperbolicPlane {
                         return result;
                     });
                 }))).flatMap(Function.identity()).toArray(BitSet[]::new);
-        return new HyperbolicPlane(lines);
+        return new Liner(lines);
     }
 
     public boolean isRegular() {

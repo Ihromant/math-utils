@@ -128,7 +128,7 @@ public class TaoPoint {
         return () -> IntStream.range(0, SIZE).iterator();
     }
 
-    public static HyperbolicPlane toPlane() {
+    public static Liner toPlane() {
         List<BitSet> lines = new ArrayList<>();
         for (int i = 0; i < SIZE; i++) {
             for (int j = i + 1; j < SIZE; j++) {
@@ -142,6 +142,6 @@ public class TaoPoint {
                 }
             }
         }
-        return new HyperbolicPlane(lines.toArray(BitSet[]::new));
+        return new Liner(lines.toArray(BitSet[]::new));
     }
 }

@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.Group;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -164,7 +165,7 @@ public class GaloisFieldTest {
     //@Test
     public void testDistinctPermutations() {
         int[] diffSet = new int[]{3, 6, 7, 12, 14};
-        HyperbolicPlane plane = new HyperbolicPlane(new int[][]{diffSet});
+        Liner plane = new Liner(new int[][]{diffSet});
         List<BitSet> lines = StreamSupport.stream(plane.lines().spliterator(), false).map(plane::line).toList();
         System.out.println(lines.size());
         int counter = 1_000_000_000;
@@ -314,7 +315,7 @@ public class GaloisFieldTest {
         int ord = q * q;
         int v = ord * ord + ord + 1;
         GaloisField fd = new GaloisField(ord);
-        HyperbolicPlane pl = new HyperbolicPlane(fd.generatePlane());
+        Liner pl = new Liner(fd.generatePlane());
         assertEquals(v, pl.pointCount());
         assertEquals(v, pl.lineCount());
         BitSet unital = new BitSet();
@@ -325,7 +326,7 @@ public class GaloisFieldTest {
                 unital.set(p);
             }
         }
-        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
+        Liner uni = pl.subPlane(unital.stream().toArray());
         assertEquals(ord * q + 1, uni.pointCount());
         HyperbolicPlaneTest.testCorrectness(uni, of(q + 1));
         System.out.println(uni.hyperbolicIndex());
@@ -336,7 +337,7 @@ public class GaloisFieldTest {
         int q = 3;
         int ord = q * q;
         GaloisField fd = new GaloisField(ord);
-        HyperbolicPlane pl = new HyperbolicPlane(fd.generateSpace());
+        Liner pl = new Liner(fd.generateSpace());
         HyperbolicPlaneTest.testCorrectness(pl, of(ord + 1));
         //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
         //checkSpace(pl, pl.pointCount(), pl.pointCount());
@@ -348,7 +349,7 @@ public class GaloisFieldTest {
                 unital.set(p);
             }
         }
-        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
+        Liner uni = pl.subPlane(unital.stream().toArray());
         assertEquals(280, uni.pointCount());
         //HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
         //assertEquals(of(28, 37), uni.cardSubPlanes(true));
@@ -356,8 +357,8 @@ public class GaloisFieldTest {
         //System.out.println(uni.hyperbolicIndex());
         int[] point37Array = of(0, 1, 2, 3, 31, 32, 33, 34, 68, 69, 70, 71, 83, 84, 85, 86, 117, 118, 119, 120, 130, 131, 132, 133, 178, 179, 180, 181, 191, 192, 193, 194, 228, 229, 230, 231, 268).stream().toArray();
         int[] point28Array = of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 276, 277, 278, 279).stream().toArray();
-        HyperbolicPlane pl37 = uni.subPlane(point37Array);
-        HyperbolicPlane pl28 = uni.subPlane(point28Array);
+        Liner pl37 = uni.subPlane(point37Array);
+        Liner pl28 = uni.subPlane(point28Array);
         HyperbolicPlaneTest.testCorrectness(pl37, of(q + 1, ord + 1));
         HyperbolicPlaneTest.testCorrectness(pl28, of(q + 1));
         System.out.println(pl37.hyperbolicIndex());
@@ -369,7 +370,7 @@ public class GaloisFieldTest {
         int q = 2;
         int ord = q * q;
         GaloisField fd = new GaloisField(ord);
-        HyperbolicPlane pl = new HyperbolicPlane(fd.generateSpace());
+        Liner pl = new Liner(fd.generateSpace());
         HyperbolicPlaneTest.testCorrectness(pl, of(ord + 1));
         //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
         //checkSpace(pl, pl.pointCount(), pl.pointCount());
@@ -381,15 +382,15 @@ public class GaloisFieldTest {
                 unital.set(p);
             }
         }
-        HyperbolicPlane uni = pl.subPlane(unital.stream().toArray());
+        Liner uni = pl.subPlane(unital.stream().toArray());
         assertEquals(45, uni.pointCount());
         HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
         assertEquals(of(9, 13), uni.cardSubPlanes(true));
         System.out.println(uni.hyperbolicIndex());
         int[] point13Array = of(0, 1, 2, 7, 8, 9, 20, 21, 22, 33, 34, 35, 39).stream().toArray();
         int[] point9Array = of(0, 1, 2, 3, 4, 5, 42, 43, 44).stream().toArray();
-        HyperbolicPlane pl13 = uni.subPlane(point13Array);
-        HyperbolicPlane pl9 = uni.subPlane(point9Array);
+        Liner pl13 = uni.subPlane(point13Array);
+        Liner pl9 = uni.subPlane(point9Array);
         HyperbolicPlaneTest.testCorrectness(pl13, of(q + 1, ord + 1));
         HyperbolicPlaneTest.testCorrectness(pl9, of(q + 1));
         System.out.println(pl13.hyperbolicIndex());
@@ -400,7 +401,7 @@ public class GaloisFieldTest {
     public void generateBeltramiKlein() {
         int q = 9;
         GaloisField fd = new GaloisField(q);
-        HyperbolicPlane prSp = new HyperbolicPlane(fd.generateSpace());
+        Liner prSp = new Liner(fd.generateSpace());
         BitSet pts = new BitSet();
         for (int p : prSp.points()) {
             int[] crds = getHomogenousSpace(p, q);
@@ -408,7 +409,7 @@ public class GaloisFieldTest {
                 pts.set(p);
             }
         }
-        HyperbolicPlane bks = prSp.subPlane(pts.stream().toArray());
+        Liner bks = prSp.subPlane(pts.stream().toArray());
         HyperbolicPlaneTest.testCorrectness(bks, of(q - 3, q - 2, q - 1));
         Set<BitSet> planes = new HashSet<>();
         for (int i = 0; i < bks.pointCount(); i++) {
@@ -422,7 +423,7 @@ public class GaloisFieldTest {
                         continue;
                     }
                     int[] plPts = plane.stream().toArray();
-                    HyperbolicPlane bkp = bks.subPlane(plPts);
+                    Liner bkp = bks.subPlane(plPts);
                     assertTrue(bkp.isRegular());
                     assertEquals(bkp.playfairIndex(), bkp.pointCount() == (q - 1) * (q - 1) ? of(2, 3) : of(2, 3, 4));
                     for (int b : plPts) {
@@ -466,7 +467,7 @@ public class GaloisFieldTest {
     public void testFigueroa() {
         int q = 4;
         GaloisField fd = new GaloisField(q * q * q);
-        HyperbolicPlane proj = new HyperbolicPlane(fd.generatePlane());
+        Liner proj = new Liner(fd.generatePlane());
         int[] pointTypes = IntStream.range(0, proj.pointCount()).map(pt -> {
             int pa = mapPoint(pt, fd, q);
             int pa2 = mapPoint(pa, fd, q);
@@ -512,10 +513,95 @@ public class GaloisFieldTest {
             }
         }
         System.out.println("d");
-        HyperbolicPlane figueroa = new HyperbolicPlane(lines);
+        Liner figueroa = new Liner(lines);
         HyperbolicPlaneTest.testCorrectness(figueroa, of(fd.cardinality() + 1));
         for (int l : figueroa.lines()) {
             System.out.println(figueroa.line(l).stream().mapToObj(Integer::toString).collect(Collectors.joining(" ")));
+        }
+    }
+
+    @Test
+    public void findSuitable() {
+        for (long k = 3; k < 300; k++) {
+            long den = k * (k - 1);
+            for (long kp = 2; kp < 1000000; kp++) {
+                long order = k + kp - 1;
+                long v2 = 1 + (k - 1) * (1 + order);
+                if ((v2 * (v2 - 1)) % den != 0) {
+                    continue;
+                }
+                long b2 = v2 * (v2 - 1) / den;
+                long af2 = b2 * (v2 - k);
+                long v3 = 1 + (k - 1) * (1 + order + order * order);
+                if ((v3 * (v3 - 1)) % den != 0) {
+                    continue;
+                }
+                long b3 = v3 * (v3 - 1) / den;
+                long af3 = b3 * (v3 - k);
+                if (af3 % af2 != 0) {
+                    continue;
+                }
+                long planes = af3 / af2;
+                long[] factors = Group.factorize(order);
+                if (Arrays.stream(factors).anyMatch(f -> f != factors[0]) && bruckRyser(order)) {
+                    continue;
+                }
+                long v4 = 1 + (k - 1) * (1 + order + order * order + order * order * order);
+                boolean fits = (v4 * (v4 - 1)) % den == 0;
+                long b4 = (v4 * (v4 - 1)) / den;
+                long af4 = b4 * (v4 - k);
+                fits = fits && af4 % af2 == 0;
+                long fourDimPlanesCount = af4 / af2;
+                long fourDimPlanePointPairs = fourDimPlanesCount * (v4 - v2);
+                long triDimPlanePointPairs = planes * (v3 - v2);
+                fits = fits && fourDimPlanePointPairs % triDimPlanePointPairs == 0;
+                System.out.println("k: " + k + ", kappa: " + kp + ", v2: " + v2 + ", b2: " + b2 + ", v3: " + v3 + ", b3: " + b3 + ", planes: " + planes + ", 4-dim: " + fits);
+            }
+        }
+    }
+
+    private static boolean bruckRyser(long val) {
+        if (val % 4 == 0 || val % 4 == 3) {
+            return false;
+        }
+        long sqrt = (long) Math.ceil(Math.sqrt(val));
+        for (long i = 0; i <= sqrt; i++) {
+            for (long j = 0; j <= sqrt; j++) {
+                if (val == i * i + j * j) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    @Test
+    public void findSuitableNotWeaklyRegular() {
+        for (int k = 3; k < 10; k++) {
+            int den = k * (k - 1);
+            for (int v2 = den + 1; v2 < 300; v2++) {
+                if ((v2 - 1) % (k - 1) != 0 || (v2 * (v2 - 1)) % den != 0) {
+                    continue;
+                }
+                int b2 = v2 * (v2 - 1) / den;
+                int r2 = (v2 - 1) / (k - 1);
+                int af2 = b2 * (v2 - k);
+                for (int v3 = v2 + 1; v3 < 1000; v3++) {
+                    if ((v3 - 1) % (k - 1) != 0 || (v3 * (v3 - 1)) % den != 0) {
+                        continue;
+                    }
+                    int b3 = v3 * (v3 - 1) / den;
+                    int r3 = (v3 - 1) / (k - 1);
+                    if ((r3 - 1) % (r2 - 1) != 0 || (r3 * (r3 - 1)) % (r2 * (r2 - 1)) != 0) {
+                        continue;
+                    }
+                    int af3 = b3 * (v3 - k);
+                    if (af3 % af2 != 0) {
+                        continue;
+                    }
+                    System.out.println(k + " " + v2 + " " + v3);
+                }
+            }
         }
     }
 }
