@@ -246,7 +246,7 @@ public class AffinePlane {
         return counter + 1;
     }
 
-    private int parallelogram(int o, int x, int y) {
+    public int parallelogram(int o, int x, int y) {
         return intersection(parallel(line(o, x), y), parallel(line(o, y), x));
     }
 

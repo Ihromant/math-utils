@@ -19,6 +19,7 @@ import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -543,6 +544,57 @@ public class BatchHyperbolicPlaneTest {
             assertEquals(of(4), p.playfairIndex());
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
             assertEquals(of(25), p.cardSubPlanes(true));
+        }
+    }
+
+    private static final Map<String, int[]> dropped = Map.of(
+            "pg29", new int[]{0},
+            "dhall9", new int[]{0, 1},
+            "hall9", new int[]{0, 81},
+            "hughes9", new int[]{0, 3});
+
+    @Test
+    public void testVectors() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(name);
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl : dropped.get(name)) {
+                System.out.println("Dropped " + dl);
+                AffinePlane aff = new AffinePlane(proj, dl);
+                int base = aff.points().iterator().next();
+                br: for (int end : aff.points()) {
+                    if (base == end) {
+                        continue;
+                    }
+                    int l = aff.line(base, end);
+                    for (int l1 : aff.parallel(l)) {
+                        if (l1 == l) {
+                            continue;
+                        }
+                        for (int l2 : aff.parallel(l)) {
+                            if (l2 == l1 || l2 == l) {
+                                continue;
+                            }
+                            for (int b1 : aff.points(l1)) {
+                                for (int b2 : aff.points(l2)) {
+                                    int e1 = aff.parallelogram(base, end, b1);
+                                    int e2 = aff.parallelogram(b1, e1, b2);
+                                    int altEnd = aff.parallelogram(b2, e2, base);
+                                    if (end != altEnd) {
+                                        continue br;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    System.out.println(new Pair(base, end));
+                }
+            }
         }
     }
 }
