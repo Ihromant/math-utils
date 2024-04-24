@@ -15,13 +15,19 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AutomorphismsTest {
     @Test
-    public void testAutomorphisms1() {
-        //assertEquals(168, Automorphisms.automorphisms(new Liner(new GaloisField(2).generatePlane())).count());
-        //assertEquals(5616, Automorphisms.automorphisms(new Liner(new GaloisField(3).generatePlane())).count());
-        assertEquals(5, Automorphisms.automorphisms(new Liner(new String[]{
+    public void testAutomorphisms() {
+        assertEquals(168, Automorphisms.automorphisms(new Liner(new GaloisField(2).generatePlane())).count()); // Fano
+        assertEquals(5616, Automorphisms.automorphisms(new Liner(new GaloisField(3).generatePlane())).count()); // projective 3
+        assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
+        assertEquals(432, Automorphisms.automorphisms(new Liner(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
+        })).count());
+        assertEquals(20160, Automorphisms.automorphisms(new Liner(new String[]{ // smallest 3-dim projective
+                "00000001111112222223333444455556666",
+                "13579bd3478bc3478bc789a789a789a789a",
+                "2468ace569ade65a9edbcdecbeddebcedcb"
         })).count());
     }
 

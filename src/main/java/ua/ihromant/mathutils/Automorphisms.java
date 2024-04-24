@@ -35,12 +35,12 @@ public class Automorphisms {
         }
         int fromNotSet = fromLines.nextClearBit(0);
         if (fromNotSet == liner.pointCount()) {
-            if (toLines.nextSetBit(0) != liner.pointCount()) {
+            if (toLines.nextClearBit(0) != liner.pointCount()) {
                 return Stream.empty();
             }
             fromLines = IntStream.range(0, base.length).filter(i -> base[i] >= 0).collect(BitSet::new, BitSet::set, BitSet::or);
             toLines = IntStream.of(base).filter(i -> i >= 0).collect(BitSet::new, BitSet::set, BitSet::or);
-            fromNotSet = fromLines.nextSetBit(0);
+            fromNotSet = fromLines.nextClearBit(0);
         }
         int fromNotSetF = fromNotSet;
         BitSet toLinesF = toLines;
