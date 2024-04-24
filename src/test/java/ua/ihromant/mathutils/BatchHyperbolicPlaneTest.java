@@ -551,12 +551,13 @@ public class BatchHyperbolicPlaneTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
+            "bbh1", new int[]{192, 193, 195, 197, 269},
             "hughes9", new int[]{0, 3});
 
     @Test
-    public void testTranslations() throws IOException {
-        String name = "hughes9";
-        int k = 9;
+    public void testDilations() throws IOException {
+        String name = "bbh1";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {

@@ -33,8 +33,8 @@ public class AutomorphismsTest {
     }
 
     @Test
-    public void testTranslations() {
-        Liner proj = new Liner(new GaloisField(9).generatePlane());
+    public void testDilations() {
+        Liner proj = new Liner(new GaloisField(3).generatePlane());
         BitSet infty = proj.line(0);
         int[] partial = new int[proj.pointCount()];
         Arrays.fill(partial, -1);
