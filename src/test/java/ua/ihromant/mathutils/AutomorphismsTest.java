@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -29,6 +30,16 @@ public class AutomorphismsTest {
                 "13579bd3478bc3478bc789a789a789a789a",
                 "2468ace569ade65a9edbcdecbeddebcedcb"
         })).count());
+    }
+
+    @Test
+    public void testTranslations() {
+        Liner proj = new Liner(new GaloisField(9).generatePlane());
+        BitSet infty = proj.line(0);
+        int[] partial = new int[proj.pointCount()];
+        Arrays.fill(partial, -1);
+        infty.stream().forEach(i -> partial[i] = i);
+        System.out.println(Automorphisms.automorphisms(proj, partial).count());
     }
 
     @Test

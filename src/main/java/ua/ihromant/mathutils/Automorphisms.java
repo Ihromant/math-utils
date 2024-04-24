@@ -14,7 +14,7 @@ public class Automorphisms {
         return automorphisms(liner, base);
     }
 
-    private static Stream<int[]> automorphisms(Liner liner, int[] base) {
+    public static Stream<int[]> automorphisms(Liner liner, int[] base) {
         BitSet fromLines = new BitSet();
         BitSet toLines = new BitSet();
         for (int i = 0; i < base.length; i++) {

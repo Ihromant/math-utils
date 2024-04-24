@@ -554,6 +554,26 @@ public class BatchHyperbolicPlaneTest {
             "hughes9", new int[]{0, 3});
 
     @Test
+    public void testTranslations() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+                BitSet infty = proj.line(dl);
+                System.out.println(name + " dropped " + dl);
+                int[] partial = new int[proj.pointCount()];
+                Arrays.fill(partial, -1);
+                infty.stream().forEach(i -> partial[i] = i);
+                System.out.println(Automorphisms.automorphisms(proj, partial).count());
+            }
+        }
+    }
+
+    @Test
     public void testVectors() throws IOException {
         String name = "bbh1";
         int k = 16;
