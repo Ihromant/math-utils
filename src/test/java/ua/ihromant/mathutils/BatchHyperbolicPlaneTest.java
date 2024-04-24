@@ -551,13 +551,13 @@ public class BatchHyperbolicPlaneTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
-            "bbh1", new int[]{192, 193, 195, 197, 269},
+            //"bbh1", new int[]{192, 193, 195, 197, 269},
             "hughes9", new int[]{0, 3});
 
     @Test
     public void testDilations() throws IOException {
-        String name = "bbh1";
-        int k = 16;
+        String name = "hughes9";
+        int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -570,6 +570,22 @@ public class BatchHyperbolicPlaneTest {
                 Arrays.fill(partial, -1);
                 infty.stream().forEach(i -> partial[i] = i);
                 System.out.println(Automorphisms.automorphisms(proj, partial).count());
+            }
+        }
+    }
+
+    @Test
+    public void testAutomorphisms() throws IOException {
+        String name = "dhall9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+                System.out.println(name + " dropped " + dl);
+                System.out.println(Automorphisms.automorphisms(new AffinePlane(proj, dl).toLiner()).count());
             }
         }
     }

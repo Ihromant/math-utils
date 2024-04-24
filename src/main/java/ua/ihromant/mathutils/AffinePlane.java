@@ -71,6 +71,10 @@ public class AffinePlane {
         return () -> plane.line(line).stream().filter(p -> !dropped.get(p)).boxed().iterator();
     }
 
+    public Liner toLiner() {
+        return plane.subPlane(IntStream.range(0, plane.pointCount()).filter(p -> !dropped.get(p)).toArray());
+    }
+
     public Liner subPlane(int[] pointArray) {
         return plane.subPlane(pointArray);
     }
