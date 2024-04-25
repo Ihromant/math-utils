@@ -1,8 +1,10 @@
 package ua.ihromant.mathutils;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -97,7 +99,7 @@ public class AffinePlane {
         }
         return () -> plane.point(plane.intersection(line, dl)).stream().filter(l -> l != dl).boxed().iterator();
     }
-    
+
     public int parallel(int l, int p) {
         if (l == dl || dropped.get(p)) {
             throw new IllegalArgumentException();
@@ -298,5 +300,40 @@ public class AffinePlane {
             charToPoint.put(pairs, o);
         }
         return charToPoint;
+    }
+
+    public List<Set<Pair>> vectors() {
+        List<Set<Pair>> result = new ArrayList<>();
+        for (int p1 : points()) {
+            for (int p2 : points()) {
+                if (p1 == p2) {
+                    continue;
+                }
+                Pair p = new Pair(p1, p2);
+                if (result.stream().anyMatch(s -> s.contains(p))) {
+                    continue;
+                }
+                Set<Pair> vectors = new HashSet<>();
+                vectors.add(new Pair(p1, p2));
+                Set<Pair> currentLayer = new HashSet<>(vectors);
+                while (!currentLayer.isEmpty()) {
+                    Set<Pair> nextLayer = new HashSet<>();
+                    for (Pair pair : currentLayer) {
+                        int line = line(pair.a(), pair.b());
+                        for (int beg : notLine(line)) {
+                            int end = parallelogram(pair.a(), pair.b(), beg);
+                            Pair newPair = new Pair(beg, end);
+                            if (!vectors.contains(newPair)) {
+                                nextLayer.add(newPair);
+                            }
+                        }
+                    }
+                    vectors.addAll(currentLayer);
+                    currentLayer = nextLayer;
+                }
+                result.add(vectors);
+            }
+        }
+        return result;
     }
 }

@@ -593,34 +593,18 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testEquivalence() throws IOException {
-        String name = "fig";
-        int k = 27;
+        String name = "bbh1";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            for (int dl = 0; dl < proj.lineCount(); dl++) {
+            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
-                Set<Pair> vectors = new HashSet<>();
-                vectors.add(new Pair(aff.points().iterator().next(), StreamSupport.stream(aff.points().spliterator(), false).skip(1).findAny().orElseThrow()));
-                Set<Pair> currentLayer = new HashSet<>(vectors);
-                while (!currentLayer.isEmpty()) {
-                    Set<Pair> nextLayer = new HashSet<>();
-                    for (Pair pair : currentLayer) {
-                        int line = aff.line(pair.a(), pair.b());
-                        for (int beg : aff.notLine(line)) {
-                            int end = aff.parallelogram(pair.a(), pair.b(), beg);
-                            Pair p1 = new Pair(beg, end);
-                            if (!vectors.contains(p1)) {
-                                nextLayer.add(p1);
-                            }
-                        }
-                    }
-                    vectors.addAll(currentLayer);
-                    currentLayer = nextLayer;
-                }
-                System.out.println(name + " dropped " + dl + " vector " + vectors.size());
+                List<Set<Pair>> vectors = aff.vectors();
+                System.out.println(name + " dropped " + dl + " vectors " + Arrays.toString(vectors.stream().mapToInt(Set::size).sorted().toArray())
+                + " contains reverse " + vectors.stream().anyMatch(s -> s.stream().anyMatch(p -> s.contains(new Pair(p.b(), p.a())))));
             }
         }
     }
