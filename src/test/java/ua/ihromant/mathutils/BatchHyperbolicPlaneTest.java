@@ -17,6 +17,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -556,8 +557,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testDilations() throws IOException {
-        String name = "hughes9";
-        int k = 9;
+        String name = "john";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -576,8 +577,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testAutomorphisms() throws IOException {
-        String name = "dhall9";
-        int k = 9;
+        String name = "john";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -591,8 +592,42 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
+    public void testEquivalence() throws IOException {
+        String name = "fig";
+        int k = 27;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl = 0; dl < proj.lineCount(); dl++) {
+                AffinePlane aff = new AffinePlane(proj, dl);
+                Set<Pair> vectors = new HashSet<>();
+                vectors.add(new Pair(aff.points().iterator().next(), StreamSupport.stream(aff.points().spliterator(), false).skip(1).findAny().orElseThrow()));
+                Set<Pair> currentLayer = new HashSet<>(vectors);
+                while (!currentLayer.isEmpty()) {
+                    Set<Pair> nextLayer = new HashSet<>();
+                    for (Pair pair : currentLayer) {
+                        int line = aff.line(pair.a(), pair.b());
+                        for (int beg : aff.notLine(line)) {
+                            int end = aff.parallelogram(pair.a(), pair.b(), beg);
+                            Pair p1 = new Pair(beg, end);
+                            if (!vectors.contains(p1)) {
+                                nextLayer.add(p1);
+                            }
+                        }
+                    }
+                    vectors.addAll(currentLayer);
+                    currentLayer = nextLayer;
+                }
+                System.out.println(name + " dropped " + dl + " vector " + vectors.size());
+            }
+        }
+    }
+
+    @Test
     public void testVectors() throws IOException {
-        String name = "bbh1";
+        String name = "john";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));

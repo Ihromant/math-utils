@@ -71,6 +71,14 @@ public class AffinePlane {
         return () -> plane.line(line).stream().filter(p -> !dropped.get(p)).boxed().iterator();
     }
 
+    public Iterable<Integer> notLine(int line) {
+        if (line == dl) {
+            throw new IllegalArgumentException();
+        }
+        BitSet onLine = line(line);
+        return () -> IntStream.range(0, plane.pointCount()).filter(p -> !onLine.get(p) && !dropped.get(p)).boxed().iterator();
+    }
+
     public Liner toLiner() {
         return plane.subPlane(IntStream.range(0, plane.pointCount()).filter(p -> !dropped.get(p)).toArray());
     }
