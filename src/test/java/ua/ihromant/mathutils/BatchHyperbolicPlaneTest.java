@@ -593,7 +593,7 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testEquivalence() throws IOException {
-        String name = "bbh1";
+        String name = "bbh2";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -603,8 +603,7 @@ public class BatchHyperbolicPlaneTest {
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 List<Set<Pair>> vectors = aff.vectors();
-                System.out.println(name + " dropped " + dl + " vectors " + Arrays.toString(vectors.stream().mapToInt(Set::size).sorted().toArray())
-                + " contains reverse " + vectors.stream().anyMatch(s -> s.stream().anyMatch(p -> s.contains(new Pair(p.b(), p.a())))));
+                System.out.println(name + " dropped " + dl + " vectors " + Arrays.toString(vectors.stream().mapToInt(Set::size).sorted().toArray()));
             }
         }
     }
