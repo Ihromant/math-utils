@@ -2,122 +2,132 @@ package ua.ihromant.mathutils;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Automorphisms {
     public static Stream<int[]> automorphisms(Liner liner) {
-        int[] base = new int[liner.pointCount()];
-        Arrays.fill(base, -1);
-        return automorphisms(liner, base);
+        int[] partial = new int[liner.pointCount()];
+        Arrays.fill(partial, -1);
+        return automorphisms(liner, partial);
     }
 
-    public static Stream<int[]> automorphisms(Liner liner, int[] base) {
-        BitSet fromLines = new BitSet();
-        BitSet toLines = new BitSet();
-        for (int i = 0; i < base.length; i++) {
-            int toi = base[i];
-            if (toi == -1) {
+    public static Stream<int[]> automorphisms(Liner liner, int[] partial) {
+        BitSet assigned = new BitSet();
+        BitSet fromPossible = new BitSet();
+        BitSet toPossible = new BitSet();
+        fromPossible.set(0, partial.length);
+        toPossible.set(0, partial.length);
+        for (int i = 0; i < partial.length; i++) {
+            if (partial[i] < 0) {
                 continue;
             }
-            fromLines.set(i);
-            toLines.set(toi);
-            for (int j = i + 1; j < base.length; j++) {
-                int toj = base[j];
-                if (toj == -1) {
+            assigned.set(i);
+            fromPossible.set(i, false);
+            toPossible.set(partial[i], false);
+            for (int j = i + 1; j < partial.length; j++) {
+                if (partial[j] < 0) {
                     continue;
                 }
-                fromLines.or(liner.line(liner.line(i, j)));
-                toLines.or(liner.line(liner.line(toi, toj)));
+                liner.line(liner.line(i, j)).stream().forEach(p -> fromPossible.set(p, false));
+                liner.line(liner.line(partial[i], partial[j])).stream().forEach(p -> toPossible.set(p, false));
             }
         }
-        int fromNotSet = fromLines.nextClearBit(0);
-        if (fromNotSet == liner.pointCount()) {
-            if (toLines.nextClearBit(0) != liner.pointCount()) {
+        return automorphisms(liner, partial, assigned, fromPossible, toPossible);
+    }
+
+    public static Stream<int[]> automorphisms(Liner liner, int[] partial, BitSet assigned, BitSet fromPossible, BitSet toPossible) {
+        int fromNotSet = fromPossible.nextSetBit(0);
+        if (fromNotSet == -1) {
+            if (toPossible.nextSetBit(0) >= 0) {
                 return Stream.empty();
             }
-            fromLines = IntStream.range(0, base.length).filter(i -> base[i] >= 0).collect(BitSet::new, BitSet::set, BitSet::or);
-            toLines = IntStream.of(base).filter(i -> i >= 0).collect(BitSet::new, BitSet::set, BitSet::or);
-            fromNotSet = fromLines.nextClearBit(0);
+            BitSet otherPossible = new BitSet();
+            toPossible = new BitSet();
+            otherPossible.set(0, partial.length);
+            toPossible.set(0, partial.length);
+            for (int i = assigned.nextSetBit(0); i >= 0; i = assigned.nextSetBit(i + 1)) {
+                otherPossible.set(i, false);
+                toPossible.set(partial[i], false);
+            }
+            fromNotSet = otherPossible.nextSetBit(0);
         }
         int fromNotSetF = fromNotSet;
-        BitSet toLinesF = toLines;
-        return IntStream.range(0, liner.pointCount()).filter(i -> !toLinesF.get(i)).boxed().mapMulti((toNotSet, sink) -> {
-            int[] newArr = intersectionClosure(liner, base, fromNotSetF, toNotSet);
-            if (newArr == null) {
+        BitSet toPossibleF = toPossible;
+        return toPossibleF.stream().boxed().mapMulti((toNotSet, sink) -> {
+            BitSet newAssigned = (BitSet) assigned.clone();
+            int[] newPartial = intersectionClosure(liner, partial, assigned, fromNotSetF, toNotSet);
+            if (newPartial == null) {
                 return;
             }
-            if (Arrays.stream(newArr).noneMatch(i -> i < 0)) {
-                sink.accept(newArr);
+            if (Arrays.stream(newPartial).noneMatch(i -> i < 0)) {
+                sink.accept(newPartial);
                 return;
             }
-            automorphisms(liner, newArr).forEach(sink);
+            BitSet newFromPossible = (BitSet) fromPossible.clone();
+            BitSet newToPossible = (BitSet) toPossibleF.clone();
+            for (int i = assigned.nextSetBit(0); i >= 0; i = assigned.nextSetBit(i + 1)) {
+                liner.line(liner.line(i, fromNotSetF)).stream().forEach(p -> newFromPossible.set(p, false));
+                liner.line(liner.line(partial[i], toNotSet)).stream().forEach(p -> newToPossible.set(p, false));
+            }
+            newFromPossible.set(fromNotSetF, false);
+            newToPossible.set(toNotSet, false);
+            newAssigned.set(fromNotSetF);
+            automorphisms(liner, newPartial, newAssigned, newFromPossible, newToPossible).forEach(sink);
         });
     }
 
-    private static int[] intersectionClosure(Liner liner, int[] base, int from, Integer to) {
-        Map<Integer, Integer> old = new HashMap<>();
-        for (int i = 0; i < base.length; i++) {
-            if (base[i] == -1) {
-                continue;
+    private static int[] intersectionClosure(Liner liner, int[] partial, BitSet assigned, int from, Integer to) {
+        int[] oldArr = partial.clone();
+        int[] newArr = oldArr.clone();
+        BitSet oldKeys = (BitSet) assigned.clone();
+        Arrays.fill(newArr, -1);
+        newArr[from] = to;
+        while (Arrays.stream(newArr).anyMatch(i -> i >= 0)) {
+            for (int i = 0; i < newArr.length; i++) {
+                if (newArr[i] >= 0) {
+                    oldArr[i] = newArr[i];
+                    oldKeys.set(i);
+                }
             }
-            old.put(i, base[i]);
-        }
-        Map<Integer, Integer> next = new HashMap<>();
-        next.put(from, to);
-        while (!next.isEmpty()) {
-            old.putAll(next);
-            next = new HashMap<>();
-            for (Map.Entry<Integer, Integer> a : old.entrySet()) {
-                int af = a.getKey();
-                int at = a.getValue();
-                for (Map.Entry<Integer, Integer> b : old.entrySet()) {
-                    int bf = b.getKey();
-                    int bt = b.getValue();
-                    if (af >= bf) {
-                        continue;
-                    }
-                    for (Map.Entry<Integer, Integer> c : old.entrySet()) {
-                        int cf = c.getKey();
-                        int ct = c.getValue();
-                        if (cf == af || cf == bf) {
+            newArr = new int[partial.length];
+            Arrays.fill(newArr, -1);
+            for (int a = oldKeys.nextSetBit(0); a >= 0; a = oldKeys.nextSetBit(a + 1)) {
+                for (int b = oldKeys.nextSetBit(a + 1); b >= 0; b = oldKeys.nextSetBit(b + 1)) {
+                    for (int c = oldKeys.nextSetBit(0); c >= 0; c = oldKeys.nextSetBit(c + 1)) {
+                        if (c == a || c == b) {
                             continue;
                         }
-                        for (Map.Entry<Integer, Integer> d : old.entrySet()) {
-                            int df = d.getKey();
-                            int dt = d.getValue();
-                            if (df == af || df == bf || cf >= df) {
+                        for (int d = oldKeys.nextSetBit(c + 1); d >= 0; d = oldKeys.nextSetBit(d + 1)) {
+                            if (d == a || d == b) {
                                 continue;
                             }
-                            int fInt = liner.intersection(liner.line(af, bf), liner.line(cf, df));
-                            int tInt = liner.intersection(liner.line(at, bt), liner.line(ct, dt));
+                            int fInt = liner.intersection(liner.line(a, b), liner.line(c, d));
+                            int tInt = liner.intersection(liner.line(oldArr[a], oldArr[b]), liner.line(oldArr[c], oldArr[d]));
                             if (fInt == -1 && tInt == -1) {
                                 continue;
                             }
                             if (fInt == -1 || tInt == -1) {
                                 return null;
                             }
-                            Integer oldVal = old.get(fInt);
-                            if (oldVal != null) {
+                            int oldVal = oldArr[fInt];
+                            if (oldVal >= 0) {
                                 if (oldVal != tInt) {
                                     return null;
                                 }
                                 continue;
                             }
-                            Integer newVal = next.get(fInt);
-                            if (newVal != null) {
+                            int newVal = newArr[fInt];
+                            if (newVal >= 0) {
                                 if (newVal != tInt) {
                                     continue;
                                 }
                             }
-                            next.put(fInt, tInt);
+                            newArr[fInt] = tInt;
                         }
                     }
                 }
             }
         }
-        return IntStream.range(0, base.length).map(i -> old.getOrDefault(i, -1)).toArray();
+        return oldArr;
     }
 }

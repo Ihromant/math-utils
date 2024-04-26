@@ -19,7 +19,7 @@ public class AutomorphismsTest {
     public void testAutomorphisms() {
         assertEquals(168, Automorphisms.automorphisms(new Liner(new GaloisField(2).generatePlane())).count()); // Fano
         assertEquals(5616, Automorphisms.automorphisms(new Liner(new GaloisField(3).generatePlane())).count()); // projective 3
-        assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
+        //assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
         assertEquals(432, Automorphisms.automorphisms(new Liner(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
@@ -30,6 +30,23 @@ public class AutomorphismsTest {
                 "13579bd3478bc3478bc789a789a789a789a",
                 "2468ace569ade65a9edbcdecbeddebcedcb"
         })).count());
+        assertEquals(6, Automorphisms.automorphisms(new Liner(new String[]{
+                "00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95acbbacc9bbac9"
+        })).count());
+        assertEquals(39, Automorphisms.automorphisms(new Liner(new String[]{
+                "00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95abcbcac9babc9"
+        })).count());
+    }
+
+    @Test
+    public void testPerformance() {
+        long time = System.currentTimeMillis();
+        assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
+        System.out.println(System.currentTimeMillis() - time);
     }
 
     @Test
