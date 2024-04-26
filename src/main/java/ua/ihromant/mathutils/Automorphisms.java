@@ -91,42 +91,38 @@ public class Automorphisms {
             Arrays.fill(newArr, -1);
             for (int a = oldKeys.nextSetBit(0); a >= 0; a = oldKeys.nextSetBit(a + 1)) {
                 for (int b = oldKeys.nextSetBit(a + 1); b >= 0; b = oldKeys.nextSetBit(b + 1)) {
-                    for (int c = oldKeys.nextSetBit(a + 1); c >= 0; c = oldKeys.nextSetBit(c + 1)) {
-                        if (c == b) {
-                            continue;
-                        }
+                    for (int c = oldKeys.nextSetBit(b + 1); c >= 0; c = oldKeys.nextSetBit(c + 1)) {
                         for (int d = oldKeys.nextSetBit(c + 1); d >= 0; d = oldKeys.nextSetBit(d + 1)) {
-                            if (d == b) {
-                                continue;
-                            }
-                            int fInt = liner.intersection(liner.line(a, b), liner.line(c, d));
-                            int tInt = liner.intersection(liner.line(oldArr[a], oldArr[b]), liner.line(oldArr[c], oldArr[d]));
-                            if (fInt == -1 && tInt == -1) {
-                                continue;
-                            }
-                            if (fInt == -1 || tInt == -1) {
+                            if (failed(liner, a, b, c, d, oldArr, newArr) || failed(liner, a, c, b, d, oldArr, newArr)
+                                    || failed(liner, a, d, b, c, oldArr, newArr)) {
                                 return null;
                             }
-                            int oldVal = oldArr[fInt];
-                            if (oldVal >= 0) {
-                                if (oldVal != tInt) {
-                                    return null;
-                                }
-                                continue;
-                            }
-                            int newVal = newArr[fInt];
-                            if (newVal >= 0) {
-                                if (newVal != tInt) {
-                                    return null;
-                                }
-                                continue;
-                            }
-                            newArr[fInt] = tInt;
                         }
                     }
                 }
             }
         }
         return oldArr;
+    }
+
+    private static boolean failed(Liner liner, int a, int b, int c, int d, int[] oldArr, int[] newArr) {
+        int fInt = liner.intersection(liner.line(a, b), liner.line(c, d));
+        int tInt = liner.intersection(liner.line(oldArr[a], oldArr[b]), liner.line(oldArr[c], oldArr[d]));
+        if (fInt == -1 && tInt == -1) {
+            return false;
+        }
+        if (fInt == -1 || tInt == -1) {
+            return true;
+        }
+        int oldVal = oldArr[fInt];
+        if (oldVal >= 0) {
+            return oldVal != tInt;
+        }
+        int newVal = newArr[fInt];
+        if (newVal >= 0) {
+            return newVal != tInt;
+        }
+        newArr[fInt] = tInt;
+        return false;
     }
 }
