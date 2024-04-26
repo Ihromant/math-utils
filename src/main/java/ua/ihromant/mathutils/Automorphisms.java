@@ -13,47 +13,45 @@ public class Automorphisms {
 
     public static Stream<int[]> automorphisms(Liner liner, int[] partial) {
         BitSet assigned = new BitSet();
-        BitSet fromPossible = new BitSet();
-        BitSet toPossible = new BitSet();
-        fromPossible.set(0, partial.length);
-        toPossible.set(0, partial.length);
+        BitSet fromBanned = new BitSet();
+        BitSet toBanned = new BitSet();
         for (int i = 0; i < partial.length; i++) {
             if (partial[i] < 0) {
                 continue;
             }
             assigned.set(i);
-            fromPossible.set(i, false);
-            toPossible.set(partial[i], false);
+            fromBanned.set(i);
+            toBanned.set(partial[i]);
             for (int j = i + 1; j < partial.length; j++) {
                 if (partial[j] < 0) {
                     continue;
                 }
-                liner.line(liner.line(i, j)).stream().forEach(p -> fromPossible.set(p, false));
-                liner.line(liner.line(partial[i], partial[j])).stream().forEach(p -> toPossible.set(p, false));
+                fromBanned.or(liner.line(liner.line(i, j)));
+                toBanned.or(liner.line(liner.line(partial[i], partial[j])));
             }
         }
-        return automorphisms(liner, partial, assigned, fromPossible, toPossible);
+        return automorphisms(liner, partial, assigned, fromBanned, toBanned);
     }
 
-    public static Stream<int[]> automorphisms(Liner liner, int[] partial, BitSet assigned, BitSet fromPossible, BitSet toPossible) {
-        int fromNotSet = fromPossible.nextSetBit(0);
-        if (fromNotSet == -1) {
-            if (toPossible.nextSetBit(0) >= 0) {
+    public static Stream<int[]> automorphisms(Liner liner, int[] partial, BitSet assigned, BitSet fromBanned, BitSet toBanned) {
+        int fromNotSet = fromBanned.nextClearBit(0);
+        if (fromNotSet == partial.length) {
+            if (toBanned.nextClearBit(0) != partial.length) {
                 return Stream.empty();
             }
-            BitSet otherPossible = new BitSet();
-            toPossible = new BitSet();
-            otherPossible.set(0, partial.length);
-            toPossible.set(0, partial.length);
+            BitSet otherBanned = new BitSet();
+            toBanned = new BitSet();
             for (int i = assigned.nextSetBit(0); i >= 0; i = assigned.nextSetBit(i + 1)) {
-                otherPossible.set(i, false);
-                toPossible.set(partial[i], false);
+                otherBanned.set(i);
+                toBanned.set(partial[i]);
             }
-            fromNotSet = otherPossible.nextSetBit(0);
+            fromNotSet = otherBanned.nextClearBit(0);
         }
         int fromNotSetF = fromNotSet;
-        BitSet toPossibleF = toPossible;
-        return toPossibleF.stream().boxed().mapMulti((toNotSet, sink) -> {
+        BitSet toBannedF = toBanned;
+        BitSet allowed = (BitSet) toBannedF.clone();
+        allowed.flip(0, partial.length);
+        return allowed.stream().boxed().mapMulti((toNotSet, sink) -> {
             BitSet newAssigned = (BitSet) assigned.clone();
             int[] newPartial = intersectionClosure(liner, partial, assigned, fromNotSetF, toNotSet);
             if (newPartial == null) {
@@ -63,16 +61,16 @@ public class Automorphisms {
                 sink.accept(newPartial);
                 return;
             }
-            BitSet newFromPossible = (BitSet) fromPossible.clone();
-            BitSet newToPossible = (BitSet) toPossibleF.clone();
+            BitSet newFromBanned = (BitSet) fromBanned.clone();
+            BitSet newToBanned = (BitSet) toBannedF.clone();
             for (int i = assigned.nextSetBit(0); i >= 0; i = assigned.nextSetBit(i + 1)) {
-                liner.line(liner.line(i, fromNotSetF)).stream().forEach(p -> newFromPossible.set(p, false));
-                liner.line(liner.line(partial[i], toNotSet)).stream().forEach(p -> newToPossible.set(p, false));
+                newFromBanned.or(liner.line(liner.line(i, fromNotSetF)));
+                newToBanned.or(liner.line(liner.line(partial[i], toNotSet)));
             }
-            newFromPossible.set(fromNotSetF, false);
-            newToPossible.set(toNotSet, false);
+            newFromBanned.set(fromNotSetF);
+            newToBanned.set(toNotSet);
             newAssigned.set(fromNotSetF);
-            automorphisms(liner, newPartial, newAssigned, newFromPossible, newToPossible).forEach(sink);
+            automorphisms(liner, newPartial, newAssigned, newFromBanned, newToBanned).forEach(sink);
         });
     }
 
