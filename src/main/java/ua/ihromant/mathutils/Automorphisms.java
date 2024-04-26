@@ -87,6 +87,14 @@ public class Automorphisms {
                     oldKeys.set(i);
                 }
             }
+            if (Arrays.stream(oldArr).allMatch(i -> i >= 0)) {
+                for (int line : liner.lines()) {
+                    if (!liner.collinear(liner.line(line).stream().map(f -> oldArr[f]).toArray())) {
+                        return null;
+                    }
+                }
+                return oldArr;
+            }
             newArr = new int[partial.length];
             Arrays.fill(newArr, -1);
             for (int a = oldKeys.nextSetBit(0); a >= 0; a = oldKeys.nextSetBit(a + 1)) {

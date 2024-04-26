@@ -51,8 +51,8 @@ public class AutomorphismsTest {
     @Test
     public void testPerformance() {
         long time = System.currentTimeMillis();
-        assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
-        //assertEquals(372000, Automorphisms.automorphisms(new Liner(new GaloisField(5).generatePlane())).count()); // projective 5
+        //assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
+        assertEquals(372000, Automorphisms.automorphisms(new Liner(new GaloisField(5).generatePlane())).count()); // projective 5
         System.out.println(System.currentTimeMillis() - time);
     }
 
