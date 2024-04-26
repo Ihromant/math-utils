@@ -576,8 +576,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testAutomorphisms() throws IOException {
-        String name = "hughes9";
-        int k = 9;
+        String name = "bbh1";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {

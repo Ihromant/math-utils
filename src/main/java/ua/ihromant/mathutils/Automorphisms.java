@@ -119,7 +119,7 @@ public class Automorphisms {
                             int newVal = newArr[fInt];
                             if (newVal >= 0) {
                                 if (newVal != tInt) {
-                                    continue;
+                                    return null;
                                 }
                             }
                             newArr[fInt] = tInt;
