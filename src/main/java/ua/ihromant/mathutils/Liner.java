@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.PermutationGroup;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -516,5 +517,9 @@ public class Liner {
         return sets.stream().map(l -> l.stream()
                         .map(pt -> Arrays.binarySearch(pointArray, pt)).filter(pt -> pt >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
+    }
+
+    public PermutationGroup automorphisms() {
+        return new PermutationGroup(Automorphisms.automorphisms(this).toArray(int[][]::new));
     }
 }
