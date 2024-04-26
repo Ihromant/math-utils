@@ -87,7 +87,7 @@ public class Automorphisms {
                     oldKeys.set(i);
                 }
             }
-            if (Arrays.stream(oldArr).allMatch(i -> i >= 0)) {
+            if (oldKeys.cardinality() == oldArr.length) {
                 for (int line : liner.lines()) {
                     if (!liner.collinear(liner.line(line).stream().map(f -> oldArr[f]).toArray())) {
                         return null;
