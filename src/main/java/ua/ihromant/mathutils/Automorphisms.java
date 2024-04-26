@@ -93,12 +93,12 @@ public class Automorphisms {
             Arrays.fill(newArr, -1);
             for (int a = oldKeys.nextSetBit(0); a >= 0; a = oldKeys.nextSetBit(a + 1)) {
                 for (int b = oldKeys.nextSetBit(a + 1); b >= 0; b = oldKeys.nextSetBit(b + 1)) {
-                    for (int c = oldKeys.nextSetBit(0); c >= 0; c = oldKeys.nextSetBit(c + 1)) {
-                        if (c == a || c == b) {
+                    for (int c = oldKeys.nextSetBit(a + 1); c >= 0; c = oldKeys.nextSetBit(c + 1)) {
+                        if (c == b) {
                             continue;
                         }
                         for (int d = oldKeys.nextSetBit(c + 1); d >= 0; d = oldKeys.nextSetBit(d + 1)) {
-                            if (d == a || d == b) {
+                            if (d == b) {
                                 continue;
                             }
                             int fInt = liner.intersection(liner.line(a, b), liner.line(c, d));
