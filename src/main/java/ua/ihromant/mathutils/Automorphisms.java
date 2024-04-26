@@ -78,8 +78,8 @@ public class Automorphisms {
 
     private static int[] intersectionClosure(Liner liner, int[] partial, BitSet assigned, int from, Integer to) {
         int[] oldArr = partial.clone();
-        int[] newArr = oldArr.clone();
         BitSet oldKeys = (BitSet) assigned.clone();
+        int[] newArr = new int[oldArr.length];
         Arrays.fill(newArr, -1);
         newArr[from] = to;
         while (Arrays.stream(newArr).anyMatch(i -> i >= 0)) {
