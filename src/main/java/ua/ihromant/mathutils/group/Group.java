@@ -148,4 +148,8 @@ public interface Group {
         }
         return result;
     }
+
+    default boolean isCommutative() {
+        return IntStream.range(1, order()).allMatch(i -> IntStream.range(1, order()).allMatch(j -> op(i, j) == op(j, i)));
+    }
 }

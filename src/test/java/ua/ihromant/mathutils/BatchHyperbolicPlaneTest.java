@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -551,13 +552,13 @@ public class BatchHyperbolicPlaneTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
-            //"bbh1", new int[]{0, 192, 193, 269},
+            "bbh1", new int[]{0, 192, 193, 269},
             "hughes9", new int[]{0, 3});
 
     @Test
     public void testDilations() throws IOException {
-        String name = "hughes9";
-        int k = 9;
+        String name = "bbh1";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -565,11 +566,20 @@ public class BatchHyperbolicPlaneTest {
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 BitSet infty = proj.line(dl);
-                System.out.println(name + " dropped " + dl);
                 int[] partial = new int[proj.pointCount()];
                 Arrays.fill(partial, -1);
                 infty.stream().forEach(i -> partial[i] = i);
-                System.out.println(Automorphisms.automorphisms(proj, partial).count());
+                int[][] dilations = Automorphisms.automorphisms(proj, partial).toArray(int[][]::new);
+                AffinePlane aff = new AffinePlane(proj, dl);
+                System.out.println(name + " dropped " + dl + " group size " + dilations.length);
+                for (int i : aff.points()) {
+                    int[][] withFixed = Arrays.stream(dilations).filter(dil -> dil[i] == i).toArray(int[][]::new);
+                    PermutationGroup gr = new PermutationGroup(withFixed);
+                    if (gr.order() == 1) {
+                        continue;
+                    }
+                    System.out.println("For point " + i + " group size " + gr.order() + " commutative " + gr.isCommutative());
+                }
             }
         }
     }
