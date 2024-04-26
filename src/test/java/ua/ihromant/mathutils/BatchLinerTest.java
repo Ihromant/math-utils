@@ -559,8 +559,8 @@ public class BatchLinerTest {
 
     @Test
     public void testDilations() throws IOException {
-        String name = "pg29";
-        int k = 9;
+        String name = "bbh1";
+        int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
