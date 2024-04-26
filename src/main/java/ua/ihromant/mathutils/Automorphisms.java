@@ -121,6 +121,7 @@ public class Automorphisms {
                                 if (newVal != tInt) {
                                     return null;
                                 }
+                                continue;
                             }
                             newArr[fInt] = tInt;
                         }
