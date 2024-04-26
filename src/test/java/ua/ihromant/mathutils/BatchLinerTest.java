@@ -32,7 +32,7 @@ import java.util.zip.ZipInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class BatchHyperbolicPlaneTest {
+public class BatchLinerTest {
     private ZipInputStream getZis(InputStream is) throws IOException {
         ZipInputStream zis = new ZipInputStream(Objects.requireNonNull(is));
         zis.getNextEntry();
@@ -474,7 +474,7 @@ public class BatchHyperbolicPlaneTest {
                         }
                         return unique.contains(result);
                     })) {
-                        unique.add(Arrays.stream(diffs).map(BatchHyperbolicPlaneTest::of).collect(Collectors.toSet()));
+                        unique.add(Arrays.stream(diffs).map(BatchLinerTest::of).collect(Collectors.toSet()));
                         ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
                                 .collect(Collectors.joining(", ", "{", "}")));
                         counter.incrementAndGet();
@@ -559,8 +559,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testDilations() throws IOException {
-        String name = "bbh1";
-        int k = 16;
+        String name = "pg29";
+        int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -572,19 +572,20 @@ public class BatchHyperbolicPlaneTest {
                 Arrays.fill(partial, -1);
                 infty.stream().forEach(i -> partial[i] = i);
                 int[][] dilations = Automorphisms.automorphisms(proj, partial).toArray(int[][]::new);
+                PermutationGroup dilGr = new PermutationGroup(dilations);
                 AffinePlane aff = new AffinePlane(proj, dl);
                 PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
                         || IntStream.range(0, dil.length).filter(j -> !infty.get(j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
-                System.out.println(name + " dropped " + dl + " group size " + dilations.length
-                        + " commutative " + new PermutationGroup(dilations).isCommutative()
-                        + " translations size " + translations.order() + " comm translations " + translations.isCommutative());
+                System.out.println(name + " dropped " + dl + " group size " + dilGr.order() + " commutative " + dilGr.isCommutative()
+                        + " translations size " + translations.order() + " comm translations " + translations.isCommutative()
+                    + " orders " + IntStream.range(0, dilGr.order()).boxed().collect(Collectors.groupingBy(dilGr::order, Collectors.counting())));
                 for (int i : aff.points()) {
                     int[][] withFixed = Arrays.stream(dilations).filter(dil -> dil[i] == i).toArray(int[][]::new);
                     PermutationGroup gr = new PermutationGroup(withFixed);
                     if (gr.order() == 1) {
                         continue;
                     }
-                    System.out.println("For point " + i + " group size " + gr.order() + " commutative " + gr.isCommutative());
+                    System.out.println("For point " + i + " group size " + gr.order() + " commutative " + gr.isCommutative() + " orders " + IntStream.range(0, gr.order()).boxed().collect(Collectors.groupingBy(gr::order, Collectors.counting())));
                 }
             }
         }
@@ -608,7 +609,7 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testVectors() throws IOException {
-        String name = "bbh1";
+        String name = "math";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
