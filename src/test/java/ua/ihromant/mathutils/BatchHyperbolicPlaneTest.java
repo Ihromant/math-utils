@@ -552,8 +552,10 @@ public class BatchHyperbolicPlaneTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
+            "hughes9", new int[]{0, 3},
             "bbh1", new int[]{0, 192, 193, 269},
-            "hughes9", new int[]{0, 3});
+      //      "bbh2", new int[]{0, 28},
+            "", new int[]{});
 
     @Test
     public void testDilations() throws IOException {
@@ -571,7 +573,11 @@ public class BatchHyperbolicPlaneTest {
                 infty.stream().forEach(i -> partial[i] = i);
                 int[][] dilations = Automorphisms.automorphisms(proj, partial).toArray(int[][]::new);
                 AffinePlane aff = new AffinePlane(proj, dl);
-                System.out.println(name + " dropped " + dl + " group size " + dilations.length);
+                PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
+                        || IntStream.range(0, dil.length).filter(j -> !infty.get(j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
+                System.out.println(name + " dropped " + dl + " group size " + dilations.length
+                        + " commutative " + new PermutationGroup(dilations).isCommutative()
+                        + " translations size " + translations.order() + " comm translations " + translations.isCommutative());
                 for (int i : aff.points()) {
                     int[][] withFixed = Arrays.stream(dilations).filter(dil -> dil[i] == i).toArray(int[][]::new);
                     PermutationGroup gr = new PermutationGroup(withFixed);
@@ -619,7 +625,7 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testFuncVectors() throws IOException {
-        String name = "bbh1";
+        String name = "bbh2";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
