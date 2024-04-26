@@ -17,7 +17,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -552,13 +551,13 @@ public class BatchHyperbolicPlaneTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
-            //"bbh1", new int[]{192, 193, 195, 197, 269},
+            //"bbh1", new int[]{0, 192, 193, 269},
             "hughes9", new int[]{0, 3});
 
     @Test
     public void testDilations() throws IOException {
-        String name = "john";
-        int k = 16;
+        String name = "hughes9";
+        int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -577,8 +576,8 @@ public class BatchHyperbolicPlaneTest {
 
     @Test
     public void testAutomorphisms() throws IOException {
-        String name = "john";
-        int k = 16;
+        String name = "hughes9";
+        int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -592,8 +591,8 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
-    public void testEquivalence() throws IOException {
-        String name = "bbh2";
+    public void testVectors() throws IOException {
+        String name = "bbh1";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -609,8 +608,8 @@ public class BatchHyperbolicPlaneTest {
     }
 
     @Test
-    public void testVectors() throws IOException {
-        String name = "john";
+    public void testFuncVectors() throws IOException {
+        String name = "bbh1";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
