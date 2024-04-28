@@ -559,7 +559,7 @@ public class BatchLinerTest {
 
     @Test
     public void testDilations() throws IOException {
-        String name = "bbh1";
+        String name = "bbs4";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -568,16 +568,19 @@ public class BatchLinerTest {
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 BitSet infty = proj.line(dl);
-                int[] partial = new int[proj.pointCount()];
-                Arrays.fill(partial, -1);
-                infty.stream().forEach(i -> partial[i] = i);
-                int[][] dilations = Automorphisms.automorphisms(proj, partial).toArray(int[][]::new);
+                int[] partialPoints = new int[proj.pointCount()];
+                Arrays.fill(partialPoints, -1);
+                infty.stream().forEach(i -> partialPoints[i] = i);
+                int[] partialLines = new int[proj.lineCount()];
+                Arrays.fill(partialLines, -1);
+                partialLines[dl] = dl;
+                int[][] dilations = Automorphisms.autArray(proj, partialPoints, partialLines);
                 PermutationGroup dilGr = new PermutationGroup(dilations);
                 AffinePlane aff = new AffinePlane(proj, dl);
                 PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
                         || IntStream.range(0, dil.length).filter(j -> !infty.get(j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
-                System.out.println(name + " dropped " + dl + " group size " + dilGr.order() + " commutative " + dilGr.isCommutative()
-                        + " translations size " + translations.order() + " comm translations " + translations.isCommutative()
+                System.out.println(name + " dropped " + dl + " dilations size " + dilGr.order() + " comm dil " + dilGr.isCommutative()
+                        + " translations size " + translations.order() + " comm trans " + translations.isCommutative()
                     + " orders " + IntStream.range(0, dilGr.order()).boxed().collect(Collectors.groupingBy(dilGr::order, Collectors.counting())));
                 for (int i : aff.points()) {
                     int[][] withFixed = Arrays.stream(dilations).filter(dil -> dil[i] == i).toArray(int[][]::new);
@@ -593,7 +596,7 @@ public class BatchLinerTest {
 
     @Test
     public void testAutomorphisms() throws IOException {
-        String name = "bbh1";
+        String name = "dbbs4";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -601,8 +604,7 @@ public class BatchLinerTest {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                System.out.println(name + " dropped " + dl);
-                System.out.println(Automorphisms.automorphisms(new AffinePlane(proj, dl).toLiner()).count());
+                System.out.println(name + " dropped " + dl + " count " + Automorphisms.autCount(new AffinePlane(proj, dl).toLiner()));
             }
         }
     }
@@ -626,7 +628,7 @@ public class BatchLinerTest {
 
     @Test
     public void testFuncVectors() throws IOException {
-        String name = "bbh2";
+        String name = "dbbs4";
         int k = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));

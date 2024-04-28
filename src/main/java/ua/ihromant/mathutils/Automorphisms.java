@@ -155,6 +155,18 @@ public class Automorphisms {
         return coll.array();
     }
 
+    public static long autCount(Liner liner, int[] partialPoints, int[] partialLines) {
+        CountingConsumer cnt = new CountingConsumer();
+        automorphisms(liner, partialPoints, partialLines, cnt);
+        return cnt.count();
+    }
+
+    public static int[][] autArray(Liner liner, int[] partialPoints, int[] partialLines) {
+        CollectingConsumer coll = new CollectingConsumer();
+        automorphisms(liner, partialPoints, partialLines, coll);
+        return coll.array();
+    }
+
     private static void automorphisms(Liner liner, Consumer<int[]> sink) {
         int[] partialPoints = new int[liner.pointCount()];
         int[] partialLines = new int[liner.lineCount()];
