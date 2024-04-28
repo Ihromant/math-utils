@@ -178,7 +178,6 @@ public class Automorphisms {
     private static void automorphisms(Liner liner, int[] partialPoints, int[] partialLines, Consumer<int[]> sink) {
         BitSet fromBanned = new BitSet();
         BitSet toBanned = new BitSet();
-        int len = liner.pointCount();
         for (int i = 0; i < partialLines.length; i++) {
             int ln = partialLines[i];
             if (ln >= 0) {
@@ -186,12 +185,14 @@ public class Automorphisms {
                 toBanned.or(liner.line(ln));
             }
         }
-        if (fromBanned.cardinality() == len) {
-            if (toBanned.cardinality() != len) {
+        fromBanned.flip(0, partialPoints.length);
+        if (fromBanned.isEmpty()) {
+            toBanned.flip(0, partialPoints.length);
+            if (!toBanned.isEmpty()) {
                 return;
             }
-            fromBanned.clear();
-            toBanned.clear();
+        } else {
+            fromBanned.flip(0, partialPoints.length);
         }
         for (int i = 0; i < partialPoints.length; i++) {
             int pt = partialPoints[i];
