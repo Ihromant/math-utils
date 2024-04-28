@@ -81,10 +81,16 @@ public class Automorphisms {
         Arrays.fill(newArr, -1);
         newArr[from] = to;
         while (Arrays.stream(newArr).anyMatch(i -> i >= 0)) {
+            //BitSet newVals = new BitSet(); // this is very rare case, use it when error only because it slows down calculation
             for (int i = 0; i < newArr.length; i++) {
-                if (newArr[i] >= 0) {
-                    oldArr[i] = newArr[i];
+                int newVal = newArr[i];
+                if (newVal >= 0) {
+                    oldArr[i] = newVal;
                     oldKeys.set(i);
+//                    if (newVals.get(newVal)) {
+//                        return null;
+//                    }
+//                    newVals.set(newVal);
                 }
             }
             if (Arrays.stream(oldArr).allMatch(i -> i >= 0)) {
