@@ -520,6 +520,6 @@ public class Liner {
     }
 
     public PermutationGroup automorphisms() {
-        return new PermutationGroup(Automorphisms.automorphisms(this).toArray(int[][]::new));
+        return new PermutationGroup(Automorphisms.autArray(this));
     }
 }
