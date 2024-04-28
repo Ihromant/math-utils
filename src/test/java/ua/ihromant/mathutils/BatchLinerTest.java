@@ -596,15 +596,16 @@ public class BatchLinerTest {
 
     @Test
     public void testAutomorphisms() throws IOException {
-        String name = "dbbs4";
-        int k = 16;
+        String name = "pg29";
+        int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                System.out.println(name + " dropped " + dl + " count " + Automorphisms.autCount(new AffinePlane(proj, dl).toLiner()));
+                long time = System.currentTimeMillis();
+                System.out.println(name + " dropped " + dl + " count " + Automorphisms.autCount(new AffinePlane(proj, dl).toLiner()) + " time " + (System.currentTimeMillis() - time));
             }
         }
     }
