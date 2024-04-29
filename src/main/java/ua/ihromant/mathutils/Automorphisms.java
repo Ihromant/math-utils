@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Automorphisms {
@@ -41,60 +43,45 @@ public class Automorphisms {
     }
 
     private static void automorphisms(Liner liner, int[] partialPoints, int[] partialLines, Consumer<int[]> sink) {
-        BitSet fromBanned = new BitSet();
-        BitSet toBanned = new BitSet();
+        BitSet oldPointsAssigned = new BitSet();
+        BitSet oldLinesAssigned = new BitSet();
+        BitSet pointValues = new BitSet();
         for (int i = 0; i < partialLines.length; i++) {
             int ln = partialLines[i];
             if (ln >= 0) {
-                fromBanned.or(liner.line(i));
-                toBanned.or(liner.line(ln));
+                oldLinesAssigned.set(i);
             }
-        }
-        fromBanned.flip(0, partialPoints.length);
-        if (fromBanned.isEmpty()) {
-            toBanned.flip(0, partialPoints.length);
-            if (!toBanned.isEmpty()) {
-                return;
-            }
-        } else {
-            fromBanned.flip(0, partialPoints.length);
         }
         for (int i = 0; i < partialPoints.length; i++) {
             int pt = partialPoints[i];
             if (pt >= 0) {
-                fromBanned.set(i);
-                toBanned.set(pt);
+                oldPointsAssigned.set(i);
+                pointValues.set(pt);
             }
         }
-        int from = fromBanned.nextClearBit(0);
-        br: for (int to = toBanned.nextClearBit(0); to < partialPoints.length; to = toBanned.nextClearBit(to + 1)) {
-            int[] nextPartialPoints = partialPoints.clone();
-            int[] nextPartialLines = partialLines.clone();
-            nextPartialPoints[from] = to;
-            BitSet pointsAssigned = new BitSet();
-            pointsAssigned.set(from);
-            while (!pointsAssigned.isEmpty()) {
-                BitSet linesAssigned = new BitSet();
-                for (int p1 = 0; p1 < nextPartialPoints.length; p1++) {
-                    int p1To = nextPartialPoints[p1];
-                    if (p1To < 0 || pointsAssigned.get(p1)) {
-                        continue;
-                    }
-                    for (int p2 = pointsAssigned.nextSetBit(0); p2 >= 0; p2 = pointsAssigned.nextSetBit(p2 + 1)) {
-                        int lineFrom = liner.line(p1, p2);
-                        int lineTo = liner.line(p1To, nextPartialPoints[p2]);
-                        int oldLine = nextPartialLines[lineFrom];
-                        if (oldLine >= 0) {
-                            if (oldLine != lineTo) {
-                                continue br;
-                            }
-                            continue;
-                        }
-                        nextPartialLines[lineFrom] = lineTo;
-                        linesAssigned.set(lineFrom);
-                    }
+        OptionalInt nextLine = IntStream.range(0, partialLines.length)
+                .filter(l -> !oldLinesAssigned.get(l) && !liner.line(l).intersects(oldPointsAssigned)).findAny();
+        int from = nextLine.orElseGet(() -> oldLinesAssigned.nextClearBit(0));
+        BitSet toFilter = new BitSet();
+        if (nextLine.isPresent()) {
+            for (int i = 0; i < partialLines.length; i++) {
+                if (liner.line(i).intersects(pointValues)) {
+                    toFilter.set(i);
                 }
-                pointsAssigned.clear();
+            }
+        } else {
+            for (int i = oldLinesAssigned.nextSetBit(0); i >= 0; i = oldLinesAssigned.nextSetBit(i + 1)) {
+                toFilter.set(partialLines[i]);
+            }
+        }
+        br: for (int to = toFilter.nextClearBit(0); to < partialLines.length; to = toFilter.nextClearBit(to + 1)) {
+            int[] nextPartialLines = partialLines.clone();
+            int[] nextPartialPoints = partialPoints.clone();
+            nextPartialLines[from] = to;
+            BitSet linesAssigned = new BitSet();
+            linesAssigned.set(from);
+            while (!linesAssigned.isEmpty()) {
+                BitSet pointsAssigned = new BitSet();
                 for (int l1 = 0; l1 < nextPartialLines.length; l1++) {
                     int lineTo = nextPartialLines[l1];
                     if (nextPartialLines[l1] < 0) {
@@ -118,6 +105,26 @@ public class Automorphisms {
                         }
                         nextPartialPoints[intFrom] = intTo;
                         pointsAssigned.set(intFrom);
+                    }
+                }
+                linesAssigned.clear();
+                for (int p1 = 0; p1 < nextPartialPoints.length; p1++) {
+                    int p1To = nextPartialPoints[p1];
+                    if (p1To < 0 || pointsAssigned.get(p1)) {
+                        continue;
+                    }
+                    for (int p2 = pointsAssigned.nextSetBit(0); p2 >= 0; p2 = pointsAssigned.nextSetBit(p2 + 1)) {
+                        int lineFrom = liner.line(p1, p2);
+                        int lineTo = liner.line(p1To, nextPartialPoints[p2]);
+                        int oldLine = nextPartialLines[lineFrom];
+                        if (oldLine >= 0) {
+                            if (oldLine != lineTo) {
+                                continue br;
+                            }
+                            continue;
+                        }
+                        nextPartialLines[lineFrom] = lineTo;
+                        linesAssigned.set(lineFrom);
                     }
                 }
             }
