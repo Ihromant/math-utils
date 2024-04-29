@@ -574,7 +574,7 @@ public class BatchLinerTest {
                 int[] partialLines = new int[proj.lineCount()];
                 Arrays.fill(partialLines, -1);
                 partialLines[dl] = dl;
-                int[][] dilations = Automorphisms.autArray(proj, partialPoints, partialLines);
+                int[][] dilations = Automorphisms.autArrayOld(proj, partialPoints, partialLines);
                 PermutationGroup dilGr = new PermutationGroup(dilations);
                 AffinePlane aff = new AffinePlane(proj, dl);
                 PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
@@ -595,7 +595,7 @@ public class BatchLinerTest {
     }
 
     @Test
-    public void testAutomorphisms() throws IOException {
+    public void testAutomorphisms2() throws IOException {
         String name = "pg29";
         int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
@@ -605,7 +605,7 @@ public class BatchLinerTest {
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 long time = System.currentTimeMillis();
-                System.out.println(name + " dropped " + dl + " count " + Automorphisms.autCount(new AffinePlane(proj, dl).toLiner()) + " time " + (System.currentTimeMillis() - time));
+                System.out.println(name + " dropped " + dl + " count " + Automorphisms.autCountOld(new AffinePlane(proj, dl).toLiner()) + " time " + (System.currentTimeMillis() - time));
             }
         }
     }
