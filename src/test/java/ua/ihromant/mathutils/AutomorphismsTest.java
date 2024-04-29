@@ -3,7 +3,6 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -175,6 +174,16 @@ public class AutomorphismsTest {
         assertNotNull(Automorphisms.isomorphism(firstSpace15, thirdSpace15));
         assertNotNull(Automorphisms.isomorphism(firstSpace15, thirdSpace15));
         assertNull(Automorphisms.isomorphism(firstFlat15, firstSpace15));
+        Liner firstPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(0, 3, 4)});
+        Liner secondPartial = new Liner(9, new BitSet[]{of(8, 7, 6), of(8, 5, 4)});
+        Liner thirdPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(3, 4, 5)});
+        Liner fourthPartial = new Liner(9, new BitSet[]{of(0, 3, 6), of (1, 4, 7)});
+        Liner fifthPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(0, 3, 4), of(1, 3, 5)});
+        Liner sixthPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(0, 5, 6), of(2, 4, 6)});
+        assertNotNull(Automorphisms.isomorphism(firstPartial, secondPartial));
+        assertNull(Automorphisms.isomorphism(firstPartial, thirdPartial));
+        assertNotNull(Automorphisms.isomorphism(thirdPartial, fourthPartial));
+        assertNotNull(Automorphisms.isomorphism(fifthPartial, sixthPartial));
     }
 
     private static BitSet of(int... values) {
