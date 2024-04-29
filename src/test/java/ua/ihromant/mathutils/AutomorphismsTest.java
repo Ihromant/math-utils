@@ -12,7 +12,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class AutomorphismsTest {
     @Test
@@ -124,6 +124,57 @@ public class AutomorphismsTest {
         }
         System.out.println(lengths);
         System.out.println(cycles.stream().filter(c -> c.size() > 1).peek(System.out::println).collect(Collectors.groupingBy(Set::size, Collectors.counting())));
+    }
+
+    @Test
+    public void testIsomorphism() {
+        Liner first7 = new Liner(new String[]{
+                "0001123",
+                "1242534",
+                "3654656"
+        });
+        Liner second7 = new Liner(new GaloisField(2).generatePlane());
+        assertNotNull(Automorphisms.isomorphism(first7, second7));
+        assertNotNull(Automorphisms.isomorphism(second7, first7));
+        Liner first13 = new Liner(new String[]{
+                "00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95abcbcac9babc9"
+        });
+        Liner alt13 = new Liner(new String[]{
+                "00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95acbbacc9bbac9"
+        });
+        Liner second13 = new Liner(new int[]{0, 6, 8}, new int[]{0, 9, 10});
+        assertNotNull(Automorphisms.isomorphism(first13, second13));
+        assertNotNull(Automorphisms.isomorphism(second13, first13));
+        assertNull(Automorphisms.isomorphism(alt13, first13));
+        Liner first9 = new Liner(new String[]{
+                "000011122236",
+                "134534534547",
+                "268787676858"
+        });
+        Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
+        assertNotNull(Automorphisms.isomorphism(first9, second9));
+        Liner firstFlat15 = new Liner(new String[] {
+                "00000001111112222223333444455566678",
+                "13579bd3469ac34578b678a58ab78979c9a",
+                "2468ace578bde96aecdbcded9cebecaeddb"
+        });
+        Liner firstSpace15 = new Liner(new String[]{
+               "00000001111112222223333444455556666",
+               "13579bd3478bc3478bc789a789a789a789a",
+               "2468ace569ade65a9edbcdecbeddebcedcb"
+        });
+        Liner secondFlat15 = new Liner(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondSpace15 = new Liner(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner thirdSpace15 = new Liner(new GaloisField(2).generateSpace());
+        assertNotNull(Automorphisms.isomorphism(firstFlat15, secondFlat15));
+        assertNotNull(Automorphisms.isomorphism(firstSpace15, secondSpace15));
+        assertNotNull(Automorphisms.isomorphism(firstSpace15, thirdSpace15));
+        assertNotNull(Automorphisms.isomorphism(firstSpace15, thirdSpace15));
+        assertNull(Automorphisms.isomorphism(firstFlat15, firstSpace15));
     }
 
     private static BitSet of(int... values) {
