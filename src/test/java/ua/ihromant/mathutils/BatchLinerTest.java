@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -675,6 +676,30 @@ public class BatchLinerTest {
                 }
                 System.out.println("Dropped " + dl + " size: " + vectorSub.cardinality() + " points " + vectorSub);
             }
+        }
+    }
+
+    @Test
+    public void testNonIsomorphic() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Map<Integer, Liner> nonIsomorphic = new HashMap<>();
+            br: for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
+                System.out.println(dl);
+                Liner aff = new AffinePlane(proj, dl).toLiner();
+                for (Liner l : nonIsomorphic.values()) {
+                    if (Automorphisms.isomorphism(l, aff) != null) {
+                        continue br;
+                    }
+                }
+                nonIsomorphic.put(dl, aff);
+            }
+            System.out.println("Non isomorphic " + nonIsomorphic.keySet());
         }
     }
 }
