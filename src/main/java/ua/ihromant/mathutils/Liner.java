@@ -151,10 +151,10 @@ public class Liner {
 
     private BitSet[] generateBeams(boolean strict) {
         BitSet[] result = new BitSet[pointCount];
-        for (int p1 : points()) {
+        for (int p1 = 0; p1 < pointCount; p1++) {
             BitSet beam = new BitSet();
             result[p1] = beam;
-            for (int p2 : points()) {
+            for (int p2 = 0; p2 < pointCount; p2++) {
                 if (p1 == p2) {
                     continue;
                 }
