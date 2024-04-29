@@ -28,7 +28,7 @@ public class Liner {
         this.pointCount = Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality();
         this.lines = lines;
         this.lookup = generateLookup();
-        this.points = generateBeams(true);
+        this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -36,7 +36,7 @@ public class Liner {
         this.pointCount = pointCount;
         this.lines = lines;
         this.lookup = generateLookup();
-        this.points = generateBeams(false);
+        this.points = generateBeamsPartial();
         this.intersections = generateIntersections();
     }
 
@@ -58,7 +58,7 @@ public class Liner {
             });
         }).toArray(BitSet[]::new);
         this.lookup = generateLookup();
-        this.points = generateBeams(true);
+        this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -72,7 +72,7 @@ public class Liner {
             return res;
         })).toArray(BitSet[]::new);
         this.lookup = generateLookup();
-        this.points = generateBeams(true);
+        this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -94,7 +94,7 @@ public class Liner {
             return res;
         }) : Stream.of()).toArray(BitSet[]::new);
         this.lookup = generateLookup();
-        this.points = generateBeams(true);
+        this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -116,7 +116,7 @@ public class Liner {
             return res;
         }).distinct() : Stream.of()).toArray(BitSet[]::new);
         this.lookup = generateLookup();
-        this.points = generateBeams(true);
+        this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -130,7 +130,7 @@ public class Liner {
             return res;
         }).toArray((BitSet[]::new));
         this.lookup = generateLookup();
-        this.points = generateBeams(true);
+        this.points = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -149,7 +149,22 @@ public class Liner {
         return result;
     }
 
-    private BitSet[] generateBeams(boolean strict) {
+    private BitSet[] generateBeams() {
+        BitSet[] result = new BitSet[pointCount];
+        for (int p1 = 0; p1 < pointCount; p1++) {
+            BitSet beam = new BitSet();
+            result[p1] = beam;
+            for (int p2 = 0; p2 < pointCount; p2++) {
+                if (p1 == p2) {
+                    continue;
+                }
+                beam.set(line(p1, p2));
+            }
+        }
+        return result;
+    }
+
+    private BitSet[] generateBeamsPartial() {
         BitSet[] result = new BitSet[pointCount];
         for (int p1 = 0; p1 < pointCount; p1++) {
             BitSet beam = new BitSet();
@@ -159,8 +174,8 @@ public class Liner {
                     continue;
                 }
                 int line = line(p1, p2);
-                if (strict || line >= 0) {
-                    beam.set(line(p1, p2));
+                if (line >= 0) {
+                    beam.set(line);
                 }
             }
         }
