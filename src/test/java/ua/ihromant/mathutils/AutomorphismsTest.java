@@ -53,17 +53,16 @@ public class AutomorphismsTest {
         })));
     }
 
+    private static final int[] AUTH_COUNTS = {0, 0, 168, 5616, 120960, 372000, 0, 5630688, 49448448, 84913920};
+
     @Test
     public void testPerformance() {
+        int order = 7;
         long time = System.currentTimeMillis();
-        //assertEquals(120960, Automorphisms.autCount(new Liner(new GaloisField(4).generatePlane()))); // projective 4
-        //assertEquals(372000, Automorphisms.autCount(new Liner(new GaloisField(5).generatePlane()))); // projective 5
-        assertEquals(5630688, Automorphisms.autCount(new Liner(new GaloisField(7).generatePlane()))); // projective 7
+        assertEquals(AUTH_COUNTS[order], Automorphisms.autCount(new Liner(new GaloisField(order).generatePlane())));
         System.out.println(System.currentTimeMillis() - time);
         time = System.currentTimeMillis();
-        //assertEquals(120960, Automorphisms.autCountOld(new Liner(new GaloisField(4).generatePlane()))); // projective 4
-        //assertEquals(372000, Automorphisms.autCountOld(new Liner(new GaloisField(5).generatePlane()))); // projective 5
-        assertEquals(5630688, Automorphisms.autCountOld(new Liner(new GaloisField(7).generatePlane()))); // projective 7
+        assertEquals(AUTH_COUNTS[order], Automorphisms.autCountOld(new Liner(new GaloisField(order).generatePlane())));
         System.out.println(System.currentTimeMillis() - time);
     }
 
