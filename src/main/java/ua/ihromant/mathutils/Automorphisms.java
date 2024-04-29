@@ -150,42 +150,71 @@ public class Automorphisms {
     }
 
     public static long autCountOld(Liner liner) {
-        CountingConsumer cnt = new CountingConsumer();
-        automorphisms(liner, cnt);
-        return cnt.count();
-    }
-    public static int[][] autArrayOld(Liner liner) {
-        CollectingConsumer coll = new CollectingConsumer();
-        automorphisms(liner, coll);
-        return coll.array();
-    }
-    public static long autCountOld(Liner liner, int[] partialPoints, int[] partialLines) {
-        CountingConsumer cnt = new CountingConsumer();
-        automorphisms(liner, partialPoints, partialLines, cnt);
-        return cnt.count();
-    }
-    public static int[][] autArrayOld(Liner liner, int[] partialPoints, int[] partialLines) {
-        CollectingConsumer coll = new CollectingConsumer();
-        automorphisms(liner, partialPoints, partialLines, coll);
-        return coll.array();
-    }
-    private static void automorphisms(Liner liner, Consumer<int[]> sink) {
         int[] partialPoints = new int[liner.pointCount()];
         int[] partialLines = new int[liner.lineCount()];
         Arrays.fill(partialPoints, -1);
         Arrays.fill(partialLines, -1);
-        automorphisms(liner, partialPoints, partialLines, sink);
+        CountingConsumer cnt = new CountingConsumer();
+        automorphismsOld(liner, partialPoints, new BitSet(), partialLines, new BitSet(), cnt);
+        return cnt.count();
     }
 
-    private static void automorphisms(Liner liner, int[] partialPoints, int[] partialLines, Consumer<int[]> sink) {
-        BitSet fromBanned = new BitSet();
-        BitSet toBanned = new BitSet();
+    public static int[][] autArrayOld(Liner liner) {
+        int[] partialPoints = new int[liner.pointCount()];
+        int[] partialLines = new int[liner.lineCount()];
+        Arrays.fill(partialPoints, -1);
+        Arrays.fill(partialLines, -1);
+        CollectingConsumer coll = new CollectingConsumer();
+        automorphismsOld(liner, partialPoints, new BitSet(), partialLines, new BitSet(), coll);
+        return coll.array();
+    }
+
+    public static long autCountOld(Liner liner, int[] partialPoints, int[] partialLines) {
+        CountingConsumer cnt = new CountingConsumer();
+        BitSet pointsAssigned = new BitSet();
+        BitSet linesAssigned = new BitSet();
         for (int i = 0; i < partialLines.length; i++) {
             int ln = partialLines[i];
             if (ln >= 0) {
-                fromBanned.or(liner.line(i));
-                toBanned.or(liner.line(ln));
+                linesAssigned.set(i);
             }
+        }
+        for (int i = 0; i < partialPoints.length; i++) {
+            int pt = partialPoints[i];
+            if (pt >= 0) {
+                pointsAssigned.set(i);
+            }
+        }
+        automorphismsOld(liner, partialPoints, pointsAssigned, partialLines, linesAssigned, cnt);
+        return cnt.count();
+    }
+
+    public static int[][] autArrayOld(Liner liner, int[] partialPoints, int[] partialLines) {
+        CollectingConsumer coll = new CollectingConsumer();
+        BitSet pointsAssigned = new BitSet();
+        BitSet linesAssigned = new BitSet();
+        for (int i = 0; i < partialLines.length; i++) {
+            int ln = partialLines[i];
+            if (ln >= 0) {
+                linesAssigned.set(i);
+            }
+        }
+        for (int i = 0; i < partialPoints.length; i++) {
+            int pt = partialPoints[i];
+            if (pt >= 0) {
+                pointsAssigned.set(i);
+            }
+        }
+        automorphismsOld(liner, partialPoints, pointsAssigned, partialLines, linesAssigned, coll);
+        return coll.array();
+    }
+
+    private static void automorphismsOld(Liner liner, int[] partialPoints, BitSet pointsAssignedOld, int[] partialLines, BitSet linesAssignedOld, Consumer<int[]> sink) {
+        BitSet fromBanned = new BitSet();
+        BitSet toBanned = new BitSet();
+        for (int i = linesAssignedOld.nextSetBit(0); i >= 0; i = linesAssignedOld.nextSetBit(i + 1)) {
+            fromBanned.or(liner.line(i));
+            toBanned.or(liner.line(partialLines[i]));
         }
         fromBanned.flip(0, partialPoints.length);
         if (fromBanned.isEmpty()) {
@@ -196,27 +225,27 @@ public class Automorphisms {
         } else {
             fromBanned.flip(0, partialPoints.length);
         }
-        for (int i = 0; i < partialPoints.length; i++) {
-            int pt = partialPoints[i];
-            if (pt >= 0) {
-                fromBanned.set(i);
-                toBanned.set(pt);
-            }
+        for (int i = pointsAssignedOld.nextSetBit(0); i >= 0; i = pointsAssignedOld.nextSetBit(i+1)) {
+            fromBanned.set(i);
+            toBanned.set(partialPoints[i]);
         }
         int from = fromBanned.nextClearBit(0);
         br: for (int to = toBanned.nextClearBit(0); to < partialPoints.length; to = toBanned.nextClearBit(to + 1)) {
             int[] nextPartialPoints = partialPoints.clone();
             int[] nextPartialLines = partialLines.clone();
+            BitSet nextPointsAssigned = (BitSet) pointsAssignedOld.clone();
+            BitSet nextLinesAssigned = (BitSet) linesAssignedOld.clone();
             nextPartialPoints[from] = to;
             BitSet pointsAssigned = new BitSet();
             pointsAssigned.set(from);
             while (!pointsAssigned.isEmpty()) {
+                nextPointsAssigned.or(pointsAssigned);
                 BitSet linesAssigned = new BitSet();
-                for (int p1 = 0; p1 < nextPartialPoints.length; p1++) {
-                    int p1To = nextPartialPoints[p1];
-                    if (p1To < 0 || pointsAssigned.get(p1)) {
+                for (int p1 = nextPointsAssigned.nextSetBit(0); p1 >= 0; p1 = nextPointsAssigned.nextSetBit(p1 + 1)) {
+                    if (pointsAssigned.get(p1)) {
                         continue;
                     }
+                    int p1To = nextPartialPoints[p1];
                     for (int p2 = pointsAssigned.nextSetBit(0); p2 >= 0; p2 = pointsAssigned.nextSetBit(p2 + 1)) {
                         int lineFrom = liner.line(p1, p2);
                         int lineTo = liner.line(p1To, nextPartialPoints[p2]);
@@ -232,14 +261,12 @@ public class Automorphisms {
                     }
                 }
                 pointsAssigned.clear();
-                for (int l1 = 0; l1 < nextPartialLines.length; l1++) {
-                    int lineTo = nextPartialLines[l1];
-                    if (nextPartialLines[l1] < 0) {
-                        continue;
-                    }
+                nextLinesAssigned.or(linesAssigned);
+                for (int l1 = nextLinesAssigned.nextSetBit(0); l1 >= 0; l1 = nextLinesAssigned.nextSetBit(l1 + 1)) {
+                    int l1To = nextPartialLines[l1];
                     for (int l2 = linesAssigned.nextSetBit(0); l2 >= 0; l2 = linesAssigned.nextSetBit(l2 + 1)) {
                         int intFrom = liner.intersection(l1, l2);
-                        int intTo = liner.intersection(lineTo, nextPartialLines[l2]);
+                        int intTo = liner.intersection(l1To, nextPartialLines[l2]);
                         if (intFrom == -1 && intTo == -1) {
                             continue;
                         }
@@ -262,7 +289,7 @@ public class Automorphisms {
                 sink.accept(nextPartialPoints);
                 continue;
             }
-            automorphisms(liner, nextPartialPoints, nextPartialLines, sink);
+            automorphismsOld(liner, nextPartialPoints, nextPointsAssigned, nextPartialLines, nextLinesAssigned, sink);
         }
     }
 
