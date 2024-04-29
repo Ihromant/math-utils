@@ -95,11 +95,17 @@ public class AutomorphismsTest {
     @Test
     public void testPerformance() {
         int order = 7;
+        Liner liner = new Liner(new GaloisField(order).generatePlane());
         long time = System.currentTimeMillis();
-        assertEquals(AUTH_COUNTS[order], Automorphisms.autCount(new Liner(new GaloisField(order).generatePlane())));
+        assertEquals(AUTH_COUNTS[order], Automorphisms.autCount(liner));
         System.out.println(System.currentTimeMillis() - time);
         time = System.currentTimeMillis();
-        assertEquals(AUTH_COUNTS[order], Automorphisms.autCountOld(new Liner(new GaloisField(order).generatePlane())));
+        assertEquals(AUTH_COUNTS[order], Automorphisms.autCountOld(liner));
+        System.out.println(System.currentTimeMillis() - time);
+        Liner aff1 = new AffinePlane(liner, 0).toLiner();
+        Liner aff2 = new AffinePlane(liner, 1).toLiner();
+        time = System.currentTimeMillis();
+        assertNotNull(Automorphisms.isomorphism(aff1, aff2));
         System.out.println(System.currentTimeMillis() - time);
     }
 
