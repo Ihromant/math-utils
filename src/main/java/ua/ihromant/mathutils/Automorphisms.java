@@ -294,7 +294,8 @@ public class Automorphisms {
     }
 
     public static int[] isomorphism(Liner first, Liner second) {
-        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()) {
+        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()
+            || !first.beamFrequencies().equals(second.beamFrequencies())) {
             return null;
         }
         int[] partialPoints = new int[first.pointCount()];
@@ -324,7 +325,6 @@ public class Automorphisms {
                 toFilter.set(partialLines[i]);
             }
         }
-        int i = 5;
         br: for (int to = toFilter.nextClearBit(0); to < partialLines.length; to = toFilter.nextClearBit(to + 1)) {
             int[] nextPartialLines = partialLines.clone();
             int[] nextPartialPoints = partialPoints.clone();

@@ -23,6 +23,7 @@ public class Liner {
     private final int[][] lookup;
     private final BitSet[] points;
     private final int[][] intersections;
+    private Map<Integer, Long> beamFrequencies;
 
     public Liner(BitSet[] lines) {
         this.pointCount = Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality();
@@ -235,6 +236,18 @@ public class Liner {
 
     public Iterable<Integer> points(int line) {
         return () -> lines[line].stream().boxed().iterator();
+    }
+
+    public Map<Integer, Long> beamFrequencies() {
+        if (beamFrequencies == null) {
+            beamFrequencies = new HashMap<>();
+            for (BitSet beam : points) {
+                int lines = beam.cardinality();
+                Long old = beamFrequencies.get(lines);
+                beamFrequencies.put(lines, old == null ? 1 : old + 1);
+            }
+        }
+        return beamFrequencies;
     }
 
     public boolean collinear(int... points) {
