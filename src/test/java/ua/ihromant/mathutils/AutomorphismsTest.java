@@ -192,6 +192,67 @@ public class AutomorphismsTest {
         assertNotNull(Automorphisms.isomorphism(fifthPartial, sixthPartial));
     }
 
+    @Test
+    public void testAltIsomorphism() {
+        Liner first7 = new Liner(new String[]{
+                "0001123",
+                "1242534",
+                "3654656"
+        });
+        Liner second7 = new Liner(new GaloisField(2).generatePlane());
+        assertNotNull(Automorphisms.altIsomorphism(first7, second7));
+        assertNotNull(Automorphisms.altIsomorphism(second7, first7));
+        Liner first13 = new Liner(new String[]{
+                "00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95abcbcac9babc9"
+        });
+        Liner alt13 = new Liner(new String[]{
+                "00000011111222223334445556",
+                "13579b3469a3467867868a7897",
+                "2468ac578bc95acbbacc9bbac9"
+        });
+        Liner second13 = new Liner(new int[]{0, 6, 8}, new int[]{0, 9, 10});
+        assertNotNull(Automorphisms.altIsomorphism(first13, second13));
+        assertNotNull(Automorphisms.altIsomorphism(second13, first13));
+        assertNull(Automorphisms.altIsomorphism(alt13, first13));
+        Liner first9 = new Liner(new String[]{
+                "000011122236",
+                "134534534547",
+                "268787676858"
+        });
+        Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
+        assertNotNull(Automorphisms.altIsomorphism(first9, second9));
+        Liner firstFlat15 = new Liner(new String[] {
+                "00000001111112222223333444455566678",
+                "13579bd3469ac34578b678a58ab78979c9a",
+                "2468ace578bde96aecdbcded9cebecaeddb"
+        });
+        Liner firstSpace15 = new Liner(new String[]{
+                "00000001111112222223333444455556666",
+                "13579bd3478bc3478bc789a789a789a789a",
+                "2468ace569ade65a9edbcdecbeddebcedcb"
+        });
+        Liner secondFlat15 = new Liner(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondSpace15 = new Liner(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner thirdSpace15 = new Liner(new GaloisField(2).generateSpace());
+        assertNotNull(Automorphisms.altIsomorphism(firstFlat15, secondFlat15));
+        assertNotNull(Automorphisms.altIsomorphism(firstSpace15, secondSpace15));
+        assertNotNull(Automorphisms.altIsomorphism(firstSpace15, thirdSpace15));
+        assertNotNull(Automorphisms.altIsomorphism(firstSpace15, thirdSpace15));
+        assertNull(Automorphisms.altIsomorphism(firstFlat15, firstSpace15));
+        Liner firstPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(0, 3, 4)});
+        Liner secondPartial = new Liner(9, new BitSet[]{of(8, 7, 6), of(8, 5, 4)});
+        Liner thirdPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(3, 4, 5)});
+        Liner fourthPartial = new Liner(9, new BitSet[]{of(0, 3, 6), of (1, 4, 7)});
+        Liner fifthPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(0, 3, 4), of(1, 3, 5)});
+        Liner sixthPartial = new Liner(9, new BitSet[]{of(0, 1, 2), of(0, 5, 6), of(2, 4, 6)});
+        assertNotNull(Automorphisms.altIsomorphism(firstPartial, secondPartial));
+        assertNull(Automorphisms.altIsomorphism(firstPartial, thirdPartial));
+        assertNotNull(Automorphisms.altIsomorphism(thirdPartial, fourthPartial));
+        assertNotNull(Automorphisms.altIsomorphism(fifthPartial, sixthPartial));
+    }
+
     private static BitSet of(int... values) {
         BitSet bs = new BitSet();
         IntStream.of(values).forEach(bs::set);

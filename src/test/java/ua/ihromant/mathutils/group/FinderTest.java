@@ -265,7 +265,7 @@ public class FinderTest {
                 System.arraycopy(partial, 0, nextPartial, 0, cl);
                 nextPartial[cl] = block;
                 Liner liner = new Liner(variants, nextPartial);
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.isomorphism(liner, l) != null)) {
+                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
@@ -301,7 +301,7 @@ public class FinderTest {
                             }
                             int l1 = liner.line(pl1, po1);
                             int l2 = liner.line(pl2, po1);
-                            if (l1 == -1 || l2 == -1) {
+                            if (l1 == -1 && l2 == -1) {
                                 continue;
                             }
                             for (int po2 = oLine.nextSetBit(po1 + 1); po2 >= 0; po2 = oLine.nextSetBit(po2 + 1)) {
@@ -310,10 +310,14 @@ public class FinderTest {
                                 }
                                 int l3 = liner.line(pl1, po2);
                                 int l4 = liner.line(pl2, po2);
-                                if (l3 == -1 || l4 == -1) {
+                                if (l1 == -1 || l4 == -1) {
                                     continue;
+                                } else {
+                                    if (liner.intersection(l1, l4) >= 0) {
+                                        return true;
+                                    }
                                 }
-                                if (liner.intersection(l1, l4) >= 0 || liner.intersection(l2, l3) >= 0) {
+                                if (l2 != -1 && l3 != -1 && liner.intersection(l2, l3) >= 0) {
                                     return true;
                                 }
                             }
