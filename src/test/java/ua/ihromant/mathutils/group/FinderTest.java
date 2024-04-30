@@ -98,6 +98,7 @@ public class FinderTest {
         }).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             liners = nextStage(v, k, liners, l -> false);
             left--;
@@ -170,6 +171,7 @@ public class FinderTest {
         }).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             liners = nextStage(v, k, liners, FinderTest::checkAP);
             left--;
