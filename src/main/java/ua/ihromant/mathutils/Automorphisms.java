@@ -368,6 +368,12 @@ public class Automorphisms {
                     for (int p2 = pointsAssigned.nextSetBit(0); p2 >= 0; p2 = pointsAssigned.nextSetBit(p2 + 1)) {
                         int lineFrom = first.line(p1, p2);
                         int lineTo = second.line(p1To, nextPartialPoints[p2]);
+                        if (lineFrom == -1 && lineTo == -1) {
+                            continue;
+                        }
+                        if (lineFrom == -1 || lineTo == -1) {
+                            continue br;
+                        }
                         int oldLine = nextPartialLines[lineFrom];
                         if (oldLine >= 0) {
                             if (oldLine != lineTo) {
