@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.OptionalInt;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -89,9 +90,12 @@ public class FinderTest {
         int v = 15;
         int k = 3;
         DumpConfig conf = readLast(prefix, v, k);
-        List<DesignData> liners = conf.partials().stream().map(part -> {
-            BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
-            for (BitSet block : part) {
+        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
+            boolean[][] frequencies = new boolean[v][v];
+            for (int i = 0; i < v; i++) {
+                frequencies[i][i] = true;
+            }
+            for (int[] block : part) {
                 enhanceFrequencies(frequencies, block);
             }
             return new DesignData(part, frequencies);
@@ -123,6 +127,25 @@ public class FinderTest {
                 nextPossible.set(i, false);
             }
             blocks(prev, nextCurr, needed - 1, nextPossible, frequencies).forEach(sink);
+        });
+    }
+
+    private static Stream<int[]> blocks(int prev, int[] curr, int moreNeeded, boolean[] possible, boolean[][] frequencies) {
+        return IntStream.range(prev + 1, possible.length).filter(i -> possible[i]).boxed().mapMulti((idx, sink) -> {
+            int[] nextCurr = curr.clone();
+            nextCurr[nextCurr.length - moreNeeded] = idx;
+            if (moreNeeded == 1) {
+                sink.accept(nextCurr);
+                return;
+            }
+            boolean[] nextPossible = possible.clone();
+            boolean[] fr = frequencies[idx];
+            for (int i = idx + 1; i < fr.length; i++) {
+                if (fr[i]) {
+                    nextPossible[i] = false;
+                }
+            }
+            blocks(idx, nextCurr, moreNeeded - 1, nextPossible, frequencies).forEach(sink);
         });
     }
 
@@ -162,9 +185,12 @@ public class FinderTest {
         int v = 28;
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k);
-        List<DesignData> liners = conf.partials().stream().map(part -> {
-            BitSet[] frequencies = IntStream.range(0, v).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
-            for (BitSet block : part) {
+        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
+            boolean[][] frequencies = new boolean[v][v];
+            for (int i = 0; i < v; i++) {
+                frequencies[i][i] = true;
+            }
+            for (int[] block : part) {
                 enhanceFrequencies(frequencies, block);
             }
             return new DesignData(part, frequencies);
@@ -181,9 +207,20 @@ public class FinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private record DesignData(BitSet[] partial, BitSet[] frequencies) {}
+    private static void enhanceFrequencies(boolean[][] frequencies, int[] block) {
+        for (int i = 0; i < block.length; i++) {
+            for (int j = i + 1; j < block.length; j++) {
+                int x = block[i];
+                int y = block[j];
+                frequencies[x][y] = true;
+                frequencies[y][x] = true;
+            }
+        }
+    }
 
-    private record DumpConfig(int v, int k, int left, List<BitSet[]> partials) {}
+    private record DesignData(int[][] partial, boolean[][] frequencies) {}
+
+    private record DumpConfig(int v, int k, int left, int[][][] partials) {}
 
     private static void dump(String prefix, int v, int k, int left, List<DesignData> liners) throws IOException {
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);
@@ -192,8 +229,8 @@ public class FinderTest {
             ps.println(left + " blocks left");
             ps.println(liners.size() + " partials");
             for (DesignData l : liners) {
-                for (BitSet bs : l.partial()) {
-                    ps.println(bs.stream().mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+                for (int[] line : l.partial()) {
+                    ps.println(Arrays.stream(line).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
                 }
                 ps.println();
             }
@@ -206,70 +243,92 @@ public class FinderTest {
              BufferedReader br = new BufferedReader(isr)) {
             String line;
             int left = Integer.MIN_VALUE;
-            List<BitSet[]> partials = new ArrayList<>();
             int lineCount = v * (v - 1) / k / (k - 1);
+            int[][][] partials = null;
             while ((line = br.readLine()) != null) {
-                partials.clear();
                 left = Integer.parseInt(line.substring(0, line.indexOf(' ')));
                 line = br.readLine();
                 int partialsCount = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                int partialSize = lineCount - left;
+                partials = new int[partialsCount][partialSize][k];
                 for (int i = 0; i < partialsCount; i++) {
-                    int partialSize = lineCount - left;
-                    BitSet[] partial = new BitSet[partialSize];
+                    int[][] partial = partials[i];
                     for (int j = 0; j < partialSize; j++) {
-                        partial[j] = of(Arrays.stream(br.readLine().split(" ")).mapToInt(Integer::parseInt).toArray());
+                        String[] pts = br.readLine().split(" ");
+                        for (int l = 0; l < k; l++) {
+                            partial[j][l] = Integer.parseInt(pts[l]);
+                        }
                     }
                     br.readLine();
-                    partials.add(partial);
                 }
             }
             return new DumpConfig(v, k, left, partials);
         } catch (FileNotFoundException e) {
             int r = (v - 1) / (k - 1);
-            BitSet[] blocks = new BitSet[r + 1];
-            IntStream.range(0, r).forEach(i -> {
-                BitSet block = of(IntStream.concat(IntStream.of(0), IntStream.range(0, k - 1).map(j -> 1 + i * (k - 1) + j)).toArray());
-                blocks[i] = block;
-            });
-            BitSet initial = of(IntStream.range(0, k).map(i -> 1 + (k - 1) * i).toArray());
-            blocks[r] = initial;
-            return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - r - 1, List.<BitSet[]>of(blocks));
+            int[][] blocks = new int[r + 1][k];
+            for (int i = 0; i < r; i++) {
+                for (int j = 0; j < k - 1; j++) {
+                    blocks[i][j + 1] = 1 + i * (k - 1) + j;
+                }
+            }
+            for (int i = 0; i < k; i++) {
+                blocks[r][i] = 1 + (k - 1) * i;
+            }
+            return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - r - 1, new int[][][]{blocks});
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private static boolean hasGaps(boolean[] arr) {
+        for (boolean b : arr) {
+            if (!b) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static List<DesignData> nextStage(int variants, int k, List<DesignData> partials, Predicate<Liner> filter) {
         List<DesignData> nextList = new ArrayList<>();
         int cl = partials.getFirst().partial().length;
-        int blockNeeded = k - 1;
         List<Liner> nonIsomorphic = new ArrayList<>();
         for (DesignData data : partials) {
-            BitSet[] partial = data.partial();
-            BitSet[] frequencies = data.frequencies();
-            BitSet prev = partial[cl - 1];
-            int prevFst = prev.nextSetBit(0);
-            int fst = IntStream.range(prevFst, variants - blockNeeded).filter(i -> frequencies[i].cardinality() + 1 != variants).findAny().orElse(variants);
-            BitSet base = of(fst);
-            BitSet possible = (BitSet) frequencies[fst].clone();
-            if (prevFst == fst) {
-                int second = prev.nextSetBit(fst + 1);
-                possible.set(0, second + 1, false);
-                possible.flip(second + 1, variants);
-            } else {
-                possible.set(0, fst, false);
-                possible.flip(fst + 1, variants);
+            int[][] partial = data.partial();
+            boolean[][] frequencies = data.frequencies();
+            int[] prev = partial[cl - 1];
+            int prevFst = prev[0];
+            int fst = IntStream.range(prevFst, variants - k + 1).filter(i -> hasGaps(frequencies[i])).findAny().orElseThrow();
+            int[] initBlock = new int[k];
+            initBlock[0] = fst;
+            boolean[] possible = new boolean[variants];
+            boolean[] firstAssigned = frequencies[fst];
+            for (int i = fst + 1; i < variants; i++) {
+                possible[i] = !firstAssigned[i];
             }
-            blocks(fst, base, blockNeeded, possible, frequencies).forEach(block -> {
-                BitSet[] nextPartial = new BitSet[cl + 1];
+            OptionalInt sndCan = IntStream.range(fst + 1, variants - k + 2).filter(i -> possible[i]).findAny();
+            if (sndCan.isEmpty()) {
+                continue;
+            }
+            int snd = sndCan.getAsInt();
+            initBlock[1] = snd;
+            boolean[] secondAssigned = frequencies[snd];
+            for (int i = snd + 1; i < variants; i++) {
+                possible[i] = possible[i] && !secondAssigned[i];
+            }
+            blocks(snd, initBlock, k - 2, possible, frequencies).forEach(block -> {
+                int[][] nextPartial = new int[cl + 1][];
                 System.arraycopy(partial, 0, nextPartial, 0, cl);
                 nextPartial[cl] = block;
-                Liner liner = new Liner(variants, nextPartial);
+                Liner liner = new Liner(variants, Arrays.stream(nextPartial).map(FinderTest::of).toArray(BitSet[]::new));
                 if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
-                BitSet[] nextFrequencies = Arrays.stream(frequencies).map(bs -> (BitSet) bs.clone()).toArray(BitSet[]::new);
+                boolean[][] nextFrequencies = new boolean[variants][];
+                for (int i = 0; i < nextFrequencies.length; i++) {
+                    nextFrequencies[i] = frequencies[i].clone();
+                }
                 enhanceFrequencies(nextFrequencies, block);
                 nextList.add(new DesignData(nextPartial, nextFrequencies));
             });
