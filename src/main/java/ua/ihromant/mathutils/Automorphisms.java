@@ -294,10 +294,10 @@ public class Automorphisms {
     }
 
     public static int[] isomorphism(Liner first, Liner second) {
-        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()
-            || !first.beamFrequencies().equals(second.beamFrequencies())) {
-            return null;
-        }
+//        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()
+//            || !first.beamFrequencies().equals(second.beamFrequencies())) {
+//            return null;
+//        }
         int[] partialPoints = new int[first.pointCount()];
         int[] partialLines = new int[first.lineCount()];
         Arrays.fill(partialPoints, -1);
@@ -398,10 +398,10 @@ public class Automorphisms {
     }
 
     public static int[] altIsomorphism(Liner first, Liner second) {
-        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()
-                || !first.beamFrequencies().equals(second.beamFrequencies())) {
-            return null;
-        }
+//        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()
+//                || !first.beamFrequencies().equals(second.beamFrequencies())) {
+//            return null;
+//        }
         int[] partialPoints = new int[first.pointCount()];
         int[] partialLines = new int[first.lineCount()];
         Arrays.fill(partialPoints, -1);

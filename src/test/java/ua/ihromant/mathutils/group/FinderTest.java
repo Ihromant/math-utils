@@ -16,11 +16,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.OptionalInt;
+import java.util.function.BiFunction;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class FinderTest {
     @Test
@@ -51,23 +51,22 @@ public class FinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private static Stream<int[]> blocks(int prev, int[] curr, int moreNeeded, boolean[] possible, boolean[][] frequencies) {
-        return IntStream.range(prev + 1, possible.length).filter(i -> possible[i]).boxed().mapMulti((idx, sink) -> {
+    private static void blocks(int prev, int[] curr, int moreNeeded, BitSet possible, boolean[][] frequencies, Consumer<int[]> sink) {
+        for (int idx = possible.nextSetBit(prev + 1); idx >= 0; idx = possible.nextSetBit(idx + 1)) {
             int[] nextCurr = curr.clone();
             nextCurr[nextCurr.length - moreNeeded] = idx;
             if (moreNeeded == 1) {
                 sink.accept(nextCurr);
-                return;
+                continue;
             }
-            boolean[] nextPossible = possible.clone();
-            boolean[] fr = frequencies[idx];
-            for (int i = idx + 1; i < fr.length; i++) {
-                if (fr[i]) {
-                    nextPossible[i] = false;
+            BitSet nextPossible = (BitSet) possible.clone();
+            for (int i = idx + 1; i < frequencies[idx].length; i++) {
+                if (frequencies[idx][i]) {
+                    nextPossible.set(i, false);
                 }
             }
-            blocks(idx, nextCurr, moreNeeded - 1, nextPossible, frequencies).forEach(sink);
-        });
+            blocks(idx, nextCurr, moreNeeded - 1, nextPossible, frequencies, sink);
+        }
     }
 
     @Test
@@ -181,6 +180,7 @@ public class FinderTest {
     }
 
     private static List<DesignData> nextStage(int variants, int k, List<DesignData> partials, Predicate<Liner> filter) {
+        BiFunction<Liner, Liner, int[]> iso = k >= 4 ? Automorphisms::isomorphism : Automorphisms::altIsomorphism;
         List<DesignData> nextList = new ArrayList<>();
         int cl = partials.getFirst().partial().length;
         List<Liner> nonIsomorphic = new ArrayList<>();
@@ -192,27 +192,31 @@ public class FinderTest {
             int fst = IntStream.range(prevFst, variants - k + 1).filter(i -> hasGaps(frequencies[i])).findAny().orElseThrow();
             int[] initBlock = new int[k];
             initBlock[0] = fst;
-            boolean[] possible = new boolean[variants];
+            BitSet possible = new BitSet();
             boolean[] firstAssigned = frequencies[fst];
             for (int i = fst + 1; i < variants; i++) {
-                possible[i] = !firstAssigned[i];
+                if (!firstAssigned[i]) {
+                    possible.set(i);
+                }
             }
-            OptionalInt sndCan = IntStream.range(fst + 1, variants - k + 2).filter(i -> possible[i]).findAny();
-            if (sndCan.isEmpty()) {
+            int snd = possible.nextSetBit(fst + 1);
+            if (snd < 0) {
                 continue;
             }
-            int snd = sndCan.getAsInt();
             initBlock[1] = snd;
             boolean[] secondAssigned = frequencies[snd];
+            possible.set(fst + 1, snd + 1, false);
             for (int i = snd + 1; i < variants; i++) {
-                possible[i] = possible[i] && !secondAssigned[i];
+                if (secondAssigned[i]) {
+                    possible.set(i, false);
+                }
             }
-            blocks(snd, initBlock, k - 2, possible, frequencies).forEach(block -> {
+            Consumer<int[]> blockConsumer = block -> {
                 int[][] nextPartial = new int[cl + 1][];
                 System.arraycopy(partial, 0, nextPartial, 0, cl);
                 nextPartial[cl] = block;
                 Liner liner = new Liner(variants, Arrays.stream(nextPartial).map(FinderTest::of).toArray(BitSet[]::new));
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
+                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> iso.apply(liner, l) != null)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
@@ -222,7 +226,8 @@ public class FinderTest {
                 }
                 enhanceFrequencies(nextFrequencies, block);
                 nextList.add(new DesignData(nextPartial, nextFrequencies));
-            });
+            };
+            blocks(snd, initBlock, k - 2, possible, frequencies, blockConsumer);
         }
         return nextList;
     }
