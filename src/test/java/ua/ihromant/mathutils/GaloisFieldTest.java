@@ -245,7 +245,7 @@ public class GaloisFieldTest {
         assertEquals(v, pl.pointCount());
         assertEquals(v, pl.lineCount());
         BitSet unital = new BitSet();
-        for (int p : pl.points()) {
+        for (int p = 0; p < pl.pointCount(); p++) {
             int[] hom = getHomogenous(p, ord);
             int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
             if (val == 0) {
@@ -268,7 +268,7 @@ public class GaloisFieldTest {
         //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
         //checkSpace(pl, pl.pointCount(), pl.pointCount());
         BitSet unital = new BitSet();
-        for (int p : pl.points()) {
+        for (int p = 0; p < pl.pointCount(); p++) {
             int[] hom = getHomogenousSpace(p, ord);
             int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
             if (val == 0) {
@@ -301,7 +301,7 @@ public class GaloisFieldTest {
         //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
         //checkSpace(pl, pl.pointCount(), pl.pointCount());
         BitSet unital = new BitSet();
-        for (int p : pl.points()) {
+        for (int p = 0; p < pl.pointCount(); p++) {
             int[] hom = getHomogenousSpace(p, ord);
             int val = Arrays.stream(hom).map(crd -> fd.power(crd, q + 1)).reduce(0, fd::add);
             if (val == 0) {
@@ -329,7 +329,7 @@ public class GaloisFieldTest {
         GaloisField fd = new GaloisField(q);
         Liner prSp = new Liner(fd.generateSpace());
         BitSet pts = new BitSet();
-        for (int p : prSp.points()) {
+        for (int p = 0; p < prSp.pointCount(); p++) {
             int[] crds = getHomogenousSpace(p, q);
             if (Arrays.stream(crds).allMatch(c -> c != 0)) {
                 pts.set(p);
@@ -354,8 +354,8 @@ public class GaloisFieldTest {
                     assertEquals(bkp.playfairIndex(), bkp.pointCount() == (q - 1) * (q - 1) ? of(2, 3) : of(2, 3, 4));
                     for (int b : plPts) {
                         for (int l : bks.lines(b)) {
-                            BitSet line = bks.line(l);
-                            if (line.stream().allMatch(plane::get)) {
+                            int[] line = bks.line(l);
+                            if (Arrays.stream(line).allMatch(plane::get)) {
                                 continue;
                             }
                             BitSet hull = new BitSet();
@@ -364,7 +364,7 @@ public class GaloisFieldTest {
                                     if (p1 == p2) {
                                         continue;
                                     }
-                                    hull.or(bks.line(bks.line(p1, p2)));
+                                    Arrays.stream(bks.line(bks.line(p1, p2))).forEach(hull::set);
                                 }
                             }
                             if (hull.cardinality() < bks.pointCount()) {
@@ -403,7 +403,7 @@ public class GaloisFieldTest {
             return proj.line(pt, pa) == proj.line(pa, pa2) ? 1 : 2;
         }).toArray();
         int[] lineTypes = IntStream.range(0, proj.lineCount()).map(l -> {
-            BitSet l0 = proj.line(l);
+            BitSet l0 = of(proj.line(l));
             BitSet la = mapLine(l0, fd, q);
             if (l0.equals(la)) {
                 return 0;
@@ -419,12 +419,12 @@ public class GaloisFieldTest {
                 if (pointTypes[i] == 2 && lineTypes[j] == 2) {
                     int pa = mapPoint(i, fd, q);
                     int pm = proj.line(pa, mapPoint(pa, fd, q));
-                    BitSet la = mapLine(proj.line(j), fd, q);
+                    BitSet la = mapLine(of(proj.line(j)), fd, q);
                     BitSet la2 = mapLine(la, fd, q);
                     int lm = la.stream().filter(la2::get).findAny().orElseThrow();
-                    incidence[i][j] = proj.line(pm).get(lm) ? 1 : 0;
+                    incidence[i][j] = proj.flag(pm, lm) ? 1 : 0;
                 } else {
-                    incidence[i][j] = proj.line(j).get(i) ? 1 : 0;
+                    incidence[i][j] = proj.flag(j, i) ? 1 : 0;
                 }
             }
         }
@@ -441,8 +441,8 @@ public class GaloisFieldTest {
         System.out.println("d");
         Liner figueroa = new Liner(lines);
         HyperbolicPlaneTest.testCorrectness(figueroa, of(fd.cardinality() + 1));
-        for (int l : figueroa.lines()) {
-            System.out.println(figueroa.line(l).stream().mapToObj(Integer::toString).collect(Collectors.joining(" ")));
+        for (int l = 0; l < figueroa.lineCount(); l++) {
+            System.out.println(Arrays.stream(figueroa.line(l)).mapToObj(Integer::toString).collect(Collectors.joining(" ")));
         }
     }
 

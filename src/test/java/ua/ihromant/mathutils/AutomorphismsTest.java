@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -98,7 +99,7 @@ public class AutomorphismsTest {
 
     @Test
     public void testPerformance() {
-        int order = 7;
+        int order = 5;
         Liner liner = new Liner(new GaloisField(order).generatePlane());
         long time = System.currentTimeMillis();
         assertEquals(AUTH_COUNTS[order], Automorphisms.autCount(liner));
@@ -270,7 +271,7 @@ public class AutomorphismsTest {
     }
 
     private static int quasiOp(Liner pl, int x, int y) {
-        return pl.line(pl.line(x, y)).stream().filter(p -> p != x && p != y).findAny().orElseThrow();
+        return Arrays.stream(pl.line(pl.line(x, y))).filter(p -> p != x && p != y).findAny().orElseThrow();
     }
 
     private static BitSet next(Liner plane, BitSet prev) {

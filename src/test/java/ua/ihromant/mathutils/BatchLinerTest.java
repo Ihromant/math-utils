@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 import java.util.zip.ZipInputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -153,13 +152,10 @@ public class BatchLinerTest {
         for (int i = 2600; i < planes.size(); i++) {
             Liner p1 = planes.get(i);
             Set<BitSet> subaffines = new HashSet<>();
-            for (int t0 : p1.points()) {
-                for (int t1 : p1.points()) {
-                    if (t0 >= t1) {
-                        continue;
-                    }
-                    for (int t3 : p1.points()) {
-                        if (t1 >= t3 || p1.collinear(t0, t1, t3)) {
+            for (int t0 = 0; t0 < p1.pointCount(); t0++) {
+                for (int t1 = t0 + 1; t1 < p1.pointCount(); t1++) {
+                    for (int t3 = t1 + 1; t3 < p1.pointCount(); t3++) {
+                        if (p1.collinear(t0, t1, t3)) {
                             continue;
                         }
                         for (int t2 : p1.points(p1.line(t0, t1))) {
@@ -203,8 +199,8 @@ public class BatchLinerTest {
     }
 
     private String[] printDesign(Liner plane) {
-        return IntStream.range(0, plane.line(0).cardinality()).mapToObj(i -> StreamSupport.stream(plane.lines().spliterator(), false)
-                .map(plane::line).map(bs -> String.valueOf(Character.forDigit(bs.stream()
+        return IntStream.range(0, plane.line(0).length).mapToObj(i -> IntStream.range(0, plane.lineCount())
+                .mapToObj(plane::line).map(bs -> String.valueOf(Character.forDigit(Arrays.stream(bs)
                         .skip(i).findAny().orElseThrow(), 36))).collect(Collectors.joining())).toArray(String[]::new);
     }
 
@@ -216,8 +212,8 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner projective = readUni(br);
-            for (int dl : projective.lines()) {
-                System.out.println(projective.line(dl) + " " + testThalesVectors(projective, dl));
+            for (int dl = 0; dl < projective.lineCount(); dl++) {
+                System.out.println(Arrays.toString(projective.line(dl)) + " " + testThalesVectors(projective, dl));
             }
         }
     }
@@ -228,10 +224,9 @@ public class BatchLinerTest {
 
     private static BitSet testThalesVectors(Liner pl, int droppedLine) {
         BitSet result = new BitSet();
-        BitSet dl = pl.line(droppedLine);
-        int base = IntStream.range(0, pl.pointCount()).filter(p -> !dl.get(p)).findFirst().orElseThrow();
+        int base = IntStream.range(0, pl.pointCount()).filter(p -> !pl.flag(droppedLine, p)).findFirst().orElseThrow();
         for (int end = base + 1; end < pl.pointCount(); end++) {
-            if (!dl.get(end) && testThales(pl, droppedLine, base, end)) {
+            if (!pl.flag(droppedLine, end) && testThales(pl, droppedLine, base, end)) {
                 result.set(end);
             }
         }
@@ -239,18 +234,16 @@ public class BatchLinerTest {
     }
 
     private static boolean testThales(Liner pl, int droppedLine, int base, int end) {
-        BitSet dl = pl.line(droppedLine);
         int infty = pl.intersection(droppedLine, pl.line(base, end));
         int bl = pl.line(base, infty);
-        BitSet baseLine = pl.line(bl);
-        for (int fst : pl.points()) {
-            if (dl.get(fst) || baseLine.get(fst)) {
+        for (int fst = 0; fst < pl.pointCount(); fst++) {
+            if (pl.flag(droppedLine, fst) || pl.flag(bl, fst)) {
                 continue;
             }
-            BitSet fstLine = pl.line(pl.line(fst, infty));
+            int fstLine = pl.line(fst, infty);
             int fstEnd = pl.intersection(parallel(pl, droppedLine, bl, fst), parallel(pl, droppedLine, pl.line(base, fst), end));
-            for (int snd : pl.points()) {
-                if (dl.get(snd) || baseLine.get(snd) || fstLine.get(snd)) {
+            for (int snd = 0; snd < pl.pointCount(); snd++) {
+                if (pl.flag(droppedLine, snd) || pl.flag(bl, snd) || pl.flag(fstLine, snd)) {
                     continue;
                 }
                 int sndEnd = pl.intersection(parallel(pl, droppedLine, bl, snd), parallel(pl, droppedLine, pl.line(base, snd), end));
@@ -279,9 +272,9 @@ public class BatchLinerTest {
                 String[] numbers = next.split(" ");
                 assertEquals(ub, numbers.length);
                 BitSet points = Arrays.stream(numbers).mapToInt(Integer::parseInt).collect(BitSet::new, BitSet::set, BitSet::or);
-                BitSet[] lines = StreamSupport.stream(projective.lines().spliterator(), false).map(l -> {
+                BitSet[] lines = IntStream.range(0, projective.lineCount()).mapToObj(l -> {
                     BitSet result = new BitSet();
-                    result.or(projective.line(l));
+                    Arrays.stream(projective.line(l)).forEach(result::set);
                     result.and(points);
                     return result;
                 }).filter(l -> l.cardinality() > 1).toArray(BitSet[]::new);
@@ -319,7 +312,7 @@ public class BatchLinerTest {
             System.out.println(name);
             Liner projective = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
-            for (int dl : projective.lines()) {
+            for (int dl = 0; dl < projective.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(projective, dl);
                 boolean paraPappus = aff.isParaPappus();
                 System.out.println("Dropped " + dl + " ParaPappus " + paraPappus);
@@ -341,7 +334,7 @@ public class BatchLinerTest {
             System.out.println(name);
             Liner projective = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
-            for (int dl : projective.lines()) {
+            for (int dl = 0; dl < projective.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(projective, dl);
                 System.out.println("Dropped " + dl);
                 System.out.println("ParaDesargues " + aff.isParaDesargues());
@@ -361,7 +354,7 @@ public class BatchLinerTest {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Set<Set<Pair>> configs = new HashSet<>();
-            for (int dl : proj.lines()) {
+            for (int dl = 0; dl < proj.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 Set<Pair> pairs = new HashSet<>();
                 boolean pappus = aff.isParaPappus();
@@ -397,7 +390,7 @@ public class BatchLinerTest {
             System.out.println(name);
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            for (int dl : proj.lines()) {
+            for (int dl = 0; dl < proj.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 System.out.println("Dropped " + dl + " chars " + aff.getCharacteristics());
             }
@@ -414,7 +407,7 @@ public class BatchLinerTest {
             System.out.println(name);
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            for (int dl : proj.lines()) {
+            for (int dl = 0; dl < proj.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 Set<Integer> closures = new HashSet<>();
                 for (int a : aff.points()) {
@@ -568,10 +561,10 @@ public class BatchLinerTest {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                BitSet infty = proj.line(dl);
+                int[] infty = proj.line(dl);
                 int[] partialPoints = new int[proj.pointCount()];
                 Arrays.fill(partialPoints, -1);
-                infty.stream().forEach(i -> partialPoints[i] = i);
+                Arrays.stream(infty).forEach(i -> partialPoints[i] = i);
                 int[] partialLines = new int[proj.lineCount()];
                 Arrays.fill(partialLines, -1);
                 partialLines[dl] = dl;
@@ -579,7 +572,7 @@ public class BatchLinerTest {
                 PermutationGroup dilGr = new PermutationGroup(dilations);
                 AffinePlane aff = new AffinePlane(proj, dl);
                 PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
-                        || IntStream.range(0, dil.length).filter(j -> !infty.get(j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
+                        || IntStream.range(0, dil.length).filter(j -> !proj.flag(dl, j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
                 System.out.println(name + " dropped " + dl + " dilations size " + dilGr.order() + " comm dil " + dilGr.isCommutative()
                         + " translations size " + translations.order() + " comm trans " + translations.isCommutative()
                     + " orders " + IntStream.range(0, dilGr.order()).boxed().collect(Collectors.groupingBy(dilGr::order, Collectors.counting())));
@@ -597,7 +590,7 @@ public class BatchLinerTest {
 
     @Test
     public void testAutomorphisms2() throws IOException {
-        String name = "pg29";
+        String name = "dhall9";
         int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));

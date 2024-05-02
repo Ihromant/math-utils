@@ -16,7 +16,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -182,7 +181,6 @@ public class FinderTest {
     }
 
     private static List<DesignData> nextStage(int variants, int k, List<DesignData> partials, Predicate<Liner> filter) {
-        BiFunction<Liner, Liner, int[]> iso = k >= 4 ? Automorphisms::isomorphism : Automorphisms::altIsomorphism;
         List<DesignData> nextList = new ArrayList<>();
         int cl = partials.getFirst().partial().length;
         List<Liner> nonIsomorphic = new ArrayList<>();
@@ -217,8 +215,8 @@ public class FinderTest {
                 int[][] nextPartial = new int[cl + 1][];
                 System.arraycopy(partial, 0, nextPartial, 0, cl);
                 nextPartial[cl] = block;
-                Liner liner = new Liner(variants, Arrays.stream(nextPartial).map(FinderTest::of).toArray(BitSet[]::new));
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> iso.apply(liner, l) != null)) {
+                Liner liner = new Liner(variants, nextPartial);
+                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
@@ -236,23 +234,27 @@ public class FinderTest {
 
     private static boolean checkAP(Liner liner) {
         int last = liner.lineCount() - 1;
-        BitSet lLine = liner.line(last);
-        for (int p = lLine.nextSetBit(0); p >= 0; p = lLine.nextSetBit(p + 1)) {
-            BitSet lines = liner.point(p);
-            for (int ol = lines.nextSetBit(0); ol >= 0; ol = lines.nextSetBit(ol + 1)) {
+        int[] lLine = liner.line(last);
+        int ll = lLine.length;
+        for (int p : lLine) {
+            int[] lines = liner.point(p);
+            for (int ol : lines) {
                 if (ol == last) {
                     continue;
                 }
-                BitSet oLine = liner.line(ol);
-                for (int pl1 = lLine.nextSetBit(0); pl1 >= 0; pl1 = lLine.nextSetBit(pl1+1)) {
+                int[] oLine = liner.line(ol);
+                for (int a = 0; a < ll; a++) {
+                    int pl1 = lLine[a];
                     if (pl1 == p) {
                         continue;
                     }
-                    for (int pl2 = lLine.nextSetBit(pl1 + 1); pl2 >= 0; pl2 = lLine.nextSetBit(pl2 + 1)) {
+                    for (int b = a + 1; b < ll; b++) {
+                        int pl2 = lLine[b];
                         if (pl2 == p) {
                             continue;
                         }
-                        for (int po1 = oLine.nextSetBit(0); po1 >= 0; po1 = oLine.nextSetBit(po1 + 1)) {
+                        for (int c = 0; c < ll; c++) {
+                            int po1 = oLine[c];
                             if (po1 == p) {
                                 continue;
                             }
@@ -261,7 +263,8 @@ public class FinderTest {
                             if (l1 == -1 && l2 == -1) {
                                 continue;
                             }
-                            for (int po2 = oLine.nextSetBit(po1 + 1); po2 >= 0; po2 = oLine.nextSetBit(po2 + 1)) {
+                            for (int d = c + 1; d < ll; d++) {
+                                int po2 = oLine[d];
                                 if (po2 == p) {
                                     continue;
                                 }
@@ -284,14 +287,6 @@ public class FinderTest {
             }
         }
         return false;
-    }
-
-    private static BitSet of(int... values) {
-        BitSet bs = new BitSet(values[values.length - 1] + 1);
-        for (int v : values) {
-            bs.set(v);
-        }
-        return bs;
     }
 
     @Test
@@ -367,7 +362,7 @@ public class FinderTest {
         long time = System.currentTimeMillis();
         List<Liner> nonIsomorphic = new ArrayList<>();
         for (DesignData data : dataSet) {
-            Liner liner = new Liner(v, Arrays.stream(data.partial()).map(FinderTest::of).toArray(BitSet[]::new));
+            Liner liner = new Liner(v, data.partial());
             if (nonIsomorphic.stream().anyMatch(l -> Automorphisms.isomorphism(liner, l) != null)) {
                 continue;
             }
@@ -378,7 +373,7 @@ public class FinderTest {
         nonIsomorphic.clear();
         time = System.currentTimeMillis();
         for (DesignData data : dataSet) {
-            Liner liner = new Liner(v, Arrays.stream(data.partial()).map(FinderTest::of).toArray(BitSet[]::new));
+            Liner liner = new Liner(v, data.partial());
             if (nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
                 continue;
             }

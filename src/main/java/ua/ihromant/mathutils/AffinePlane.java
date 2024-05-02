@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -12,15 +13,13 @@ import java.util.stream.IntStream;
 public class AffinePlane {
     private final Liner plane;
     private final int dl;
-    private final BitSet dropped;
 
     public AffinePlane(Liner plane, int dl) {
         this.plane = plane;
         this.dl = dl;
-        this.dropped = plane.line(dl);
     }
 
-    public BitSet line(int line) {
+    public int[] line(int line) {
         if (line == dl) {
             throw new IllegalArgumentException();
         }
@@ -28,7 +27,7 @@ public class AffinePlane {
     }
 
     public int line(int p1, int p2) {
-        if (dropped.get(p1) || dropped.get(p2)) {
+        if (plane.flag(dl, p1) || plane.flag(dl, p2)) {
             throw new IllegalArgumentException();
         }
         return plane.line(p1, p2);
@@ -38,51 +37,41 @@ public class AffinePlane {
         return () -> IntStream.range(0, plane.lineCount()).filter(l -> l != dl).boxed().iterator();
     }
 
-    public Iterable<Integer> lines(int point) {
-        if (dropped.get(point)) {
+    public int[] lines(int point) {
+        if (plane.flag(dl, point)) {
             throw new IllegalArgumentException();
         }
         return plane.lines(point);
     }
 
-    public BitSet point(int point) {
-        if (dropped.get(point)) {
-            throw new IllegalArgumentException();
-        }
-        BitSet bs = (BitSet) plane.point(point).clone();
-        bs.set(dl, false);
-        return bs;
-    }
-
     public int intersection(int l1, int l2) {
         int p = plane.intersection(l1, l2);
-        if (dropped.get(p)) {
+        if (plane.flag(dl, p)) {
             throw new IllegalArgumentException();
         }
         return p;
     }
 
     public Iterable<Integer> points() {
-        return () -> IntStream.range(0, plane.pointCount()).filter(p -> !dropped.get(p)).boxed().iterator();
+        return () -> IntStream.range(0, plane.pointCount()).filter(p -> !plane.flag(dl, p)).boxed().iterator();
     }
 
     public Iterable<Integer> points(int line) {
         if (line == dl) {
             throw new IllegalArgumentException();
         }
-        return () -> plane.line(line).stream().filter(p -> !dropped.get(p)).boxed().iterator();
+        return () -> Arrays.stream(plane.line(line)).filter(p -> !plane.flag(dl, p)).boxed().iterator();
     }
 
     public Iterable<Integer> notLine(int line) {
         if (line == dl) {
             throw new IllegalArgumentException();
         }
-        BitSet onLine = line(line);
-        return () -> IntStream.range(0, plane.pointCount()).filter(p -> !onLine.get(p) && !dropped.get(p)).boxed().iterator();
+        return () -> IntStream.range(0, plane.pointCount()).filter(p -> !plane.flag(line, p) && !plane.flag(dl, p)).boxed().iterator();
     }
 
     public Liner toLiner() {
-        return plane.subPlane(IntStream.range(0, plane.pointCount()).filter(p -> !dropped.get(p)).toArray());
+        return plane.subPlane(IntStream.range(0, plane.pointCount()).filter(p -> !plane.flag(dl, p)).toArray());
     }
 
     public Liner subPlane(int[] pointArray) {
@@ -90,18 +79,18 @@ public class AffinePlane {
     }
 
     public boolean isParallel(int l1, int l2) {
-        return l1 == l2 || dropped.get(plane.intersection(l1, l2));
+        return l1 == l2 || plane.flag(dl, plane.intersection(l1, l2));
     }
 
     public Iterable<Integer> parallel(int line) {
         if (line == dl) {
             throw new IllegalArgumentException();
         }
-        return () -> plane.point(plane.intersection(line, dl)).stream().filter(l -> l != dl).boxed().iterator();
+        return () -> Arrays.stream(plane.point(plane.intersection(line, dl))).filter(l -> l != dl).boxed().iterator();
     }
 
     public int parallel(int l, int p) {
-        if (l == dl || dropped.get(p)) {
+        if (l == dl || plane.flag(dl, p)) {
             throw new IllegalArgumentException();
         }
         return plane.line(p, plane.intersection(l, dl));
@@ -236,7 +225,7 @@ public class AffinePlane {
                     int x12 = intersection(parallel(line(x00, x11), x01), line(x10, x11));
                     int x21 = intersection(parallel(line(x00, x11), x10), line(x01, x11));
                     int x22 = intersection(parallel(line(x00, x01), x21), parallel(line(x00, x10), x12));
-                    if (!line(line(x00, x11)).get(x22)) {
+                    if (!plane.flag(line(x00, x11), x22)) {
                         return false;
                     }
                 }

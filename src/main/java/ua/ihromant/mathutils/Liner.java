@@ -19,17 +19,27 @@ import java.util.stream.Stream;
 
 public class Liner {
     private final int pointCount;
-    private final BitSet[] lines;
+    private final int[][] lines;
+    private final boolean[][] flags;
     private final int[][] lookup;
-    private final BitSet[] beams;
+    private final int[][] beams;
     private final int[][] intersections;
-    private int[] beamCounts;
+
+    public Liner(int pointCount, int[][] lines) {
+        this.pointCount = pointCount;
+        this.lines = lines;
+        this.flags = generateFlags();
+        this.lookup = generateLookup();
+        this.beams = generateBeams();
+        this.intersections = generateIntersections();
+    }
 
     public Liner(int pointCount, BitSet[] lines) {
         this.pointCount = pointCount;
-        this.lines = lines;
+        this.lines = Arrays.stream(lines).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
+        this.flags = generateFlags();
         this.lookup = generateLookup();
-        this.beams = generateBeamsPartial();
+        this.beams = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -119,13 +129,25 @@ public class Liner {
         return new Liner(pointCount, lines);
     }
 
+    private boolean[][] generateFlags() {
+        boolean[][] flags = new boolean[lines.length][pointCount];
+        for (int i = 0; i < lines.length; i++) {
+            for (int pt : lines[i]) {
+                flags[i][pt] = true;
+            }
+        }
+        return flags;
+    }
+
     private int[][] generateLookup() {
         int[][] result = new int[pointCount][pointCount];
         Arrays.stream(result).forEach(l -> Arrays.fill(l, -1));
         for (int l = 0; l < lines.length; l++) {
-            BitSet line = lines[l];
-            for (int p1 = line.nextSetBit(0); p1 >= 0; p1 = line.nextSetBit(p1 + 1)) {
-                for (int p2 = line.nextSetBit(p1 + 1); p2 >= 0; p2 = line.nextSetBit(p2 + 1)) {
+            int[] line = lines[l];
+            for (int i = 0; i < line.length; i++) {
+                int p1 = line[i];
+                for (int j = i + 1; j < line.length; j++) {
+                    int p2 = line[j];
                     result[p1][p2] = l;
                     result[p2][p1] = l;
                 }
@@ -134,11 +156,10 @@ public class Liner {
         return result;
     }
 
-    private BitSet[] generateBeamsPartial() {
-        BitSet[] result = new BitSet[pointCount];
+    private int[][] generateBeams() {
+        int[][] result = new int[pointCount][];
         for (int p1 = 0; p1 < pointCount; p1++) {
             BitSet beam = new BitSet();
-            result[p1] = beam;
             for (int p2 = 0; p2 < pointCount; p2++) {
                 if (p1 == p2) {
                     continue;
@@ -148,6 +169,7 @@ public class Liner {
                     beam.set(line);
                 }
             }
+            result[p1] = beam.stream().toArray();
         }
         return result;
     }
@@ -156,9 +178,11 @@ public class Liner {
         int[][] result = new int[lines.length][lines.length];
         Arrays.stream(result).forEach(arr -> Arrays.fill(arr, -1));
         for (int p = 0; p < pointCount; p++) {
-            BitSet beam = beams[p];
-            for (int l1 = beam.nextSetBit(0); l1 >= 0; l1 = beam.nextSetBit(l1 + 1)) {
-                for (int l2 = beam.nextSetBit(l1 + 1); l2 >= 0; l2 = beam.nextSetBit(l2 + 1)) {
+            int[] beam = beams[p];
+            for (int i = 0; i < beam.length; i++) {
+                int l1 = beam[i];
+                for (int j = i + 1; j < beam.length; j++) {
+                    int l2 = beam[j];
                     result[l1][l2] = p;
                     result[l2][l1] = p;
                 }
@@ -175,7 +199,11 @@ public class Liner {
         return lines.length;
     }
 
-    public BitSet line(int line) {
+    public boolean flag(int line, int point) {
+        return flags[line][point];
+    }
+
+    public int[] line(int line) {
         return lines[line];
     }
 
@@ -183,15 +211,11 @@ public class Liner {
         return lookup[p1][p2];
     }
 
-    public Iterable<Integer> lines() {
-        return () -> IntStream.range(0, lines.length).boxed().iterator();
+    public int[] lines(int point) {
+        return beams[point];
     }
 
-    public Iterable<Integer> lines(int point) {
-        return () -> beams[point].stream().boxed().iterator();
-    }
-
-    public BitSet point(int point) {
+    public int[] point(int point) {
         return beams[point];
     }
 
@@ -199,22 +223,8 @@ public class Liner {
         return intersections[l1][l2];
     }
 
-    public Iterable<Integer> points() {
-        return () -> IntStream.range(0, pointCount).boxed().iterator();
-    }
-
-    public Iterable<Integer> points(int line) {
-        return () -> lines[line].stream().boxed().iterator();
-    }
-
-    public int[] beamCounts() {
-        if (beamCounts == null) {
-            beamCounts = new int[pointCount];
-            for (int i = 0; i < pointCount; i++) {
-                beamCounts[i] = beams[i].cardinality();
-            }
-        }
-        return beamCounts;
+    public int[] points(int line) {
+        return lines[line];
     }
 
     public boolean collinear(int... points) {
@@ -225,19 +235,19 @@ public class Liner {
         for (int i = 1; i < points.length; i++) {
             int second = points[i];
             if (first != second) {
-                BitSet line = lines[line(first, second)];
-                return Arrays.stream(points).allMatch(line::get);
+                boolean[] fgs = flags[line(first, second)];
+                return Arrays.stream(points, i + 1, points.length).allMatch(p -> fgs[p]);
             }
         }
         return true;
     }
 
     public String lineToString(int line) {
-        return lines[line].toString();
+        return Arrays.toString(lines[line]);
     }
 
     public BitSet hull(int... points) {
-        BitSet base = new BitSet();
+        BitSet base = new BitSet(pointCount);
         for (int point : points) {
             base.set(point);
         }
@@ -255,7 +265,7 @@ public class Liner {
                 if (x == y) {
                     continue;
                 }
-                result.or(lines[line(x, y)]);
+                Arrays.stream(lines[line(x, y)]).forEach(result::set);
             }
         }
         BitSet removal = new BitSet();
@@ -266,13 +276,13 @@ public class Liner {
     }
 
     public Liner subPlane(int[] pointArray) {
-        return new Liner(Arrays.stream(lines).map(l -> l.stream()
-                        .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
-                .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new));
+        return new Liner(pointArray.length, Arrays.stream(lines).map(l -> Arrays.stream(l)
+                        .map(p -> Arrays.binarySearch(pointArray, p)).filter(p -> p >= 0).toArray())
+                .filter(bs -> bs.length > 1).toArray(int[][]::new));
     }
 
     public BitSet hyperbolicIndex() {
-        int maximum = Arrays.stream(lines).mapToInt(BitSet::cardinality).max().orElseThrow() - 1;
+        int maximum = Arrays.stream(lines).mapToInt(arr -> arr.length).max().orElseThrow() - 1;
         BitSet result = new BitSet();
         for (int o = 0; o < pointCount; o++) {
             for (int x = 0; x < pointCount; x++) {
@@ -283,15 +293,13 @@ public class Liner {
                     if (collinear(o, x, y)) {
                         continue;
                     }
-                    BitSet xy = lines[line(x, y)];
-                    for (int p = xy.nextSetBit(0); p >= 0; p = xy.nextSetBit(p + 1)) {
+                    for (int p : lines[line(x, y)]) {
                         if (p == x || p == y) {
                             continue;
                         }
                         int ox = line(o, x);
-                        BitSet oy = lines[line(o, y)];
                         int counter = 0;
-                        for (int u = oy.nextSetBit(0); u >= 0; u = oy.nextSetBit(u + 1)) {
+                        for (int u : lines[line(o, y)]) {
                             if (u == o || u == y) {
                                 continue;
                             }
@@ -321,15 +329,13 @@ public class Liner {
                     if (collinear(o, x, y)) {
                         continue;
                     }
-                    BitSet xy = lines[line(x, y)];
-                    for (int p = xy.nextSetBit(0); p >= 0; p = xy.nextSetBit(p + 1)) {
+                    for (int p : lines[line(x, y)]) {
                         if (p == x || p == y) {
                             continue;
                         }
                         int ox = line(o, x);
-                        BitSet oy = lines[line(o, y)];
                         int counter = 0;
-                        for (int u = oy.nextSetBit(0); u >= 0; u = oy.nextSetBit(u + 1)) {
+                        for (int u : lines[line(o, y)]) {
                             if (u == o || u == y) {
                                 continue;
                             }
@@ -347,15 +353,13 @@ public class Liner {
 
     public BitSet playfairIndex() {
         BitSet result = new BitSet();
-        for (int l : lines()) {
-            BitSet line = line(l);
-            for (int p : points()) {
-                if (line.get(p)) {
+        for (int l = 0; l < lines.length; l++) {
+            for (int p = 0; p < pointCount; p++) {
+                if (flag(l, p)) {
                     continue;
                 }
                 int counter = 0;
-                BitSet beam = beams[p];
-                for (int par = beam.nextSetBit(0); par >= 0; par = beam.nextSetBit(par + 1)) {
+                for (int par : beams[p]) {
                     if (intersection(par, l) == -1) {
                         counter++;
                     }
@@ -427,11 +431,11 @@ public class Liner {
     }
 
     public Liner directProduct(Liner that) {
-        int length = this.lines[0].cardinality();
-        if (Arrays.stream(this.lines).anyMatch(l -> l.cardinality() != length)) {
+        int length = this.lines[0].length;
+        if (Arrays.stream(this.lines).anyMatch(l -> l.length != length)) {
             throw new IllegalStateException("Not all lines of length " + length);
         }
-        if (Arrays.stream(that.lines).anyMatch(l -> l.cardinality() != length)) {
+        if (Arrays.stream(that.lines).anyMatch(l -> l.length != length)) {
             throw new IllegalArgumentException("Not all lines of length " + length);
         }
         Liner aff = new Liner(new GaloisField(length).generatePlane()).subPlane(IntStream.range(0, length * length).toArray());
@@ -451,16 +455,15 @@ public class Liner {
                     return result;
                 })),
                 IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.lineCount()).boxed().flatMap(l2 -> {
-                    int[] arr1 = this.line(l1).stream().toArray();
-                    int[] arr2 = that.line(l2).stream().toArray();
+                    int[] arr1 = this.line(l1);
+                    int[] arr2 = that.line(l2);
                     return IntStream.range(0, aff.lineCount()).mapToObj(aff::line).filter(l -> {
-                        int fst = l.nextSetBit(0);
-                        return l.stream().skip(1).allMatch(p -> p / length != fst / length && p % length != fst % length);
+                        int fst = l[0];
+                        return Arrays.stream(l, 1, l.length).skip(1).allMatch(p -> p / length != fst / length && p % length != fst % length);
                     }).map(l -> {
-                        int[] line = l.stream().toArray();
                         BitSet result = new BitSet();
                         for (int i = 0; i < length; i++) {
-                            result.set(cg.fromArr(arr1[line[i] / length], arr2[line[i] % length]));
+                            result.set(cg.fromArr(arr1[l[i] / length], arr2[l[i] % length]));
                         }
                         return result;
                     });
@@ -480,7 +483,7 @@ public class Liner {
                         if (p1 == p2) {
                             continue;
                         }
-                        pts.or(lines[line(p1, p2)]);
+                        Arrays.stream(lines[line(p1, p2)]).forEach(pts::set);
                     }
                 }
                 if (pts.cardinality() != pointCount) {
@@ -496,7 +499,7 @@ public class Liner {
         Set<BitSet> sets = new HashSet<>();
         BitSet points = new BitSet();
         for (int i = 0; i < lineCount(); i++) {
-            if (lines[i].get(p)) {
+            if (flag(i, p)) {
                 points.set(i);
             }
         }
@@ -511,8 +514,8 @@ public class Liner {
                 BitSet hull = hull(p, i, j);
                 BitSet line = new BitSet();
                 for (int pt = points.nextSetBit(0); pt >= 0; pt = points.nextSetBit(pt + 1)) {
-                    BitSet l = lines[pt];
-                    if (l.stream().allMatch(hull::get)) {
+                    int[] l = lines[pt];
+                    if (Arrays.stream(l).allMatch(hull::get)) {
                         line.set(pt);
                     }
                 }

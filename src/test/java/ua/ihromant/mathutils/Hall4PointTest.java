@@ -156,18 +156,15 @@ public class Hall4PointTest {
 
     public static BitSet checkSpace(Liner plane) {
         BitSet result = new BitSet();
-        for (int x : plane.points()) {
-            for (int y : plane.points()) {
-                if (x >= y) {
-                    continue;
-                }
-                for (int z : plane.points()) {
-                    if (y >= z || plane.collinear(x, y, z)) {
+        for (int x = 0; x < plane.pointCount(); x++) {
+            for (int y = x + 1; y < plane.pointCount(); y++) {
+                for (int z = y + 1; z < plane.pointCount(); z++) {
+                    if (plane.collinear(x, y, z)) {
                         continue;
                     }
                     BitSet hull = plane.hull(x, y, z);
-                    for (int w : plane.points()) {
-                        if (w >= z || hull.get(w)) {
+                    for (int w = z + 1; w < plane.pointCount(); w++) {
+                        if (hull.get(w)) {
                             continue;
                         }
                         int sCard = plane.hull(x, y, z, w).cardinality();

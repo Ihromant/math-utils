@@ -68,7 +68,7 @@ public class Automorphisms {
 
     private static void automorphisms(Liner liner, int[] partialPoints, BitSet oldPointsAssigned, int[] partialLines, BitSet oldLinesAssigned, Consumer<int[]> sink) {
         OptionalInt nextLine = IntStream.range(0, partialLines.length)
-                .filter(l -> !oldLinesAssigned.get(l) && !liner.line(l).intersects(oldPointsAssigned)).findAny();
+                .filter(l -> !oldLinesAssigned.get(l) && Arrays.stream(liner.line(l)).noneMatch(oldPointsAssigned::get)).findAny();
         int from = nextLine.orElseGet(() -> oldLinesAssigned.nextClearBit(0));
         BitSet toFilter = new BitSet();
         if (nextLine.isPresent()) {
@@ -77,7 +77,7 @@ public class Automorphisms {
                 pointValues.set(partialPoints[i]);
             }
             for (int i = 0; i < partialLines.length; i++) {
-                if (liner.line(i).intersects(pointValues)) {
+                if (Arrays.stream(liner.line(i)).anyMatch(pointValues::get)) {
                     toFilter.set(i);
                 }
             }
@@ -213,8 +213,8 @@ public class Automorphisms {
         BitSet fromBanned = new BitSet();
         BitSet toBanned = new BitSet();
         for (int i = linesAssignedOld.nextSetBit(0); i >= 0; i = linesAssignedOld.nextSetBit(i + 1)) {
-            fromBanned.or(liner.line(i));
-            toBanned.or(liner.line(partialLines[i]));
+            Arrays.stream(liner.line(i)).forEach(fromBanned::set);
+            Arrays.stream(liner.line(partialLines[i])).forEach(toBanned::set);
         }
         fromBanned.flip(0, partialPoints.length);
         if (fromBanned.isEmpty()) {
@@ -307,22 +307,24 @@ public class Automorphisms {
 
     private static int[] isomorphism(Liner first, Liner second, int[] partialPoints, BitSet oldPointsAssigned, int[] partialLines, BitSet oldLinesAssigned) {
         OptionalInt nextLine = IntStream.range(0, partialLines.length)
-                .filter(l -> !oldLinesAssigned.get(l) && !first.line(l).intersects(oldPointsAssigned)).findAny();
-        int from = nextLine.orElseGet(() -> oldLinesAssigned.nextClearBit(0));
+                .filter(l -> !oldLinesAssigned.get(l) && Arrays.stream(first.line(l)).noneMatch(oldPointsAssigned::get)).findAny();
+        int from = nextLine.orElseGet(() -> IntStream.range(0, partialLines.length).filter(l -> partialLines[l] < 0).findAny().orElseThrow());
         BitSet toFilter = new BitSet();
         if (nextLine.isPresent()) {
-            BitSet pointValues = new BitSet();
-            for (int i = oldPointsAssigned.nextSetBit(0); i >= 0; i = oldPointsAssigned.nextSetBit(i + 1)) {
-                pointValues.set(partialPoints[i]);
-            }
-            for (int i = 0; i < partialLines.length; i++) {
-                if (second.line(i).intersects(pointValues)) {
-                    toFilter.set(i);
+            for (int p : partialPoints) {
+                if (p < 0) {
+                    continue;
+                }
+                for (int l : second.point(p)) {
+                    toFilter.set(l);
                 }
             }
         } else {
-            for (int i = oldLinesAssigned.nextSetBit(0); i >= 0; i = oldLinesAssigned.nextSetBit(i + 1)) {
-                toFilter.set(partialLines[i]);
+            for (int l : partialLines) {
+                if (l < 0) {
+                    continue;
+                }
+                toFilter.set(l);
             }
         }
         br: for (int to = toFilter.nextClearBit(0); to < partialLines.length; to = toFilter.nextClearBit(to + 1)) {
@@ -417,9 +419,9 @@ public class Automorphisms {
             toBanned.set(partialPoints[i]);
         }
         int from = fromBanned.nextClearBit(0);
-        int fromCnt = first.beamCounts()[from];
+        int fromCnt = first.lines(from).length;
         br: for (int to = toBanned.nextClearBit(0); to < partialPoints.length; to = toBanned.nextClearBit(to + 1)) {
-            if (second.beamCounts()[to] != fromCnt) {
+            if (second.lines(to).length != fromCnt) {
                 continue;
             }
             int[] nextPartialPoints = partialPoints.clone();

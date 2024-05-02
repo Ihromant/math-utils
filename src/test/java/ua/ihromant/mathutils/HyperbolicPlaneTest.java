@@ -81,7 +81,7 @@ public class HyperbolicPlaneTest {
                 "2468ac578bc95abcbcac9babc9");
         BitSet[] constructed1 = Stream.concat(Stream.concat(IntStream.range(0, base.lineCount()).boxed().flatMap(l -> IntStream.range(0, 3).mapToObj(sk -> {
                     BitSet result = new BitSet();
-                    int[] line = base.line(l).stream().toArray();
+                    int[] line = base.line(l);
                     for (int i = 0; i < 3; i++) {
                         result.set(2 * line[i] + (sk == i ? 0 : 1));
                     }
@@ -93,7 +93,7 @@ public class HyperbolicPlaneTest {
                     result.set(2 * x + 1);
                     result.set(2 * base.pointCount());
                     return result;
-                })), IntStream.range(0, base.lineCount()).mapToObj(base::line).map(bs -> of(bs.stream().map(i -> 2 * i).toArray()))).toArray(BitSet[]::new);
+                })), IntStream.range(0, base.lineCount()).mapToObj(base::line).map(bs -> of(Arrays.stream(bs).map(i -> 2 * i).toArray()))).toArray(BitSet[]::new);
         Liner infty = new Liner(constructed1);
         testCorrectness(infty, of(3));
         assertEquals(2 * base.pointCount() + 1, infty.pointCount());
@@ -126,7 +126,7 @@ public class HyperbolicPlaneTest {
     }
 
     private static int quasiOp(Liner pl, int x, int y) {
-        return pl.line(pl.line(x, y)).stream().filter(p -> p != x && p != y).findAny().orElseThrow();
+        return Arrays.stream(pl.line(pl.line(x, y))).filter(p -> p != x && p != y).findAny().orElseThrow();
     }
 
     @Test
@@ -771,13 +771,12 @@ public class HyperbolicPlaneTest {
         IntStream.range(0, q).forEach(i -> set.set(i * q + fd.mul(i, i)));
         set.set(q * q + q);
         int[] oval = set.stream().toArray();
-        Map<Integer, BitSet> tangents = new HashMap<>();
+        Map<Integer, int[]> tangents = new HashMap<>();
         for (int p : oval) {
             int t = -1;
             q: for (int l : pl.lines(p)) {
-                BitSet line = pl.line(l);
                 for (int p1 : oval) {
-                    if (p != p1 && line.get(p1)) {
+                    if (p != p1 && pl.flag(l, p1)) {
                         continue q;
                     }
                 }
@@ -787,7 +786,7 @@ public class HyperbolicPlaneTest {
         }
         BitSet pts = new BitSet();
         pts.set(0, q * q + q + 1);
-        tangents.values().forEach(t -> t.stream().forEach(i -> pts.set(i, false)));
+        tangents.values().forEach(t -> Arrays.stream(t).forEach(i -> pts.set(i, false)));
         Liner hyp = pl.subPlane(pts.stream().toArray());
         testCorrectness(hyp, of(q / 2, q / 2 + 1));
         System.out.println(hyp.isRegular());
@@ -800,7 +799,7 @@ public class HyperbolicPlaneTest {
                 if (p1 == p2) {
                     continue;
                 }
-                bs.or(hyp.line(hyp.line(p1, p2)));
+                Arrays.stream(hyp.line(hyp.line(p1, p2))).forEach(bs::set);
             }
         }
         System.out.println(bs.cardinality());
@@ -820,16 +819,15 @@ public class HyperbolicPlaneTest {
                 q * q * fd.add(fd.mul(s, s), fd.mul(s, t), fd.mul(a, t, t)) + t * q + s)));
         set.set(q * q * q);
         int[] ovoid = set.stream().toArray();
-        Map<Integer, List<BitSet>> tangents = new HashMap<>();
+        Map<Integer, List<int[]>> tangents = new HashMap<>();
         for (int p : ovoid) {
             q: for (int l : sp.lines(p)) {
-                BitSet line = sp.line(l);
                 for (int p1 : ovoid) {
-                    if (p != p1 && line.get(p1)) {
+                    if (p != p1 && sp.flag(l, p1)) {
                         continue q;
                     }
                 }
-                tangents.computeIfAbsent(p, p1 -> new ArrayList<>()).add(line);
+                tangents.computeIfAbsent(p, p1 -> new ArrayList<>()).add(sp.line(l));
             }
         }
         BitSet pts = new BitSet();
@@ -843,12 +841,11 @@ public class HyperbolicPlaneTest {
                     }
                     BitSet bs = sp.hull(x, y, z);
                     bs.and(set);
-                    System.out.println(bs.cardinality());
                 }
             }
         }
         tangents.forEach((k, v) -> System.out.println(k + " " + v.size()));
-        tangents.values().forEach(l -> l.forEach(t -> t.stream().forEach(i -> pts.set(i, false))));
+        tangents.values().forEach(l -> l.forEach(t -> Arrays.stream(t).forEach(i -> pts.set(i, false))));
         System.out.println(pts.cardinality());
     }
 
@@ -860,14 +857,14 @@ public class HyperbolicPlaneTest {
         Liner subPl = Liner.byStrings("0001123", "1242534", "3654656");
         //HyperbolicPlane subPl = new HyperbolicPlane("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95acbbacc9bbac9");
         Set<BitSet> lines = new LinkedHashSet<>();
-        for (int l : aff.lines()) {
+        for (int l = 0; l < aff.lineCount(); l++) {
 //            List<Integer> pts = new ArrayList<>(Arrays.asList(aff.line(l).stream().boxed().toArray(Integer[]::new)));
 //            Collections.shuffle(pts);
 //            Integer[] line = pts.toArray(Integer[]::new);
-            int[] line = aff.line(l).stream().toArray();
+            int[] line = aff.line(l);
             for (int i = 0; i < q; i++) {
                 for (int j = i + 1; j < q; j++) {
-                    int[] sl = subPl.line(subPl.line(i, j)).stream().toArray();
+                    int[] sl = subPl.line(subPl.line(i, j));
                     int[] nl = new int[sl.length];
                     for (int k = 0; k < nl.length; k++) {
                         nl[k] = line[sl[k]];
@@ -900,7 +897,7 @@ public class HyperbolicPlaneTest {
         Liner p13a = Liner.byStrings("00000011111222223334445556", "13579b3469a3467867868a7897", "2468ac578bc95abcbcac9babc9");
         Liner p15aff = Liner.byStrings("00000001111112222223333444455566678", "13579bd3469ac34578b678a58ab78979c9a", "2468ace578bde96aecdbcded9cebecaeddb");
         Liner prod = pl91.directProduct(tr7);
-        testCorrectness(prod, of(prod.line(0).cardinality()));
+        testCorrectness(prod, of(prod.line(0).length));
         System.out.println(prod.cardSubPlanes(false));
         //System.out.println(prod.cardSubSpaces(false));
     }
@@ -1062,32 +1059,34 @@ public class HyperbolicPlaneTest {
     }
 
     public static void testCorrectness(Liner plane, BitSet perLine) {
-        for (int l : plane.lines()) {
-            assertTrue(perLine.get(plane.line(l).cardinality()));
+        for (int l = 0; l < plane.lineCount(); l++) {
+            assertTrue(perLine.get(plane.line(l).length));
         }
-        for (int p1 : plane.points()) {
-            for (int p2 : plane.points()) {
+        for (int p1 = 0; p1 < plane.pointCount(); p1++) {
+            for (int p2 = 0; p2 < plane.pointCount(); p2++) {
                 if (p1 != p2) {
-                    BitSet line = plane.line(plane.line(p1, p2));
-                    assertTrue(line.get(p1));
-                    assertTrue(line.get(p2));
+                    int line = plane.line(p1, p2);
+                    assertTrue(plane.flag(line, p1));
+                    assertTrue(plane.flag(line, p2));
                 }
             }
         }
-        for (int p : plane.points()) {
+        for (int p = 0; p < plane.pointCount(); p++) {
+            int p1 = p;
             for (int l : plane.lines(p)) {
-                assertTrue(plane.line(l).get(p));
+                assertTrue(Arrays.stream(plane.line(l)).anyMatch(pt -> pt == p1));
             }
         }
-        for (int l : plane.lines()) {
+        for (int l = 0; l < plane.lineCount(); l++) {
+            int ln1 = l;
             for (int p : plane.points(l)) {
-                assertTrue(plane.point(p).get(l));
+                assertTrue(Arrays.stream(plane.point(p)).anyMatch(ln -> ln == ln1));
             }
         }
         if (perLine.cardinality() == 1) { // Theorem 8.3.1
             int beamCount = (plane.pointCount() - 1) / (perLine.length() - 2);
-            for (int p : plane.points()) {
-                assertEquals(beamCount, plane.point(p).cardinality());
+            for (int p = 0; p < plane.pointCount(); p++) {
+                assertEquals(beamCount, plane.point(p).length);
             }
             assertEquals(plane.pointCount() * beamCount, plane.lineCount() * perLine.stream().findAny().orElseThrow());
         }
