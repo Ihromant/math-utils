@@ -34,7 +34,7 @@ public class Liner {
         this.intersections = generateIntersections();
     }
 
-    public Liner(int pointCount, BitSet[] lines) {
+    private Liner(int pointCount, BitSet[] lines) {
         this.pointCount = pointCount;
         this.lines = Arrays.stream(lines).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
         this.flags = generateFlags();
@@ -53,7 +53,7 @@ public class Liner {
         int m = (pointCount - 1) / 2 / t;
         GaloisField pf = new GaloisField(pointCount);
         int prim = pf.primitives().findAny().orElseThrow();
-        BitSet[] lines = IntStream.range(0, t).boxed().flatMap(idx -> {
+        int[][] lines = IntStream.range(0, t).boxed().flatMap(idx -> {
             int[] block = Arrays.stream(base).map(j -> pf.mul(j, pf.power(prim, idx * m))).toArray();
             return pf.elements().mapToObj(i -> {
                 BitSet res = new BitSet();
@@ -62,25 +62,25 @@ public class Liner {
                 }
                 return res;
             });
-        }).toArray(BitSet[]::new);
+        }).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
         return new Liner(pointCount, lines);
     }
 
     public static Liner byDiffFamily(int[]... base) {
         int pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;
-        BitSet[] lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
+        int[][] lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int shift : arr) {
                 res.set((idx + shift) % pointCount);
             }
             return res;
-        })).toArray(BitSet[]::new);
+        })).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
         return new Liner(pointCount, lines);
     }
 
     public static Liner byDiffFamily(int pointCount, int[]... base) {
         int k = base[0].length; // assuming that difference set is correct
-        BitSet[] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
+        int[][] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
                 .flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
                     BitSet res = new BitSet();
                     for (int shift : arr) {
@@ -93,14 +93,14 @@ public class Liner {
                 res.set((idx + shift) % pointCount);
             }
             return res;
-        }) : Stream.of()).toArray(BitSet[]::new);
+        }) : Stream.of()).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
         return new Liner(pointCount, lines);
     }
 
     public static Liner byDiffFamily(Group g, int[]... base) {
         int pointCount = g.order();
         int k = base[0].length; // assuming that difference set is correct
-        BitSet[] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
+        int[][] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
                 .flatMap(arr -> g.elements().mapToObj(el -> {
                     BitSet res = new BitSet();
                     for (int shift : arr) {
@@ -113,19 +113,20 @@ public class Liner {
                 res.set(g.op(idx, shift));
             }
             return res;
-        }).distinct() : Stream.of()).toArray(BitSet[]::new);
+        }).distinct() : Stream.of()).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
         return new Liner(pointCount, lines);
     }
 
     public static Liner byStrings(String... design) {
         int pointCount = Arrays.stream(design).flatMap(s -> s.chars().boxed()).collect(Collectors.toSet()).size();
-        BitSet[] lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
-            BitSet res = new BitSet();
-            for (String s : design) {
-                res.set(Character.digit(s.charAt(idx), 36));
+        int[][] lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
+            int[] res = new int[design.length];
+            for (int i = 0; i < design.length; i++) {
+                String s = design[i];
+                res[i] = Character.digit(s.charAt(idx), 36);
             }
             return res;
-        }).toArray((BitSet[]::new));
+        }).toArray((int[][]::new));
         return new Liner(pointCount, lines);
     }
 
