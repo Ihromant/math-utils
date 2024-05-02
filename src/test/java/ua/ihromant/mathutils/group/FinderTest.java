@@ -291,4 +291,54 @@ public class FinderTest {
         }
         return bs;
     }
+
+    @Test
+    public void readByLeft() {
+        String prefix = "ap";
+        String newPrefix = "ap1";
+        int v = 19;
+        int k = 3;
+        int leftNeeded = 35;
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int lineCount = v * (v - 1) / k / (k - 1);
+            while ((line = br.readLine()) != null) {
+                int left = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                line = br.readLine();
+                int partialsCount = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                int partialSize = lineCount - left;
+                int[][][] partials = new int[partialsCount][partialSize][k];
+                for (int i = 0; i < partialsCount; i++) {
+                    int[][] partial = partials[i];
+                    for (int j = 0; j < partialSize; j++) {
+                        String[] pts = br.readLine().split(" ");
+                        for (int l = 0; l < k; l++) {
+                            partial[j][l] = Integer.parseInt(pts[l]);
+                        }
+                    }
+                    br.readLine();
+                }
+                if (left == leftNeeded) {
+                    List<DesignData> liners = Arrays.stream(partials).map(part -> {
+                        boolean[][] frequencies = new boolean[v][v];
+                        for (int i = 0; i < v; i++) {
+                            frequencies[i][i] = true;
+                        }
+                        for (int[] block : part) {
+                            enhanceFrequencies(frequencies, block);
+                        }
+                        return new DesignData(part, frequencies);
+                    }).collect(Collectors.toList());
+                    dump(newPrefix, v, k, left, liners);
+                    return;
+                }
+            }
+            System.out.println("Not found");
+        } catch (IOException e) {
+            System.out.println("Something wrong happened");
+            e.printStackTrace();
+        }
+    }
 }
