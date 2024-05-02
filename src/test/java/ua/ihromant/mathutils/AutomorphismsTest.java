@@ -44,12 +44,14 @@ public class AutomorphismsTest {
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         })));
+        long time = System.currentTimeMillis();
         assertEquals(12096, Automorphisms.autCount(Liner.byStrings(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
                 "3cdefopqrghijrqopqrponmklporqklmn7romnqpnmqoklrplkbopporqqrfjnr"
         })));
+        System.out.println(System.currentTimeMillis() - time);
     }
 
     @Test
@@ -82,12 +84,14 @@ public class AutomorphismsTest {
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         })));
+        long time = System.currentTimeMillis();
         assertEquals(12096, Automorphisms.autCountOld(Liner.byStrings(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
                 "3cdefopqrghijrqopqrponmklporqklmn7romnqpnmqoklrplkbopporqqrfjnr"
         })));
+        System.out.println(System.currentTimeMillis() - time);
     }
 
     private static final int[] AUTH_COUNTS = {0, 0, 168, 5616, 120960, 372000, 0, 5630688, 49448448, 84913920};
