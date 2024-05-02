@@ -21,16 +21,15 @@ public class Liner {
     private final int pointCount;
     private final BitSet[] lines;
     private final int[][] lookup;
-    private final BitSet[] points;
+    private final BitSet[] beams;
     private final int[][] intersections;
-    private Map<Integer, Long> beamFrequencies;
     private int[] beamCounts;
 
     public Liner(int pointCount, BitSet[] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
         this.lookup = generateLookup();
-        this.points = generateBeamsPartial();
+        this.beams = generateBeamsPartial();
         this.intersections = generateIntersections();
     }
 
@@ -135,21 +134,6 @@ public class Liner {
         return result;
     }
 
-    private BitSet[] generateBeams() {
-        BitSet[] result = new BitSet[pointCount];
-        for (int p1 = 0; p1 < pointCount; p1++) {
-            BitSet beam = new BitSet();
-            result[p1] = beam;
-            for (int p2 = 0; p2 < pointCount; p2++) {
-                if (p1 == p2) {
-                    continue;
-                }
-                beam.set(line(p1, p2));
-            }
-        }
-        return result;
-    }
-
     private BitSet[] generateBeamsPartial() {
         BitSet[] result = new BitSet[pointCount];
         for (int p1 = 0; p1 < pointCount; p1++) {
@@ -172,7 +156,7 @@ public class Liner {
         int[][] result = new int[lines.length][lines.length];
         Arrays.stream(result).forEach(arr -> Arrays.fill(arr, -1));
         for (int p = 0; p < pointCount; p++) {
-            BitSet beam = points[p];
+            BitSet beam = beams[p];
             for (int l1 = beam.nextSetBit(0); l1 >= 0; l1 = beam.nextSetBit(l1 + 1)) {
                 for (int l2 = beam.nextSetBit(l1 + 1); l2 >= 0; l2 = beam.nextSetBit(l2 + 1)) {
                     result[l1][l2] = p;
@@ -204,11 +188,11 @@ public class Liner {
     }
 
     public Iterable<Integer> lines(int point) {
-        return () -> points[point].stream().boxed().iterator();
+        return () -> beams[point].stream().boxed().iterator();
     }
 
     public BitSet point(int point) {
-        return points[point];
+        return beams[point];
     }
 
     public int intersection(int l1, int l2) {
@@ -223,23 +207,11 @@ public class Liner {
         return () -> lines[line].stream().boxed().iterator();
     }
 
-    public Map<Integer, Long> beamFrequencies() {
-        if (beamFrequencies == null) {
-            beamFrequencies = new HashMap<>();
-            for (BitSet beam : points) {
-                int lines = beam.cardinality();
-                Long old = beamFrequencies.get(lines);
-                beamFrequencies.put(lines, old == null ? 1 : old + 1);
-            }
-        }
-        return beamFrequencies;
-    }
-
     public int[] beamCounts() {
         if (beamCounts == null) {
             beamCounts = new int[pointCount];
             for (int i = 0; i < pointCount; i++) {
-                beamCounts[i] = points[i].cardinality();
+                beamCounts[i] = beams[i].cardinality();
             }
         }
         return beamCounts;
@@ -382,7 +354,7 @@ public class Liner {
                     continue;
                 }
                 int counter = 0;
-                BitSet beam = points[p];
+                BitSet beam = beams[p];
                 for (int par = beam.nextSetBit(0); par >= 0; par = beam.nextSetBit(par + 1)) {
                     if (intersection(par, l) == -1) {
                         counter++;
