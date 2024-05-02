@@ -22,6 +22,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class FinderTest {
     @Test
     public void generateCom() throws IOException {
@@ -340,5 +342,49 @@ public class FinderTest {
             System.out.println("Something wrong happened");
             e.printStackTrace();
         }
+    }
+
+    @Test
+    public void performance() {
+        testPerformance("perf", 19, 3, 3);
+        testPerformance("perf", 25, 4, 1);
+        testPerformance("perf", 31, 4, 3);
+        testPerformance("perf", 37, 5, 4);
+    }
+
+    private static void testPerformance(String prefix, int v, int k, int cnt) {
+        DumpConfig conf = readLast("perf", v, k);
+        List<DesignData> dataSet = Arrays.stream(conf.partials()).map(part -> {
+            boolean[][] frequencies = new boolean[v][v];
+            for (int i = 0; i < v; i++) {
+                frequencies[i][i] = true;
+            }
+            for (int[] block : part) {
+                enhanceFrequencies(frequencies, block);
+            }
+            return new DesignData(part, frequencies);
+        }).toList();
+        long time = System.currentTimeMillis();
+        List<Liner> nonIsomorphic = new ArrayList<>();
+        for (DesignData data : dataSet) {
+            Liner liner = new Liner(v, Arrays.stream(data.partial()).map(FinderTest::of).toArray(BitSet[]::new));
+            if (nonIsomorphic.stream().anyMatch(l -> Automorphisms.isomorphism(liner, l) != null)) {
+                continue;
+            }
+            nonIsomorphic.add(liner);
+        }
+        assertEquals(cnt, nonIsomorphic.size());
+        System.out.println(prefix + " " + v + " " + k + " iso lines time " + (System.currentTimeMillis() - time));
+        nonIsomorphic.clear();
+        time = System.currentTimeMillis();
+        for (DesignData data : dataSet) {
+            Liner liner = new Liner(v, Arrays.stream(data.partial()).map(FinderTest::of).toArray(BitSet[]::new));
+            if (nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
+                continue;
+            }
+            nonIsomorphic.add(liner);
+        }
+        assertEquals(cnt, nonIsomorphic.size());
+        System.out.println(prefix + " " + v + " " + k + " non iso points time " + (System.currentTimeMillis() - time));
     }
 }
