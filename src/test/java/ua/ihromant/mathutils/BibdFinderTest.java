@@ -68,7 +68,7 @@ public class BibdFinderTest {
                         }
                         return unique.contains(result);
                     })) {
-                        HyperbolicPlaneTest.testCorrectness(new Liner(v, diffs), of(k));
+                        HyperbolicPlaneTest.testCorrectness(Liner.byDiffFamily(v, diffs), of(k));
                         unique.add(Arrays.stream(diffs).map(BibdFinderTest::of).collect(Collectors.toSet()));
                         ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
                                 .collect(Collectors.joining(", ", "{", "}")));
@@ -99,7 +99,7 @@ public class BibdFinderTest {
             Set<BitSet> planes = ConcurrentHashMap.newKeySet();
             AtomicLong counter = new AtomicLong();
             long time = System.currentTimeMillis();
-            br.lines().parallel().forEach(line -> {
+            br.lines().forEach(line -> {
                 String cut = line.replace("{{", "").replace("}}", "");
                 String[] arrays = cut.split("\\}, \\{");
                 int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
@@ -107,7 +107,7 @@ public class BibdFinderTest {
                 IntStream.range(0, 1 << (diffSet.length - (g.order() % k == 0 ? 2 : 1))).forEach(comb -> {
                     int[][] ds = IntStream.range(0, diffSet.length)
                             .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(g, diffSet[i])).toArray(int[][]::new);
-                    Liner p = new Liner(g, ds);
+                    Liner p = Liner.byDiffFamily(g, ds);
                     checkHypIndex(p, planes, ds);
                 });
 
@@ -136,7 +136,7 @@ public class BibdFinderTest {
                 String[] arrays = cut.split("\\}, \\{");
                 int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
                         .toArray()).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
-                Liner p = new Liner(v, diffSet);
+                Liner p = Liner.byDiffFamily(v, diffSet);
                 HyperbolicPlaneTest.testCorrectness(p, of(5));
                 checkHypIndex(p, planes, diffSet);
 
@@ -169,7 +169,7 @@ public class BibdFinderTest {
                 IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                     int[][] ds = IntStream.range(0, diffSet.length)
                             .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : mirrorTuple(diffSet[i])).toArray(int[][]::new);
-                    Liner p = new Liner(v, ds);
+                    Liner p = Liner.byDiffFamily(v, ds);
                     checkHypIndex(p, planes, ds);
                 });
 
@@ -373,7 +373,7 @@ public class BibdFinderTest {
             IntStream.range(0, 1 << (dss.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                 int[][] dsss = IntStream.range(0, dss.length)
                         .mapToObj(i -> ((1 << i) & comb) == 0 ? dss[i] : mirrorTuple(dss[i])).toArray(int[][]::new);
-                Liner hp = new Liner(v, dsss);
+                Liner hp = Liner.byDiffFamily(v, dsss);
                 BitSet csp = hp.cardSubPlanes(false);
                 if (!csp.get(v)) {
                     System.out.println(csp + " " + Arrays.deepToString(dsss));

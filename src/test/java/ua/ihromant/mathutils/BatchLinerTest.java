@@ -539,7 +539,7 @@ public class BatchLinerTest {
             }
         }
         for (int i = 0; i < designs.length; i++) {
-            Liner p = new Liner(designs[i]);
+            Liner p = Liner.byStrings(designs[i]);
             assertEquals(25, p.pointCount());
             assertEquals(50, p.lineCount());
             HyperbolicPlaneTest.testCorrectness(p, of(4));

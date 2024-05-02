@@ -17,34 +17,34 @@ public class AutomorphismsTest {
     @Test
     public void testAutomorphisms() {
         assertEquals(168, Automorphisms.autCount(new Liner(new GaloisField(2).generatePlane())));
-        assertEquals(432, Automorphisms.autCount(new Liner(new String[]{ // affine 3
+        assertEquals(432, Automorphisms.autCount(Liner.byStrings(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
         })));
         assertEquals(5616, Automorphisms.autCount(new Liner(new GaloisField(3).generatePlane()))); // projective 3
         //assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
-        assertEquals(432, Automorphisms.autCount(new Liner(new String[]{ // affine 3
+        assertEquals(432, Automorphisms.autCount(Liner.byStrings(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
         })));
-        assertEquals(20160, Automorphisms.autCount(new Liner(new String[]{ // smallest 3-dim projective
+        assertEquals(20160, Automorphisms.autCount(Liner.byStrings(new String[]{ // smallest 3-dim projective
                 "00000001111112222223333444455556666",
                 "13579bd3478bc3478bc789a789a789a789a",
                 "2468ace569ade65a9edbcdecbeddebcedcb"
         })));
-        assertEquals(6, Automorphisms.autCount(new Liner(new String[]{
+        assertEquals(6, Automorphisms.autCount(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95acbbacc9bbac9"
         })));
-        assertEquals(39, Automorphisms.autCount(new Liner(new String[]{
+        assertEquals(39, Automorphisms.autCount(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         })));
-        assertEquals(12096, Automorphisms.autCount(new Liner(new String[]{
+        assertEquals(12096, Automorphisms.autCount(Liner.byStrings(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
@@ -55,34 +55,34 @@ public class AutomorphismsTest {
     @Test
     public void testAutomorphismsOld() {
         assertEquals(168, Automorphisms.autCountOld(new Liner(new GaloisField(2).generatePlane())));
-        assertEquals(432, Automorphisms.autCountOld(new Liner(new String[]{ // affine 3
+        assertEquals(432, Automorphisms.autCountOld(Liner.byStrings(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
         })));
         assertEquals(5616, Automorphisms.autCountOld(new Liner(new GaloisField(3).generatePlane()))); // projective 3
         //assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
-        assertEquals(432, Automorphisms.autCountOld(new Liner(new String[]{ // affine 3
+        assertEquals(432, Automorphisms.autCountOld(Liner.byStrings(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
         })));
-        assertEquals(20160, Automorphisms.autCountOld(new Liner(new String[]{ // smallest 3-dim projective
+        assertEquals(20160, Automorphisms.autCountOld(Liner.byStrings(new String[]{ // smallest 3-dim projective
                 "00000001111112222223333444455556666",
                 "13579bd3478bc3478bc789a789a789a789a",
                 "2468ace569ade65a9edbcdecbeddebcedcb"
         })));
-        assertEquals(6, Automorphisms.autCountOld(new Liner(new String[]{
+        assertEquals(6, Automorphisms.autCountOld(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95acbbacc9bbac9"
         })));
-        assertEquals(39, Automorphisms.autCountOld(new Liner(new String[]{
+        assertEquals(39, Automorphisms.autCountOld(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         })));
-        assertEquals(12096, Automorphisms.autCountOld(new Liner(new String[]{
+        assertEquals(12096, Automorphisms.autCountOld(Liner.byStrings(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
@@ -111,7 +111,7 @@ public class AutomorphismsTest {
 
     @Test
     public void testCycles() {
-        Liner plane = new Liner(new String[] {
+        Liner plane = Liner.byStrings(new String[] {
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"});
@@ -133,7 +133,7 @@ public class AutomorphismsTest {
 
     @Test
     public void testIsomorphism() {
-        Liner first7 = new Liner(new String[]{
+        Liner first7 = Liner.byStrings(new String[]{
                 "0001123",
                 "1242534",
                 "3654656"
@@ -141,39 +141,39 @@ public class AutomorphismsTest {
         Liner second7 = new Liner(new GaloisField(2).generatePlane());
         assertNotNull(Automorphisms.isomorphism(first7, second7));
         assertNotNull(Automorphisms.isomorphism(second7, first7));
-        Liner first13 = new Liner(new String[]{
+        Liner first13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         });
-        Liner alt13 = new Liner(new String[]{
+        Liner alt13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95acbbacc9bbac9"
         });
-        Liner second13 = new Liner(new int[]{0, 6, 8}, new int[]{0, 9, 10});
+        Liner second13 = Liner.byDiffFamily(new int[]{0, 6, 8}, new int[]{0, 9, 10});
         assertNotNull(Automorphisms.isomorphism(first13, second13));
         assertNotNull(Automorphisms.isomorphism(second13, first13));
         assertNull(Automorphisms.isomorphism(alt13, first13));
-        Liner first9 = new Liner(new String[]{
+        Liner first9 = Liner.byStrings(new String[]{
                 "000011122236",
                 "134534534547",
                 "268787676858"
         });
         Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
         assertNotNull(Automorphisms.isomorphism(first9, second9));
-        Liner firstFlat15 = new Liner(new String[] {
+        Liner firstFlat15 = Liner.byStrings(new String[] {
                 "00000001111112222223333444455566678",
                 "13579bd3469ac34578b678a58ab78979c9a",
                 "2468ace578bde96aecdbcded9cebecaeddb"
         });
-        Liner firstSpace15 = new Liner(new String[]{
+        Liner firstSpace15 = Liner.byStrings(new String[]{
                "00000001111112222223333444455556666",
                "13579bd3478bc3478bc789a789a789a789a",
                "2468ace569ade65a9edbcdecbeddebcedcb"
         });
-        Liner secondFlat15 = new Liner(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
-        Liner secondSpace15 = new Liner(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondFlat15 = Liner.byDiffFamily(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondSpace15 = Liner.byDiffFamily(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
         Liner thirdSpace15 = new Liner(new GaloisField(2).generateSpace());
         assertNotNull(Automorphisms.isomorphism(firstFlat15, secondFlat15));
         assertNotNull(Automorphisms.isomorphism(firstSpace15, secondSpace15));
@@ -194,7 +194,7 @@ public class AutomorphismsTest {
 
     @Test
     public void testAltIsomorphism() {
-        Liner first7 = new Liner(new String[]{
+        Liner first7 = Liner.byStrings(new String[]{
                 "0001123",
                 "1242534",
                 "3654656"
@@ -202,39 +202,39 @@ public class AutomorphismsTest {
         Liner second7 = new Liner(new GaloisField(2).generatePlane());
         assertNotNull(Automorphisms.altIsomorphism(first7, second7));
         assertNotNull(Automorphisms.altIsomorphism(second7, first7));
-        Liner first13 = new Liner(new String[]{
+        Liner first13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         });
-        Liner alt13 = new Liner(new String[]{
+        Liner alt13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95acbbacc9bbac9"
         });
-        Liner second13 = new Liner(new int[]{0, 6, 8}, new int[]{0, 9, 10});
+        Liner second13 = Liner.byDiffFamily(new int[]{0, 6, 8}, new int[]{0, 9, 10});
         assertNotNull(Automorphisms.altIsomorphism(first13, second13));
         assertNotNull(Automorphisms.altIsomorphism(second13, first13));
         assertNull(Automorphisms.altIsomorphism(alt13, first13));
-        Liner first9 = new Liner(new String[]{
+        Liner first9 = Liner.byStrings(new String[]{
                 "000011122236",
                 "134534534547",
                 "268787676858"
         });
         Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
         assertNotNull(Automorphisms.altIsomorphism(first9, second9));
-        Liner firstFlat15 = new Liner(new String[] {
+        Liner firstFlat15 = Liner.byStrings(new String[] {
                 "00000001111112222223333444455566678",
                 "13579bd3469ac34578b678a58ab78979c9a",
                 "2468ace578bde96aecdbcded9cebecaeddb"
         });
-        Liner firstSpace15 = new Liner(new String[]{
+        Liner firstSpace15 = Liner.byStrings(new String[]{
                 "00000001111112222223333444455556666",
                 "13579bd3478bc3478bc789a789a789a789a",
                 "2468ace569ade65a9edbcdecbeddebcedcb"
         });
-        Liner secondFlat15 = new Liner(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
-        Liner secondSpace15 = new Liner(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondFlat15 = Liner.byDiffFamily(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondSpace15 = Liner.byDiffFamily(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
         Liner thirdSpace15 = new Liner(new GaloisField(2).generateSpace());
         assertNotNull(Automorphisms.altIsomorphism(firstFlat15, secondFlat15));
         assertNotNull(Automorphisms.altIsomorphism(firstSpace15, secondSpace15));

@@ -26,14 +26,6 @@ public class Liner {
     private Map<Integer, Long> beamFrequencies;
     private int[] beamCounts;
 
-    public Liner(BitSet[] lines) {
-        this.pointCount = Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality();
-        this.lines = lines;
-        this.lookup = generateLookup();
-        this.points = generateBeams();
-        this.intersections = generateIntersections();
-    }
-
     public Liner(int pointCount, BitSet[] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
@@ -42,14 +34,17 @@ public class Liner {
         this.intersections = generateIntersections();
     }
 
-    public Liner(int v, int[] base) {
-        this.pointCount = v;
+    public Liner(BitSet[] lines) {
+        this(Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality(), lines);
+    }
+
+    public static Liner byGaloisPower(int pointCount, int[] base) {
         int k = base.length;
-        int t = (v - 1) / k / (k - 1);
-        int m = (v - 1) / 2 / t;
-        GaloisField pf = new GaloisField(v);
+        int t = (pointCount - 1) / k / (k - 1);
+        int m = (pointCount - 1) / 2 / t;
+        GaloisField pf = new GaloisField(pointCount);
         int prim = pf.primitives().findAny().orElseThrow();
-        this.lines = IntStream.range(0, t).boxed().flatMap(idx -> {
+        BitSet[] lines = IntStream.range(0, t).boxed().flatMap(idx -> {
             int[] block = Arrays.stream(base).map(j -> pf.mul(j, pf.power(prim, idx * m))).toArray();
             return pf.elements().mapToObj(i -> {
                 BitSet res = new BitSet();
@@ -59,29 +54,24 @@ public class Liner {
                 return res;
             });
         }).toArray(BitSet[]::new);
-        this.lookup = generateLookup();
-        this.points = generateBeams();
-        this.intersections = generateIntersections();
+        return new Liner(pointCount, lines);
     }
 
-    public Liner(int[]... base) {
-        this.pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;
-        this.lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
+    public static Liner byDiffFamily(int[]... base) {
+        int pointCount = Arrays.stream(base).mapToInt(arr -> arr.length * (arr.length - 1)).sum() + 1;
+        BitSet[] lines = Stream.of(base).flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (int shift : arr) {
                 res.set((idx + shift) % pointCount);
             }
             return res;
         })).toArray(BitSet[]::new);
-        this.lookup = generateLookup();
-        this.points = generateBeams();
-        this.intersections = generateIntersections();
+        return new Liner(pointCount, lines);
     }
 
-    public Liner(int pointCount, int[]... base) {
-        this.pointCount = pointCount;
+    public static Liner byDiffFamily(int pointCount, int[]... base) {
         int k = base[0].length; // assuming that difference set is correct
-        this.lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
+        BitSet[] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
                 .flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
                     BitSet res = new BitSet();
                     for (int shift : arr) {
@@ -95,15 +85,13 @@ public class Liner {
             }
             return res;
         }) : Stream.of()).toArray(BitSet[]::new);
-        this.lookup = generateLookup();
-        this.points = generateBeams();
-        this.intersections = generateIntersections();
+        return new Liner(pointCount, lines);
     }
 
-    public Liner(Group g, int[]... base) {
-        this.pointCount = g.order();
+    public static Liner byDiffFamily(Group g, int[]... base) {
+        int pointCount = g.order();
         int k = base[0].length; // assuming that difference set is correct
-        this.lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
+        BitSet[] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
                 .flatMap(arr -> g.elements().mapToObj(el -> {
                     BitSet res = new BitSet();
                     for (int shift : arr) {
@@ -117,23 +105,19 @@ public class Liner {
             }
             return res;
         }).distinct() : Stream.of()).toArray(BitSet[]::new);
-        this.lookup = generateLookup();
-        this.points = generateBeams();
-        this.intersections = generateIntersections();
+        return new Liner(pointCount, lines);
     }
 
-    public Liner(String... design) {
-        this.pointCount = Arrays.stream(design).flatMap(s -> s.chars().boxed()).collect(Collectors.toSet()).size();
-        this.lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
+    public static Liner byStrings(String... design) {
+        int pointCount = Arrays.stream(design).flatMap(s -> s.chars().boxed()).collect(Collectors.toSet()).size();
+        BitSet[] lines = IntStream.range(0, design[0].length()).mapToObj(idx -> {
             BitSet res = new BitSet();
             for (String s : design) {
                 res.set(Character.digit(s.charAt(idx), 36));
             }
             return res;
         }).toArray((BitSet[]::new));
-        this.lookup = generateLookup();
-        this.points = generateBeams();
-        this.intersections = generateIntersections();
+        return new Liner(pointCount, lines);
     }
 
     private int[][] generateLookup() {
