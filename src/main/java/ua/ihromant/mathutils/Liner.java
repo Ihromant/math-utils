@@ -28,18 +28,50 @@ public class Liner {
     public Liner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
-        this.flags = generateFlags();
+        int[] beamCounts = new int[pointCount];
+        this.flags = new boolean[lines.length][pointCount];
+        for (int i = 0; i < lines.length; i++) {
+            for (int pt : lines[i]) {
+                flags[i][pt] = true;
+                beamCounts[pt]++;
+            }
+        }
+        this.beams = new int[pointCount][];
+        for (int pt = 0; pt < pointCount; pt++) {
+            beams[pt] = new int[beamCounts[pt]];
+            int idx = 0;
+            for (int ln = 0; ln < lines.length; ln++) {
+                if (flags[ln][pt]) {
+                    beams[pt][idx++] = ln;
+                }
+            }
+        }
         this.lookup = generateLookup();
-        this.beams = generateBeams();
         this.intersections = generateIntersections();
     }
 
     private Liner(int pointCount, BitSet[] lines) {
         this.pointCount = pointCount;
         this.lines = Arrays.stream(lines).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
-        this.flags = generateFlags();
+        int[] beamCounts = new int[pointCount];
+        this.flags = new boolean[lines.length][pointCount];
+        for (int i = 0; i < lines.length; i++) {
+            for (int pt : this.lines[i]) {
+                flags[i][pt] = true;
+                beamCounts[pt]++;
+            }
+        }
+        this.beams = new int[pointCount][];
+        for (int pt = 0; pt < pointCount; pt++) {
+            beams[pt] = new int[beamCounts[pt]];
+            int idx = 0;
+            for (int ln = 0; ln < lines.length; ln++) {
+                if (flags[ln][pt]) {
+                    beams[pt][idx++] = ln;
+                }
+            }
+        }
         this.lookup = generateLookup();
-        this.beams = generateBeams();
         this.intersections = generateIntersections();
     }
 
@@ -130,16 +162,6 @@ public class Liner {
         return new Liner(pointCount, lines);
     }
 
-    private boolean[][] generateFlags() {
-        boolean[][] flags = new boolean[lines.length][pointCount];
-        for (int i = 0; i < lines.length; i++) {
-            for (int pt : lines[i]) {
-                flags[i][pt] = true;
-            }
-        }
-        return flags;
-    }
-
     private int[][] generateLookup() {
         int[][] result = new int[pointCount][pointCount];
         Arrays.stream(result).forEach(l -> Arrays.fill(l, -1));
@@ -153,24 +175,6 @@ public class Liner {
                     result[p2][p1] = l;
                 }
             }
-        }
-        return result;
-    }
-
-    private int[][] generateBeams() {
-        int[][] result = new int[pointCount][];
-        for (int p1 = 0; p1 < pointCount; p1++) {
-            BitSet beam = new BitSet(lines.length);
-            for (int p2 = 0; p2 < pointCount; p2++) {
-                if (p1 == p2) {
-                    continue;
-                }
-                int line = line(p1, p2);
-                if (line >= 0) {
-                    beam.set(line);
-                }
-            }
-            result[p1] = beam.stream().toArray();
         }
         return result;
     }
