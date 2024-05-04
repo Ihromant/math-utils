@@ -67,23 +67,40 @@ public class Automorphisms {
     }
 
     private static void automorphisms(Liner liner, int[] partialPoints, BitSet oldPointsAssigned, int[] partialLines, BitSet oldLinesAssigned, Consumer<int[]> sink) {
-        OptionalInt nextLine = IntStream.range(0, partialLines.length)
-                .filter(l -> !oldLinesAssigned.get(l) && Arrays.stream(liner.line(l)).noneMatch(oldPointsAssigned::get)).findAny();
-        int from = nextLine.orElseGet(() -> oldLinesAssigned.nextClearBit(0));
-        BitSet toFilter = new BitSet();
-        if (nextLine.isPresent()) {
-            BitSet pointValues = new BitSet();
-            for (int i = oldPointsAssigned.nextSetBit(0); i >= 0; i = oldPointsAssigned.nextSetBit(i + 1)) {
-                pointValues.set(partialPoints[i]);
+        int from = -1;
+        boolean foundNotCrossing = false;
+        ex: for (int l = 0; l < partialLines.length; l++) {
+            if (oldLinesAssigned.get(l)) {
+                continue;
             }
-            for (int i = 0; i < partialLines.length; i++) {
-                if (Arrays.stream(liner.line(i)).anyMatch(pointValues::get)) {
-                    toFilter.set(i);
+            for (int p : liner.line(l)) {
+                if (oldPointsAssigned.get(p)) {
+                    continue ex;
+                }
+            }
+            foundNotCrossing = true;
+            from = l;
+            break;
+        }
+        if (!foundNotCrossing) {
+            from = oldLinesAssigned.nextClearBit(0);
+        }
+        BitSet toFilter = new BitSet();
+        if (foundNotCrossing) {
+            for (int p : partialPoints) {
+                if (p < 0) {
+                    continue;
+                }
+                for (int l : liner.point(p)) {
+                    toFilter.set(l);
                 }
             }
         } else {
-            for (int i = oldLinesAssigned.nextSetBit(0); i >= 0; i = oldLinesAssigned.nextSetBit(i + 1)) {
-                toFilter.set(partialLines[i]);
+            for (int l : partialLines) {
+                if (l < 0) {
+                    continue;
+                }
+                toFilter.set(l);
             }
         }
         br: for (int to = toFilter.nextClearBit(0); to < partialLines.length; to = toFilter.nextClearBit(to + 1)) {
