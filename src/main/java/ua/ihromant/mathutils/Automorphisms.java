@@ -427,13 +427,18 @@ public class Automorphisms {
     }
 
     private static int[] altIsomorphism(Liner first, Liner second, int[] partialPoints, BitSet pointsAssignedOld, int[] partialLines, BitSet linesAssignedOld) {
-        BitSet fromBanned = new BitSet();
         BitSet toBanned = new BitSet();
-        for (int i = pointsAssignedOld.nextSetBit(0); i >= 0; i = pointsAssignedOld.nextSetBit(i+1)) {
-            fromBanned.set(i);
-            toBanned.set(partialPoints[i]);
+        int from = -1;
+        for (int i = 0; i < partialPoints.length; i++) {
+            int pp = partialPoints[i];
+            if (pp < 0) {
+                if (from == -1) {
+                    from = i;
+                }
+            } else {
+                toBanned.set(pp);
+            }
         }
-        int from = fromBanned.nextClearBit(0);
         int fromCnt = first.lines(from).length;
         br: for (int to = toBanned.nextClearBit(0); to < partialPoints.length; to = toBanned.nextClearBit(to + 1)) {
             if (second.lines(to).length != fromCnt) {
