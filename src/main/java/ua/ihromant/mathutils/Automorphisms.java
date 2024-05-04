@@ -432,7 +432,7 @@ public class Automorphisms {
         for (int i = 0; i < partialPoints.length; i++) {
             int pp = partialPoints[i];
             if (pp < 0) {
-                if (from == -1) {
+                if (from < 0) {
                     from = i;
                 }
             } else {
