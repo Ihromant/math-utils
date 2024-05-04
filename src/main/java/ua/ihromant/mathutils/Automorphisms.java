@@ -141,7 +141,7 @@ public class Automorphisms {
                     }
                 }
             }
-            if (Arrays.stream(nextPartialPoints).allMatch(p -> p >= 0)) {
+            if (nextPointsAssigned.nextClearBit(0) == liner.pointCount()) {
                 sink.accept(nextPartialPoints);
                 continue;
             }
@@ -285,7 +285,7 @@ public class Automorphisms {
                     }
                 }
             }
-            if (Arrays.stream(nextPartialPoints).allMatch(p -> p >= 0)) {
+            if (nextPointsAssigned.nextClearBit(0) == liner.pointCount()) {
                 sink.accept(nextPartialPoints);
                 continue;
             }
@@ -388,7 +388,7 @@ public class Automorphisms {
                     }
                 }
             }
-            if (Arrays.stream(nextPartialLines).allMatch(p -> p >= 0)) {
+            if (nextLinesAssigned.nextClearBit(0) == first.lineCount()) {
                 return nextPartialPoints;
             }
             int[] candidate = isomorphism(first, second, nextPartialPoints, nextPointsAssigned, nextPartialLines, nextLinesAssigned);
@@ -484,7 +484,7 @@ public class Automorphisms {
                     }
                 }
             }
-            if (Arrays.stream(nextPartialPoints).allMatch(p -> p >= 0)) {
+            if (nextPointsAssigned.nextClearBit(0) == first.pointCount()) {
                 return nextPartialPoints;
             }
             int[] candidate = altIsomorphism(first, second, nextPartialPoints, nextPointsAssigned, nextPartialLines, nextLinesAssigned);
