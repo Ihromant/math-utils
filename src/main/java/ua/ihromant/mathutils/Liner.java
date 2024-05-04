@@ -164,7 +164,9 @@ public class Liner {
 
     private int[][] generateLookup() {
         int[][] result = new int[pointCount][pointCount];
-        Arrays.stream(result).forEach(l -> Arrays.fill(l, -1));
+        for (int[] p : result) {
+            Arrays.fill(p, -1);
+        }
         for (int l = 0; l < lines.length; l++) {
             int[] line = lines[l];
             for (int i = 0; i < line.length; i++) {
@@ -181,7 +183,9 @@ public class Liner {
 
     private int[][] generateIntersections() {
         int[][] result = new int[lines.length][lines.length];
-        Arrays.stream(result).forEach(arr -> Arrays.fill(arr, -1));
+        for (int[] arr : result) {
+            Arrays.fill(arr, -1);
+        }
         for (int p = 0; p < pointCount; p++) {
             int[] beam = beams[p];
             for (int i = 0; i < beam.length; i++) {
