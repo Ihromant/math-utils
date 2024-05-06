@@ -137,9 +137,21 @@ public class HyperbolicPlaneTest {
         assertEquals(15, p2.pointCount());
         assertEquals(35, p2.lineCount());
         testCorrectness(p2, of(3));
+        assertEquals(60, Automorphisms.autCountOld(p2));
         assertEquals(of(4), p2.playfairIndex());
         assertEquals(of(1), p2.hyperbolicIndex());
         assertEquals(of(p2.pointCount()), p2.cardSubPlanes(true));
+
+        Liner p3 = new Liner(19, new int[][]{{0, 1, 2}, {0, 3, 4}, {0, 5, 6}, {0, 7, 8}, {0, 9, 10}, {0, 11, 12},
+                {0, 13, 14}, {0, 15, 16}, {0, 17, 18}, {1, 3, 5}, {1, 4, 7}, {1, 6, 9}, {1, 8, 11}, {1, 10, 13}, {1, 12, 15},
+                {1, 14, 17}, {1, 16, 18}, {2, 3, 8}, {2, 4, 17}, {2, 5, 14}, {2, 6, 16}, {2, 7, 9}, {2, 10, 11}, {2, 12, 18},
+                {2, 13, 15}, {3, 6, 7}, {3, 9, 12}, {3, 10, 17}, {3, 11, 16}, {3, 13, 18}, {3, 14, 15}, {4, 5, 13}, {4, 6, 11},
+                {4, 8, 16}, {4, 9, 18}, {4, 10, 15}, {4, 12, 14}, {5, 7, 12}, {5, 8, 18}, {5, 9, 17}, {5, 10, 16}, {5, 11, 15},
+                {6, 8, 14}, {6, 10, 18}, {6, 12, 13}, {6, 15, 17}, {7, 10, 14}, {7, 11, 17}, {7, 13, 16}, {7, 15, 18}, {8, 9, 15},
+                {8, 10, 12}, {8, 13, 17}, {9, 11, 13}, {9, 14, 16}, {11, 14, 18}, {12, 16, 17}});
+        testCorrectness(p3, of(3));
+        assertEquals(of(1), p3.hyperbolicIndex());
+        assertEquals(1, Automorphisms.autCountOld(p3));
 
         Liner p1 = Liner.byStrings("0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
