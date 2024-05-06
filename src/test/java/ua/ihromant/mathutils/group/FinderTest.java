@@ -457,4 +457,75 @@ public class FinderTest {
         };
         blocks(snd, initBlock, k - 2, possible, frequencies, blockConsumer);
     }
+
+    @Test
+    public void generateLimitedHulls() throws IOException {
+        int cap = 15;
+        String prefix = "hs" + cap;
+        int v = 45;
+        int k = 3;
+        DumpConfig conf = readLast(prefix, v, k);
+        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
+            boolean[][] frequencies = new boolean[v][v];
+            for (int i = 0; i < v; i++) {
+                frequencies[i][i] = true;
+            }
+            for (int[] block : part) {
+                enhanceFrequencies(frequencies, block);
+            }
+            return new DesignData(part, frequencies);
+        }).collect(Collectors.toList());
+        long time = System.currentTimeMillis();
+        int left = conf.left();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
+        while (left > 0 && !liners.isEmpty()) {
+            liners = nextStage(v, k, liners, l -> hullsOverCap(l, cap));
+            left--;
+            dump(prefix, v, k, left, liners);
+            System.out.println(left + " " + liners.size());
+        }
+        System.out.println(System.currentTimeMillis() - time);
+    }
+
+    public static boolean hullsOverCap(Liner liner, int cap) {
+        int[] ll = liner.line(liner.lineCount() - 1);
+        BitSet last = new BitSet(liner.pointCount());
+        for (int point : ll) {
+            last.set(point);
+        }
+        for (int pt = 0; pt < liner.pointCount(); pt++) {
+            if (last.get(pt)) {
+                continue;
+            }
+            BitSet base = (BitSet) last.clone();
+            base.set(pt);
+            BitSet additional = new BitSet(liner.pointCount());
+            additional.set(pt);
+            while (!(additional = additional(liner, base, additional)).isEmpty()) {
+                base.or(additional);
+                if (base.cardinality() > cap) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    public static BitSet additional(Liner liner, BitSet first, BitSet second) {
+        BitSet result = new BitSet();
+        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
+            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
+                int line = liner.line(x, y);
+                if (line < 0) {
+                    continue;
+                }
+                for (int p : liner.line(line)) {
+                    if (!first.get(p) && !second.get(p)) {
+                        result.set(p);
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }

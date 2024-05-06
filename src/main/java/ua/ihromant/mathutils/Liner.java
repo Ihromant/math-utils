@@ -274,7 +274,9 @@ public class Liner {
                 if (x == y) {
                     continue;
                 }
-                Arrays.stream(lines[line(x, y)]).forEach(result::set);
+                for (int p : lines[line(x, y)]) {
+                    result.set(p);
+                }
             }
         }
         BitSet removal = new BitSet();
