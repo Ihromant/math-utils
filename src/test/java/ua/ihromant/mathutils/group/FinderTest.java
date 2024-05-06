@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -181,6 +182,7 @@ public class FinderTest {
     }
 
     private static List<DesignData> nextStage(int variants, int k, List<DesignData> partials, Predicate<Liner> filter) {
+        BiFunction<Liner, Liner, int[]> iso = k >= 6 ? Automorphisms::isomorphism : Automorphisms::altIsomorphism;
         List<DesignData> nextList = new ArrayList<>();
         int cl = partials.getFirst().partial().length;
         List<Liner> nonIsomorphic = new ArrayList<>();
@@ -216,7 +218,7 @@ public class FinderTest {
                 System.arraycopy(partial, 0, nextPartial, 0, cl);
                 nextPartial[cl] = block;
                 Liner liner = new Liner(variants, nextPartial);
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
+                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> iso.apply(liner, l) != null)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
