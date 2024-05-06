@@ -270,11 +270,11 @@ public class FinderTest {
                                 if (po2 == p) {
                                     continue;
                                 }
-                                int l3 = liner.line(pl1, po2);
                                 int l4 = liner.line(pl2, po2);
                                 if (l1 != -1 && l4 != -1 && liner.intersection(l1, l4) >= 0) {
                                     return true;
                                 }
+                                int l3 = liner.line(pl1, po2);
                                 if (l2 != -1 && l3 != -1 && liner.intersection(l2, l3) >= 0) {
                                     return true;
                                 }
