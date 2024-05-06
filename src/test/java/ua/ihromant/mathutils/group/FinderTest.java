@@ -382,4 +382,70 @@ public class FinderTest {
         assertEquals(cnt, nonIsomorphic.size());
         System.out.println(prefix + " " + v + " " + k + " non iso points time " + (System.currentTimeMillis() - time));
     }
+
+    @Test
+    public void byPartials() {
+        String prefix = "com";
+        int v = 25;
+        int k = 4;
+        DumpConfig conf = readLast(prefix, v, k);
+        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
+            boolean[][] frequencies = new boolean[v][v];
+            for (int i = 0; i < v; i++) {
+                frequencies[i][i] = true;
+            }
+            for (int[] block : part) {
+                enhanceFrequencies(frequencies, block);
+            }
+            return new DesignData(part, frequencies);
+        }).toList();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
+        long time = System.currentTimeMillis();
+        liners.stream().parallel().forEach(dd -> designs(v, k, dd.partial, conf.left(), dd.frequencies(), des -> System.out.println(Arrays.deepToString(des))));
+        System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
+    }
+
+    private static void designs(int variants, int k, int[][] partial, int needed, boolean[][] frequencies, Consumer<int[][]> cons) {
+        int cl = partial.length;
+        int[] prev = partial[cl - 1];
+        int prevFst = prev[0];
+        int fst = IntStream.range(prevFst, variants - k + 1).filter(i -> hasGaps(frequencies[i])).findAny().orElseThrow();
+        int[] initBlock = new int[k];
+        initBlock[0] = fst;
+        BitSet possible = new BitSet();
+        boolean[] firstAssigned = frequencies[fst];
+        for (int i = fst + 1; i < variants; i++) {
+            if (!firstAssigned[i]) {
+                possible.set(i);
+            }
+        }
+        int snd = possible.nextSetBit(fst + 1);
+        if (snd < 0) {
+            return;
+        }
+        initBlock[1] = snd;
+        boolean[] secondAssigned = frequencies[snd];
+        possible.set(fst + 1, snd + 1, false);
+        for (int i = snd + 1; i < variants; i++) {
+            if (secondAssigned[i]) {
+                possible.set(i, false);
+            }
+        }
+        Consumer<int[]> blockConsumer = block -> {
+            int[][] nextPartial = new int[cl + 1][];
+            System.arraycopy(partial, 0, nextPartial, 0, cl);
+            nextPartial[cl] = block;
+            if (needed == 1) {
+                cons.accept(nextPartial);
+                return;
+            }
+            boolean[][] nextFrequencies = new boolean[variants][];
+            for (int i = 0; i < nextFrequencies.length; i++) {
+                nextFrequencies[i] = frequencies[i].clone();
+            }
+            enhanceFrequencies(nextFrequencies, block);
+            designs(variants, k, nextPartial, needed - 1, nextFrequencies, cons);
+        };
+        blocks(snd, initBlock, k - 2, possible, frequencies, blockConsumer);
+    }
 }
