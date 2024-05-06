@@ -72,7 +72,7 @@ public class FinderTest {
     }
 
     @Test
-    public void generateAP2() throws IOException {
+    public void generateAP() throws IOException {
         String prefix = "ap";
         int v = 28;
         int k = 4;
@@ -272,12 +272,8 @@ public class FinderTest {
                                 }
                                 int l3 = liner.line(pl1, po2);
                                 int l4 = liner.line(pl2, po2);
-                                if (l1 == -1 || l4 == -1) {
-                                    continue;
-                                } else {
-                                    if (liner.intersection(l1, l4) >= 0) {
-                                        return true;
-                                    }
+                                if (l1 != -1 && l4 != -1 && liner.intersection(l1, l4) >= 0) {
+                                    return true;
                                 }
                                 if (l2 != -1 && l3 != -1 && liner.intersection(l2, l3) >= 0) {
                                     return true;
@@ -403,11 +399,19 @@ public class FinderTest {
         }).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
-        liners.stream().parallel().forEach(dd -> designs(v, k, dd.partial, conf.left(), dd.frequencies(), des -> System.out.println(Arrays.deepToString(des))));
+        Predicate<int[][]> filter = partial -> {
+            // return false;
+            Liner liner = new Liner(v, partial);
+            return checkAP(liner);
+        };
+        liners.stream().forEach(dd -> designs(v, k, dd.partial, conf.left(), dd.frequencies(), filter, des -> {
+            Liner l = new Liner(v, des);
+            System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des));
+        }));
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 
-    private static void designs(int variants, int k, int[][] partial, int needed, boolean[][] frequencies, Consumer<int[][]> cons) {
+    private static void designs(int variants, int k, int[][] partial, int needed, boolean[][] frequencies, Predicate<int[][]> filter, Consumer<int[][]> cons) {
         int cl = partial.length;
         int[] prev = partial[cl - 1];
         int prevFst = prev[0];
@@ -437,6 +441,9 @@ public class FinderTest {
             int[][] nextPartial = new int[cl + 1][];
             System.arraycopy(partial, 0, nextPartial, 0, cl);
             nextPartial[cl] = block;
+            if (filter.test(nextPartial)) {
+                return;
+            }
             if (needed == 1) {
                 cons.accept(nextPartial);
                 return;
@@ -446,7 +453,7 @@ public class FinderTest {
                 nextFrequencies[i] = frequencies[i].clone();
             }
             enhanceFrequencies(nextFrequencies, block);
-            designs(variants, k, nextPartial, needed - 1, nextFrequencies, cons);
+            designs(variants, k, nextPartial, needed - 1, nextFrequencies, filter, cons);
         };
         blocks(snd, initBlock, k - 2, possible, frequencies, blockConsumer);
     }
