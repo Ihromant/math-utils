@@ -540,6 +540,48 @@ public class Liner {
     }
 
     public PermutationGroup automorphisms() {
-        return new PermutationGroup(Automorphisms.autArray(this));
+        return new PermutationGroup(Automorphisms.autArrayOld(this));
+    }
+
+    public int triangleCount() {
+        return pointCount * (pointCount - 1) * (pointCount - lines[0].length); // assuming that liner is uniform
+    }
+
+    public Triangle ofIdx(int idx) {
+        int o = idx % pointCount;
+        idx = idx / pointCount;
+        int uIdx = idx % (pointCount - 1);
+        int u = o > uIdx ? uIdx : uIdx + 1;
+        int wIdx = idx / (pointCount - 1);
+        BitSet bs = new BitSet();
+        bs.set(0, pointCount);
+        int[] line = lines[line(o, u)];
+        for (int p : line) {
+            bs.set(p, false);
+        }
+        for (int w = bs.nextSetBit(0); w >= 0; w = bs.nextSetBit(w + 1)) {
+            if (--wIdx < 0) {
+                return new Triangle(o, u, w);
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    public int toIdx(Triangle tr) {
+        int uIdx = tr.u() > tr.o() ? tr.u() - 1 : tr.u();
+        BitSet bs = new BitSet();
+        bs.set(0, pointCount);
+        int[] line = lines[line(tr.o(), tr.u())];
+        for (int p : line) {
+            bs.set(p, false);
+        }
+        int wIdx = 0;
+        for (int w = bs.nextSetBit(0); w >= 0; w = bs.nextSetBit(w + 1)) {
+            if (w == tr.w()) {
+                return (wIdx * (pointCount - 1) + uIdx) * pointCount + tr.o();
+            }
+            wIdx++;
+        }
+        throw new IllegalArgumentException();
     }
 }

@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -693,6 +694,39 @@ public class BatchLinerTest {
                 nonIsomorphic.put(dl, aff);
             }
             System.out.println("Non isomorphic " + nonIsomorphic.keySet());
+        }
+    }
+
+    @Test
+    public void testTriangles() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+                Liner liner = new AffinePlane(proj, dl).toLiner();
+                long time = System.currentTimeMillis();
+                PermutationGroup permGroup = liner.automorphisms();
+                System.out.println(name + " dropped " + dl + " time " + (System.currentTimeMillis() - time) + " count " + permGroup.order());
+                int[] triangles = new int[liner.triangleCount()];
+                Arrays.fill(triangles, -1);
+                for (int i = 0; i < triangles.length; i++) {
+                    if (triangles[i] >= 0) {
+                        continue;
+                    }
+                    Triangle tr = liner.ofIdx(i);
+                    for (int j = 0; j < permGroup.order(); j++) {
+                        int[] perm = permGroup.permutation(j);
+                        Triangle applied = new Triangle(perm[tr.o()], perm[tr.u()], perm[tr.w()]);
+                        triangles[liner.toIdx(applied)] = i;
+                    }
+                }
+                Map<Integer, Long> counts = Arrays.stream(triangles).boxed().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+                System.out.println(counts);
+            }
         }
     }
 }
