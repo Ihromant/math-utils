@@ -3,6 +3,8 @@ package ua.ihromant.mathutils.group;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Automorphisms;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.vf2.LinerWrapper;
+import ua.ihromant.mathutils.vf2.VF2IsomorphismTester;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -339,13 +341,13 @@ public class FinderTest {
 
     @Test
     public void performance() {
-        testPerformance("perf", 19, 3, 3);
-        testPerformance("perf", 25, 4, 1);
-        testPerformance("perf", 31, 4, 3);
-        testPerformance("perf", 37, 5, 4);
+        testPerformance("perf", 19, 3, 3, true);
+        testPerformance("perf", 25, 4, 1, true);
+        testPerformance("perf", 31, 4, 3, false);
+        testPerformance("perf", 37, 5, 4, false);
     }
 
-    private static void testPerformance(String prefix, int v, int k, int cnt) {
+    private static void testPerformance(String prefix, int v, int k, int cnt, boolean vf2) {
         DumpConfig conf = readLast("perf", v, k);
         List<DesignData> dataSet = Arrays.stream(conf.partials()).map(part -> {
             boolean[][] frequencies = new boolean[v][v];
@@ -379,6 +381,21 @@ public class FinderTest {
         }
         assertEquals(cnt, nonIsomorphic.size());
         System.out.println(prefix + " " + v + " " + k + " non iso points time " + (System.currentTimeMillis() - time));
+        if (!vf2) {
+            return;
+        }
+        List<LinerWrapper> wrappers = new ArrayList<>();
+        VF2IsomorphismTester tester = new VF2IsomorphismTester();
+        time = System.currentTimeMillis();
+        for (DesignData data : dataSet) {
+            LinerWrapper liner = new LinerWrapper(new Liner(v, data.partial()));
+            if (wrappers.stream().anyMatch(l -> tester.areIsomorphic(liner, l))) {
+                continue;
+            }
+            wrappers.add(liner);
+        }
+        assertEquals(cnt, wrappers.size());
+        System.out.println(prefix + " " + v + " " + k + " vf2 time " + (System.currentTimeMillis() - time));
     }
 
     @Test
