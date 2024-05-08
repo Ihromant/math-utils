@@ -5,11 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * A {@link State} implementation for testing isomorphism using the VF2
- * algorithm's logic.  Note that this implementation requires that the graphs
- * have contiguous vertex indices (beginning at 0 to {@code g.order()}-1.
- *
- * <p>This implementation is based on the vf2_state implemenation in VFLib.
+ * <p>This implementation is based on the vf2_state implementation in VFLib.
  */
 public class VF2State implements State {
 
@@ -24,7 +20,7 @@ public class VF2State implements State {
     private final Graph g2;
 
     /**
-     * The number of nodes currently being matched betwen g1 and g3
+     * The number of nodes currently being matched between g1 and g2
      */
     int coreLen;
 
@@ -223,7 +219,7 @@ public class VF2State implements State {
             if (core1[other1] != NULL_NODE) {
                 int other2 = core1[other1];
                 // If there's node edge to the other node, or if there is some
-                // edge incompatability, then the mapping is not feasible
+                // edge incompatibility, then the mapping is not feasible
                 if (!g2.contains(other2, node2))
                     return false;
             }
@@ -339,7 +335,7 @@ public class VF2State implements State {
      * {@inheritDoc}
      */
     public Map<Integer,Integer> getVertexMapping() {
-        Map<Integer,Integer> vertexMapping = new HashMap<Integer,Integer>();
+        Map<Integer,Integer> vertexMapping = new HashMap<>();
         for (int i = 0; i < n1; ++i) {
             if (core1[i] != NULL_NODE) {
                 vertexMapping.put(i, core1[i]);
