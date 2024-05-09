@@ -974,4 +974,35 @@ public class BatchLinerTest {
             }
         }
     }
+
+    @Test
+    public void testBiloopEquality() throws IOException {
+        String name = "hughes9-3-9";
+        String[] tokens = name.split("-");
+        String plName = tokens[0];
+        int dl = Integer.parseInt(tokens[1]);
+        int k = Integer.parseInt(tokens[2]);
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Liner liner = new AffinePlane(proj, dl).toLiner();
+            Map<Integer, List<TernaryRing>> byIso = new HashMap<>();
+            ex: for (int triangle : uniqueTriangles.get(name)) {
+                Triangle tr = liner.ofIdx(triangle);
+                TernaryRing ring = new AffineTernaryRing(liner, tr);
+                for (Map.Entry<Integer, List<TernaryRing>> e : byIso.entrySet()) {
+                    if (e.getValue().getFirst().biLoopEquals(ring)) {
+                        e.getValue().add(ring);
+                        continue ex;
+                    }
+                }
+                List<TernaryRing> nl = new ArrayList<>();
+                nl.add(ring);
+                byIso.put(triangle, nl);
+            }
+            System.out.println(byIso);
+        }
+    }
 }

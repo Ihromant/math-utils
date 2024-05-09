@@ -10,6 +10,26 @@ public interface TernaryRing {
 
     int[][][] matrix();
 
+    default int[][] addMatrix() {
+        int[][] result = new int[order()][order()];
+        for (int a : elements()) {
+            for (int b : elements()) {
+                result[a][b] = add(a, b);
+            }
+        }
+        return result;
+    }
+
+    default int[][] mulMatrix() {
+        int[][] result = new int[order()][order()];
+        for (int a : elements()) {
+            for (int b : elements()) {
+                result[a][b] = mul(a, b);
+            }
+        }
+        return result;
+    }
+
     default int add(int x, int b) {
         return op(x, 1, b);
     }
@@ -48,6 +68,31 @@ public interface TernaryRing {
                 }
             }
             if (Arrays.deepEquals(permMatrix, matrix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    default boolean biLoopEquals(TernaryRing that) {
+        if (this.order() != that.order()) {
+            return false;
+        }
+        int[][] addMatrix = this.addMatrix();
+        int[][] mulMatrix = this.mulMatrix();
+        int[][] tAddMatrix = that.addMatrix();
+        int[][] tMulMatrix = that.mulMatrix();
+        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        for (int[] perm : permutations) {
+            int[][] permAddMatrix = new int[order()][order()];
+            int[][] permMulMatrix = new int[order()][order()];
+            for (int i = 0; i < order(); i++) {
+                for (int j = 0; j < order(); j++) {
+                    permAddMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tAddMatrix[i][j]);
+                    permMulMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tMulMatrix[i][j]);
+                }
+            }
+            if (Arrays.deepEquals(permAddMatrix, addMatrix) && Arrays.deepEquals(permMulMatrix, mulMatrix)) {
                 return true;
             }
         }
