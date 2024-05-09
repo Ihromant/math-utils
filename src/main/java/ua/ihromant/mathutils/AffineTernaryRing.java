@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.vf2.IntPair;
+
 import java.util.Arrays;
 
 public class AffineTernaryRing implements TernaryRing {
@@ -49,12 +51,12 @@ public class AffineTernaryRing implements TernaryRing {
             idxes[diagonalOrder[i]] = i;
         }
         this.opMatrix = new int[order][order][order];
-        for (int x = 0; x < order; x++) {
-            int xPt = diagonalOrder[x];
-            for (int a = 0; a < order; a++) {
-                int aPt = diagonalOrder[a];
-                for (int b = 0; b < order; b++) {
-                    int bPt = diagonalOrder[b];
+        for (int a = 0; a < order; a++) {
+            int aPt = diagonalOrder[a];
+            for (int b = 0; b < order; b++) {
+                int bPt = diagonalOrder[b];
+                for (int x = 0; x < order; x++) {
+                    int xPt = diagonalOrder[x];
                     int ea = liner.intersection(parallel(hor, aPt), parallel(ver, e));
                     int lao = liner.line(o, ea);
                     int ob = liner.intersection(ver, parallel(hor, bPt));
@@ -101,5 +103,13 @@ public class AffineTernaryRing implements TernaryRing {
 
     private int byIdx(int idx) {
         return diagonalOrder[idx];
+    }
+
+    public IntPair toCoordinates(int pt) {
+        return new IntPair(idxes[liner.intersection(parallel(ver, pt), oe)], idxes[liner.intersection(parallel(hor, pt), oe)]);
+    }
+
+    public int toPt(IntPair crd) {
+        return liner.intersection(parallel(ver, diagonalOrder[crd.fst()]), parallel(hor, diagonalOrder[crd.snd()]));
     }
 }

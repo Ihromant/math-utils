@@ -740,7 +740,7 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            int dl = 0;
+            int dl = 1;
             Liner liner = new AffinePlane(proj, dl).toLiner();
             for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
                 TernaryRing tr = new AffineTernaryRing(liner, liner.ofIdx(triangle));
@@ -774,12 +774,12 @@ public class BatchLinerTest {
                                 continue;
                             }
                             for (int d : tr.elements()) {
-                                int x = IntStream.range(0, tr.order()).filter(y -> tr.op(a, y, b) == tr.op(c, y, d)).findAny().orElseThrow();
+                                int x = IntStream.range(0, tr.order()).filter(y -> tr.op(y, a, b) == tr.op(y, c, d)).findAny().orElseThrow();
                                 for (int y : tr.elements()) {
                                     if (x == y) {
                                         continue;
                                     }
-                                    if (tr.op(a, y, b) == tr.op(c, y, d)) {
+                                    if (tr.op(y, a, b) == tr.op(y, c, d)) {
                                         fail();
                                     }
                                 }
@@ -945,7 +945,7 @@ public class BatchLinerTest {
 
     @Test
     public void testTRAutomorphisms() throws IOException {
-        String name = "dhall9-1-9";
+        String name = "hughes9-3-9";
         String[] tokens = name.split("-");
         String plName = tokens[0];
         int dl = Integer.parseInt(tokens[1]);
