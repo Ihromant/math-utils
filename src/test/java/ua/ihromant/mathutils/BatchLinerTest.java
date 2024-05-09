@@ -841,4 +841,37 @@ public class BatchLinerTest {
             assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
         }
     }
+
+    private static final Map<String, int[]> uniqueTriangles = Map.of("dhall9-0-9", new int[]{0, 1, 18, 24});
+
+    @Test
+    public void testTRAutomorphisms() throws IOException {
+        String name = "dhall9-0-9";
+        String[] tokens = name.split("-");
+        String plName = tokens[0];
+        int dl = Integer.parseInt(tokens[1]);
+        int k = Integer.parseInt(tokens[2]);
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Liner liner = new AffinePlane(proj, dl).toLiner();
+            for (int triangle : uniqueTriangles.get(name)) {
+                Triangle tr = liner.ofIdx(triangle);
+                int[] fixedPoints = new int[liner.pointCount()];
+                Arrays.fill(fixedPoints, -1);
+                fixedPoints[tr.o()] = tr.o();
+                fixedPoints[tr.u()] = tr.u();
+                fixedPoints[tr.w()] = tr.w();
+                int[] fixedLines = new int[liner.lineCount()];
+                Arrays.fill(fixedLines, -1);
+                fixedLines[liner.line(tr.o(), tr.u())] = liner.line(tr.o(), tr.u());
+                fixedLines[liner.line(tr.o(), tr.w())] = liner.line(tr.o(), tr.w());
+                fixedLines[liner.line(tr.u(), tr.w())] = liner.line(tr.u(), tr.w());
+                PermutationGroup perm = new PermutationGroup(Automorphisms.autArrayOld(liner, fixedPoints, fixedLines));
+                System.out.println(triangle + " " + perm.order() + " " + perm.isCommutative());
+            }
+        }
+    }
 }
