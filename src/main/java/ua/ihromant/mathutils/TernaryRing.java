@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import java.util.Arrays;
+import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
 public interface TernaryRing {
@@ -45,6 +46,183 @@ public interface TernaryRing {
                     if (op(x, a, b) != add(mul(x, a), b)) {
                         return false;
                     }
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean isConcurrent() {
+        for (int a : elements()) {
+            if (a == 1) {
+                continue;
+            }
+            for (int b : elements()) {
+                int x = IntStream.range(0, order()).filter(y -> mul(y, a) == add(y, b)).findAny().orElseThrow();
+                for (int y : elements()) {
+                    if (x == y) {
+                        continue;
+                    }
+                    if (mul(y, a) == add(y, b)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean isLeftDistributive() {
+        for (int a : elements()) {
+            for (int x : elements()) {
+                for (int y : elements()) {
+                    if (mul(a, add(x, y)) != add(mul(a, x), mul(a, y))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean isRightDistributive() {
+        for (int a : elements()) {
+            for (int x : elements()) {
+                for (int y : elements()) {
+                    if (mul(add(x, y), a) != add(mul(x, a), mul(y, a))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean addAssoc() {
+        for (int a : elements()) {
+            for (int b : elements()) {
+                for (int c : elements()) {
+                    if (add(add(a, b), c) != add(a, add(b, c))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean mulAssoc() {
+        for (int a : elements()) {
+            for (int b : elements()) {
+                for (int c : elements()) {
+                    if (mul(mul(a, b), c) != mul(a, mul(b, c))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean addComm() {
+        for (int a : elements()) {
+            for (int b : elements()) {
+                if (add(a, b) != add(b, a)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean mulComm() {
+        for (int a : elements()) {
+            for (int b : elements()) {
+                if (mul(a, b) != mul(b, a)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean addTwoSidedInverse() {
+        for (int a : elements()) {
+            OptionalInt x = IntStream.range(0, order()).filter(t -> add(t, a) == 0 && add(a, t) == 0).findAny();
+            if (x.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    default boolean addLeftInverse() {
+        for (int a : elements()) {
+            int x = IntStream.range(0, order()).filter(y -> add(y, a) == 0).findAny().orElseThrow();
+            for (int y : elements()) {
+                if (add(add(x, a), y) != add(x, add(a, y))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean addRightInverse() {
+        for (int a : elements()) {
+            int x = IntStream.range(0, order()).filter(y -> add(a, y) == 0).findAny().orElseThrow();
+            for (int y : elements()) {
+                if (add(add(y, a), x) != add(y, add(a, x))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean mulTwoSidedInverse() {
+        for (int a : elements()) {
+            if (a == 0) {
+                continue;
+            }
+            OptionalInt x = IntStream.range(1, order()).filter(t -> mul(t, a) == 1 && mul(a, t) == 1).findAny();
+            if (x.isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    default boolean mulLeftInverse() {
+        for (int a : elements()) {
+            if (a == 0) {
+                continue;
+            }
+            int x = IntStream.range(1, order()).filter(y -> mul(y, a) == 1).findAny().orElseThrow();
+            for (int y : elements()) {
+                if (y == 0) {
+                    continue;
+                }
+                if (mul(mul(x, a), y) != mul(x, mul(a, y))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    default boolean mulRightInverse() {
+        for (int a : elements()) {
+            if (a == 0) {
+                continue;
+            }
+            int x = IntStream.range(1, order()).filter(y -> mul(a, y) == 1).findAny().orElseThrow();
+            for (int y : elements()) {
+                if (y == 0) {
+                    continue;
+                }
+                if (mul(mul(y, a), x) != mul(y, mul(a, x))) {
+                    return false;
                 }
             }
         }

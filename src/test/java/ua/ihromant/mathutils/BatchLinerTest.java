@@ -1005,4 +1005,38 @@ public class BatchLinerTest {
             System.out.println(byIso);
         }
     }
+
+    @Test
+    public void testBooleanProperties() throws IOException {
+        String name = "hughes9-3-9";
+        String[] tokens = name.split("-");
+        String plName = tokens[0];
+        int dl = Integer.parseInt(tokens[1]);
+        int k = Integer.parseInt(tokens[2]);
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Liner liner = new AffinePlane(proj, dl).toLiner();
+            System.out.println(name + " dropped line " + dl);
+            for (int triangle : uniqueTriangles.get(name)) {
+                TernaryRing ring = new AffineTernaryRing(liner, liner.ofIdx(triangle));
+                System.out.println("triangle:" + String.format("%8d", triangle)
+                        + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
+                        + ", rgtd:" + (ring.isRightDistributive() ? 1 : 0)
+                        + ", addass:" + (ring.addAssoc() ? 1 : 0)
+                        + ", mulass:" + (ring.mulAssoc() ? 1 : 0)
+                        + ", addcom:" + (ring.addComm() ? 1 : 0)
+                        + ", mulcom:" + (ring.mulComm() ? 1 : 0)
+                        + ", addTSI:" + (ring.addTwoSidedInverse() ? 1 : 0)
+                        + ", mulTSI:" + (ring.mulTwoSidedInverse() ? 1 : 0)
+                        + ", lAddInv:" + (ring.addLeftInverse() ? 1 : 0)
+                        + ", rAddInv:" + (ring.addRightInverse() ? 1 : 0)
+                        + ", lMulInv:" + (ring.mulLeftInverse() ? 1 : 0)
+                        + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
+                );
+            }
+        }
+    }
 }
