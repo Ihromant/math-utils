@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -31,7 +32,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipInputStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class BatchLinerTest {
     private ZipInputStream getZis(InputStream is) throws IOException {
@@ -699,7 +700,7 @@ public class BatchLinerTest {
 
     @Test
     public void testTriangles() throws IOException {
-        String name = "hughes9";
+        String name = "dhall9";
         int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -727,6 +728,117 @@ public class BatchLinerTest {
                 Map<Integer, Long> counts = Arrays.stream(triangles).boxed().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
                 System.out.println(counts);
             }
+        }
+    }
+
+    @Test
+    public void testCorrectness() throws IOException {
+        String name = "dhall9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Liner liner = new AffinePlane(proj, 0).toLiner();
+            TernaryRing tr = new AffineTernaryRing(liner, liner.ofIdx(0));
+            for (int x : tr.elements()) {
+                for (int b : tr.elements()) {
+                    assertEquals(b, tr.op(x, 0, b));
+                    assertEquals(b, tr.op(0, x, b));
+                }
+                assertEquals(x, tr.op(x, 1, 0));
+                assertEquals(x, tr.op(1, x, 0));
+            }
+            for (int a : tr.elements()) {
+                for (int x : tr.elements()) {
+                    for (int y : tr.elements()) {
+                        int b = IntStream.range(0, tr.order()).filter(c -> tr.op(x, a, c) == y).findAny().orElseThrow();
+                        for (int c : tr.elements()) {
+                            if (b == c) {
+                                continue;
+                            }
+                            if (tr.op(x, a, c) == y) {
+                                fail();
+                            }
+                        }
+                    }
+                }
+            }
+            for (int a : tr.elements()) {
+                for (int b : tr.elements()) {
+                    for (int c : tr.elements()) {
+                        if (c == a) {
+                            continue;
+                        }
+                        for (int d : tr.elements()) {
+                            int x = IntStream.range(0, tr.order()).filter(y -> tr.op(a, y, b) == tr.op(c, y, d)).findAny().orElseThrow();
+                            for (int y : tr.elements()) {
+                                if (x == y) {
+                                    continue;
+                                }
+                                if (tr.op(a, y, b) == tr.op(c, y, d)) {
+                                    fail();
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            for (int x1 : tr.elements()) {
+                for (int y1 : tr.elements()) {
+                    for (int x2 : tr.elements()) {
+                        if (x1 == x2) {
+                            continue;
+                        }
+                        for (int y2 : tr.elements()) {
+                            IntPair ab = null;
+                            for (int a : tr.elements()) {
+                                for (int b : tr.elements()) {
+                                    if (tr.op(x1, a, b) == y1 && tr.op(x2, a, b) == y2) {
+                                        ab = new IntPair(a, b);
+                                    }
+                                }
+                            }
+                            assertNotNull(ab);
+                            for (int a1 : tr.elements()) {
+                                for (int b1 : tr.elements()) {
+                                    if (a1 == ab.fst() && b1 == ab.snd()) {
+                                        continue;
+                                    }
+                                    if (tr.op(x1, a1, b1) == y1 && tr.op(x2, a1, b1) == y2) {
+                                        fail();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testEquality() throws IOException {
+        String name = "dhall9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Liner liner = new AffinePlane(proj, 0).toLiner();
+            TernaryRing tr0 = new AffineTernaryRing(liner, liner.ofIdx(0));
+            TernaryRing tr1 = new AffineTernaryRing(liner, liner.ofIdx(1));
+            assertFalse(tr0.trEquals(tr1));
+            TernaryRing tr2 = new AffineTernaryRing(liner, liner.ofIdx(2));
+            assertTrue(tr1.trEquals(tr2));
+            TernaryRing tr18 = new AffineTernaryRing(liner, liner.ofIdx(18));
+            TernaryRing tr24 = new AffineTernaryRing(liner, liner.ofIdx(24));
+            assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
+            assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
+            TernaryRing tr17 = new AffineTernaryRing(liner, liner.ofIdx(17));
+            assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
         }
     }
 }
