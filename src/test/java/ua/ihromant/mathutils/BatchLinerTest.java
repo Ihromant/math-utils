@@ -845,7 +845,8 @@ public class BatchLinerTest {
         }
     }
 
-    private static final Map<String, int[]> uniqueTriangles = Map.of("dhall9-0-9", new int[]{0, 1, 18, 24},
+    private static final Map<String, int[]> uniqueTriangles = Map.of("pg29-0-9", new int[]{0, 1, 2, 3},
+            "dhall9-0-9", new int[]{0, 1, 18, 24},
             "dhall9-1-9", new int[]{0, 1, 53250, 51972, 52742, 52743, 53256, 52488, 52745, 52489, 9, 52746, 51978,
                     52747, 52748, 52750, 52751, 52752, 52753, 52754, 52755, 51990, 53274, 51996, 53280, 53286, 53802,
                     53292, 7226, 7227, 59708, 53823, 7233, 7234, 7235, 53316, 53829, 53317, 53318, 53320, 53321, 53322,
