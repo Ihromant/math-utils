@@ -842,7 +842,8 @@ public class BatchLinerTest {
         }
     }
 
-    private static final Map<String, int[]> uniqueTriangles = Map.of("dhall9-0-9", new int[]{0, 1, 18, 24});
+    private static final Map<String, int[]> uniqueTriangles = Map.of("dhall9-0-9", new int[]{0, 1, 18, 24},
+            "hughes9-3-9", new int[]{46686});
 
     @Test
     public void testTRAutomorphisms() throws IOException {
@@ -870,7 +871,8 @@ public class BatchLinerTest {
                 fixedLines[liner.line(tr.o(), tr.w())] = liner.line(tr.o(), tr.w());
                 fixedLines[liner.line(tr.u(), tr.w())] = liner.line(tr.u(), tr.w());
                 PermutationGroup perm = new PermutationGroup(Automorphisms.autArrayOld(liner, fixedPoints, fixedLines));
-                System.out.println(triangle + " " + perm.order() + " " + perm.isCommutative());
+                TernaryRing ring = new AffineTernaryRing(liner, tr);
+                System.out.println(triangle + " " + perm.order() + " " + perm.isCommutative() + " " + ring.isLinear());
             }
         }
     }

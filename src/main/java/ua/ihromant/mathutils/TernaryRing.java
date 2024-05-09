@@ -10,6 +10,27 @@ public interface TernaryRing {
 
     int[][][] matrix();
 
+    default int add(int x, int b) {
+        return op(x, 1, b);
+    }
+
+    default int mul(int x, int a) {
+        return op(x, a, 0);
+    }
+
+    default boolean isLinear() {
+        for (int x : elements()) {
+            for (int a : elements()) {
+                for (int b : elements()) {
+                    if (op(x, a, b) != add(mul(x, a), b)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     default boolean trEquals(TernaryRing that) {
         if (this.order() != that.order()) {
             return false;
