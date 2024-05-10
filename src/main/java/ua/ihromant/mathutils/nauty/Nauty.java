@@ -46,43 +46,39 @@ public class Nauty {
     private static class Search {
         private final Deque<SNode> buffer = new LinkedList<>();
 
-        private SNode max = null;
+        private SNode max;
         private String maxString;
 
-        public Search(List<List<NautyNode>> initial)
-        {
+        public Search(List<List<NautyNode>> initial) {
             // ** Set up the search stack
             buffer.add(new SNode(initial));
         }
 
-        public void search()
-        {
-            while(! buffer.isEmpty())
-            {
+        public void search() {
+            while (!buffer.isEmpty()) {
                 SNode current = buffer.poll();
 
                 List<SNode> children = current.children();
-                if(children.isEmpty())
+                if (children.isEmpty()) {
                     observe(current);
+                }
 
-                for(SNode child : children)
+                for (SNode child : children) {
                     buffer.addFirst(child);
+                }
             }
         }
 
-        private void observe(SNode node)
-        {
+        private void observe(SNode node) {
             String nodeString = Nauty.toString(node.partition());
 
-            if(max == null || nodeString.compareTo(maxString) > 0)
-            {
+            if (max == null || nodeString.compareTo(maxString) > 0) {
                 max = node;
                 maxString = nodeString;
             }
         }
 
-        public List<List<NautyNode>> max()
-        {
+        public List<List<NautyNode>> max() {
             return max.partition();
         }
     }

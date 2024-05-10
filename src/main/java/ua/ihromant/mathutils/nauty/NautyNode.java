@@ -14,10 +14,6 @@ public record NautyNode(NautyWrapper wrap, boolean line, int idx) {
         }
     }
 
-    public int label() {
-        return line ? 1 : 0;
-    }
-
     public boolean connected(NautyNode that) {
         if (this.line && that.line || !this.line && !that.line) {
             return false;
