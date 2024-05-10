@@ -16,15 +16,7 @@ public interface Node<L>
 
     public L label();
 
-    /**
-     * Returns all links between this node and the given other node.
-     *
-     * For directed graphs, this will return links in both directions.
-     *
-     * @param other
-     * @return
-     */
-    public Collection<? extends Link<L>> links(Node<L> other);
+    public boolean connected(Node<L> other);
 
     /**
      * The index of the node in the graph to which it belongs

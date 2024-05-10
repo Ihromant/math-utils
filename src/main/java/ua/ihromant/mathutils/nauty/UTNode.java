@@ -9,11 +9,8 @@ import java.util.Collection;
  * @param <L>
  * @param <T>
  */
-public interface UTNode<L, T> extends UNode<L>, TNode<L, T>
-{
+public interface UTNode<L, T> extends UNode<L>, TNode<L, T> {
     public Collection<? extends UTNode<L, T>> neighbors();
-
-    public Collection<? extends UTLink<L, T>> links(Node<L> other);
 
     /**
      * <p>Connects this node to another node. </p>

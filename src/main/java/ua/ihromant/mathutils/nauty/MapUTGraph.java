@@ -93,19 +93,12 @@ public class MapUTGraph<L, T> implements UTGraph<L, T> {
         }
 
         @Override
-        public Collection<? extends UTLink<L, T>> links(Node<L> other) {
-            List<UTLink<L, T>> result = new ArrayList<UTLink<L, T>>();
-
+        public boolean connected(Node<L> other) {
             for(T tag : links.keySet())
-                for(UTLink<L, T> link : links.get(tag))
+                for(MapUTLink link : links.get(tag))
                     if(link.other(this).equals(other))
-                        result.add(link);
-
-            return result;
-        }
-
-        public boolean equals(Object other) {
-            return this == other;
+                        return true;
+            return false;
         }
     }
 
@@ -127,7 +120,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T> {
             return first + " -- " + second + (tag == null ? "" : " [label="+tag+"]");
         }
 
-        @Override
         public UTNode<L, T> other(Node<L> current)
         {
             if(first != current)

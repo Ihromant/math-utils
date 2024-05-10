@@ -223,7 +223,9 @@ public class Nauty {
         int sum = 0;
 
         for(Node<L> node : to) // * this should automatically work right for directed/undirected
-            sum += from.links(node).size();
+            if (from.connected(node)) {
+                sum++;
+            }
 
         return sum;
     }
