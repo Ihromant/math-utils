@@ -13,10 +13,6 @@ import java.util.Set;
  * @param <L> The label type
  * @param <T> The tag type
  */
-public interface TGraph<L, T> extends Graph<L>
-{
-
+public interface TGraph<L, T> extends Graph<L> {
     public List<? extends TNode<L, T>> nodes();
-
-    public long numLinks();
 }

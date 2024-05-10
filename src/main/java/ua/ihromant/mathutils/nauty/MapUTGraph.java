@@ -224,12 +224,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     }
 
     @Override
-    public long numLinks()
-    {
-        return numLinks;
-    }
-
-    @Override
     public List<? extends UTNode<L, T>> nodes()
     {
         return Collections.unmodifiableList(nodeList);

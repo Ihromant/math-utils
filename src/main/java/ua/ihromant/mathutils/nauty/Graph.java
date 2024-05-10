@@ -48,6 +48,4 @@ public interface Graph<L> {
      * @return The graph's size in nodes.
      */
     public int size();
-
-    public long numLinks();
 }
