@@ -1,14 +1,10 @@
 package ua.ihromant.mathutils.nauty;
 
-import nl.peterbloem.kit.FrequencyModel;
-import nl.peterbloem.kit.Functions;
-
 import java.util.AbstractCollection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -160,25 +156,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             checkDead();
 
             return index;
-        }
-
-        @Override
-        public Collection<? extends UTLink<L, T>> links(TNode<L, T> other)
-        {
-            checkDead();
-
-            MapUTNode o = (MapUTNode) other;
-
-            if(! connected(o))
-                return Collections.emptyList();
-
-            List<MapUTLink> result = new LinkedList<MapUTLink>();
-            for(T tag : links.keySet())
-                for(MapUTLink link : links.get(tag))
-                    if(link.other(this).equals(o))
-                        result.add(link);
-
-            return result;
         }
 
 
@@ -358,72 +335,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     }
 
     @Override
-    public UTNode<L, T> add(L label)
-    {
-        // * Create the new node. It will add itself to the nodes map and list
-        UTNode<L, T> node = new MapUTNode(label);
-
-        modCount++;
-
-        //updateIndices();
-
-        return node;
-    }
-
-    /**
-     * Returns true if each label currently describes a unique node.
-     *
-     * @return
-     */
-    public boolean uniqueLabels()
-    {
-        for(L label : nodes.keySet())
-            if(nodes.get(label).size() > 1)
-                return false;
-
-        return true;
-    }
-
-    /**
-     * Returns a representation of the graph in Dot language format.
-     */
-    public String toString()
-    {
-        StringBuffer sb = new StringBuffer();
-        sb.append("graph {");
-
-        Set<MapUTNode> nodes = new HashSet<MapUTNode>(nodeList);
-
-        boolean first = true;
-        for(MapUTLink link : links())
-        {
-            if(first)
-                first = false;
-            else
-                sb.append("; ");
-
-            sb.append(link);
-
-            nodes.remove(link.first());
-            nodes.remove(link.second());
-        }
-
-        for(MapUTNode node : nodes)
-        {
-            if(first)
-                first = false;
-            else
-                sb.append("; ");
-
-            sb.append(node);
-        }
-
-        sb.append("}");
-
-        return sb.toString();
-    }
-
-    @Override
     public long numLinks()
     {
         return numLinks;
@@ -433,12 +344,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     public List<? extends UTNode<L, T>> nodes()
     {
         return Collections.unmodifiableList(nodeList);
-    }
-
-    @Override
-    public Iterable<MapUTLink> links()
-    {
-        return new LinkCollection();
     }
 
     private class LinkCollection extends AbstractCollection<MapUTLink>

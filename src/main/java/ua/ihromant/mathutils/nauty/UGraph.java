@@ -15,10 +15,4 @@ public interface UGraph<L> extends Graph<L>
 
     @Override
     public UNode<L> get(int i);
-
-    @Override
-    public Iterable<? extends ULink<L>> links();
-
-    @Override
-    public UNode<L> add(L label);
 }
