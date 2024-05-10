@@ -23,8 +23,6 @@ public interface Node<L>
 
     public L label();
 
-    public Node<L> neighbor(L label);
-
     public Collection<? extends Node<L>> neighbors(L label);
 
     /**

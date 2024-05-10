@@ -135,19 +135,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         }
 
         @Override
-        public MapUTNode neighbor(L label)
-        {
-            checkDead();
-
-            for(MapUTNode node : neighbors)
-                if((label == null && node.label == null)
-                        || (label != null && node.label().equals(label)))
-                    return node;
-
-            return null;
-        }
-
-        @Override
         public L label()
         {
             checkDead();

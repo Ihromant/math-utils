@@ -11,9 +11,6 @@ public interface UNode<L> extends Node<L>
     public Collection<? extends ULink<L>> links();
 
     @Override
-    public UNode<L> neighbor(L label);
-
-    @Override
     public Collection<? extends UNode<L>> neighbors(L label);
 
     public Collection<? extends ULink<L>> links(Node<L> other);
