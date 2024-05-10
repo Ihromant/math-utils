@@ -78,40 +78,6 @@ public interface Graph<L>
     public long numLinks();
 
     /**
-     * Returns the node labels
-     * @return
-     */
-    public Set<L> labels();
-
-    /**
-     * Checks whether two nodes exist with the given labels that are connected.
-     *
-     * If multiple pairs of nodes exist with these labels, only one of them
-     * needs to be connected for the method to return true.
-     *
-     * @param first
-     * @param second
-     * @return
-     */
-    public boolean connected(L first, L second);
-
-    /**
-     * The state of a graph indicates whether it has changed. If the value
-     * returned by this method has changed, then a modification has been made.
-     *
-     * If the value is the same, then with great probability, the graph has not
-     * been modified.
-     *
-     * Please note that this value should only be used in reference to the same
-     * graph object. The state of one graph bears no relation to the state of
-     * another. Ie. it should be thought of as a mod count rather than a hash
-     * code.
-     *
-     * @return
-     */
-    public long state();
-
-    /**
      * Shorthand for nodes().get(i);
      * @param i
      * @return

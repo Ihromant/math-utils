@@ -14,13 +14,6 @@ public interface Node<L>
      */
     public Collection<? extends Node<L>> neighbors();
 
-    /**
-     * Returns a collection of all links to neighboring nodes
-     *
-     * @return
-     */
-    public Collection<? extends Link<L>> links();
-
     public L label();
 
     /**
@@ -71,21 +64,6 @@ public interface Node<L>
      * @return
      */
     public int index();
-
-    /**
-     * Since clients can maintain links to nodes that have been removed
-     * from the graph, there is a danger of these nodes being used and
-     * causing mayhem.
-     *
-     * To prevent such situations such nodes have an explicit a state
-     * of 'dead'. Using dead nodes in any way (except calling this method)
-     * can result in undefined behavior.
-     *
-     * A dead node is never reachable from a live node and vice versa
-     *
-     * @return
-     */
-    public boolean dead();
 
     /**
      * Returns the degree of the node, ie. the number of connections to other

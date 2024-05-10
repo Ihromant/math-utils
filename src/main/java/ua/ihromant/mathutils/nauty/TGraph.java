@@ -36,8 +36,6 @@ public interface TGraph<L, T> extends Graph<L>
 
     public long numLinks();
 
-    public Set<T> tags();
-
     /**
      *
      * Checks whether two nodes exist with the given labels that are connected.
@@ -50,14 +48,4 @@ public interface TGraph<L, T> extends Graph<L>
      * @return
      */
     public boolean connected(L from, L to);
-
-    /**
-     * The state of a graph indicates whether it has changed. If the value
-     * returned by this method has changed, then a modification has been made.
-     * If the value is the same, then with great likelihood, the graph has not
-     * been modified.
-     *
-     * @return
-     */
-    public long state();
 }

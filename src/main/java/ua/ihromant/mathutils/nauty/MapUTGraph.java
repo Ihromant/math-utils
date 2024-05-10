@@ -251,22 +251,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             return label + (unique ? "" : "_" + labelId());
         }
 
-        /**
-         * Since clients can maintain links to nodes that have been removed
-         * from the graph, there is a danger of these nodes being used and
-         * causing mayhem.
-         *
-         * To prevent such situations we will explicitly give such nodes a state
-         * of 'dead'. Using dead nodes in any way (except calling this method)
-         * can result in an IllegalStateException
-         *
-         * @return
-         */
-        public boolean dead()
-        {
-            return dead;
-        }
-
 
         @Override
         public int index()
@@ -339,18 +323,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
                 n += links.get(tag).size();
 
             return n;
-        }
-
-        @Override
-        public List<UTLink<L, T>> links()
-        {
-            checkDead();
-
-            List<UTLink<L, T>> list = new ArrayList<UTLink<L,T>>(degree());
-            for(T tag : links.keySet())
-                list.addAll(links.get(tag));
-
-            return list;
         }
 
         @Override
@@ -611,21 +583,9 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     }
 
     @Override
-    public Set<L> labels()
-    {
-        return Collections.unmodifiableSet(nodes.keySet());
-    }
-
-    @Override
     public long numLinks()
     {
         return numLinks;
-    }
-
-    @Override
-    public long state()
-    {
-        return modCount;
     }
 
     @Override
@@ -718,112 +678,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     {
         for(int i : series(nodeList.size()))
             nodeList.get(i).index = i;
-    }
-
-    @Override
-    public Set<T> tags()
-    {
-        return Collections.unmodifiableSet(tags);
-    }
-
-    @Override
-    public int hashCode()
-    {
-        if(hashMod != null && hashMod == modCount)
-            return hash;
-
-        hash = 1;
-
-        for(UTNode<L, T> node : nodes())
-            hash = 31 * hash + (node == null ? 0 : node.hashCode());
-
-        // * tags
-        for(UTLink<L, T> link : links())
-            hash = 31 * hash + link.hashCode();
-
-        // * structure
-        for(UTNode<L, T> node : nodes())
-        {
-            List<Integer> nbIndices = new ArrayList<Integer>(node.degree());
-            for(UTNode<L, T> neighbor : node.neighbors())
-                nbIndices.add(neighbor.index());
-
-            Collections.sort(nbIndices);
-            hash = 31 * hash + nbIndices.hashCode();
-        }
-
-        return hash;
-    }
-
-    @Override
-    public boolean equals(Object other)
-    {
-        if(!(other instanceof UTGraph<?, ?>))
-            return false;
-
-        UTGraph<Object, Object> otherGraph = (UTGraph<Object, Object>) other;
-
-        if(! otherGraph.level().equals(level()))
-            return false;
-
-        if(size() != otherGraph.size())
-            return false;
-
-        if(numLinks() != otherGraph.numLinks())
-            return false;
-
-        if(labels().size() != otherGraph.labels().size())
-            return false;
-
-        // * for all connected nodes
-        for(UTNode<L, T> node : nodes())
-        {
-            if(! Functions.equals(node.label(), otherGraph.get(node.index()).label()))
-                return false;
-
-            for(UTNode<L, T> neighbor : node.neighbors())
-            {
-                Collection<? extends UTLink<L, T>> links = node.links(neighbor);
-                Collection<? extends UTLink<Object, Object>> otherLinks =
-                        otherGraph.get(node.index())
-                                .links(otherGraph.get(neighbor.index()));
-
-                if(links.size() != otherLinks.size())
-                    return false;
-
-                if(links.size() == 1)
-                {
-                    // ** If there is only one link, check that there is a single
-                    //    similar link in the other graph and that it has the same tag
-                    T tag = links.iterator().next().tag();
-                    Object otherTag = otherLinks.iterator().next().tag();
-
-
-                    if(! Functions.equals(tag, otherTag))
-                        return false;
-                } else {
-                    // ** If there are multiple links between these two nodes,
-                    //    count the occurrences of each tag and check that the
-                    //    frequencies match between graphs
-                    FrequencyModel<T>
-                            model = new FrequencyModel<T>();
-                    FrequencyModel<Object>
-                            otherModel = new FrequencyModel<Object>();
-
-                    for(UTLink<L, T> link : links)
-                        model.add(link.tag());
-
-                    for(UTLink<Object, Object> otherLink : otherLinks)
-                        otherModel.add(otherLink.tag());
-
-                    for(T token : model.tokens())
-                        if(otherModel.frequency(token) != model.frequency(token))
-                            return false;
-                }
-            }
-        }
-
-        return true;
     }
 
     @Override
