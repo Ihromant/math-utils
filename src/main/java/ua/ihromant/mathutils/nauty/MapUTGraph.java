@@ -32,16 +32,10 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
 {
     protected List<MapUTNode> nodeList = new ArrayList<MapUTNode>();
     protected Map<L, Set<MapUTNode>> nodes = new LinkedHashMap<L, Set<MapUTNode>>();
-    protected Set<T> tags = new LinkedHashSet<T>();
 
-    protected long numLinks = 0;
     protected long modCount = 0;
 
-    protected int hash;
-    protected Long hashMod = null;
-
-    public MapUTGraph()
-    {
+    public MapUTGraph() {
     }
 
     private class MapUTNode implements UTNode<L, T>
@@ -51,11 +45,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         private Set<MapUTNode> neighbors = new LinkedHashSet<MapUTNode>();
 
         private L label;
-
-        // * A node is dead when it is removed from the graph. Since there is no
-        //   way to ensure that clients don't maintain copies of node objects we
-        //   keep check of nodes that are no longer part of the graph.
-        private boolean dead = false;
 
         private Integer labelId = null;
         private Long labelIdMod;
@@ -76,17 +65,13 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         }
 
         @Override
-        public Collection<MapUTNode> neighbors()
-        {
-            checkDead();
+        public Collection<MapUTNode> neighbors() {
 
             return Collections.unmodifiableSet(neighbors);
         }
 
         @Override
-        public L label()
-        {
-            checkDead();
+        public L label() {
 
             return label;
         }
@@ -95,9 +80,7 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
          * An id to identify this node among nodes with the same label.
          * @return
          */
-        public int labelId()
-        {
-            checkDead();
+        public int labelId() {
 
             if(labelIdMod == null || labelIdMod != modCount)
             {
@@ -119,9 +102,7 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
 
         }
 
-        public String toString()
-        {
-            checkDead();
+        public String toString() {
 
             boolean unique = nodes.get(label).size() <= 1;
 
@@ -130,17 +111,13 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
 
 
         @Override
-        public int index()
-        {
-            checkDead();
+        public int index() {
 
             return index;
         }
 
         @Override
-        public int hashCode()
-        {
-            checkDead();
+        public int hashCode() {
 
             // * We base the hashcode on just the label. If adding links changes
             //   the hashcode, our maps will get messed up.
@@ -153,9 +130,7 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         }
 
         @Override
-        public Collection<? extends UTLink<L, T>> links(Node<L> other)
-        {
-            checkDead();
+        public Collection<? extends UTLink<L, T>> links(Node<L> other) {
             List<UTLink<L, T>> result = new ArrayList<UTLink<L, T>>();
 
             for(T tag : links.keySet())
@@ -166,19 +141,8 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             return result;
         }
 
-        public boolean equals(Object other)
-        {
-            checkDead();
+        public boolean equals(Object other) {
             return this == other;
-        }
-
-        /**
-         * Checks if the node is dead, and fails if it is.
-         */
-        private void checkDead()
-        {
-            if(dead)
-                throw new IllegalStateException("This node (last index "+index+") has been removed, accessing any of its methods (except dead()) will cause en exception.");
         }
     }
 
