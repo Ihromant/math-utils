@@ -28,12 +28,9 @@ import java.util.Set;
  *
  * @param <L>
  */
-public class MapUTGraph<L, T> implements UTGraph<L, T>
-{
+public class MapUTGraph<L, T> implements UTGraph<L, T> {
     protected List<MapUTNode> nodeList = new ArrayList<MapUTNode>();
     protected Map<L, Set<MapUTNode>> nodes = new LinkedHashMap<L, Set<MapUTNode>>();
-
-    protected long modCount = 0;
 
     public MapUTGraph() {
     }
@@ -75,40 +72,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
 
             return label;
         }
-
-        /**
-         * An id to identify this node among nodes with the same label.
-         * @return
-         */
-        public int labelId() {
-
-            if(labelIdMod == null || labelIdMod != modCount)
-            {
-                Collection<MapUTNode> others = nodes.get(label);
-
-                int i = 0;
-                for(MapUTNode other : others)
-                {
-                    if(other.equals(this))
-                    {
-                        labelId = i;
-                        break;
-                    }
-                    i++;
-                }
-                labelIdMod = modCount;
-            }
-            return labelId;
-
-        }
-
-        public String toString() {
-
-            boolean unique = nodes.get(label).size() <= 1;
-
-            return label + (unique ? "" : "_" + labelId());
-        }
-
 
         @Override
         public int index() {
