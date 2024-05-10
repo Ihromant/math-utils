@@ -1,12 +1,9 @@
 package ua.ihromant.mathutils.nauty;
 
-import nl.peterbloem.kit.Functions;
 import nl.peterbloem.kit.Order;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Deque;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -16,31 +13,25 @@ import java.util.Map;
 public class Nauty {
     /**
      * Find the canonical ordering for the given graph
-     *
-     * @param graph
-     * @param comp
-     * @return
      */
-    private static <L> Order order(Graph<L> graph, Comparator<L> comp)
-    {
+    private static Order order(Graph graph) {
         // * Start with the unit partition
-        List<List<Node<L>>> partition = partition(graph, comp);
+        List<List<Node>> partition = partition(graph);
 
         // * The equitable refinement procedure.
         partition = refine(partition);
 
         // * Start the search for the maximal isomorph
-        Search<L> search = new Search<L>(partition);
+        Search search = new Search(partition);
         search.search();
 
-        List<Integer> order = new ArrayList<Integer>(graph.size());
-        List<List<Node<L>>> max = search.max();
+        List<Integer> order = new ArrayList<>(graph.size());
+        List<List<Node>> max = search.max();
 
-        for(List<Node<L>> cell : max)
-        {
+        for(List<Node> cell : max) {
             assert(cell.size() == 1);
 
-            Node<L> node = cell.get(0);
+            Node node = cell.getFirst();
             order.add(node.index());
         }
 
@@ -51,39 +42,35 @@ public class Nauty {
 
     /**
      * This object encapsulates the information in a single search.
-     *
-     * @author Peter
-     *
      */
-    private static class Search<T>
-    {
-        private Deque<SNode<T>> buffer = new LinkedList<SNode<T>>();
+    private static class Search {
+        private final Deque<SNode> buffer = new LinkedList<>();
 
-        private SNode<T> max = null;
+        private SNode max = null;
         private String maxString;
 
-        public Search(List<List<Node<T>>> initial)
+        public Search(List<List<Node>> initial)
         {
             // ** Set up the search stack
-            buffer.add(new SNode<T>(initial));
+            buffer.add(new SNode(initial));
         }
 
         public void search()
         {
             while(! buffer.isEmpty())
             {
-                SNode<T> current = buffer.poll();
+                SNode current = buffer.poll();
 
-                List<SNode<T>> children = current.children();
+                List<SNode> children = current.children();
                 if(children.isEmpty())
                     observe(current);
 
-                for(SNode<T> child : children)
+                for(SNode child : children)
                     buffer.addFirst(child);
             }
         }
 
-        private void observe(SNode<T> node)
+        private void observe(SNode node)
         {
             String nodeString = Nauty.toString(node.partition());
 
@@ -94,50 +81,46 @@ public class Nauty {
             }
         }
 
-        public List<List<Node<T>>> max()
+        public List<List<Node>> max()
         {
             return max.partition();
         }
     }
 
-    public static <L> List<List<Node<L>>> partition(Graph<L> graph, Comparator<L> comp)
-    {
-        Map<L, List<Node<L>>> byLabel = new LinkedHashMap<L, List<Node<L>>>();
-        for(Node<L> node : graph.nodes())
+    public static List<List<Node>> partition(Graph graph) {
+        Map<Integer, List<Node>> byLabel = new LinkedHashMap<>();
+        for(Node node : graph.nodes())
         {
             if(!byLabel.containsKey(node.label()))
-                byLabel.put(node.label(), new ArrayList<Node<L>>());
+                byLabel.put(node.label(), new ArrayList<>());
             byLabel.get(node.label()).add(node);
         }
 
-        List<L> keys = new ArrayList<L>(byLabel.keySet());
-        Collections.sort(keys, comp);
+        List<Integer> keys = new ArrayList<>(byLabel.keySet());
+        Collections.sort(keys);
 
-        List<List<Node<L>>> result = new ArrayList<List<Node<L>>>();
+        List<List<Node>> result = new ArrayList<>();
 
-        for(L key : keys)
+        for(Integer key : keys)
             result.add(byLabel.get(key));
         return result;
     }
 
     /**
-     * Refine the given partition to a coarsest equitable refinement.
-     *
-     * @param partition
-     * @return
+     * Refine the given partition to the coarsest equitable refinement.
      */
-    public static <T> List<List<Node<T>>> refine(List<List<Node<T>>> partition)
+    public static List<List<Node>> refine(List<List<Node>> partition)
     {
-        List<List<Node<T>>> result = new ArrayList<List<Node<T>>>();
-        for(List<Node<T>> cell : partition)
-            result.add(new ArrayList<Node<T>>(cell));
+        List<List<Node>> result = new ArrayList<>();
+        for(List<Node> cell : partition)
+            result.add(new ArrayList<>(cell));
 
         while(searchShattering(result));
 
         return result;
     }
 
-    private static <T> boolean searchShattering(List<List<Node<T>>> partition)
+    private static boolean searchShattering(List<List<Node>> partition)
     {
         // * Loop through every pair of partition cells
         for(int i = 0; i < partition.size(); i++)
@@ -146,7 +129,7 @@ public class Nauty {
             {
                 if(shatters(partition.get(i), partition.get(j)))
                 {
-                    List<List<Node<T>>> shattering = shattering(partition.get(i), partition.get(j));
+                    List<List<Node>> shattering = shattering(partition.get(i), partition.get(j));
 
                     // * This edit to the list we're looping over is safe,
                     //   because we return right after
@@ -164,29 +147,25 @@ public class Nauty {
 
     /**
      * Re-orders the nodes in 'from' by their degree relative to 'to'
-     *
-     * @param from
-     * @param to
-     * @return
      */
-    public static <L> List<List<Node<L>>> shattering(List<Node<L>> from, List<Node<L>> to)
+    public static List<List<Node>> shattering(List<Node> from, List<Node> to)
     {
-        Map<Integer, List<Node<L>>> byDegree = new LinkedHashMap<Integer, List<Node<L>>>();
+        Map<Integer, List<Node>> byDegree = new LinkedHashMap<>();
 
-        for(Node<L> node : from)
+        for(Node node : from)
         {
             int degree = degree(node, to);
 
             if(!byDegree.containsKey(degree))
-                byDegree.put(degree, new ArrayList<Node<L>>());
+                byDegree.put(degree, new ArrayList<>());
 
             byDegree.get(degree).add(node);
         }
 
-        List<Integer> keys = new ArrayList<Integer>(byDegree.keySet());
+        List<Integer> keys = new ArrayList<>(byDegree.keySet());
         Collections.sort(keys);
 
-        List<List<Node<L>>> result = new ArrayList<List<Node<L>>>();
+        List<List<Node>> result = new ArrayList<>();
         for(int key : keys)
             result.add(byDegree.get(key));
 
@@ -194,18 +173,13 @@ public class Nauty {
     }
 
     /**
-     * A set of nodes shatters another set of nodes, if the the outdegree
+     * A set of nodes shatters another set of nodes, if the outdegree
      * relative to the second set differs between members of the first.
-     *
-     * @param from
-     * @param to
-     * @return
      */
-    public static <L> boolean shatters(List<Node<L>> from, List<Node<L>> to)
-    {
+    public static boolean shatters(List<Node> from, List<Node> to) {
         int num = -1;
 
-        for(Node<L> node : from)
+        for(Node node : from)
             if(num == -1)
                 num = degree(node, to);
             else
@@ -215,11 +189,11 @@ public class Nauty {
         return false;
     }
 
-    public static <L> int degree(Node<L> from, List<Node<L>> to)
+    public static int degree(Node from, List<Node> to)
     {
         int sum = 0;
 
-        for(Node<L> node : to) // * this should automatically work right for directed/undirected
+        for(Node node : to) // * this should automatically work right for directed/undirected
             if (from.connected(node)) {
                 sum++;
             }
@@ -227,77 +201,54 @@ public class Nauty {
         return sum;
     }
 
-    private static class SNode<T>
-    {
-        private List<List<Node<T>>> partition;
+    private record SNode(List<List<Node>> partition) {
+        public List<SNode> children() {
+                List<SNode> children = new ArrayList<>(partition.size() + 1);
 
-        public SNode(List<List<Node<T>>> partition)
-        {
-            super();
-            this.partition = partition;
-        }
+                for (int cellIndex = 0; cellIndex < partition.size(); cellIndex++) {
+                    List<Node> cell = partition.get(cellIndex);
+                    if (cell.size() > 1)
+                        for (int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++) {
+                            List<Node> rest = new ArrayList<>(cell);
+                            List<Node> single = Collections.singletonList(rest.remove(nodeIndex));
 
-        public List<List<Node<T>>> partition()
-        {
-            return partition;
-        }
+                            // * Careful... We're shallow copying the cells. We must
+                            //   make sure never to modify a cell.
+                            List<List<Node>> newPartition = new ArrayList<>(partition);
 
-        public List<SNode<T>> children()
-        {
-            List<SNode<T>> children = new ArrayList<SNode<T>>(partition.size() + 1);
+                            newPartition.remove(cellIndex);
+                            newPartition.add(cellIndex, single);
+                            newPartition.add(cellIndex + 1, rest);
 
-            for(int cellIndex = 0; cellIndex < partition.size(); cellIndex++)
-            {
-                List<Node<T>> cell = partition.get(cellIndex);
-                if(cell.size() > 1)
-                    for(int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++)
-                    {
-                        List<Node<T>> rest = new ArrayList<Node<T>>(cell);
-                        List<Node<T>> single = Arrays.asList(rest.remove(nodeIndex));
+                            children.add(new SNode(newPartition));
+                        }
+                }
 
-                        // * Careful... We're shallow copying the cells. We must
-                        //   make sure never to modify a cell.
-                        List<List<Node<T>>> newPartition = new ArrayList<List<Node<T>>>(partition);
-
-                        newPartition.remove(cellIndex);
-                        newPartition.add(cellIndex, single);
-                        newPartition.add(cellIndex + 1, rest);
-
-                        children.add(new SNode<T>(newPartition));
-                    }
+                return children;
             }
-
-            return children;
         }
-    }
 
     /**
      * Converts a trivial partition to a string representing the graph's
      * structure (without labels) in a particular format.
-     *
-     * @param partition
-     * @return
      */
-    private static <T> String toString(List<List<Node<T>>> partition)
+    private static String toString(List<List<Node>> partition)
     {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
 
         int[] order = new int[partition.size()];
         int i = 0;
-        for(List<Node<T>> cell : partition)
-        {
-            order[cell.get(0).index()] = i;
+        for(List<Node> cell : partition) {
+            order[cell.getFirst().index()] = i;
             i++;
         }
 
-        int myIndex = 0;
-        for(List<Node<T>> cell : partition)
-        {
+        for(List<Node> cell : partition) {
             assert(cell.size() == 1);
-            Node<T> current = cell.get(0);
+            Node current = cell.getFirst();
 
-            List<Integer> neighbors = new ArrayList<Integer>(current.neighbors().size());
-            for(Node<T> neighbor : current.neighbors())
+            List<Integer> neighbors = new ArrayList<>(current.neighbors().size());
+            for(Node neighbor : current.neighbors())
             {
                 int rawIndex = neighbor.index(); // index in the original graph
                 int neighborIndex = order[rawIndex]; // index in the re-ordered graph
@@ -310,14 +261,12 @@ public class Nauty {
                 buffer.append(neighborIndex).append(' ');
 
             buffer.append(',');
-
-            myIndex++;
         }
 
         return buffer.toString();
     }
 
-    public static <L extends Comparable<L>> Order canonicalOrdering(Graph<L> graph) {
-        return Nauty.order(graph, new Functions.NaturalComparator<L>());
+    public static Order canonicalOrdering(Graph graph) {
+        return Nauty.order(graph);
     }
 }

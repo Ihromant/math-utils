@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public record NautyWrapper(Liner liner) implements Graph<Integer> {
+public record NautyWrapper(Liner liner) implements Graph {
     @Override
-    public List<? extends Node<Integer>> nodes() {
+    public List<? extends Node> nodes() {
         return Stream.concat(IntStream.range(0, liner.pointCount()).mapToObj(i -> new NautyNode(this, false, i)),
                 IntStream.range(0, liner.lineCount()).mapToObj(i -> new NautyNode(this, true, i))).toList();
     }
@@ -20,9 +20,9 @@ public record NautyWrapper(Liner liner) implements Graph<Integer> {
         return liner.pointCount() + liner.lineCount();
     }
 
-    private record NautyNode(NautyWrapper wrap, boolean line, int idx) implements Node<Integer> {
+    private record NautyNode(NautyWrapper wrap, boolean line, int idx) implements Node {
         @Override
-        public Collection<? extends Node<Integer>> neighbors() {
+        public Collection<? extends Node> neighbors() {
             if (line) {
                 int[] pts = wrap.liner.points(idx);
                 return Arrays.stream(pts).mapToObj(i -> new NautyNode(wrap, false, i)).toList();
@@ -33,12 +33,12 @@ public record NautyWrapper(Liner liner) implements Graph<Integer> {
         }
 
         @Override
-        public Integer label() {
+        public int label() {
             return line ? 1 : 0;
         }
 
         @Override
-        public boolean connected(Node<Integer> other) {
+        public boolean connected(Node other) {
             if (!(other instanceof NautyNode that) || this.line && that.line || !this.line && !that.line) {
                 return false;
             }
