@@ -1,14 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.Collection;
-
-public interface ULink<L> extends Link<L>
-{
-    @Override
-    public UNode<L> first();
-
-    @Override
-    public UNode<L> second();
+public interface ULink<L> extends Link<L> {
 
     /**
      * Returns the first node, after one occurrence of the given
@@ -18,8 +10,4 @@ public interface ULink<L> extends Link<L>
      * @return
      */
     public UNode<L> other(Node<L> current);
-
-    @Override
-    public Collection<? extends UNode<L>> nodes();
-
 }

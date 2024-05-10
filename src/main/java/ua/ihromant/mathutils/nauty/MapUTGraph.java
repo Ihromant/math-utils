@@ -1,19 +1,13 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.AbstractCollection;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static nl.peterbloem.kit.Series.series;
 
 /**
  * <p>
@@ -95,13 +89,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             checkDead();
 
             return label;
-        }
-
-        public int id()
-        {
-            checkDead();
-
-            return ((Object) this).hashCode();
         }
 
         /**
@@ -208,31 +195,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             this.second = second;
         }
 
-        @Override
-        public T tag()
-        {
-            return tag;
-        }
-
-        @Override
-        public UTNode<L, T> first()
-        {
-            return first;
-        }
-
-        @Override
-        public UTNode<L, T> second()
-        {
-            return second;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public Collection<? extends UTNode<L, T>> nodes()
-        {
-            return Arrays.asList(first, second);
-        }
-
         public String toString()
         {
             return first + " -- " + second + (tag == null ? "" : " [label="+tag+"]");
@@ -281,85 +243,5 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     public List<? extends UTNode<L, T>> nodes()
     {
         return Collections.unmodifiableList(nodeList);
-    }
-
-    private class LinkCollection extends AbstractCollection<MapUTLink>
-    {
-
-        @Override
-        public Iterator<MapUTLink> iterator()
-        {
-            return new LCIterator();
-        }
-
-        @Override
-        public int size()
-        {
-            return (int)numLinks();
-        }
-
-        private class LCIterator implements Iterator<MapUTLink>
-        {
-            private static final int BUFFER_SIZE = 5;
-            private LinkedList<MapUTLink> buffer = new LinkedList<MapUTLink>();
-            private MapUTLink last = null;
-
-            private MapUTNode current = null;
-            private Iterator<MapUTNode> nodeIt = nodeList.iterator();
-            private Iterator<MapUTNode> neighborIt;
-
-            LCIterator() {}
-
-            @Override
-            public boolean hasNext()
-            {
-                buffer();
-                return ! buffer.isEmpty();
-            }
-
-            @Override
-            public MapUTLink next()
-            {
-                buffer();
-                last = buffer.poll();
-                return last;
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException("Call remove on the link object to remove the link from the graph");
-            }
-
-            private void buffer()
-            {
-                while(buffer.size() < BUFFER_SIZE)
-                {
-                    if(! nodeIt.hasNext())
-                        break;
-
-                    current = nodeIt.next();
-
-                    for(T tag : current.links.keySet())
-                        for(MapUTLink link : current.links.get(tag))
-                        {
-                            int curr = current.index(),
-                                    oth = link.other(current).index();
-
-                            if(curr <= oth)
-                                buffer.add(link);
-                        }
-                }
-            }
-        }
-    }
-
-    /**
-     * Resets the indices of all nodes
-     */
-    protected void updateIndices()
-    {
-        for(int i : series(nodeList.size()))
-            nodeList.get(i).index = i;
     }
 }
