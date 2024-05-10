@@ -210,19 +210,7 @@ public class Nauty {
 
         @Override
         public int compareTo(SNode that) {
-            for (int i = 0; i < partition.size(); i++) {
-                List<NautyNode> tsL = this.partition.get(i);
-                List<NautyNode> ttL = that.partition.get(i);
-                // TODO if size differs, check sizes, but probably should be the same
-                for (int j = 0; j < tsL.size(); j++) {
-                    NautyNode tsN = tsL.get(j);
-                    NautyNode ttN = ttL.get(j);
-                    int nDiff = tsN.index() - ttN.index();
-                    if (nDiff != 0) {
-                        return nDiff;
-                    }
-                }
-            }
+            // TODO implement correct compare
             return 0;
         }
     }
