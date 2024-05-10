@@ -1008,7 +1008,7 @@ public class BatchLinerTest {
 
     @Test
     public void testBooleanProperties() throws IOException {
-        String name = "hughes9-3-9";
+        String name = "hall9-0-9";
         String[] tokens = name.split("-");
         String plName = tokens[0];
         int dl = Integer.parseInt(tokens[1]);
@@ -1035,6 +1035,8 @@ public class BatchLinerTest {
                         + ", rAddInv:" + (ring.addRightInverse() ? 1 : 0)
                         + ", lMulInv:" + (ring.mulLeftInverse() ? 1 : 0)
                         + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
+                        + ", linear:" + (ring.isLinear() ? 1 : 0)
+                        + ", conc:" + (ring.isConcurrent() ? 1 : 0)
                 );
             }
         }
