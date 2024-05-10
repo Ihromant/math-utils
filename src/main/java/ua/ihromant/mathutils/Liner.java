@@ -1,8 +1,11 @@
 package ua.ihromant.mathutils;
 
+import nl.peterbloem.kit.Order;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.nauty.Nauty;
+import ua.ihromant.mathutils.nauty.NautyWrapper;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -24,6 +27,8 @@ public class Liner {
     private final int[][] lookup;
     private final int[][] beams;
     private final int[][] intersections;
+    private int[] canon;
+    private int[][] canonLines;
 
     public Liner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
@@ -583,5 +588,37 @@ public class Liner {
             wIdx++;
         }
         throw new IllegalArgumentException();
+    }
+
+    private int[] canon() {
+        if (canon == null) {
+            NautyWrapper wrap = new NautyWrapper(this);
+            Order order = Nauty.canonicalOrdering(wrap);
+            canon = new int[order.size()];
+            for (int i = 0; i < canon.length; i++) {
+                canon[i] = order.newIndex(i);
+            }
+        }
+        return canon;
+    }
+
+    private int[][] canonLines() {
+        if (canonLines == null) {
+            int[] canon = canon();
+            canonLines = new int[lines.length][];
+            for (int i = 0; i < lines.length; i++) {
+                int[] line = lines[i];
+                BitSet bs = new BitSet();
+                for (int j = 0; j < line.length; j++) {
+                    bs.set(canon[line[j]]);
+                }
+                canonLines[canon[i + pointCount] - pointCount] = bs.stream().toArray();
+            }
+        }
+        return canonLines;
+    }
+
+    public static boolean isomorphic(Liner a, Liner b) {
+        return Arrays.deepEquals(a.canonLines(), b.canonLines());
     }
 }

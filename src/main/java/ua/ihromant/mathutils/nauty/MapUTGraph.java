@@ -103,20 +103,12 @@ public class MapUTGraph<L, T> implements UTGraph<L, T> {
     }
 
     private final class MapUTLink {
-        private T tag;
         private MapUTNode first, second;
-        private boolean dead = false;
 
-        public MapUTLink(T tag, MapUTNode first, MapUTNode second)
+        public MapUTLink(MapUTNode first, MapUTNode second)
         {
-            this.tag = tag;
             this.first = first;
             this.second = second;
-        }
-
-        public String toString()
-        {
-            return first + " -- " + second + (tag == null ? "" : " [label="+tag+"]");
         }
 
         public UTNode<L, T> other(Node<L> current)
@@ -125,25 +117,14 @@ public class MapUTGraph<L, T> implements UTGraph<L, T> {
                 return first;
             return second;
         }
-
-        @Override
-        public int hashCode()
-        {
-            int result = 1;
-            result = 31 * result + (dead ? 1231 : 1237);
-            result = 31 * result + ((tag == null) ? 0 : tag.hashCode());
-            return result;
-        }
     }
 
-    public int size()
-    {
+    public int size() {
         return nodeList.size();
     }
 
     @Override
-    public List<? extends UTNode<L, T>> nodes()
-    {
+    public List<? extends UTNode<L, T>> nodes() {
         return Collections.unmodifiableList(nodeList);
     }
 }
