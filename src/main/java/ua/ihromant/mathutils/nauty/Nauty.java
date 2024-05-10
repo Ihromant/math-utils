@@ -73,9 +73,14 @@ public class Nauty {
             String nodeString = Nauty.toString(node.partition());
 
             if (max == null || nodeString.compareTo(maxString) > 0) {
+                System.out.println(Nauty.toString(node.partition) + " " + maxString);
                 max = node;
                 maxString = nodeString;
             }
+//            if (max == null || node.compareTo(max) > 0) {
+//                System.out.println(Nauty.toString(node.partition) + " " + (max == null ? null : Nauty.toString(max.partition)));
+//                max = node;
+//            }
         }
 
         public List<List<NautyNode>> max() {
@@ -177,7 +182,7 @@ public class Nauty {
         return sum;
     }
 
-    private record SNode(List<List<NautyNode>> partition) {
+    private record SNode(List<List<NautyNode>> partition) implements Comparable<SNode> {
         public List<SNode> children() {
                 List<SNode> children = new ArrayList<>(partition.size() + 1);
 
@@ -202,7 +207,25 @@ public class Nauty {
 
                 return children;
             }
+
+        @Override
+        public int compareTo(SNode that) {
+            for (int i = 0; i < partition.size(); i++) {
+                List<NautyNode> tsL = this.partition.get(i);
+                List<NautyNode> ttL = that.partition.get(i);
+                // TODO if size differs, check sizes, but probably should be the same
+                for (int j = 0; j < tsL.size(); j++) {
+                    NautyNode tsN = tsL.get(j);
+                    NautyNode ttN = ttL.get(j);
+                    int nDiff = tsN.index() - ttN.index();
+                    if (nDiff != 0) {
+                        return nDiff;
+                    }
+                }
+            }
+            return 0;
         }
+    }
 
     /**
      * Converts a trivial partition to a string representing the graph's

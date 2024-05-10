@@ -609,11 +609,12 @@ public class Liner {
             for (int i = 0; i < lines.length; i++) {
                 int[] line = lines[i];
                 BitSet bs = new BitSet();
-                for (int j = 0; j < line.length; j++) {
-                    bs.set(canon[line[j]]);
+                for (int pt : line) {
+                    bs.set(canon[pt]);
                 }
                 canonLines[canon[i + pointCount] - pointCount] = bs.stream().toArray();
             }
+            System.out.println();
         }
         return canonLines;
     }
