@@ -13,8 +13,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static nl.peterbloem.kit.Series.series;
-
 public class Nauty {
     /**
      * Find the canonical ordering for the given graph
@@ -23,7 +21,6 @@ public class Nauty {
      * @param comp
      * @return
      */
-    @SuppressWarnings("unchecked")
     private static <L> Order order(Graph<L> graph, Comparator<L> comp)
     {
         // * Start with the unit partition
@@ -143,9 +140,9 @@ public class Nauty {
     private static <T> boolean searchShattering(List<List<Node<T>>> partition)
     {
         // * Loop through every pair of partition cells
-        for(int i : series(partition.size()))
+        for(int i = 0; i < partition.size(); i++)
         {
-            for(int j : series(partition.size()))
+            for(int j = 0; j < partition.size(); j++)
             {
                 if(shatters(partition.get(i), partition.get(j)))
                 {
@@ -180,7 +177,7 @@ public class Nauty {
         {
             int degree = degree(node, to);
 
-            if(! byDegree.containsKey(degree))
+            if(!byDegree.containsKey(degree))
                 byDegree.put(degree, new ArrayList<Node<L>>());
 
             byDegree.get(degree).add(node);
@@ -249,11 +246,11 @@ public class Nauty {
         {
             List<SNode<T>> children = new ArrayList<SNode<T>>(partition.size() + 1);
 
-            for(int cellIndex : series(partition.size()))
+            for(int cellIndex = 0; cellIndex < partition.size(); cellIndex++)
             {
                 List<Node<T>> cell = partition.get(cellIndex);
                 if(cell.size() > 1)
-                    for(int nodeIndex : series(cell.size()))
+                    for(int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++)
                     {
                         List<Node<T>> rest = new ArrayList<Node<T>>(cell);
                         List<Node<T>> single = Arrays.asList(rest.remove(nodeIndex));
