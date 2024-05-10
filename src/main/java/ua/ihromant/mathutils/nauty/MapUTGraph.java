@@ -102,8 +102,7 @@ public class MapUTGraph<L, T> implements UTGraph<L, T> {
         }
     }
 
-    private final class MapUTLink implements UTLink<L, T>
-    {
+    private final class MapUTLink {
         private T tag;
         private MapUTNode first, second;
         private boolean dead = false;
