@@ -14,7 +14,7 @@ public class Nauty {
     /**
      * Find the canonical ordering for the given graph
      */
-    private static Order order(Graph graph) {
+    private static Order order(NautyWrapper graph) {
         // * Start with the unit partition
         List<List<NautyNode>> partition = graph.partition();
 
@@ -170,8 +170,7 @@ public class Nauty {
         return false;
     }
 
-    public static int degree(NautyNode from, List<NautyNode> to)
-    {
+    public static int degree(NautyNode from, List<NautyNode> to) {
         int sum = 0;
 
         for(NautyNode node : to) // * this should automatically work right for directed/undirected
@@ -247,7 +246,7 @@ public class Nauty {
         return buffer.toString();
     }
 
-    public static Order canonicalOrdering(Graph graph) {
+    public static Order canonicalOrdering(NautyWrapper graph) {
         return Nauty.order(graph);
     }
 }
