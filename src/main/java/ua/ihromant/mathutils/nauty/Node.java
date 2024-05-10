@@ -38,14 +38,6 @@ public interface Node<L>
     public Collection<? extends Link<L>> links(Node<L> other);
 
     /**
-     * Returns the graph object to which these nodes belong. Nodes always belong
-     * to a single graph and cannot be exchanged between them. This is a very
-     * important property for the correctness of the API.
-     * @return
-     */
-    public Graph<L> graph();
-
-    /**
      * The index of the node in the graph to which it belongs
      * @return
      */

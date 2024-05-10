@@ -109,14 +109,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             return neighbors.contains(other);
         }
 
-        @Override
-        public UTGraph<L, T> graph()
-        {
-            checkDead();
-
-            return MapUTGraph.this;
-        }
-
         public int id()
         {
             checkDead();
@@ -171,25 +163,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         }
 
         @Override
-        public TLink<L, T> link(TNode<L, T> other)
-        {
-            checkDead();
-            checkDead();
-
-            MapUTNode o = (MapUTNode) other;
-
-            if(!connected(o))
-                return null;
-
-            for(T tag : links.keySet())
-                for(MapUTLink link : links.get(tag))
-                    if(link.second().equals(o))
-                        return link;
-
-            return null;
-        }
-
-        @Override
         public Collection<? extends UTLink<L, T>> links(TNode<L, T> other)
         {
             checkDead();
@@ -208,20 +181,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             return result;
         }
 
-        @Override
-        public boolean connected(TNode<L, T> other, T tag)
-        {
-            checkDead();
-
-            if(! links.containsKey(tag))
-                return false;
-
-            for(MapUTLink link : links.get(tag))
-                if(link.other(this).equals(other))
-                    return true;
-
-            return false;
-        }
 
         @Override
         public int degree()
@@ -233,14 +192,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
                 n += links.get(tag).size();
 
             return n;
-        }
-
-        @Override
-        public Collection<T> tags()
-        {
-            checkDead();
-
-            return Collections.unmodifiableCollection(links.keySet());
         }
 
         @Override

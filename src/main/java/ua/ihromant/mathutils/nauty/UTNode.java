@@ -32,13 +32,6 @@ public interface UTNode<L, T> extends UNode<L>, TNode<L, T>
     public L label();
 
     /**
-     * Returns the graph object to which these nodes belong. Nodes always belong
-     * to a single graph and cannot be exchanged between them.
-     * @return
-     */
-    public UTGraph<L, T> graph();
-
-    /**
      * The index of the node in the graph to which it belongs
      * @return
      */
