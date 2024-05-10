@@ -14,24 +14,6 @@ public interface TNode<L, T> extends Node<L>
     public Collection<? extends TNode<L, T>> neighbors();
 
     /**
-     * <p>Connects this node to another node. </p>
-     * <p>
-     * The only prescription is that if this method succeeds, the other nod
-     * shows up in this nodes' {@link neighbours()}</p>
-     * <p>
-     * The particulars of the connection
-     * are not prescribed by this interface, nor does this interface prescribe
-     * what should happen when the connection already exists. </p>
-     *
-     * @param other
-     */
-
-    public TLink<L, T> connect(TNode<L, T> other, T tag);
-
-    public TLink<L, T> connect(Node<L> to);
-
-
-    /**
      * Check whether this node is connected to another, with a given tag on the
      * connecting link.
      *

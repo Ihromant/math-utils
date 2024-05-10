@@ -318,10 +318,7 @@ public class Nauty {
         return buffer.toString();
     }
 
-    public static <L extends Comparable<L>> Graph<L> canonize(Graph<L> graph)
-    {
-        Order order = Nauty.order(graph, new Functions.NaturalComparator<L>());
-
-        return Graphs.reorder(graph, order);
+    public static <L extends Comparable<L>> Order canonicalOrdering(Graph<L> graph) {
+        return Nauty.order(graph, new Functions.NaturalComparator<L>());
     }
 }

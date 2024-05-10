@@ -36,6 +36,4 @@ public interface UTGraph<L, T> extends TGraph<L, T>, UGraph<L>
      */
     public UTNode<L, T> add(L label);
 
-    public Class<? extends UTGraph<?, ?>> level();
-
 }

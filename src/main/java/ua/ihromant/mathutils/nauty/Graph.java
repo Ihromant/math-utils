@@ -83,13 +83,4 @@ public interface Graph<L>
      * @return
      */
     public Node<L> get(int i);
-
-    /**
-     * The level of the graph hierarchy which this graph accepts for equality
-     * (see above).
-     *
-     * @return
-     */
-    public Class<? extends Graph<?>> level();
-
 }

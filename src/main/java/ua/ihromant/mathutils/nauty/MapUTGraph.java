@@ -54,47 +54,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     {
     }
 
-    /**
-     * Returns a graph with the same structure and labels as that in the
-     * argument.
-     *
-     * @param graph
-     * @return
-     */
-    public static <L, T> MapUTGraph<L, T> copy(UTGraph<L, T> graph)
-    {
-        MapUTGraph<L, T> copy = new MapUTGraph<L, T>();
-        for(UTNode<L, T> node : graph.nodes())
-            copy.add(node.label());
-
-        for(UTLink<L, T> link : graph.links())
-        {
-            int i = link.first().index(),
-                    j = link.second().index();
-
-            copy.nodes().get(i).connect(copy.nodes().get(j), link.tag());
-        }
-
-        return copy;
-    }
-
-    public static <L,T> MapUTGraph<L,T> copy(UGraph<L> graph)
-    {
-        MapUTGraph<L, T> copy = new MapUTGraph<L, T>();
-        for(UNode<L> node : graph.nodes())
-            copy.add(node.label());
-
-        for(ULink<L> link : graph.links())
-        {
-            int i = link.first().index(),
-                    j = link.second().index();
-
-            copy.nodes().get(i).connect(copy.nodes().get(j), null);
-        }
-
-        return copy;
-    }
-
     private class MapUTNode implements UTNode<L, T>
     {
         private Map<T, List<MapUTLink>> links = new LinkedHashMap<T, List<MapUTLink>>();
@@ -140,55 +99,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             checkDead();
 
             return label;
-        }
-
-        @SuppressWarnings("unchecked")
-        @Override
-        public MapUTLink connect(Node<L> other)
-        {
-            checkDead();
-
-            if(MapUTGraph.this != other.graph())
-                throw new IllegalArgumentException("Can only connect nodes that belong to the same graph.");
-
-            // - This cast is safe because we know the node belongs to this
-            //   graph, so it was made by this graph, so it's a MapDTNode
-            return connect((TNode<L, T>)other, null);
-        }
-
-        @Override
-        public MapUTLink connect(TNode<L, T> other, T tag)
-        {
-            checkDead();
-
-            if(this.graph().hashCode() != other.graph().hashCode())
-                throw new IllegalArgumentException("Can only connect to nodes from the same graph (arguments: this="+this+", other="+other+")");
-
-            // * This graph can only contain MapDTNodes, so this is a safe cast
-            MapUTNode mutOther = (MapUTNode) other;
-
-            MapUTLink link = new MapUTLink(tag, this, mutOther);
-
-            // * Add to this node's neighbors
-            if(! links.containsKey(tag))
-                links.put(tag, new LinkedList<MapUTLink>());
-            links.get(tag).add(link);
-
-            // * Add this  in other's neighbors
-            if(! mutOther.equals(this))
-            {
-                if(! mutOther.links.containsKey(tag))
-                    mutOther.links.put(tag, new LinkedList<MapUTLink>());
-                mutOther.links.get(tag).add(link);
-            }
-
-            neighbors.add(mutOther);
-            mutOther.neighbors.add(this);
-
-            numLinks++;
-            modCount++;
-
-            return link;
         }
 
         @Override
@@ -684,12 +594,5 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     public UTNode<L, T> get(int i)
     {
         return nodes().get(i);
-    }
-
-    @Override
-    public Class<? extends UTGraph<L, T>> level()
-    {
-        Object obj = UTGraph.class;
-        return (Class<? extends UTGraph<L, T>>) obj;
     }
 }

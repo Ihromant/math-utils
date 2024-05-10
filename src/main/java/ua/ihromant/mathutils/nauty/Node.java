@@ -17,20 +17,6 @@ public interface Node<L>
     public L label();
 
     /**
-     * <p>Connects this node to another node. </p>
-     * <p>
-     * The only prescription is that if this method succeeds, the other node
-     * shows up in this nodes' {@link neighbours()}</p>
-     * <p>
-     * The particulars of the connection
-     * are not prescribed by this interface, nor does this interface prescribe
-     * what should happen when the connection already exists. </p>
-     *
-     * @param other
-     */
-    public Link<L> connect(Node<L> other);
-
-    /**
      * Whether the current node is connected to the given node.
      *
      * If the graph is directed, a connection in either direction will cause
