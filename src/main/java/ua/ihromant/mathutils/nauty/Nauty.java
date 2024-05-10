@@ -16,7 +16,7 @@ public class Nauty {
      */
     private static Order order(Graph graph) {
         // * Start with the unit partition
-        List<List<Node>> partition = partition(graph);
+        List<List<NautyNode>> partition = partition(graph);
 
         // * The equitable refinement procedure.
         partition = refine(partition);
@@ -26,12 +26,12 @@ public class Nauty {
         search.search();
 
         List<Integer> order = new ArrayList<>(graph.size());
-        List<List<Node>> max = search.max();
+        List<List<NautyNode>> max = search.max();
 
-        for(List<Node> cell : max) {
+        for(List<NautyNode> cell : max) {
             assert(cell.size() == 1);
 
-            Node node = cell.getFirst();
+            NautyNode node = cell.getFirst();
             order.add(node.index());
         }
 
@@ -49,7 +49,7 @@ public class Nauty {
         private SNode max = null;
         private String maxString;
 
-        public Search(List<List<Node>> initial)
+        public Search(List<List<NautyNode>> initial)
         {
             // ** Set up the search stack
             buffer.add(new SNode(initial));
@@ -81,15 +81,15 @@ public class Nauty {
             }
         }
 
-        public List<List<Node>> max()
+        public List<List<NautyNode>> max()
         {
             return max.partition();
         }
     }
 
-    public static List<List<Node>> partition(Graph graph) {
-        Map<Integer, List<Node>> byLabel = new LinkedHashMap<>();
-        for(Node node : graph.nodes())
+    public static List<List<NautyNode>> partition(Graph graph) {
+        Map<Integer, List<NautyNode>> byLabel = new LinkedHashMap<>();
+        for(NautyNode node : graph.nodes())
         {
             if(!byLabel.containsKey(node.label()))
                 byLabel.put(node.label(), new ArrayList<>());
@@ -99,7 +99,7 @@ public class Nauty {
         List<Integer> keys = new ArrayList<>(byLabel.keySet());
         Collections.sort(keys);
 
-        List<List<Node>> result = new ArrayList<>();
+        List<List<NautyNode>> result = new ArrayList<>();
 
         for(Integer key : keys)
             result.add(byLabel.get(key));
@@ -109,10 +109,10 @@ public class Nauty {
     /**
      * Refine the given partition to the coarsest equitable refinement.
      */
-    public static List<List<Node>> refine(List<List<Node>> partition)
+    public static List<List<NautyNode>> refine(List<List<NautyNode>> partition)
     {
-        List<List<Node>> result = new ArrayList<>();
-        for(List<Node> cell : partition)
+        List<List<NautyNode>> result = new ArrayList<>();
+        for(List<NautyNode> cell : partition)
             result.add(new ArrayList<>(cell));
 
         while(searchShattering(result));
@@ -120,7 +120,7 @@ public class Nauty {
         return result;
     }
 
-    private static boolean searchShattering(List<List<Node>> partition)
+    private static boolean searchShattering(List<List<NautyNode>> partition)
     {
         // * Loop through every pair of partition cells
         for(int i = 0; i < partition.size(); i++)
@@ -129,7 +129,7 @@ public class Nauty {
             {
                 if(shatters(partition.get(i), partition.get(j)))
                 {
-                    List<List<Node>> shattering = shattering(partition.get(i), partition.get(j));
+                    List<List<NautyNode>> shattering = shattering(partition.get(i), partition.get(j));
 
                     // * This edit to the list we're looping over is safe,
                     //   because we return right after
@@ -148,11 +148,11 @@ public class Nauty {
     /**
      * Re-orders the nodes in 'from' by their degree relative to 'to'
      */
-    public static List<List<Node>> shattering(List<Node> from, List<Node> to)
+    public static List<List<NautyNode>> shattering(List<NautyNode> from, List<NautyNode> to)
     {
-        Map<Integer, List<Node>> byDegree = new LinkedHashMap<>();
+        Map<Integer, List<NautyNode>> byDegree = new LinkedHashMap<>();
 
-        for(Node node : from)
+        for(NautyNode node : from)
         {
             int degree = degree(node, to);
 
@@ -165,7 +165,7 @@ public class Nauty {
         List<Integer> keys = new ArrayList<>(byDegree.keySet());
         Collections.sort(keys);
 
-        List<List<Node>> result = new ArrayList<>();
+        List<List<NautyNode>> result = new ArrayList<>();
         for(int key : keys)
             result.add(byDegree.get(key));
 
@@ -176,10 +176,10 @@ public class Nauty {
      * A set of nodes shatters another set of nodes, if the outdegree
      * relative to the second set differs between members of the first.
      */
-    public static boolean shatters(List<Node> from, List<Node> to) {
+    public static boolean shatters(List<NautyNode> from, List<NautyNode> to) {
         int num = -1;
 
-        for(Node node : from)
+        for(NautyNode node : from)
             if(num == -1)
                 num = degree(node, to);
             else
@@ -189,11 +189,11 @@ public class Nauty {
         return false;
     }
 
-    public static int degree(Node from, List<Node> to)
+    public static int degree(NautyNode from, List<NautyNode> to)
     {
         int sum = 0;
 
-        for(Node node : to) // * this should automatically work right for directed/undirected
+        for(NautyNode node : to) // * this should automatically work right for directed/undirected
             if (from.connected(node)) {
                 sum++;
             }
@@ -201,20 +201,20 @@ public class Nauty {
         return sum;
     }
 
-    private record SNode(List<List<Node>> partition) {
+    private record SNode(List<List<NautyNode>> partition) {
         public List<SNode> children() {
                 List<SNode> children = new ArrayList<>(partition.size() + 1);
 
                 for (int cellIndex = 0; cellIndex < partition.size(); cellIndex++) {
-                    List<Node> cell = partition.get(cellIndex);
+                    List<NautyNode> cell = partition.get(cellIndex);
                     if (cell.size() > 1)
                         for (int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++) {
-                            List<Node> rest = new ArrayList<>(cell);
-                            List<Node> single = Collections.singletonList(rest.remove(nodeIndex));
+                            List<NautyNode> rest = new ArrayList<>(cell);
+                            List<NautyNode> single = Collections.singletonList(rest.remove(nodeIndex));
 
                             // * Careful... We're shallow copying the cells. We must
                             //   make sure never to modify a cell.
-                            List<List<Node>> newPartition = new ArrayList<>(partition);
+                            List<List<NautyNode>> newPartition = new ArrayList<>(partition);
 
                             newPartition.remove(cellIndex);
                             newPartition.add(cellIndex, single);
@@ -232,23 +232,23 @@ public class Nauty {
      * Converts a trivial partition to a string representing the graph's
      * structure (without labels) in a particular format.
      */
-    private static String toString(List<List<Node>> partition)
+    private static String toString(List<List<NautyNode>> partition)
     {
         StringBuilder buffer = new StringBuilder();
 
         int[] order = new int[partition.size()];
         int i = 0;
-        for(List<Node> cell : partition) {
+        for(List<NautyNode> cell : partition) {
             order[cell.getFirst().index()] = i;
             i++;
         }
 
-        for(List<Node> cell : partition) {
+        for(List<NautyNode> cell : partition) {
             assert(cell.size() == 1);
-            Node current = cell.getFirst();
+            NautyNode current = cell.getFirst();
 
             List<Integer> neighbors = new ArrayList<>(current.neighbors().size());
-            for(Node neighbor : current.neighbors())
+            for(NautyNode neighbor : current.neighbors())
             {
                 int rawIndex = neighbor.index(); // index in the original graph
                 int neighborIndex = order[rawIndex]; // index in the re-ordered graph
