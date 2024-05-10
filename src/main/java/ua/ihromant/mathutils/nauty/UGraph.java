@@ -12,7 +12,4 @@ public interface UGraph<L> extends Graph<L>
     @Override
 
     public List<? extends UNode<L>> nodes();
-
-    @Override
-    public UNode<L> get(int i);
 }

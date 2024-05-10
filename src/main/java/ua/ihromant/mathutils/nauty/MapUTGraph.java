@@ -425,10 +425,4 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         for(int i : series(nodeList.size()))
             nodeList.get(i).index = i;
     }
-
-    @Override
-    public UTNode<L, T> get(int i)
-    {
-        return nodes().get(i);
-    }
 }

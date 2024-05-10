@@ -54,11 +54,4 @@ public interface Graph<L> {
     public int size();
 
     public long numLinks();
-
-    /**
-     * Shorthand for nodes().get(i);
-     * @param i
-     * @return
-     */
-    public Node<L> get(int i);
 }
