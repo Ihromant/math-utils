@@ -1,10 +1,10 @@
 package ua.ihromant.mathutils.nauty;
 
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.List;
 
 public record NautyNode(NautyWrapper wrap, boolean line, int idx) {
-    public Collection<NautyNode> neighbors() {
+    public List<NautyNode> neighbors() {
         if (line) {
             int[] pts = wrap.liner().points(idx);
             return Arrays.stream(pts).mapToObj(i -> new NautyNode(wrap, false, i)).toList();

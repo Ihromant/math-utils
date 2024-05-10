@@ -2,11 +2,12 @@ package ua.ihromant.mathutils.nauty;
 
 import nl.peterbloem.kit.Order;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -44,10 +45,8 @@ public class Nauty {
      * This object encapsulates the information in a single search.
      */
     private static class Search {
-        private final Deque<SNode> buffer = new LinkedList<>();
-
+        private final Deque<SNode> buffer = new ArrayDeque<>();
         private SNode max;
-        private String maxString;
 
         public Search(List<List<NautyNode>> initial) {
             // ** Set up the search stack
@@ -70,17 +69,9 @@ public class Nauty {
         }
 
         private void observe(SNode node) {
-            String nodeString = Nauty.toString(node.partition);
-
-            if (max == null || nodeString.compareTo(maxString) > 0) {
-                System.out.println(Nauty.toString(node.partition) + " " + maxString);
+            if (max == null || node.compareTo(max) > 0) {
                 max = node;
-                maxString = nodeString;
             }
-//            if (max == null || node.compareTo(max) > 0) {
-//                System.out.println(Nauty.toString(node.partition) + " " + (max == null ? null : Nauty.toString(max.partition)));
-//                max = node;
-//            }
         }
 
         public List<List<NautyNode>> max() {
@@ -184,79 +175,83 @@ public class Nauty {
 
     private static class SNode implements Comparable<SNode> {
         private final List<List<NautyNode>> partition;
+        private int[][] neighborsView;
 
         private SNode(List<List<NautyNode>> partition) {
             this.partition = partition;
         }
 
         public List<SNode> children() {
-                List<SNode> children = new ArrayList<>(partition.size() + 1);
+            List<SNode> children = new ArrayList<>(partition.size() + 1);
 
-                for (int cellIndex = 0; cellIndex < partition.size(); cellIndex++) {
-                    List<NautyNode> cell = partition.get(cellIndex);
-                    if (cell.size() > 1)
-                        for (int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++) {
-                            List<NautyNode> rest = new ArrayList<>(cell);
-                            List<NautyNode> single = Collections.singletonList(rest.remove(nodeIndex));
+            for (int cellIndex = 0; cellIndex < partition.size(); cellIndex++) {
+                List<NautyNode> cell = partition.get(cellIndex);
+                if (cell.size() > 1)
+                    for (int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++) {
+                        List<NautyNode> rest = new ArrayList<>(cell);
+                        List<NautyNode> single = Collections.singletonList(rest.remove(nodeIndex));
 
-                            // * Careful... We're shallow copying the cells. We must
-                            //   make sure never to modify a cell.
-                            List<List<NautyNode>> newPartition = new ArrayList<>(partition);
+                        // * Careful... We're shallow copying the cells. We must
+                        //   make sure never to modify a cell.
+                        List<List<NautyNode>> newPartition = new ArrayList<>(partition);
 
-                            newPartition.remove(cellIndex);
-                            newPartition.add(cellIndex, single);
-                            newPartition.add(cellIndex + 1, rest);
+                        newPartition.remove(cellIndex);
+                        newPartition.add(cellIndex, single);
+                        newPartition.add(cellIndex + 1, rest);
 
-                            children.add(new SNode(newPartition));
-                        }
-                }
-
-                return children;
+                        children.add(new SNode(newPartition));
+                    }
             }
+
+            return children;
+        }
+
+        private int[][] neighborsView() {
+            if (neighborsView == null) {
+                neighborsView = new int[partition.size()][];
+                int[] order = new int[partition.size()];
+                for (int i = 0; i < partition.size(); i++) {
+                    order[partition.get(i).getFirst().index()] = i;
+                }
+                for (int i = 0; i < partition.size(); i++) {
+                    List<NautyNode> cell = partition.get(i);
+                    assert(cell.size() == 1);
+                    NautyNode current = cell.getFirst();
+
+                    List<NautyNode> ngb = current.neighbors();
+                    int[] neighbors = new int[ngb.size()];
+                    for (int j = 0; j < ngb.size(); j++) {
+                        NautyNode neighbor = ngb.get(j);
+                        int rawIndex = neighbor.index(); // index in the original graph
+                        int neighborIndex = order[rawIndex]; // index in the re-ordered graph
+
+                        neighbors[j] = neighborIndex;
+                    }
+
+                    Arrays.sort(neighbors);
+                    neighborsView[i] = neighbors;
+                }
+            }
+            return neighborsView;
+        }
 
         @Override
         public int compareTo(SNode that) {
-            // TODO implement correct compare
+            int[][] tsNv = this.neighborsView();
+            int[][] ttNv = that.neighborsView();
+            for (int i = 0; i < partition.size(); i++) {
+                int[] tsL = tsNv[i];
+                int[] ttL = ttNv[i];
+                // TODO if size differs, check sizes, but probably should be the same
+                for (int j = 0; j < tsL.length; j++) {
+                    int nDiff = tsL[j] - ttL[j];
+                    if (nDiff != 0) {
+                        return nDiff;
+                    }
+                }
+            }
             return 0;
         }
-    }
-
-    /**
-     * Converts a trivial partition to a string representing the graph's
-     * structure (without labels) in a particular format.
-     */
-    private static String toString(List<List<NautyNode>> partition)
-    {
-        StringBuilder buffer = new StringBuilder();
-
-        int[] order = new int[partition.size()];
-        int i = 0;
-        for(List<NautyNode> cell : partition) {
-            order[cell.getFirst().index()] = i;
-            i++;
-        }
-
-        for(List<NautyNode> cell : partition) {
-            assert(cell.size() == 1);
-            NautyNode current = cell.getFirst();
-
-            List<Integer> neighbors = new ArrayList<>(current.neighbors().size());
-            for(NautyNode neighbor : current.neighbors())
-            {
-                int rawIndex = neighbor.index(); // index in the original graph
-                int neighborIndex = order[rawIndex]; // index in the re-ordered graph
-
-                neighbors.add(neighborIndex);
-            }
-
-            Collections.sort(neighbors);
-            for(int neighborIndex : neighbors)
-                buffer.append(neighborIndex).append(' ');
-
-            buffer.append(',');
-        }
-
-        return buffer.toString();
     }
 
     public static Order canonicalOrdering(NautyWrapper graph) {
