@@ -16,7 +16,7 @@ public class Nauty {
      */
     private static Order order(Graph graph) {
         // * Start with the unit partition
-        List<List<NautyNode>> partition = partition(graph);
+        List<List<NautyNode>> partition = graph.partition();
 
         // * The equitable refinement procedure.
         partition = refine(partition);
@@ -85,25 +85,6 @@ public class Nauty {
         {
             return max.partition();
         }
-    }
-
-    public static List<List<NautyNode>> partition(Graph graph) {
-        Map<Integer, List<NautyNode>> byLabel = new LinkedHashMap<>();
-        for(NautyNode node : graph.nodes())
-        {
-            if(!byLabel.containsKey(node.label()))
-                byLabel.put(node.label(), new ArrayList<>());
-            byLabel.get(node.label()).add(node);
-        }
-
-        List<Integer> keys = new ArrayList<>(byLabel.keySet());
-        Collections.sort(keys);
-
-        List<List<NautyNode>> result = new ArrayList<>();
-
-        for(Integer key : keys)
-            result.add(byLabel.get(key));
-        return result;
     }
 
     /**
