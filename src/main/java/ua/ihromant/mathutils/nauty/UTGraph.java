@@ -15,7 +15,5 @@ import java.util.Set;
 public interface UTGraph<L, T> extends TGraph<L, T>, UGraph<L>
 {
 
-    public Set<? extends UTNode<L, T>> nodes(L label);
-
     public List<? extends UTNode<L, T>> nodes();
 }

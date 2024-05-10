@@ -1,8 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 /**
  *
@@ -44,8 +42,6 @@ import java.util.Set;
  * @param <L>
  */
 public interface Graph<L> {
-    public Collection<? extends Node<L>> nodes(L label);
-
     public List<? extends Node<L>> nodes();
 
     /**

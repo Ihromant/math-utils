@@ -224,16 +224,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
     }
 
     @Override
-    public Set<? extends UTNode<L, T>> nodes(L label)
-    {
-        Set<MapUTNode> n = nodes.get(label);
-        if(n == null)
-            return Collections.emptySet();
-
-        return Collections.unmodifiableSet(n);
-    }
-
-    @Override
     public long numLinks()
     {
         return numLinks;

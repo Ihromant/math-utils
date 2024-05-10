@@ -16,8 +16,6 @@ import java.util.Set;
 public interface TGraph<L, T> extends Graph<L>
 {
 
-    public Collection<? extends TNode<L, T>> nodes(L label);
-
     public List<? extends TNode<L, T>> nodes();
 
     public long numLinks();
