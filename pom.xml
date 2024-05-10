@@ -26,10 +26,22 @@
             <version>2.2</version>
         </dependency>
         <dependency>
+            <groupId>com.github.pbloem</groupId>
+            <artifactId>kit</artifactId>
+            <version>v0.1.13</version>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <repositories>
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+    </repositories>
 </project>
