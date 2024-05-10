@@ -17,8 +17,6 @@ public interface UTNode<L, T> extends UNode<L>, TNode<L, T>
 
     public Collection<? extends UTLink<L, T>> links(TNode<L, T> neighbor);
 
-    public Collection<? extends UTNode<L, T>> neighbors(L label);
-
     public Collection<? extends UTLink<L, T>> links(Node<L> other);
 
     /**

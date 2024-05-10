@@ -10,9 +10,6 @@ public interface UNode<L> extends Node<L>
     @Override
     public Collection<? extends ULink<L>> links();
 
-    @Override
-    public Collection<? extends UNode<L>> neighbors(L label);
-
     public Collection<? extends ULink<L>> links(Node<L> other);
 
     /**

@@ -142,20 +142,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             return label;
         }
 
-        @Override
-        public Set<MapUTNode> neighbors(L label)
-        {
-            checkDead();
-
-            Set<MapUTNode> result = new LinkedHashSet<MapUTNode>();
-            for(MapUTNode node : neighbors)
-                if((label == null && node.label == null)
-                        || (label != null && label.equals(node.label)))
-                    result.add(node);
-
-            return result;
-        }
-
         @SuppressWarnings("unchecked")
         @Override
         public MapUTLink connect(Node<L> other)
@@ -203,36 +189,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             modCount++;
 
             return link;
-        }
-
-        @Override
-        public void disconnect(Node<L> other)
-        {
-            checkDead();
-
-            if(MapUTGraph.this != other.graph())
-                throw new IllegalArgumentException("Can only disconnect nodes that belong to the same graph.");
-
-            if(!connected(other))
-                return;
-
-            MapUTNode mdtOther = (MapUTNode)other;
-
-            int removed = 0;
-
-            List<MapUTLink> toRemove = new LinkedList<MapUTLink>();
-            for(T tag : links.keySet())
-            {
-                for(MapUTLink link : links.get(tag))
-                    if(link.other(this).equals(mdtOther))
-                        toRemove.add(link);
-            }
-
-            for(MapUTLink link : toRemove)
-                link.remove();
-
-            if(removed > 0)
-                modCount++;
         }
 
         @Override
@@ -309,34 +265,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         public boolean dead()
         {
             return dead;
-        }
-
-        /**
-         * Removes this node from the graph
-         */
-        public void remove()
-        {
-            checkDead();
-
-            // * Disconnect from the graph
-
-            // * Copy the nodes over to avoid a ConcurrentModificationException
-            List<MapUTNode> ns = new ArrayList<MapUTNode>(neighbors);
-
-            for(MapUTNode to: ns)
-                disconnect(to);
-
-            nodeList.remove(this);
-            nodes.get(label).remove(this);
-
-            updateIndices();
-
-            // * kill the node
-            dead = true;
-
-            // * disconnect() won't increment the modcount if this node was
-            //   already orphaned
-            modCount ++;
         }
 
 

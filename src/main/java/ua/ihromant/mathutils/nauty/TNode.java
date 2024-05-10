@@ -13,8 +13,6 @@ public interface TNode<L, T> extends Node<L>
 {
     public Collection<? extends TNode<L, T>> neighbors();
 
-    public Collection<? extends TNode<L, T>> neighbors(L label);
-
     /**
      * <p>Connects this node to another node. </p>
      * <p>

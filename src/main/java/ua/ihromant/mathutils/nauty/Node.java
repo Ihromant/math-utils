@@ -23,8 +23,6 @@ public interface Node<L>
 
     public L label();
 
-    public Collection<? extends Node<L>> neighbors(L label);
-
     /**
      * <p>Connects this node to another node. </p>
      * <p>
@@ -38,15 +36,6 @@ public interface Node<L>
      * @param other
      */
     public Link<L> connect(Node<L> other);
-
-    /**
-     * Removes all links existing between this node and the given node.
-     *
-     * For directed graphs, this removes links going in both directions.
-     *
-     * @param other
-     */
-    public void disconnect(Node<L> other);
 
     /**
      * Whether the current node is connected to the given node.
@@ -68,13 +57,6 @@ public interface Node<L>
      * @return
      */
     public Collection<? extends Link<L>> links(Node<L> other);
-
-
-    /**
-     * Disconnects and removes this node from the graph
-     *
-     */
-    public void remove();
 
     /**
      * Returns the graph object to which these nodes belong. Nodes always belong
