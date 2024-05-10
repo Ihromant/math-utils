@@ -108,7 +108,7 @@ public class Nauty {
         Map<L, List<Node<L>>> byLabel = new LinkedHashMap<L, List<Node<L>>>();
         for(Node<L> node : graph.nodes())
         {
-            if(! byLabel.containsKey(node.label()))
+            if(!byLabel.containsKey(node.label()))
                 byLabel.put(node.label(), new ArrayList<Node<L>>());
             byLabel.get(node.label()).add(node);
         }

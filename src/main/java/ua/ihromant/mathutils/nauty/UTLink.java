@@ -19,5 +19,4 @@ public interface UTLink<L, T> extends TLink<L, T>, ULink<L>
 
     public Collection<? extends UTNode<L, T>> nodes();
 
-    public UTGraph<L, T> graph();
 }

@@ -97,14 +97,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             return label;
         }
 
-        @Override
-        public boolean connected(Node<L> other)
-        {
-            checkDead();
-
-            return neighbors.contains(other);
-        }
-
         public int id()
         {
             checkDead();
@@ -156,19 +148,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
             checkDead();
 
             return index;
-        }
-
-
-        @Override
-        public int degree()
-        {
-            checkDead();
-
-            int n = 0;
-            for(T tag : links.keySet())
-                n += links.get(tag).size();
-
-            return n;
         }
 
         @Override
@@ -252,48 +231,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         public Collection<? extends UTNode<L, T>> nodes()
         {
             return Arrays.asList(first, second);
-        }
-
-        @Override
-        public UTGraph<L, T> graph()
-        {
-            return MapUTGraph.this;
-        }
-
-        @Override
-        public void remove()
-        {
-            first.links.get(tag).remove(this);
-            second.links.get(tag).remove(this);
-
-            // * check whether second should be removed from first.neighborsTo
-            boolean occurs = false;
-            for(T tag : first.links.keySet())
-                for(MapUTLink link : first.links.get(tag))
-                    if(link.second().equals(second))
-                        occurs = true;
-            if(! occurs)
-                first.neighbors.remove(second);
-
-            // * check whether first should be removed from second.neighborsFrom
-            occurs = false;
-            for(T tag : second.links.keySet())
-                for(MapUTLink link : second.links.get(tag))
-                    if(link.first().equals(first))
-                        occurs = true;
-            if(! occurs)
-                second.neighbors.remove(first);
-
-            dead = true;
-
-            numLinks --;
-            modCount++;
-        }
-
-        @Override
-        public boolean dead()
-        {
-            return dead;
         }
 
         public String toString()
