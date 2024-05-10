@@ -70,7 +70,7 @@ public class Nauty {
         }
 
         private void observe(SNode node) {
-            String nodeString = Nauty.toString(node.partition());
+            String nodeString = Nauty.toString(node.partition);
 
             if (max == null || nodeString.compareTo(maxString) > 0) {
                 System.out.println(Nauty.toString(node.partition) + " " + maxString);
@@ -84,7 +84,7 @@ public class Nauty {
         }
 
         public List<List<NautyNode>> max() {
-            return max.partition();
+            return max.partition;
         }
     }
 
@@ -182,7 +182,13 @@ public class Nauty {
         return sum;
     }
 
-    private record SNode(List<List<NautyNode>> partition) implements Comparable<SNode> {
+    private static class SNode implements Comparable<SNode> {
+        private final List<List<NautyNode>> partition;
+
+        private SNode(List<List<NautyNode>> partition) {
+            this.partition = partition;
+        }
+
         public List<SNode> children() {
                 List<SNode> children = new ArrayList<>(partition.size() + 1);
 
