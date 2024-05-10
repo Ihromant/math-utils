@@ -14,13 +14,6 @@ import java.util.Set;
  */
 public interface UTGraph<L, T> extends TGraph<L, T>, UGraph<L>
 {
-    /**
-     * Returns the first node in the Graph which has the given label
-     *
-     * @param label
-     * @return
-     */
-    public UTNode<L, T> node(L label);
 
     public Set<? extends UTNode<L, T>> nodes(L label);
 

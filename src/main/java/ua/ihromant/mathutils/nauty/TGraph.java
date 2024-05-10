@@ -15,13 +15,6 @@ import java.util.Set;
  */
 public interface TGraph<L, T> extends Graph<L>
 {
-    /**
-     * Returns the first node in the Graph which has the given label
-     *
-     * @param label
-     * @return
-     */
-    public TNode<L, T> node(L label);
 
     public Collection<? extends TNode<L, T>> nodes(L label);
 
@@ -35,17 +28,4 @@ public interface TGraph<L, T> extends Graph<L>
     public TNode<L, T> add(L label);
 
     public long numLinks();
-
-    /**
-     *
-     * Checks whether two nodes exist with the given labels that are connected.
-     *
-     * If multiple pairs of nodes exist with these labels, only one of them
-     * needs to be connected for the method to return true.
-     *
-     * @param first
-     * @param second
-     * @return
-     */
-    public boolean connected(L from, L to);
 }

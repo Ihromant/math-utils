@@ -5,8 +5,6 @@ import java.util.List;
 
 public interface UGraph<L> extends Graph<L>
 {
-    @Override
-    public UNode<L> node(L label);
 
     @Override
     public Collection<? extends UNode<L>> nodes(L label);

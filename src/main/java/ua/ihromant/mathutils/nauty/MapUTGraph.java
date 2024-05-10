@@ -342,16 +342,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         }
     }
 
-    @Override
-    public UTNode<L, T> node(L label)
-    {
-        Set<MapUTNode> n = nodes.get(label);
-        if(n == null)
-            return null;
-
-        return n.iterator().next();
-    }
-
     public int size()
     {
         return nodeList.size();
@@ -431,16 +421,6 @@ public class MapUTGraph<L, T> implements UTGraph<L, T>
         sb.append("}");
 
         return sb.toString();
-    }
-
-    @Override
-    public boolean connected(L first, L second)
-    {
-        for(MapUTNode f : nodes.get(first))
-            for(MapUTNode s : nodes.get(second))
-                if(f.connected(s))
-                    return true;
-        return false;
     }
 
     @Override

@@ -43,16 +43,7 @@ import java.util.Set;
  *
  * @param <L>
  */
-public interface Graph<L>
-{
-    /**
-     * Returns the first node in the Graph which has the given label
-     *
-     * @param label
-     * @return
-     */
-    public Node<L> node(L label);
-
+public interface Graph<L> {
     public Collection<? extends Node<L>> nodes(L label);
 
     public List<? extends Node<L>> nodes();
