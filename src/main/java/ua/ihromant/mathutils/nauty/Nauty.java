@@ -93,15 +93,11 @@ public class Nauty {
         return result;
     }
 
-    private static boolean searchShattering(List<List<NautyNode>> partition)
-    {
+    private static boolean searchShattering(List<List<NautyNode>> partition) {
         // * Loop through every pair of partition cells
-        for(int i = 0; i < partition.size(); i++)
-        {
-            for(int j = 0; j < partition.size(); j++)
-            {
-                if(shatters(partition.get(i), partition.get(j)))
-                {
+        for(int i = 0; i < partition.size(); i++) {
+            for(int j = 0; j < partition.size(); j++) {
+                if(shatters(partition.get(i), partition.get(j))) {
                     List<List<NautyNode>> shattering = shattering(partition.get(i), partition.get(j));
 
                     // * This edit to the list we're looping over is safe,
@@ -121,12 +117,10 @@ public class Nauty {
     /**
      * Re-orders the nodes in 'from' by their degree relative to 'to'
      */
-    public static List<List<NautyNode>> shattering(List<NautyNode> from, List<NautyNode> to)
-    {
+    public static List<List<NautyNode>> shattering(List<NautyNode> from, List<NautyNode> to) {
         Map<Integer, List<NautyNode>> byDegree = new LinkedHashMap<>();
 
-        for(NautyNode node : from)
-        {
+        for(NautyNode node : from) {
             int degree = degree(node, to);
 
             if(!byDegree.containsKey(degree))
@@ -165,10 +159,11 @@ public class Nauty {
     public static int degree(NautyNode from, List<NautyNode> to) {
         int sum = 0;
 
-        for(NautyNode node : to) // * this should automatically work right for directed/undirected
+        for (NautyNode node : to) { // * this should automatically work right for directed/undirected
             if (from.connected(node)) {
                 sum++;
             }
+        }
 
         return sum;
     }
@@ -186,24 +181,30 @@ public class Nauty {
 
             for (int cellIndex = 0; cellIndex < partition.size(); cellIndex++) {
                 List<NautyNode> cell = partition.get(cellIndex);
-                if (cell.size() > 1)
+                if (cell.size() > 1) {
                     for (int nodeIndex = 0; nodeIndex < cell.size(); nodeIndex++) {
-                        List<NautyNode> rest = new ArrayList<>(cell);
-                        List<NautyNode> single = Collections.singletonList(rest.remove(nodeIndex));
-
-                        // * Careful... We're shallow copying the cells. We must
-                        //   make sure never to modify a cell.
-                        List<List<NautyNode>> newPartition = new ArrayList<>(partition);
-
-                        newPartition.remove(cellIndex);
-                        newPartition.add(cellIndex, single);
-                        newPartition.add(cellIndex + 1, rest);
+                        List<List<NautyNode>> newPartition = newPartition(cell, nodeIndex, cellIndex);
 
                         children.add(new SNode(newPartition));
                     }
+                }
             }
 
             return children;
+        }
+
+        private List<List<NautyNode>> newPartition(List<NautyNode> cell, int nodeIndex, int cellIndex) {
+            List<NautyNode> rest = new ArrayList<>(cell);
+            List<NautyNode> single = Collections.singletonList(rest.remove(nodeIndex));
+
+            // * Careful... We're shallow copying the cells. We must
+            //   make sure never to modify a cell.
+            List<List<NautyNode>> newPartition = new ArrayList<>(partition);
+
+            newPartition.remove(cellIndex);
+            newPartition.add(cellIndex, single);
+            newPartition.add(cellIndex + 1, rest);
+            return newPartition;
         }
 
         private int[][] neighborsView() {
