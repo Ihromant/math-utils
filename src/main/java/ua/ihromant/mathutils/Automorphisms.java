@@ -4,10 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.OptionalInt;
 import java.util.function.Consumer;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class Automorphisms {
     public static long autCount(Liner liner) {
@@ -457,13 +454,12 @@ public class Automorphisms {
     private static int[] altIsomorphism(Liner first, Liner second, int[] partialPoints, BitSet pointsAssignedOld, int[] partialLines, BitSet linesAssignedOld) {
         BitSet toBanned = new BitSet();
         int from = getFrom(first.beamDist(), pointsAssignedOld);
-        int fromCnt = first.lines(from).length;
         for (int pp : partialPoints) {
             if (pp >= 0) {
                 toBanned.set(pp);
             }
         }
-        br: for (int to : second.beamDist()[fromCnt]) {
+        br: for (int to : second.beamDist()[first.lines(from).length]) {
             if (toBanned.get(to)) {
                 continue;
             }
@@ -548,10 +544,6 @@ public class Automorphisms {
 
         public int[][] array() {
             return list.toArray(int[][]::new);
-        }
-
-        public Stream<int[]> stream() {
-            return list.stream();
         }
     }
 
