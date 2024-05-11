@@ -135,6 +135,15 @@ public interface TernaryRing {
         return true;
     }
 
+    default boolean oneComm() {
+        for (int x : elements()) {
+            if (add(x, 1) != add(1, x)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     default boolean mulComm() {
         for (int a : elements()) {
             for (int b : elements()) {
