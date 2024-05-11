@@ -453,7 +453,7 @@ public class BatchAffineTest {
 
     @Test
     public void batchBooleanProperties() throws IOException {
-        EqualityProcessor processor = new EqualityProcessor(true, false);
+        EqualityProcessor processor = new EqualityProcessor(false, true);
         //BiConsumer<String, AffineTernaryRing> processor = BatchAffineTest::printLinearTables;
         for (String plName : dropped.keySet()) {
             int k = 9;
