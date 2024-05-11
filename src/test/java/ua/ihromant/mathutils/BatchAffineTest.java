@@ -12,9 +12,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.SequencedMap;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
@@ -367,7 +369,7 @@ public class BatchAffineTest {
                 Triangle tr = liner.trOf(triangle);
                 TernaryRing ring = new AffineTernaryRing(liner, tr);
                 for (Map.Entry<Integer, List<TernaryRing>> e : byIso.entrySet()) {
-                    if (e.getValue().getFirst().biLoopEquals(ring)) {
+                    if (e.getValue().getFirst().biLoopEquals(ring, true, true)) {
                         e.getValue().add(ring);
                         continue ex;
                     }
@@ -451,7 +453,8 @@ public class BatchAffineTest {
 
     @Test
     public void batchBooleanProperties() throws IOException {
-        BiConsumer<String, AffineTernaryRing> processor = BatchAffineTest::printLinearTables;
+        EqualityProcessor processor = new EqualityProcessor(true, false);
+        //BiConsumer<String, AffineTernaryRing> processor = BatchAffineTest::printLinearTables;
         for (String plName : dropped.keySet()) {
             int k = 9;
             try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
@@ -469,6 +472,51 @@ public class BatchAffineTest {
                     }
                     System.out.println();
                 }
+            }
+        }
+        processor.finish();
+    }
+
+    private static class EqualityProcessor implements BiConsumer<String, AffineTernaryRing> {
+        private final Map<String, SequencedMap<String, AffineTernaryRing>> grouped = new LinkedHashMap<>();
+        private final boolean incAdd;
+        private final boolean incMul;
+
+        public EqualityProcessor(boolean incAdd, boolean incMul) {
+            this.incAdd = incAdd;
+            this.incMul = incMul;
+        }
+
+        @Override
+        public void accept(String name, AffineTernaryRing ring) {
+            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
+                if (e.getValue().firstEntry().getValue().biLoopEquals(ring, incAdd, incMul)) {
+                    e.getValue().put(name + "-" + ring.trIdx(), ring);
+                    return;
+                }
+            }
+            SequencedMap<String, AffineTernaryRing> map = new LinkedHashMap<>();
+            map.put(name + "-" + ring.trIdx(), ring);
+            grouped.put(name + "-" + ring.trIdx(), map);
+        }
+
+        public void finish() {
+            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
+                if (incAdd && incMul && e.getValue().size() == 1) {
+                    continue;
+                }
+                System.out.println("Unique biloop by " + (incAdd ? "addition" + (incMul ? " and " : "") : "")
+                        + (incMul ? "multiplication" : "") + ": " + e.getKey());
+                AffineTernaryRing ring = e.getValue().firstEntry().getValue();
+                if (incAdd) {
+                    System.out.println("Addition");
+                    Arrays.stream(ring.addMatrix()).forEach(arr -> System.out.println(Arrays.toString(arr)));
+                }
+                if (incMul) {
+                    System.out.println("Multiplication");
+                    Arrays.stream(ring.mulMatrix()).forEach(arr -> System.out.println(Arrays.toString(arr)));
+                }
+                System.out.println("Equal triangles " + e.getValue().keySet().size() + ": " + String.join(" ", e.getValue().keySet()));
             }
         }
     }

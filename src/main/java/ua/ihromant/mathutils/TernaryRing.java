@@ -261,7 +261,7 @@ public interface TernaryRing {
         return false;
     }
 
-    default boolean biLoopEquals(TernaryRing that) {
+    default boolean biLoopEquals(TernaryRing that, boolean incAdd, boolean incMul) {
         if (this.order() != that.order()) {
             return false;
         }
@@ -279,7 +279,7 @@ public interface TernaryRing {
                     permMulMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tMulMatrix[i][j]);
                 }
             }
-            if (Arrays.deepEquals(permAddMatrix, addMatrix) && Arrays.deepEquals(permMulMatrix, mulMatrix)) {
+            if ((!incAdd || Arrays.deepEquals(permAddMatrix, addMatrix)) && (!incMul || Arrays.deepEquals(permMulMatrix, mulMatrix))) {
                 return true;
             }
         }
