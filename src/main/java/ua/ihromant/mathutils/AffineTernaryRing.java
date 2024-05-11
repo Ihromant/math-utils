@@ -84,6 +84,10 @@ public class AffineTernaryRing implements TernaryRing {
         return opMatrix;
     }
 
+    public int trIdx() {
+        return liner.trIdx(new Triangle(o, u, w));
+    }
+
     private int parallel(int line, int point) {
         if (liner.flag(line, point)) {
             return line;

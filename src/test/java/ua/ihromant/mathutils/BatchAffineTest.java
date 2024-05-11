@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -415,8 +416,42 @@ public class BatchAffineTest {
         }
     }
 
+    private static void printBooleanProperties(String name, AffineTernaryRing ring) {
+        System.out.println("triangle:" + String.format("%8d", ring.trIdx())
+                + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
+                + ", rgtd:" + (ring.isRightDistributive() ? 1 : 0)
+                + ", addass:" + (ring.addAssoc() ? 1 : 0)
+                + ", mulass:" + (ring.mulAssoc() ? 1 : 0)
+                + ", addcom:" + (ring.addComm() ? 1 : 0)
+                + ", mulcom:" + (ring.mulComm() ? 1 : 0)
+                + ", addTSI:" + (ring.addTwoSidedInverse() ? 1 : 0)
+                + ", mulTSI:" + (ring.mulTwoSidedInverse() ? 1 : 0)
+                + ", lAddInv:" + (ring.addLeftInverse() ? 1 : 0)
+                + ", rAddInv:" + (ring.addRightInverse() ? 1 : 0)
+                + ", lMulInv:" + (ring.mulLeftInverse() ? 1 : 0)
+                + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
+                + ", linear:" + (ring.isLinear() ? 1 : 0)
+                + ", 1comm:" + (ring.oneComm() ? 1 : 0)
+        );
+    }
+
+    private static void printLinearTables(String name, AffineTernaryRing ring) {
+        if (!ring.isLinear()) {
+            return;
+        }
+        System.out.println(name + " triangle " + ring.trIdx());
+        int[][] additionMatrix = ring.addMatrix();
+        int[][] mulMatrix = ring.mulMatrix();
+        System.out.println("Addition");
+        Arrays.stream(additionMatrix).forEach(arr -> System.out.println(Arrays.toString(arr)));
+        System.out.println("Multiplication");
+        Arrays.stream(mulMatrix).forEach(arr -> System.out.println(Arrays.toString(arr)));
+        System.out.println();
+    }
+
     @Test
     public void batchBooleanProperties() throws IOException {
+        BiConsumer<String, AffineTernaryRing> processor = BatchAffineTest::printLinearTables;
         for (String plName : dropped.keySet()) {
             int k = 9;
             try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
@@ -429,23 +464,8 @@ public class BatchAffineTest {
                     String name = plName + "-" + dl + "-" + k;
                     System.out.println(name + " dropped line " + dl);
                     for (int triangle : uniqueTriangles.get(name)) {
-                        TernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
-                        System.out.println("triangle:" + String.format("%8d", triangle)
-                                + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
-                                + ", rgtd:" + (ring.isRightDistributive() ? 1 : 0)
-                                + ", addass:" + (ring.addAssoc() ? 1 : 0)
-                                + ", mulass:" + (ring.mulAssoc() ? 1 : 0)
-                                + ", addcom:" + (ring.addComm() ? 1 : 0)
-                                + ", mulcom:" + (ring.mulComm() ? 1 : 0)
-                                + ", addTSI:" + (ring.addTwoSidedInverse() ? 1 : 0)
-                                + ", mulTSI:" + (ring.mulTwoSidedInverse() ? 1 : 0)
-                                + ", lAddInv:" + (ring.addLeftInverse() ? 1 : 0)
-                                + ", rAddInv:" + (ring.addRightInverse() ? 1 : 0)
-                                + ", lMulInv:" + (ring.mulLeftInverse() ? 1 : 0)
-                                + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
-                                + ", linear:" + (ring.isLinear() ? 1 : 0)
-                                + ", 1comm:" + (ring.oneComm() ? 1 : 0)
-                        );
+                        AffineTernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
+                        processor.accept(name, ring);
                     }
                     System.out.println();
                 }
