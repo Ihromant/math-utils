@@ -451,87 +451,94 @@ public class Automorphisms {
         throw new IllegalStateException();
     }
 
-    private static int[] altIsomorphism(Liner first, Liner second, int[] partialPoints, BitSet pointsAssignedOld, int[] partialLines, BitSet linesAssignedOld) {
-        BitSet toBanned = new BitSet();
-        int from = getFrom(first.beamDist(), pointsAssignedOld);
-        for (int pp : partialPoints) {
+    private static int[] altIsomorphism(Liner first, Liner second, int[] oldPointsMap, BitSet oldPoints, int[] oldLinesMap, BitSet oldLines) {
+        BitSet toMapped = new BitSet();
+        int from = getFrom(first.beamDist(), oldPoints);
+        for (int pp : oldPointsMap) {
             if (pp >= 0) {
-                toBanned.set(pp);
+                toMapped.set(pp);
             }
         }
-        br: for (int to : second.beamDist()[first.lines(from).length]) {
-            if (toBanned.get(to)) {
+        for (int to : second.beamDist()[first.lines(from).length]) {
+            if (toMapped.get(to)) {
                 continue;
             }
-            int[] nextPartialPoints = partialPoints.clone();
-            int[] nextPartialLines = partialLines.clone();
-            BitSet nextPointsAssigned = (BitSet) pointsAssignedOld.clone();
-            BitSet nextLinesAssigned = (BitSet) linesAssignedOld.clone();
-            nextPartialPoints[from] = to;
-            BitSet pointsAssigned = new BitSet();
-            pointsAssigned.set(from);
-            while (!pointsAssigned.isEmpty()) {
-                nextPointsAssigned.or(pointsAssigned);
-                BitSet linesAssigned = new BitSet();
-                for (int p1 = nextPointsAssigned.nextSetBit(0); p1 >= 0; p1 = nextPointsAssigned.nextSetBit(p1 + 1)) {
-                    if (pointsAssigned.get(p1)) {
-                        continue;
-                    }
-                    int p1To = nextPartialPoints[p1];
-                    for (int p2 = pointsAssigned.nextSetBit(0); p2 >= 0; p2 = pointsAssigned.nextSetBit(p2 + 1)) {
-                        int lineFrom = first.line(p1, p2);
-                        int lineTo = second.line(p1To, nextPartialPoints[p2]);
-                        if (lineFrom == -1 && lineTo == -1) {
-                            continue;
-                        }
-                        if (lineFrom == -1 || lineTo == -1) {
-                            continue br;
-                        }
-                        int oldLine = nextPartialLines[lineFrom];
-                        if (oldLine >= 0) {
-                            if (oldLine != lineTo) {
-                                continue br;
-                            }
-                            continue;
-                        }
-                        nextPartialLines[lineFrom] = lineTo;
-                        linesAssigned.set(lineFrom);
-                    }
-                }
-                pointsAssigned.clear();
-                nextLinesAssigned.or(linesAssigned);
-                for (int l1 = nextLinesAssigned.nextSetBit(0); l1 >= 0; l1 = nextLinesAssigned.nextSetBit(l1 + 1)) {
-                    int l1To = nextPartialLines[l1];
-                    for (int l2 = linesAssigned.nextSetBit(0); l2 >= 0; l2 = linesAssigned.nextSetBit(l2 + 1)) {
-                        int intFrom = first.intersection(l1, l2);
-                        int intTo = second.intersection(l1To, nextPartialLines[l2]);
-                        if (intFrom == -1 && intTo == -1) {
-                            continue;
-                        }
-                        if (intFrom == -1 || intTo == -1) {
-                            continue br;
-                        }
-                        int oldPoint = nextPartialPoints[intFrom];
-                        if (oldPoint >= 0) {
-                            if (oldPoint != intTo) {
-                                continue br;
-                            }
-                            continue;
-                        }
-                        nextPartialPoints[intFrom] = intTo;
-                        pointsAssigned.set(intFrom);
-                    }
-                }
+            int[] newPointsMap = oldPointsMap.clone();
+            int[] newLinesMap = oldLinesMap.clone();
+            BitSet newPoints = (BitSet) oldPoints.clone();
+            BitSet newLines = (BitSet) oldLines.clone();
+            newPointsMap[from] = to;
+            BitSet newStepPoints = new BitSet();
+            newStepPoints.set(from);
+            if (enhanceFailed(first, second, newStepPoints, newPointsMap, newPoints, newLinesMap, newLines)) {
+                continue;
             }
-            if (nextPointsAssigned.nextClearBit(0) == first.pointCount()) {
-                return nextPartialPoints;
+            if (newPoints.nextClearBit(0) == first.pointCount()) {
+                return newPointsMap;
             }
-            int[] candidate = altIsomorphism(first, second, nextPartialPoints, nextPointsAssigned, nextPartialLines, nextLinesAssigned);
+            int[] candidate = altIsomorphism(first, second, newPointsMap, newPoints, newLinesMap, newLines);
             if (candidate != null) {
                 return candidate;
             }
         }
         return null;
+    }
+
+    private static boolean enhanceFailed(Liner first, Liner second, BitSet newStepPoints, int[] newPointsMap, BitSet newPoints, int[] newLinesMap, BitSet newLines) {
+        while (!newStepPoints.isEmpty()) {
+            newPoints.or(newStepPoints);
+            BitSet linesAssigned = new BitSet();
+            for (int p1 = newPoints.nextSetBit(0); p1 >= 0; p1 = newPoints.nextSetBit(p1 + 1)) {
+                if (newStepPoints.get(p1)) {
+                    continue;
+                }
+                int p1To = newPointsMap[p1];
+                for (int p2 = newStepPoints.nextSetBit(0); p2 >= 0; p2 = newStepPoints.nextSetBit(p2 + 1)) {
+                    int lineFrom = first.line(p1, p2);
+                    int lineTo = second.line(p1To, newPointsMap[p2]);
+                    if (lineFrom == -1 && lineTo == -1) {
+                        continue;
+                    }
+                    if (lineFrom == -1 || lineTo == -1) {
+                        return true;
+                    }
+                    int oldLine = newLinesMap[lineFrom];
+                    if (oldLine >= 0) {
+                        if (oldLine != lineTo) {
+                            return true;
+                        }
+                        continue;
+                    }
+                    newLinesMap[lineFrom] = lineTo;
+                    linesAssigned.set(lineFrom);
+                }
+            }
+            newStepPoints.clear();
+            newLines.or(linesAssigned);
+            for (int l1 = newLines.nextSetBit(0); l1 >= 0; l1 = newLines.nextSetBit(l1 + 1)) {
+                int l1To = newLinesMap[l1];
+                for (int l2 = linesAssigned.nextSetBit(0); l2 >= 0; l2 = linesAssigned.nextSetBit(l2 + 1)) {
+                    int intFrom = first.intersection(l1, l2);
+                    int intTo = second.intersection(l1To, newLinesMap[l2]);
+                    if (intFrom == -1 && intTo == -1) {
+                        continue;
+                    }
+                    if (intFrom == -1 || intTo == -1) {
+                        return true;
+                    }
+                    int oldPoint = newPointsMap[intFrom];
+                    if (oldPoint >= 0) {
+                        if (oldPoint != intTo) {
+                            return true;
+                        }
+                        continue;
+                    }
+                    newPointsMap[intFrom] = intTo;
+                    newStepPoints.set(intFrom);
+                }
+            }
+        }
+        return false;
     }
 
     private static class CollectingConsumer implements Consumer<int[]> {
