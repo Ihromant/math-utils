@@ -443,22 +443,28 @@ public class Automorphisms {
         return altIsomorphism(first, second, partialPoints, new BitSet(), partialLines, new BitSet());
     }
 
+    private static int getFrom(int[][] beamDist, BitSet pointsAssigned) {
+        for (int i = beamDist.length - 1; i >= 0; i--) {
+            for (int pt : beamDist[i]) {
+                if (!pointsAssigned.get(pt)) {
+                    return pt;
+                }
+            }
+        }
+        throw new IllegalStateException();
+    }
+
     private static int[] altIsomorphism(Liner first, Liner second, int[] partialPoints, BitSet pointsAssignedOld, int[] partialLines, BitSet linesAssignedOld) {
         BitSet toBanned = new BitSet();
-        int from = -1;
-        for (int i = 0; i < partialPoints.length; i++) {
-            int pp = partialPoints[i];
-            if (pp < 0) {
-                if (from < 0) {
-                    from = i;
-                }
-            } else {
+        int from = getFrom(first.beamDist(), pointsAssignedOld);
+        int fromCnt = first.lines(from).length;
+        for (int pp : partialPoints) {
+            if (pp >= 0) {
                 toBanned.set(pp);
             }
         }
-        int fromCnt = first.lines(from).length;
-        br: for (int to = toBanned.nextClearBit(0); to < partialPoints.length; to = toBanned.nextClearBit(to + 1)) {
-            if (second.lines(to).length != fromCnt) {
+        br: for (int to : second.beamDist()[fromCnt]) {
+            if (toBanned.get(to)) {
                 continue;
             }
             int[] nextPartialPoints = partialPoints.clone();

@@ -25,6 +25,7 @@ public class Liner {
     private final int[][] lines;
     private final boolean[][] flags;
     private final int[][] lookup;
+    private final int[][] beamDist;
     private final int[][] beams;
     private final int[][] intersections;
     private int[] canon;
@@ -33,42 +34,32 @@ public class Liner {
     public Liner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
-        int[] beamCounts = new int[pointCount];
         this.flags = new boolean[lines.length][pointCount];
+        int[] beamCounts = new int[pointCount];
+        int minLineLength = lines[0].length;
         for (int i = 0; i < lines.length; i++) {
-            for (int pt : lines[i]) {
+            int[] line = lines[i];
+            for (int pt : line) {
                 flags[i][pt] = true;
                 beamCounts[pt]++;
             }
-        }
-        this.beams = new int[pointCount][];
-        for (int pt = 0; pt < pointCount; pt++) {
-            beams[pt] = new int[beamCounts[pt]];
-            int idx = 0;
-            for (int ln = 0; ln < lines.length; ln++) {
-                if (flags[ln][pt]) {
-                    beams[pt][idx++] = ln;
-                }
+            if (line.length < minLineLength) {
+                minLineLength = line.length;
             }
         }
-        this.lookup = generateLookup();
-        this.intersections = generateIntersections();
-    }
-
-    private Liner(int pointCount, BitSet[] lines) {
-        this.pointCount = pointCount;
-        this.lines = Arrays.stream(lines).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
-        int[] beamCounts = new int[pointCount];
-        this.flags = new boolean[lines.length][pointCount];
-        for (int i = 0; i < lines.length; i++) {
-            for (int pt : this.lines[i]) {
-                flags[i][pt] = true;
-                beamCounts[pt]++;
-            }
+        int[] beamLengths = new int[(pointCount - 1) / (minLineLength - 1) + 1];
+        for (int beamCount : beamCounts) {
+            beamLengths[beamCount]++;
         }
         this.beams = new int[pointCount][];
+        this.beamDist = new int[beamLengths.length][0];
         for (int pt = 0; pt < pointCount; pt++) {
-            beams[pt] = new int[beamCounts[pt]];
+            int bc = beamCounts[pt];
+            if (beamDist[bc].length == 0) {
+                beamDist[bc] = new int[beamLengths[bc]];
+            }
+            beamDist[bc][beamDist[bc].length - beamLengths[bc]--] = pt;
+            beams[pt] = new int[bc];
             int idx = 0;
             for (int ln = 0; ln < lines.length; ln++) {
                 if (flags[ln][pt]) {
@@ -81,7 +72,8 @@ public class Liner {
     }
 
     public Liner(BitSet[] lines) {
-        this(Arrays.stream(lines).collect(Collector.of(BitSet::new, BitSet::or, (b1, b2) -> {b1.or(b2); return b1;})).cardinality(), lines);
+        this(Arrays.stream(lines).mapToInt(BitSet::length).max().orElseThrow(),
+                Arrays.stream(lines).map(bs -> bs.stream().toArray()).toArray(int[][]::new));
     }
 
     public static Liner byGaloisPower(int pointCount, int[] base) {
@@ -211,6 +203,10 @@ public class Liner {
 
     public int lineCount() {
         return lines.length;
+    }
+
+    public int[][] beamDist() {
+        return beamDist;
     }
 
     public boolean flag(int line, int point) {
@@ -552,7 +548,7 @@ public class Liner {
         return pointCount * (pointCount - 1) * (pointCount - lines[0].length); // assuming that liner is uniform
     }
 
-    public Triangle ofIdx(int idx) {
+    public Triangle trOf(int idx) {
         int o = idx % pointCount;
         idx = idx / pointCount;
         int uIdx = idx % (pointCount - 1);
@@ -572,7 +568,7 @@ public class Liner {
         throw new IllegalArgumentException();
     }
 
-    public int toIdx(Triangle tr) {
+    public int trIdx(Triangle tr) {
         int uIdx = tr.u() > tr.o() ? tr.u() - 1 : tr.u();
         BitSet bs = new BitSet();
         bs.set(0, pointCount);

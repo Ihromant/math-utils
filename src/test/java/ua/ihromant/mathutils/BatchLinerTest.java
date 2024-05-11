@@ -718,11 +718,11 @@ public class BatchLinerTest {
                     if (triangles[i] >= 0) {
                         continue;
                     }
-                    Triangle tr = liner.ofIdx(i);
+                    Triangle tr = liner.trOf(i);
                     for (int j = 0; j < permGroup.order(); j++) {
                         int[] perm = permGroup.permutation(j);
                         Triangle applied = new Triangle(perm[tr.o()], perm[tr.u()], perm[tr.w()]);
-                        triangles[liner.toIdx(applied)] = i;
+                        triangles[liner.trIdx(applied)] = i;
                     }
                 }
                 Map<Integer, Long> counts = Arrays.stream(triangles).boxed().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
@@ -743,7 +743,7 @@ public class BatchLinerTest {
             int dl = 1;
             Liner liner = new AffinePlane(proj, dl).toLiner();
             for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
-                TernaryRing tr = new AffineTernaryRing(liner, liner.ofIdx(triangle));
+                TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
                 for (int x : tr.elements()) {
                     for (int b : tr.elements()) {
                         assertEquals(b, tr.op(x, 0, b));
@@ -831,16 +831,16 @@ public class BatchLinerTest {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, 0).toLiner();
-            TernaryRing tr0 = new AffineTernaryRing(liner, liner.ofIdx(0));
-            TernaryRing tr1 = new AffineTernaryRing(liner, liner.ofIdx(1));
+            TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
+            TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
             assertFalse(tr0.trEquals(tr1));
-            TernaryRing tr2 = new AffineTernaryRing(liner, liner.ofIdx(2));
+            TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
             assertTrue(tr1.trEquals(tr2));
-            TernaryRing tr18 = new AffineTernaryRing(liner, liner.ofIdx(18));
-            TernaryRing tr24 = new AffineTernaryRing(liner, liner.ofIdx(24));
+            TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
+            TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
             assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
             assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
-            TernaryRing tr17 = new AffineTernaryRing(liner, liner.ofIdx(17));
+            TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
             assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
         }
     }
@@ -957,7 +957,7 @@ public class BatchLinerTest {
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             for (int triangle : uniqueTriangles.get(name)) {
-                Triangle tr = liner.ofIdx(triangle);
+                Triangle tr = liner.trOf(triangle);
                 int[] fixedPoints = new int[liner.pointCount()];
                 Arrays.fill(fixedPoints, -1);
                 fixedPoints[tr.o()] = tr.o();
@@ -990,7 +990,7 @@ public class BatchLinerTest {
             Liner liner = new AffinePlane(proj, dl).toLiner();
             Map<Integer, List<TernaryRing>> byIso = new HashMap<>();
             ex: for (int triangle : uniqueTriangles.get(name)) {
-                Triangle tr = liner.ofIdx(triangle);
+                Triangle tr = liner.trOf(triangle);
                 TernaryRing ring = new AffineTernaryRing(liner, tr);
                 for (Map.Entry<Integer, List<TernaryRing>> e : byIso.entrySet()) {
                     if (e.getValue().getFirst().biLoopEquals(ring)) {
@@ -1021,7 +1021,7 @@ public class BatchLinerTest {
             Liner liner = new AffinePlane(proj, dl).toLiner();
             System.out.println(name + " dropped line " + dl);
             for (int triangle : uniqueTriangles.get(name)) {
-                TernaryRing ring = new AffineTernaryRing(liner, liner.ofIdx(triangle));
+                TernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
                 System.out.println("triangle:" + String.format("%8d", triangle)
                         + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
                         + ", rgtd:" + (ring.isRightDistributive() ? 1 : 0)
