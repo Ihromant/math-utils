@@ -496,11 +496,16 @@ public class Automorphisms {
                 for (int p2 = newStepPoints.nextSetBit(0); p2 >= 0; p2 = newStepPoints.nextSetBit(p2 + 1)) {
                     int lineFrom = first.line(p1, p2);
                     int lineTo = second.line(p1To, newPointsMap[p2]);
-                    if (lineFrom == -1 && lineTo == -1) {
-                        continue;
-                    }
-                    if (lineFrom == -1 || lineTo == -1) {
-                        return true;
+                    if (lineFrom < 0) {
+                        if (lineTo < 0) {
+                            continue;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        if (lineTo < 0) {
+                            return true;
+                        }
                     }
                     int oldLine = newLinesMap[lineFrom];
                     if (oldLine >= 0) {
@@ -518,23 +523,28 @@ public class Automorphisms {
             for (int l1 = newLines.nextSetBit(0); l1 >= 0; l1 = newLines.nextSetBit(l1 + 1)) {
                 int l1To = newLinesMap[l1];
                 for (int l2 = linesAssigned.nextSetBit(0); l2 >= 0; l2 = linesAssigned.nextSetBit(l2 + 1)) {
-                    int intFrom = first.intersection(l1, l2);
-                    int intTo = second.intersection(l1To, newLinesMap[l2]);
-                    if (intFrom == -1 && intTo == -1) {
-                        continue;
+                    int ptFrom = first.intersection(l1, l2);
+                    int ptTo = second.intersection(l1To, newLinesMap[l2]);
+                    if (ptFrom < 0) {
+                        if (ptTo < 0) {
+                            continue;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        if (ptTo < 0) {
+                            return true;
+                        }
                     }
-                    if (intFrom == -1 || intTo == -1) {
-                        return true;
-                    }
-                    int oldPoint = newPointsMap[intFrom];
+                    int oldPoint = newPointsMap[ptFrom];
                     if (oldPoint >= 0) {
-                        if (oldPoint != intTo) {
+                        if (oldPoint != ptTo) {
                             return true;
                         }
                         continue;
                     }
-                    newPointsMap[intFrom] = intTo;
-                    newStepPoints.set(intFrom);
+                    newPointsMap[ptFrom] = ptTo;
+                    newStepPoints.set(ptFrom);
                 }
             }
         }
