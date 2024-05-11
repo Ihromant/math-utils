@@ -9,13 +9,13 @@ import ua.ihromant.mathutils.nauty.NautyWrapper;
 
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.Function;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -28,6 +28,7 @@ public class Liner {
     private final int[][] beamDist;
     private final int[][] beams;
     private final int[][] intersections;
+    private int[] pointOrder;
     private int[] canon;
     private int[][] canonLines;
 
@@ -207,6 +208,28 @@ public class Liner {
 
     public int[][] beamDist() {
         return beamDist;
+    }
+
+    public int[] pointOrder() {
+        if (pointOrder == null) {
+            int[] freq = new int[pointCount];
+            for (int[] pts : beamDist) {
+                for (int pt : pts) {
+                    freq[pt] = pts.length;
+                }
+            }
+            Integer[] arr = new Integer[pointCount];
+            for (int i = 0; i < pointCount; i++) {
+                arr[i] = i;
+            }
+            Arrays.sort(arr, Comparator.<Integer>comparingInt(pt -> freq[pt])
+                    .thenComparingInt(pt -> -beams[pt].length));
+            pointOrder = new int[pointCount];
+            for (int i = 0; i < pointCount; i++) {
+                pointOrder[i] = arr[i];
+            }
+        }
+        return pointOrder;
     }
 
     public boolean flag(int line, int point) {
