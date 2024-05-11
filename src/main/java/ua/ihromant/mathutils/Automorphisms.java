@@ -437,23 +437,12 @@ public class Automorphisms {
         int[] partialLines = new int[first.lineCount()];
         Arrays.fill(partialPoints, -1);
         Arrays.fill(partialLines, -1);
-        return altIsomorphism(first, second, partialPoints, new BitSet(), partialLines, new BitSet());
+        return altIsomorphism(first, first.pointOrder(), 0, second, partialPoints, new BitSet(), partialLines, new BitSet());
     }
 
-    private static int getFrom(int[][] beamDist, BitSet pointsAssigned) {
-        for (int i = beamDist.length - 1; i >= 0; i--) {
-            for (int pt : beamDist[i]) {
-                if (!pointsAssigned.get(pt)) {
-                    return pt;
-                }
-            }
-        }
-        throw new IllegalStateException();
-    }
-
-    private static int[] altIsomorphism(Liner first, Liner second, int[] oldPointsMap, BitSet oldPoints, int[] oldLinesMap, BitSet oldLines) {
+    private static int[] altIsomorphism(Liner first, int[] pointOrder, int fromIdx, Liner second, int[] oldPointsMap, BitSet oldPoints, int[] oldLinesMap, BitSet oldLines) {
         BitSet toMapped = new BitSet();
-        int from = getFrom(first.beamDist(), oldPoints);
+        int from = pointOrder[fromIdx];
         for (int pp : oldPointsMap) {
             if (pp >= 0) {
                 toMapped.set(pp);
@@ -476,7 +465,10 @@ public class Automorphisms {
             if (newPoints.nextClearBit(0) == first.pointCount()) {
                 return newPointsMap;
             }
-            int[] candidate = altIsomorphism(first, second, newPointsMap, newPoints, newLinesMap, newLines);
+            int newFrom = fromIdx;
+            while (newPoints.get(pointOrder[++newFrom])) {
+            }
+            int[] candidate = altIsomorphism(first, pointOrder, newFrom, second, newPointsMap, newPoints, newLinesMap, newLines);
             if (candidate != null) {
                 return candidate;
             }
