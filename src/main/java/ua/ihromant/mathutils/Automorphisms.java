@@ -429,10 +429,9 @@ public class Automorphisms {
     }
 
     public static int[] altIsomorphism(Liner first, Liner second) {
-//        if (first.pointCount() != second.pointCount() || first.lineCount() != second.lineCount()
-//                || !first.beamFrequencies().equals(second.beamFrequencies())) {
-//            return null;
-//        }
+        if (!Arrays.equals(first.lineFreq(), second.lineFreq())) {
+            return null;
+        }
         int[] partialPoints = new int[first.pointCount()];
         int[] partialLines = new int[first.lineCount()];
         Arrays.fill(partialPoints, -1);
