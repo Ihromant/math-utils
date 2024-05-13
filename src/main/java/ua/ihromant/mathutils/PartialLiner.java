@@ -391,4 +391,99 @@ public class PartialLiner {
         }
         return false;
     }
+
+    public boolean checkAP() {
+        int last = lines.length - 1;
+        int[] lLine = lines[last];
+        int ll = lLine.length;
+        for (int p : lLine) {
+            int[] beam = beams[p];
+            for (int ol : beam) {
+                if (ol == last) {
+                    continue;
+                }
+                int[] oLine = lines[ol];
+                for (int a = 0; a < ll; a++) {
+                    int pl1 = lLine[a];
+                    if (pl1 == p) {
+                        continue;
+                    }
+                    for (int b = a + 1; b < ll; b++) {
+                        int pl2 = lLine[b];
+                        if (pl2 == p) {
+                            continue;
+                        }
+                        for (int c = 0; c < ll; c++) {
+                            int po1 = oLine[c];
+                            if (po1 == p) {
+                                continue;
+                            }
+                            int l1 = lookup[pl1][po1];
+                            int l2 = lookup[pl2][po1];
+                            if (l1 < 0 && l2 < 0) {
+                                continue;
+                            }
+                            for (int d = c + 1; d < ll; d++) {
+                                int po2 = oLine[d];
+                                if (po2 == p) {
+                                    continue;
+                                }
+                                int l4 = lookup[pl2][po2];
+                                if (l1 >= 0 && l4 >= 0 && intersections[l1][l4] >= 0) {
+                                    return true;
+                                }
+                                int l3 = lookup[pl1][po2];
+                                if (l2 >= 0 && l3 >= 0 && intersections[l2][l3] >= 0) {
+                                    return true;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    public boolean hullsOverCap(int cap) {
+        int[] ll = lines[lines.length - 1];
+        BitSet last = new BitSet(pointCount);
+        for (int point : ll) {
+            last.set(point);
+        }
+        for (int pt = 0; pt < pointCount; pt++) {
+            if (last.get(pt)) {
+                continue;
+            }
+            BitSet base = (BitSet) last.clone();
+            base.set(pt);
+            BitSet additional = new BitSet(pointCount);
+            additional.set(pt);
+            while (!(additional = additional(base, additional)).isEmpty()) {
+                base.or(additional);
+                if (base.cardinality() > cap) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private BitSet additional(BitSet first, BitSet second) {
+        BitSet result = new BitSet();
+        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
+            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
+                int line = lookup[x][y];
+                if (line < 0) {
+                    continue;
+                }
+                for (int p : lines[line]) {
+                    if (!first.get(p) && !second.get(p)) {
+                        result.set(p);
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }
