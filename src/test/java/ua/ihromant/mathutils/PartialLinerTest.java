@@ -34,9 +34,6 @@ public class PartialLinerTest {
         assertArrayEquals(byArr1.lines(), byLine1.lines());
         assertArrayEquals(byArr2.lines(), byLine2.lines());
 
-        assertArrayEquals(byArr1.flags(), byLine1.flags());
-        assertArrayEquals(byArr2.flags(), byLine2.flags());
-
         assertArrayEquals(byArr1.beamCounts(), byLine1.beamCounts());
         assertArrayEquals(byArr2.beamCounts(), byLine2.beamCounts());
 

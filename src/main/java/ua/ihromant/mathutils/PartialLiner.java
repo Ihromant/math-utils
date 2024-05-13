@@ -7,7 +7,6 @@ import java.util.Comparator;
 public class PartialLiner {
     private final int pointCount;
     private final int[][] lines;
-    private final boolean[][] flags;
     private final int[] beamCounts; // number of lines in beam
     private final int[] beamLengths; // distribution by beam count
     private final int[][] lookup;
@@ -25,7 +24,7 @@ public class PartialLiner {
     public PartialLiner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
-        this.flags = new boolean[lines.length][pointCount];
+        boolean[][] flags = new boolean[lines.length][pointCount];
         this.beamCounts = new int[pointCount];
         int ll = lines[0].length;
         for (int i = 0; i < lines.length; i++) {
@@ -88,9 +87,6 @@ public class PartialLiner {
         this.lines = new int[pll + 1][];
         System.arraycopy(prev.lines, 0, this.lines, 0, pll);
         this.lines[pll] = newLine;
-        this.flags = new boolean[pll + 1][];
-        System.arraycopy(prev.flags, 0, this.flags, 0, pll);
-        boolean[] nf = new boolean[pointCount];
         this.lookup = prev.lookup.clone();
         this.beams = prev.beams.clone();
         this.beamCounts = prev.beamCounts.clone();
@@ -108,8 +104,6 @@ public class PartialLiner {
         }
         Arrays.fill(intersections[pll], -1);
         for (int p : newLine) {
-            nf[p] = true; // flags
-
             int[] nl = this.lookup[p].clone(); // lookup
             for (int p1 : newLine) {
                 if (p1 == p) {
@@ -142,7 +136,6 @@ public class PartialLiner {
             }
             ni = ni + beam.length;
         }
-        this.flags[pll] = nf;
         lineInter[pll] = ni;
         lineFreq[ni]++;
 
@@ -186,10 +179,6 @@ public class PartialLiner {
 
     public int[][] lines() {
         return lines;
-    }
-
-    public boolean[][] flags() {
-        return flags;
     }
 
     public int[] beamCounts() {
@@ -251,10 +240,6 @@ public class PartialLiner {
 
     public int[] lookup(int pt) {
         return lookup[pt];
-    }
-
-    public boolean flag(int line, int point) {
-        return flags[line][point];
     }
 
     public int[] line(int line) {
