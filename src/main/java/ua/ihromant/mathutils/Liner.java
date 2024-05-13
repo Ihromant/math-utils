@@ -278,6 +278,10 @@ public class Liner {
         return lines[line];
     }
 
+    public int[][] lines() {
+        return lines;
+    }
+
     public boolean collinear(int... points) {
         if (points.length == 0) {
             return true;
