@@ -1,13 +1,13 @@
 package ua.ihromant.mathutils.vf2;
 
-import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.PartialLiner;
 
 public class LinerWrapper implements Graph {
     private final int size;
     private final boolean[][] incidence;
     private final int[][] adjacency;
 
-    public LinerWrapper(Liner liner) {
+    public LinerWrapper(PartialLiner liner) {
         this.size = liner.pointCount() + liner.lineCount();
         this.incidence = new boolean[size][size];
         this.adjacency = new int[size][];

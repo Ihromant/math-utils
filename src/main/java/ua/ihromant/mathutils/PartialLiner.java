@@ -249,6 +249,10 @@ public class PartialLiner {
         }
     }
 
+    public int[] lookup(int pt) {
+        return lookup[pt];
+    }
+
     public boolean flag(int line, int point) {
         return flags[line][point];
     }
@@ -485,5 +489,18 @@ public class PartialLiner {
             }
         }
         return result;
+    }
+
+    public boolean hasGaps(int pt) {
+        int[] arr = lookup[pt];
+        for (int i = 0; i < pointCount; i++) {
+            if (i == pt) {
+                continue;
+            }
+            if (arr[i] < 0) {
+                return true;
+            }
+        }
+        return false;
     }
 }

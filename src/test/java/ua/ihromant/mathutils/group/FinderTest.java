@@ -3,8 +3,7 @@ package ua.ihromant.mathutils.group;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Automorphisms;
 import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.vf2.LinerWrapper;
-import ua.ihromant.mathutils.vf2.VF2IsomorphismTester;
+import ua.ihromant.mathutils.PartialLiner;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -32,21 +31,12 @@ public class FinderTest {
         int v = 15;
         int k = 3;
         DumpConfig conf = readLast(prefix, v, k);
-        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
-            boolean[][] frequencies = new boolean[v][v];
-            for (int i = 0; i < v; i++) {
-                frequencies[i][i] = true;
-            }
-            for (int[] block : part) {
-                enhanceFrequencies(frequencies, block);
-            }
-            return new DesignData(part, frequencies);
-        }).collect(Collectors.toList());
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
-            liners = nextStage(v, k, liners, l -> false);
+            liners = nextStage(k, liners, l -> false);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size());
@@ -54,7 +44,7 @@ public class FinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private static void blocks(int prev, int[] curr, int moreNeeded, BitSet possible, boolean[][] frequencies, Consumer<int[]> sink) {
+    private static void blocks(PartialLiner liner, int prev, int[] curr, int moreNeeded, BitSet possible, Consumer<int[]> sink) {
         for (int idx = possible.nextSetBit(prev + 1); idx >= 0; idx = possible.nextSetBit(idx + 1)) {
             int[] nextCurr = curr.clone();
             nextCurr[nextCurr.length - moreNeeded] = idx;
@@ -63,12 +53,12 @@ public class FinderTest {
                 continue;
             }
             BitSet nextPossible = (BitSet) possible.clone();
-            for (int i = idx + 1; i < frequencies[idx].length; i++) {
-                if (frequencies[idx][i]) {
+            for (int i = idx + 1; i < liner.pointCount(); i++) {
+                if (liner.line(idx, i) >= 0) {
                     nextPossible.set(i, false);
                 }
             }
-            blocks(idx, nextCurr, moreNeeded - 1, nextPossible, frequencies, sink);
+            blocks(liner, idx, nextCurr, moreNeeded - 1, nextPossible, sink);
         }
     }
 
@@ -78,21 +68,12 @@ public class FinderTest {
         int v = 28;
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k);
-        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
-            boolean[][] frequencies = new boolean[v][v];
-            for (int i = 0; i < v; i++) {
-                frequencies[i][i] = true;
-            }
-            for (int[] block : part) {
-                enhanceFrequencies(frequencies, block);
-            }
-            return new DesignData(part, frequencies);
-        }).collect(Collectors.toList());
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
-            liners = nextStage(v, k, liners, FinderTest::checkAP);
+            liners = nextStage(k, liners, PartialLiner::checkAP);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size());
@@ -100,29 +81,16 @@ public class FinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private static void enhanceFrequencies(boolean[][] frequencies, int[] block) {
-        for (int i = 0; i < block.length; i++) {
-            for (int j = i + 1; j < block.length; j++) {
-                int x = block[i];
-                int y = block[j];
-                frequencies[x][y] = true;
-                frequencies[y][x] = true;
-            }
-        }
-    }
-
-    private record DesignData(int[][] partial, boolean[][] frequencies) {}
-
     private record DumpConfig(int v, int k, int left, int[][][] partials) {}
 
-    private static void dump(String prefix, int v, int k, int left, List<DesignData> liners) throws IOException {
+    private static void dump(String prefix, int v, int k, int left, List<PartialLiner> liners) throws IOException {
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             ps.println(left + " blocks left");
             ps.println(liners.size() + " partials");
-            for (DesignData l : liners) {
-                for (int[] line : l.partial()) {
+            for (PartialLiner l : liners) {
+                for (int[] line : l.lines()) {
                     ps.println(Arrays.stream(line).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
                 }
                 ps.println();
@@ -173,31 +141,20 @@ public class FinderTest {
         }
     }
 
-    private static boolean hasGaps(boolean[] arr) {
-        for (boolean b : arr) {
-            if (!b) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private static List<DesignData> nextStage(int variants, int k, List<DesignData> partials, Predicate<Liner> filter) {
-        List<DesignData> nextList = new ArrayList<>();
-        int cl = partials.getFirst().partial().length;
-        List<Liner> nonIsomorphic = new ArrayList<>();
-        for (DesignData data : partials) {
-            int[][] partial = data.partial();
-            boolean[][] frequencies = data.frequencies();
-            int[] prev = partial[cl - 1];
+    private static List<PartialLiner> nextStage(int k, List<PartialLiner> partials, Predicate<PartialLiner> filter) {
+        int lc = partials.getFirst().lineCount();
+        int pc = partials.getFirst().pointCount();
+        List<PartialLiner> nonIsomorphic = new ArrayList<>();
+        for (PartialLiner partial : partials) {
+            int[] prev = partial.line(lc - 1);
             int prevFst = prev[0];
-            int fst = IntStream.range(prevFst, variants - k + 1).filter(i -> hasGaps(frequencies[i])).findAny().orElseThrow();
+            int fst = IntStream.range(prevFst, pc - k + 1).filter(partial::hasGaps).findAny().orElseThrow();
             int[] initBlock = new int[k];
             initBlock[0] = fst;
             BitSet possible = new BitSet();
-            boolean[] firstAssigned = frequencies[fst];
-            for (int i = fst + 1; i < variants; i++) {
-                if (!firstAssigned[i]) {
+            int[] firstAssigned = partial.lookup(fst);
+            for (int i = fst + 1; i < pc; i++) {
+                if (firstAssigned[i] < 0) {
                     possible.set(i);
                 }
             }
@@ -206,85 +163,23 @@ public class FinderTest {
                 continue;
             }
             initBlock[1] = snd;
-            boolean[] secondAssigned = frequencies[snd];
+            int[] secondAssigned = partial.lookup(snd);
             possible.set(fst + 1, snd + 1, false);
-            for (int i = snd + 1; i < variants; i++) {
-                if (secondAssigned[i]) {
+            for (int i = snd + 1; i < pc; i++) {
+                if (secondAssigned[i] >= 0) {
                     possible.set(i, false);
                 }
             }
             Consumer<int[]> blockConsumer = block -> {
-                int[][] nextPartial = new int[cl + 1][];
-                System.arraycopy(partial, 0, nextPartial, 0, cl);
-                nextPartial[cl] = block;
-                Liner liner = new Liner(variants, nextPartial);
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
+                PartialLiner liner = new PartialLiner(partial, block);
+                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(liner::isomorphic)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
-                boolean[][] nextFrequencies = new boolean[variants][];
-                for (int i = 0; i < nextFrequencies.length; i++) {
-                    nextFrequencies[i] = frequencies[i].clone();
-                }
-                enhanceFrequencies(nextFrequencies, block);
-                nextList.add(new DesignData(nextPartial, nextFrequencies));
             };
-            blocks(snd, initBlock, k - 2, possible, frequencies, blockConsumer);
+            blocks(partial, snd, initBlock, k - 2, possible, blockConsumer);
         }
-        return nextList;
-    }
-
-    private static boolean checkAP(Liner liner) {
-        int last = liner.lineCount() - 1;
-        int[] lLine = liner.line(last);
-        int ll = lLine.length;
-        for (int p : lLine) {
-            int[] lines = liner.point(p);
-            for (int ol : lines) {
-                if (ol == last) {
-                    continue;
-                }
-                int[] oLine = liner.line(ol);
-                for (int a = 0; a < ll; a++) {
-                    int pl1 = lLine[a];
-                    if (pl1 == p) {
-                        continue;
-                    }
-                    for (int b = a + 1; b < ll; b++) {
-                        int pl2 = lLine[b];
-                        if (pl2 == p) {
-                            continue;
-                        }
-                        for (int c = 0; c < ll; c++) {
-                            int po1 = oLine[c];
-                            if (po1 == p) {
-                                continue;
-                            }
-                            int l1 = liner.line(pl1, po1);
-                            int l2 = liner.line(pl2, po1);
-                            if (l1 == -1 && l2 == -1) {
-                                continue;
-                            }
-                            for (int d = c + 1; d < ll; d++) {
-                                int po2 = oLine[d];
-                                if (po2 == p) {
-                                    continue;
-                                }
-                                int l4 = liner.line(pl2, po2);
-                                if (l1 != -1 && l4 != -1 && liner.intersection(l1, l4) >= 0) {
-                                    return true;
-                                }
-                                int l3 = liner.line(pl1, po2);
-                                if (l2 != -1 && l3 != -1 && liner.intersection(l2, l3) >= 0) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return false;
+        return nonIsomorphic;
     }
 
     @Test
@@ -316,16 +211,7 @@ public class FinderTest {
                     br.readLine();
                 }
                 if (left == leftNeeded) {
-                    List<DesignData> liners = Arrays.stream(partials).map(part -> {
-                        boolean[][] frequencies = new boolean[v][v];
-                        for (int i = 0; i < v; i++) {
-                            frequencies[i][i] = true;
-                        }
-                        for (int[] block : part) {
-                            enhanceFrequencies(frequencies, block);
-                        }
-                        return new DesignData(part, frequencies);
-                    }).collect(Collectors.toList());
+                    List<PartialLiner> liners = Arrays.stream(partials).map(PartialLiner::new).collect(Collectors.toList());
                     dump(newPrefix, v, k, left, liners);
                     return;
                 }
@@ -339,61 +225,41 @@ public class FinderTest {
 
     @Test
     public void performance() {
-        testPerformance("perf", 19, 3, 3, true);
-        testPerformance("perf", 25, 4, 1, true);
-        testPerformance("perf", 31, 4, 3, false);
-        testPerformance("perf", 37, 5, 4, false);
+        testPerformance(19, 3, 3);
+        testPerformance(25, 4, 1);
+        testPerformance(31, 4, 3);
+        testPerformance(37, 5, 4);
     }
 
-    private static void testPerformance(String prefix, int v, int k, int cnt, boolean vf2) {
+    private static void testPerformance(int v, int k, int cnt) {
         DumpConfig conf = readLast("perf", v, k);
-        List<DesignData> dataSet = Arrays.stream(conf.partials()).map(part -> {
-            boolean[][] frequencies = new boolean[v][v];
-            for (int i = 0; i < v; i++) {
-                frequencies[i][i] = true;
-            }
-            for (int[] block : part) {
-                enhanceFrequencies(frequencies, block);
-            }
-            return new DesignData(part, frequencies);
-        }).toList();
+        List<PartialLiner> dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         long time = System.currentTimeMillis();
-        List<Liner> nonIsomorphic = new ArrayList<>();
-        for (DesignData data : dataSet) {
-            Liner liner = new Liner(v, data.partial());
-            if (nonIsomorphic.stream().anyMatch(l -> Automorphisms.isomorphism(liner, l) != null)) {
+        List<PartialLiner> nonIsomorphic = new ArrayList<>();
+        for (PartialLiner data : dataSet) {
+            if (nonIsomorphic.stream().anyMatch(data::isomorphic)) {
                 continue;
             }
-            nonIsomorphic.add(liner);
+            nonIsomorphic.add(data);
         }
         assertEquals(cnt, nonIsomorphic.size());
-        System.out.println(prefix + " " + v + " " + k + " iso lines time " + (System.currentTimeMillis() - time));
-        nonIsomorphic.clear();
-        time = System.currentTimeMillis();
-        for (DesignData data : dataSet) {
-            Liner liner = new Liner(v, data.partial());
-            if (nonIsomorphic.stream().anyMatch(l -> Automorphisms.altIsomorphism(liner, l) != null)) {
-                continue;
-            }
-            nonIsomorphic.add(liner);
-        }
-        assertEquals(cnt, nonIsomorphic.size());
-        System.out.println(prefix + " " + v + " " + k + " non iso points time " + (System.currentTimeMillis() - time));
-        if (!vf2) {
-            return;
-        }
-        List<LinerWrapper> wrappers = new ArrayList<>();
-        VF2IsomorphismTester tester = new VF2IsomorphismTester();
-        time = System.currentTimeMillis();
-        for (DesignData data : dataSet) {
-            LinerWrapper liner = new LinerWrapper(new Liner(v, data.partial()));
-            if (wrappers.stream().anyMatch(l -> tester.areIsomorphic(liner, l))) {
-                continue;
-            }
-            wrappers.add(liner);
-        }
-        assertEquals(cnt, wrappers.size());
-        System.out.println(prefix + " " + v + " " + k + " vf2 time " + (System.currentTimeMillis() - time));
+        System.out.println(v + " " + k + " iso points time " + (System.currentTimeMillis() - time));
+//        nonIsomorphic.clear();
+//        if (!vf2) {
+//            return;
+//        }
+//        List<LinerWrapper> wrappers = new ArrayList<>();
+//        VF2IsomorphismTester tester = new VF2IsomorphismTester();
+//        time = System.currentTimeMillis();
+//        for (PartialLiner data : dataSet) {
+//            LinerWrapper liner = new LinerWrapper(data);
+//            if (wrappers.stream().anyMatch(l -> tester.areIsomorphic(liner, l))) {
+//                continue;
+//            }
+//            wrappers.add(liner);
+//        }
+//        assertEquals(cnt, wrappers.size());
+//        System.out.println(prefix + " " + v + " " + k + " vf2 time " + (System.currentTimeMillis() - time));
     }
 
     @Test
@@ -402,41 +268,28 @@ public class FinderTest {
         int v = 25;
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k);
-        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
-            boolean[][] frequencies = new boolean[v][v];
-            for (int i = 0; i < v; i++) {
-                frequencies[i][i] = true;
-            }
-            for (int[] block : part) {
-                enhanceFrequencies(frequencies, block);
-            }
-            return new DesignData(part, frequencies);
-        }).toList();
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
-        Predicate<int[][]> filter = partial -> {
-            // return false;
-            Liner liner = new Liner(v, partial);
-            return checkAP(liner);
-        };
-        liners.stream().forEach(dd -> designs(v, k, dd.partial, conf.left(), dd.frequencies(), filter, des -> {
-            Liner l = new Liner(v, des);
-            System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des));
+        Predicate<PartialLiner> filter = PartialLiner::checkAP;
+        liners.stream().forEach(pl -> designs(v, k, pl, conf.left(), filter, des -> {
+            Liner l = new Liner(v, des.lines());
+            System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des.lines()));
         }));
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 
-    private static void designs(int variants, int k, int[][] partial, int needed, boolean[][] frequencies, Predicate<int[][]> filter, Consumer<int[][]> cons) {
-        int cl = partial.length;
-        int[] prev = partial[cl - 1];
+    private static void designs(int variants, int k, PartialLiner partial, int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
+        int cl = partial.lineCount();
+        int[] prev = partial.line(cl - 1);
         int prevFst = prev[0];
-        int fst = IntStream.range(prevFst, variants - k + 1).filter(i -> hasGaps(frequencies[i])).findAny().orElseThrow();
+        int fst = IntStream.range(prevFst, variants - k + 1).filter(partial::hasGaps).findAny().orElseThrow();
         int[] initBlock = new int[k];
         initBlock[0] = fst;
         BitSet possible = new BitSet();
-        boolean[] firstAssigned = frequencies[fst];
+        int[] firstAssigned = partial.lookup(fst);
         for (int i = fst + 1; i < variants; i++) {
-            if (!firstAssigned[i]) {
+            if (firstAssigned[i] < 0) {
                 possible.set(i);
             }
         }
@@ -445,17 +298,15 @@ public class FinderTest {
             return;
         }
         initBlock[1] = snd;
-        boolean[] secondAssigned = frequencies[snd];
+        int[] secondAssigned = partial.lookup(snd);
         possible.set(fst + 1, snd + 1, false);
         for (int i = snd + 1; i < variants; i++) {
-            if (secondAssigned[i]) {
+            if (secondAssigned[i] >= 0) {
                 possible.set(i, false);
             }
         }
         Consumer<int[]> blockConsumer = block -> {
-            int[][] nextPartial = new int[cl + 1][];
-            System.arraycopy(partial, 0, nextPartial, 0, cl);
-            nextPartial[cl] = block;
+            PartialLiner nextPartial = new PartialLiner(partial, block);
             if (filter.test(nextPartial)) {
                 return;
             }
@@ -463,14 +314,9 @@ public class FinderTest {
                 cons.accept(nextPartial);
                 return;
             }
-            boolean[][] nextFrequencies = new boolean[variants][];
-            for (int i = 0; i < nextFrequencies.length; i++) {
-                nextFrequencies[i] = frequencies[i].clone();
-            }
-            enhanceFrequencies(nextFrequencies, block);
-            designs(variants, k, nextPartial, needed - 1, nextFrequencies, filter, cons);
+            designs(variants, k, nextPartial, needed - 1, filter, cons);
         };
-        blocks(snd, initBlock, k - 2, possible, frequencies, blockConsumer);
+        blocks(partial, snd, initBlock, k - 2, possible, blockConsumer);
     }
 
     @Test
@@ -480,67 +326,16 @@ public class FinderTest {
         int v = 45;
         int k = 3;
         DumpConfig conf = readLast(prefix, v, k);
-        List<DesignData> liners = Arrays.stream(conf.partials()).map(part -> {
-            boolean[][] frequencies = new boolean[v][v];
-            for (int i = 0; i < v; i++) {
-                frequencies[i][i] = true;
-            }
-            for (int[] block : part) {
-                enhanceFrequencies(frequencies, block);
-            }
-            return new DesignData(part, frequencies);
-        }).collect(Collectors.toList());
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
-            liners = nextStage(v, k, liners, l -> hullsOverCap(l, cap));
+            liners = nextStage(k, liners, l -> l.hullsOverCap(cap));
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size());
         }
         System.out.println(System.currentTimeMillis() - time);
-    }
-
-    public static boolean hullsOverCap(Liner liner, int cap) {
-        int[] ll = liner.line(liner.lineCount() - 1);
-        BitSet last = new BitSet(liner.pointCount());
-        for (int point : ll) {
-            last.set(point);
-        }
-        for (int pt = 0; pt < liner.pointCount(); pt++) {
-            if (last.get(pt)) {
-                continue;
-            }
-            BitSet base = (BitSet) last.clone();
-            base.set(pt);
-            BitSet additional = new BitSet(liner.pointCount());
-            additional.set(pt);
-            while (!(additional = additional(liner, base, additional)).isEmpty()) {
-                base.or(additional);
-                if (base.cardinality() > cap) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    public static BitSet additional(Liner liner, BitSet first, BitSet second) {
-        BitSet result = new BitSet();
-        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
-            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
-                int line = liner.line(x, y);
-                if (line < 0) {
-                    continue;
-                }
-                for (int p : liner.line(line)) {
-                    if (!first.get(p) && !second.get(p)) {
-                        result.set(p);
-                    }
-                }
-            }
-        }
-        return result;
     }
 }
