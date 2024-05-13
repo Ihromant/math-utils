@@ -286,11 +286,11 @@ public class PartialLiner {
         Arrays.fill(partialPoints, -1);
         Arrays.fill(partialLines, -1);
         initOrder();
-        return isomorphic(0, second, partialPoints, new BitSet(), partialLines, new BitSet());
+        return isomorphic(0, second, partialPoints, new BitSet(pointCount), partialLines, new BitSet(lines.length));
     }
 
     private boolean isomorphic(int fromIdx, PartialLiner second, int[] oldPointsMap, BitSet oldPoints, int[] oldLinesMap, BitSet oldLines) {
-        BitSet toMapped = new BitSet();
+        BitSet toMapped = new BitSet(pointCount);
         int from = pointOrder[fromIdx];
         for (int pp : oldPointsMap) {
             if (pp >= 0) {
@@ -306,7 +306,7 @@ public class PartialLiner {
             BitSet newPoints = (BitSet) oldPoints.clone();
             BitSet newLines = (BitSet) oldLines.clone();
             newPointsMap[from] = to;
-            BitSet newStepPoints = new BitSet();
+            BitSet newStepPoints = new BitSet(pointCount);
             newStepPoints.set(from);
             if (enhanceFailed(second, newStepPoints, newPointsMap, newPoints, newLinesMap, newLines)) {
                 continue;
@@ -328,7 +328,7 @@ public class PartialLiner {
     private boolean enhanceFailed(PartialLiner second, BitSet newStepPoints, int[] newPointsMap, BitSet newPoints, int[] newLinesMap, BitSet newLines) {
         while (!newStepPoints.isEmpty()) {
             newPoints.or(newStepPoints);
-            BitSet linesAssigned = new BitSet();
+            BitSet linesAssigned = new BitSet(lines.length);
             for (int p1 = newPoints.nextSetBit(0); p1 >= 0; p1 = newPoints.nextSetBit(p1 + 1)) {
                 if (newStepPoints.get(p1)) {
                     continue;
@@ -470,7 +470,7 @@ public class PartialLiner {
     }
 
     private BitSet additional(BitSet first, BitSet second) {
-        BitSet result = new BitSet();
+        BitSet result = new BitSet(pointCount);
         for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
             for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
                 int line = lookup[x][y];
