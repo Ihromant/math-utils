@@ -86,13 +86,26 @@ public class PartialLiner {
         this.flags = new boolean[pll + 1][];
         System.arraycopy(prev.flags, 0, this.flags, 0, pll);
         boolean[] nf = new boolean[pointCount];
-        for (int p : newLine) {
-            nf[p] = true;
-        }
-        this.flags[pll] = nf;
         this.lookup = prev.lookup.clone();
+        this.beams = prev.beams.clone();
+        this.beamCounts = prev.beamCounts.clone();
+        this.beamLengths = prev.beamLengths.clone();
+        this.lineInter = new int[pll + 1];
+        int bl = beamLengths.length;
+        this.lineFreq = new int[Math.min(lines.length, (bl - 1) * newLine.length) + 1];
+        System.arraycopy(prev.lineInter, 0, this.lineInter, 0, pll);
+        System.arraycopy(prev.lineFreq, 0, this.lineFreq, 0, prev.lineFreq.length);
+        int ni = 0;
+        this.intersections = new int[pll + 1][pll + 1];
+        for (int i = 0; i < pll; i++) {
+            System.arraycopy(prev.intersections[i], 0, this.intersections[i], 0, pll);
+            intersections[i][pll] = -1;
+        }
+        Arrays.fill(intersections[pll], -1);
         for (int p : newLine) {
-            int[] nl = this.lookup[p].clone();
+            nf[p] = true; // flags
+
+            int[] nl = this.lookup[p].clone(); // lookup
             for (int p1 : newLine) {
                 if (p1 == p) {
                     continue;
@@ -100,24 +113,34 @@ public class PartialLiner {
                 nl[p1] = pll;
             }
             this.lookup[p] = nl;
-        }
-        this.beams = prev.beams.clone();
-        for (int p : newLine) {
-            int[] ob = this.beams[p];
+
+            int[] ob = this.beams[p]; // beams
             int[] nb = new int[ob.length + 1];
             System.arraycopy(ob, 0, nb, 0, ob.length);
             nb[ob.length] = pll;
             this.beams[p] = nb;
-        }
-        this.beamCounts = prev.beamCounts.clone();
-        this.beamLengths = prev.beamLengths.clone();
-        for (int p : newLine) {
-            int pbc = beamCounts[p];
+
+            int pbc = beamCounts[p]; // beamcounts-beamlengths
             beamLengths[pbc++]--;
             beamCounts[p] = pbc;
             beamLengths[pbc]++;
+
+            int[] beam = prev.beams[p];
+            for (int l : beam) {
+                int prInter = lineInter[l]; // lineinter-linefreq
+                lineFreq[prInter++]--;
+                lineInter[l] = prInter;
+                lineFreq[prInter]++;
+
+                intersections[l][pll] = p; // intersections
+                intersections[pll][l] = p;
+            }
+            ni = ni + beam.length;
         }
-        int bl = beamLengths.length;
+        this.flags[pll] = nf;
+        lineInter[pll] = ni;
+        lineFreq[ni]++;
+
         this.beamDist = new int[bl][];
         int[] beamLengths = this.beamLengths.clone();
         for (int pt = 0; pt < pointCount; pt++) {
@@ -126,35 +149,6 @@ public class PartialLiner {
                 beamDist[bc] = new int[beamLengths[bc]];
             }
             beamDist[bc][beamDist[bc].length - beamLengths[bc]--] = pt;
-        }
-        this.lineInter = new int[pll + 1];
-        this.lineFreq = new int[Math.min(lines.length, (bl - 1) * newLine.length) + 1];
-        System.arraycopy(prev.lineInter, 0, this.lineInter, 0, pll);
-        System.arraycopy(prev.lineFreq, 0, this.lineFreq, 0, prev.lineFreq.length);
-        int ni = 0;
-        for (int p : newLine) {
-            int[] beam = prev.beams[p];
-            for (int l : beam) {
-                int prInter = lineInter[l];
-                lineFreq[prInter++]--;
-                lineInter[l] = prInter;
-                lineFreq[prInter]++;
-            }
-            ni = ni + beam.length;
-        }
-        lineInter[pll] = ni;
-        lineFreq[ni]++;
-        this.intersections = new int[pll + 1][pll + 1];
-        for (int i = 0; i < pll; i++) {
-            System.arraycopy(prev.intersections[i], 0, this.intersections[i], 0, pll);
-            intersections[i][pll] = -1;
-        }
-        Arrays.fill(intersections[pll], -1);
-        for (int p : newLine) {
-            for (int l : prev.beams[p]) {
-                intersections[l][pll] = p;
-                intersections[pll][l] = p;
-            }
         }
     }
 
