@@ -350,6 +350,24 @@ public class PartialLiner1 {
                     break;
                 }
             }
+            if (newPerLineUnAss[line] == 1) {
+                int pointFrom = findUnassigned(lines[line], newPointsMap);
+                BitSet values = new BitSet();
+                for (int p : second.lines[newLinesMap[line]]) {
+                    values.set(p);
+                }
+                for (int p : lines[line]) {
+                    int val = newPointsMap[p];
+                    if (val >= 0) {
+                        values.set(p, false);
+                    }
+                }
+                int added = mapPoint(second, pointFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                if (added < 0) {
+                    return -1;
+                }
+                result = result + added;
+            }
         }
         return result;
     }
@@ -386,17 +404,26 @@ public class PartialLiner1 {
                     break;
                 }
             }
-        }
-        return result;
-    }
-
-    private static int findOne(int[] arr) {
-        for (int i = 0; i < arr.length; i++) {
-            if (arr[i] == 1) {
-                return i;
+            if (newPerPointUnAss[pt] == 1) {
+                int lineFrom = findUnassigned(beams[pt], newLinesMap);
+                BitSet values = new BitSet();
+                for (int l : second.beams[newPointsMap[pt]]) {
+                    values.set(l);
+                }
+                for (int l : beams[pt]) {
+                    int val = newLinesMap[l];
+                    if (val >= 0) {
+                        values.set(l, false);
+                    }
+                }
+                int added = mapLine(second, lineFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                if (added < 0) {
+                    return -1;
+                }
+                result = result + added;
             }
         }
-        return -1;
+        return result;
     }
 
     private static int findUnassigned(int[] elems, int[] partialMap) {
@@ -406,72 +433,6 @@ public class PartialLiner1 {
             }
         }
         return -1;
-    }
-
-    private boolean enhanceFailed(PartialLiner1 second, BitSet newStepPoints, int[] newPointsMap, BitSet newPoints, int[] newPerPointsUnAss, int[] newLinesMap, BitSet newLines, int[] newPerLinesUnAss) {
-        while (!newStepPoints.isEmpty()) {
-            newPoints.or(newStepPoints);
-            BitSet newStepLines = new BitSet(lines.length);
-            for (int p1 = newPoints.nextSetBit(0); p1 >= 0; p1 = newPoints.nextSetBit(p1 + 1)) {
-                if (newStepPoints.get(p1)) {
-                    continue;
-                }
-                int p1To = newPointsMap[p1];
-                for (int p2 = newStepPoints.nextSetBit(0); p2 >= 0; p2 = newStepPoints.nextSetBit(p2 + 1)) {
-                    int lineFrom = line(p1, p2);
-                    int lineTo = second.line(p1To, newPointsMap[p2]);
-//                    if (setLineFailed(lineFrom, lineTo, newLinesMap, newStepLines, newPerPointsUnAss)) {
-//                        return true;
-//                    }
-                }
-            }
-            int one;
-            while ((one = findOne(newPerPointsUnAss)) >= 0) { // one is a point which has only one line unassigned
-                int lineFrom = findUnassigned(beams[one], newLinesMap);
-                BitSet values = new BitSet();
-                for (int l : second.beams[newPointsMap[one]]) {
-                    values.set(l);
-                }
-                for (int l : beams[one]) {
-                    int val = newLinesMap[l];
-                    if (val >= 0) {
-                        values.set(l, false);
-                    }
-                }
-//                if (setLineFailed(lineFrom, values.nextSetBit(0), newLinesMap, newStepLines, newPerPointsUnAss)) {
-//                    return true;
-//                }
-            }
-            newLines.or(newStepLines);
-            newStepPoints.clear();
-            for (int l1 = newLines.nextSetBit(0); l1 >= 0; l1 = newLines.nextSetBit(l1 + 1)) {
-                int l1To = newLinesMap[l1];
-                for (int l2 = newStepLines.nextSetBit(0); l2 >= 0; l2 = newStepLines.nextSetBit(l2 + 1)) {
-                    int ptFrom = intersection(l1, l2);
-                    int ptTo = second.intersection(l1To, newLinesMap[l2]);
-//                    if (setPointFailed(ptFrom, ptTo, newPointsMap, newStepPoints, newPerLinesUnAss)) {
-//                        return true;
-//                    }
-                }
-            }
-            while ((one = findOne(newPerLinesUnAss)) >= 0) { // one is a line which has only one point unassigned
-                int pointFrom = findUnassigned(lines[one], newPointsMap);
-                BitSet values = new BitSet();
-                for (int p : second.lines[newLinesMap[one]]) {
-                    values.set(p);
-                }
-                for (int p : lines[one]) {
-                    int val = newPointsMap[p];
-                    if (val >= 0) {
-                        values.set(p, false);
-                    }
-                }
-//                if (setPointFailed(pointFrom, values.nextSetBit(0), newPointsMap, newStepPoints, newPerLinesUnAss)) {
-//                    return true;
-//                }
-            }
-        }
-        return false;
     }
 
     public boolean checkAP() {
