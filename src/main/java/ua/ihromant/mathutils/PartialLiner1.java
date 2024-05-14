@@ -279,8 +279,8 @@ public class PartialLiner1 {
     }
 
     private boolean isomorphic(int mapped, int fromIdx, PartialLiner1 second, int[] pointsMap, int[] linesMap) {
-        BitSet toMapped = new BitSet(pointCount);
         int from = pointOrder[fromIdx];
+        BitSet toMapped = new BitSet(pointCount);
         for (int pp : pointsMap) {
             if (pp >= 0) {
                 toMapped.set(pp);
