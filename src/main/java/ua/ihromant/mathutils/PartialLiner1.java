@@ -274,17 +274,14 @@ public class PartialLiner1 {
         int[] partialLines = new int[lines.length];
         Arrays.fill(partialPoints, -1);
         Arrays.fill(partialLines, -1);
-        int[] perLineUnAss = new int[lines.length];
-        Arrays.fill(perLineUnAss, lines[0].length);
-        int[] perPointUnAss = beamCounts.clone();
         initOrder();
-        return isomorphic(0, 0, second, partialPoints, new BitSet(pointCount), perPointUnAss, partialLines, new BitSet(lines.length), perLineUnAss);
+        return isomorphic(0, 0, second, partialPoints, partialLines);
     }
 
-    private boolean isomorphic(int mapped, int fromIdx, PartialLiner1 second, int[] oldPointsMap, BitSet oldPoints, int[] perPointUnAss, int[] oldLinesMap, BitSet oldLines, int[] perLineUnAss) {
+    private boolean isomorphic(int mapped, int fromIdx, PartialLiner1 second, int[] pointsMap, int[] linesMap) {
         BitSet toMapped = new BitSet(pointCount);
         int from = pointOrder[fromIdx];
-        for (int pp : oldPointsMap) {
+        for (int pp : pointsMap) {
             if (pp >= 0) {
                 toMapped.set(pp);
             }
@@ -293,13 +290,9 @@ public class PartialLiner1 {
             if (toMapped.get(to)) {
                 continue;
             }
-            int[] newPointsMap = oldPointsMap.clone();
-            int[] newLinesMap = oldLinesMap.clone();
-            int[] newPerPointUnAss = perPointUnAss.clone();
-            int[] newPerLineUnAss = perLineUnAss.clone();
-            BitSet newPoints = (BitSet) oldPoints.clone();
-            BitSet newLines = (BitSet) oldLines.clone();
-            int added = mapPoint(second, from, to, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+            int[] newPointsMap = pointsMap.clone();
+            int[] newLinesMap = linesMap.clone();
+            int added = mapPoint(second, from, to, newPointsMap, newLinesMap);
             if (added < 0) {
                 continue;
             }
@@ -308,17 +301,17 @@ public class PartialLiner1 {
                 return true;
             }
             int newFrom = fromIdx + 1;
-            while (newPoints.get(pointOrder[newFrom])) {
+            while (newPointsMap[pointOrder[newFrom]] >= 0) {
                 newFrom++;
             }
-            if (isomorphic(newMapped, newFrom, second, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss)) {
+            if (isomorphic(newMapped, newFrom, second, newPointsMap, newLinesMap)) {
                 return true;
             }
         }
         return false;
     }
 
-    private int mapPoint(PartialLiner1 second, int from, int to, int[] newPointsMap, BitSet newPoints, int[] newPerPointUnAss, int[] newLinesMap, BitSet newLines, int[] newPerLineUnAss) {
+    private int mapPoint(PartialLiner1 second, int from, int to, int[] newPointsMap, int[] newLinesMap) {
         if (from < 0) {
             return to >= 0 ? -1 : 0;
         } else {
@@ -331,47 +324,25 @@ public class PartialLiner1 {
             return oldPoint != to ? -1 : 0;
         }
         newPointsMap[from] = to;
-        newPoints.set(from);
         int result = 1;
         for (int line : beams[from]) {
-            newPerLineUnAss[line]--;
             for (int p : lines[line]) {
-                if (p == from || !newPoints.get(p)) {
+                if (p == from || newPointsMap[p] < 0) {
                     continue;
                 }
                 int lineTo = second.lookup[to][newPointsMap[p]];
-                int added = mapLine(second, line, lineTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                int added = mapLine(second, line, lineTo, newPointsMap, newLinesMap);
                 if (added < 0) {
                     return -1;
                 }
                 result = result + added;
-                if (newPerLineUnAss[line] == 1) {
-                    int pointFrom = -1;
-                    BitSet values = new BitSet(pointCount);
-                    for (int p1 : lines[line]) {
-                        int val = newPointsMap[p1];
-                        if (val < 0) {
-                            pointFrom = p1;
-                        } else {
-                            values.set(val);
-                        }
-                    }
-                    for (int p1 : second.lines[lineTo]) {
-                        values.flip(p1);
-                    }
-                    added = mapPoint(second, pointFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
-                    if (added < 0) {
-                        return -1;
-                    }
-                    result = result + added;
-                }
                 break;
             }
         }
         return result;
     }
 
-    private int mapLine(PartialLiner1 second, int from, int to, int[] newPointsMap, BitSet newPoints, int[] newPerPointUnAss, int[] newLinesMap, BitSet newLines, int[] newPerLineUnAss) {
+    private int mapLine(PartialLiner1 second, int from, int to, int[] newPointsMap, int[] newLinesMap) {
         if (from < 0) {
             return to >= 0 ? -1 : 0;
         } else {
@@ -384,40 +355,18 @@ public class PartialLiner1 {
             return oldLine != to ? -1 : 0;
         }
         newLinesMap[from] = to;
-        newLines.set(from);
         int result = 0;
         for (int pt : lines[from]) {
-            newPerPointUnAss[pt]--;
             for (int line : beams[pt]) {
-                if (line == from || !newLines.get(line)) {
+                if (line == from || newLinesMap[line] < 0) {
                     continue;
                 }
                 int ptTo = second.intersections[to][newLinesMap[line]];
-                int added = mapPoint(second, pt, ptTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                int added = mapPoint(second, pt, ptTo, newPointsMap, newLinesMap);
                 if (added < 0) {
                     return -1;
                 }
                 result = result + added;
-                if (newPerPointUnAss[pt] == 1) {
-                    int lineFrom = -1;
-                    BitSet values = new BitSet(lines.length);
-                    for (int l : beams[pt]) {
-                        int val = newLinesMap[l];
-                        if (val < 0) {
-                            lineFrom = l;
-                        } else {
-                            values.set(val);
-                        }
-                    }
-                    for (int l : second.beams[ptTo]) {
-                        values.flip(l);
-                    }
-                    added = mapLine(second, lineFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
-                    if (added < 0) {
-                        return -1;
-                    }
-                    result = result + added;
-                }
                 break;
             }
         }
