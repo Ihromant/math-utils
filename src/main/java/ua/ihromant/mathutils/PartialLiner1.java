@@ -339,16 +339,13 @@ public class PartialLiner1 {
                 if (p == from || !newPoints.get(p)) {
                     continue;
                 }
-                int lineFrom = lookup[from][p];
                 int lineTo = second.lookup[to][newPointsMap[p]];
-                if (lineFrom >= 0) {
-                    int added = mapLine(second, lineFrom, lineTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
-                    if (added < 0) {
-                        return -1;
-                    }
-                    result = result + added;
-                    break;
+                int added = mapLine(second, line, lineTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                if (added < 0) {
+                    return -1;
                 }
+                result = result + added;
+                break;
             }
             if (newPerLineUnAss[line] == 1) {
                 int pointFrom = -1;
@@ -395,16 +392,13 @@ public class PartialLiner1 {
                 if (line == from || !newLines.get(line)) {
                     continue;
                 }
-                int ptFrom = intersections[from][line];
                 int ptTo = second.intersections[to][newLinesMap[line]];
-                if (ptFrom >= 0) {
-                    int added = mapPoint(second, ptFrom, ptTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
-                    if (added < 0) {
-                        return -1;
-                    }
-                    result = result + added;
-                    break;
+                int added = mapPoint(second, pt, ptTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                if (added < 0) {
+                    return -1;
                 }
+                result = result + added;
+                break;
             }
             if (newPerPointUnAss[pt] == 1) {
                 int lineFrom = -1;
