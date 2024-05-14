@@ -278,10 +278,10 @@ public class PartialLiner1 {
         Arrays.fill(perLineUnAss, lines[0].length);
         int[] perPointUnAss = beamCounts.clone();
         initOrder();
-        return isomorphic(0, second, partialPoints, new BitSet(pointCount), perPointUnAss, partialLines, new BitSet(lines.length), perLineUnAss);
+        return isomorphic(0, 0, second, partialPoints, new BitSet(pointCount), perPointUnAss, partialLines, new BitSet(lines.length), perLineUnAss);
     }
 
-    private boolean isomorphic(int fromIdx, PartialLiner1 second, int[] oldPointsMap, BitSet oldPoints, int[] perPointUnAss, int[] oldLinesMap, BitSet oldLines, int[] perLineUnAss) {
+    private boolean isomorphic(int mapped, int fromIdx, PartialLiner1 second, int[] oldPointsMap, BitSet oldPoints, int[] perPointUnAss, int[] oldLinesMap, BitSet oldLines, int[] perLineUnAss) {
         BitSet toMapped = new BitSet(pointCount);
         int from = pointOrder[fromIdx];
         for (int pp : oldPointsMap) {
@@ -299,63 +299,95 @@ public class PartialLiner1 {
             int[] newPerLineUnAss = perLineUnAss.clone();
             BitSet newPoints = (BitSet) oldPoints.clone();
             BitSet newLines = (BitSet) oldLines.clone();
-            BitSet newStepPoints = new BitSet(pointCount);
-            setPointFailed(from, to, newPointsMap, newStepPoints, newPerLineUnAss);
-            if (enhanceFailed(second, newStepPoints, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss)) {
+            int added = mapPoint(second, from, to, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+            if (added < 0) {
                 continue;
             }
-            if (newPoints.nextClearBit(0) == pointCount) {
+            int newMapped = mapped + added;
+            if (newMapped == pointCount) {
                 return true;
             }
             int newFrom = fromIdx + 1;
             while (newPoints.get(pointOrder[newFrom])) {
                 newFrom++;
             }
-            if (isomorphic(newFrom, second, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss)) {
+            if (isomorphic(newMapped, newFrom, second, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss)) {
                 return true;
             }
         }
         return false;
     }
 
-    private boolean setPointFailed(int from, int to, int[] newPointsMap, BitSet newStepPoints, int[] newPerLineUnAss) {
+    private int mapPoint(PartialLiner1 second, int from, int to, int[] newPointsMap, BitSet newPoints, int[] newPerPointUnAss, int[] newLinesMap, BitSet newLines, int[] newPerLineUnAss) {
         if (from < 0) {
-            return to >= 0;
+            return to >= 0 ? -1 : 0;
         } else {
             if (to < 0) {
-                return true;
+                return -1;
             }
         }
         int oldPoint = newPointsMap[from];
         if (oldPoint >= 0) {
-            return oldPoint != to;
+            return oldPoint != to ? -1 : 0;
         }
         newPointsMap[from] = to;
-        newStepPoints.set(from);
+        newPoints.set(from);
+        int result = 1;
         for (int line : beams[from]) {
             newPerLineUnAss[line]--;
+            for (int p : lines[line]) {
+                if (p == from || !newPoints.get(p)) {
+                    continue;
+                }
+                int lineFrom = lookup[from][p];
+                int lineTo = second.lookup[to][newPointsMap[p]];
+                if (lineFrom >= 0) {
+                    int added = mapLine(second, lineFrom, lineTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
+                    break;
+                }
+            }
         }
-        return false;
+        return result;
     }
 
-    private boolean setLineFailed(int from, int to, int[] newLinesMap, BitSet newStepLines, int[] newPerPointUnAss) {
+    private int mapLine(PartialLiner1 second, int from, int to, int[] newPointsMap, BitSet newPoints, int[] newPerPointUnAss, int[] newLinesMap, BitSet newLines, int[] newPerLineUnAss) {
         if (from < 0) {
-            return to >= 0;
+            return to >= 0 ? -1 : 0;
         } else {
             if (to < 0) {
-                return true;
+                return -1;
             }
         }
         int oldLine = newLinesMap[from];
         if (oldLine >= 0) {
-            return oldLine != to;
+            return oldLine != to ? -1 : 0;
         }
         newLinesMap[from] = to;
-        newStepLines.set(from);
+        newLines.set(from);
+        int result = 0;
         for (int pt : lines[from]) {
             newPerPointUnAss[pt]--;
+            for (int line : beams[pt]) {
+                if (line == from || !newLines.get(line)) {
+                    continue;
+                }
+                int ptFrom = intersections[from][line];
+                int ptTo = second.intersections[to][newLinesMap[line]];
+                if (ptFrom >= 0) {
+                    int added = mapPoint(second, ptFrom, ptTo, newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
+                    break;
+                }
+            }
         }
-        return false;
+        return result;
     }
 
     private static int findOne(int[] arr) {
@@ -388,9 +420,9 @@ public class PartialLiner1 {
                 for (int p2 = newStepPoints.nextSetBit(0); p2 >= 0; p2 = newStepPoints.nextSetBit(p2 + 1)) {
                     int lineFrom = line(p1, p2);
                     int lineTo = second.line(p1To, newPointsMap[p2]);
-                    if (setLineFailed(lineFrom, lineTo, newLinesMap, newStepLines, newPerPointsUnAss)) {
-                        return true;
-                    }
+//                    if (setLineFailed(lineFrom, lineTo, newLinesMap, newStepLines, newPerPointsUnAss)) {
+//                        return true;
+//                    }
                 }
             }
             int one;
@@ -406,9 +438,9 @@ public class PartialLiner1 {
                         values.set(l, false);
                     }
                 }
-                if (setLineFailed(lineFrom, values.nextSetBit(0), newLinesMap, newStepLines, newPerPointsUnAss)) {
-                    return true;
-                }
+//                if (setLineFailed(lineFrom, values.nextSetBit(0), newLinesMap, newStepLines, newPerPointsUnAss)) {
+//                    return true;
+//                }
             }
             newLines.or(newStepLines);
             newStepPoints.clear();
@@ -417,9 +449,9 @@ public class PartialLiner1 {
                 for (int l2 = newStepLines.nextSetBit(0); l2 >= 0; l2 = newStepLines.nextSetBit(l2 + 1)) {
                     int ptFrom = intersection(l1, l2);
                     int ptTo = second.intersection(l1To, newLinesMap[l2]);
-                    if (setPointFailed(ptFrom, ptTo, newPointsMap, newStepPoints, newPerLinesUnAss)) {
-                        return true;
-                    }
+//                    if (setPointFailed(ptFrom, ptTo, newPointsMap, newStepPoints, newPerLinesUnAss)) {
+//                        return true;
+//                    }
                 }
             }
             while ((one = findOne(newPerLinesUnAss)) >= 0) { // one is a line which has only one point unassigned
@@ -434,9 +466,9 @@ public class PartialLiner1 {
                         values.set(p, false);
                     }
                 }
-                if (setPointFailed(pointFrom, values.nextSetBit(0), newPointsMap, newStepPoints, newPerLinesUnAss)) {
-                    return true;
-                }
+//                if (setPointFailed(pointFrom, values.nextSetBit(0), newPointsMap, newStepPoints, newPerLinesUnAss)) {
+//                    return true;
+//                }
             }
         }
         return false;
