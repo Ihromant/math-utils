@@ -345,27 +345,27 @@ public class PartialLiner1 {
                     return -1;
                 }
                 result = result + added;
-                break;
-            }
-            if (newPerLineUnAss[line] == 1) {
-                int pointFrom = -1;
-                BitSet values = new BitSet(pointCount);
-                for (int p : lines[line]) {
-                    int val = newPointsMap[p];
-                    if (val < 0) {
-                        pointFrom = p;
-                    } else {
-                        values.set(val);
+                if (newPerLineUnAss[line] == 1) {
+                    int pointFrom = -1;
+                    BitSet values = new BitSet(pointCount);
+                    for (int p1 : lines[line]) {
+                        int val = newPointsMap[p1];
+                        if (val < 0) {
+                            pointFrom = p1;
+                        } else {
+                            values.set(val);
+                        }
                     }
+                    for (int p1 : second.lines[lineTo]) {
+                        values.flip(p1);
+                    }
+                    added = mapPoint(second, pointFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
                 }
-                for (int p : second.lines[newLinesMap[line]]) {
-                    values.flip(p);
-                }
-                int added = mapPoint(second, pointFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
-                if (added < 0) {
-                    return -1;
-                }
-                result = result + added;
+                break;
             }
         }
         return result;
@@ -398,27 +398,27 @@ public class PartialLiner1 {
                     return -1;
                 }
                 result = result + added;
-                break;
-            }
-            if (newPerPointUnAss[pt] == 1) {
-                int lineFrom = -1;
-                BitSet values = new BitSet(lines.length);
-                for (int l : beams[pt]) {
-                    int val = newLinesMap[l];
-                    if (val < 0) {
-                        lineFrom = l;
-                    } else {
-                        values.set(val);
+                if (newPerPointUnAss[pt] == 1) {
+                    int lineFrom = -1;
+                    BitSet values = new BitSet(lines.length);
+                    for (int l : beams[pt]) {
+                        int val = newLinesMap[l];
+                        if (val < 0) {
+                            lineFrom = l;
+                        } else {
+                            values.set(val);
+                        }
                     }
+                    for (int l : second.beams[ptTo]) {
+                        values.flip(l);
+                    }
+                    added = mapLine(second, lineFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
                 }
-                for (int l : second.beams[newPointsMap[pt]]) {
-                    values.flip(l);
-                }
-                int added = mapLine(second, lineFrom, values.nextSetBit(0), newPointsMap, newPoints, newPerPointUnAss, newLinesMap, newLines, newPerLineUnAss);
-                if (added < 0) {
-                    return -1;
-                }
-                result = result + added;
+                break;
             }
         }
         return result;
