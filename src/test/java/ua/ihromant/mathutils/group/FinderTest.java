@@ -361,7 +361,10 @@ public class FinderTest {
             DumpConfig common = readLast("com", cap, k);
             int bc = (cap - 1) / (k - 1);
             int lc = cap * (cap - 1) / k / (k - 1);
-            liners = Arrays.stream(common.partials()).map(part -> {
+            liners = Arrays.stream(common.partials()).filter(part -> {
+                Liner l = new Liner(cap, part);
+                return l.cardSubPlanes(true).nextSetBit(0) == cap;
+            }).map(part -> {
                 int[][] lines = new int[(v - 1) / (k - 1) + lc - bc][k];
                 System.arraycopy(part, 0, lines, 0, part.length);
                 for (int o = part.length; o < lines.length; o++) {
