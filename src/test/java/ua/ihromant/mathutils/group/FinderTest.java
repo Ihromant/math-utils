@@ -7,6 +7,7 @@ import ua.ihromant.mathutils.PartialLiner;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -333,6 +334,50 @@ public class FinderTest {
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
+        while (left > 0 && !liners.isEmpty()) {
+            AtomicLong cnt = new AtomicLong();
+            liners = nextStage(k, liners, l -> l.hullsOverCap(cap), cnt);
+            left--;
+            dump(prefix, v, k, left, liners);
+            System.out.println(left + " " + liners.size() + " " + cnt.get());
+        }
+        System.out.println(System.currentTimeMillis() - time);
+    }
+
+    @Test
+    public void generateLimitedHullsAlt() throws IOException {
+        int cap = 13;
+        String prefix = "hsa" + cap;
+        int v = 27;
+        int k = 3;
+        List<PartialLiner> liners;
+        int left;
+        if (new File("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt").exists()) {
+            DumpConfig conf = readLast(prefix, v, k);
+            liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
+            left = conf.left();
+        } else {
+            DumpConfig common = readLast("com", cap, k);
+            int bc = (cap - 1) / (k - 1);
+            int lc = cap * (cap - 1) / k / (k - 1);
+            liners = Arrays.stream(common.partials()).map(part -> {
+                int[][] lines = new int[(v - 1) / (k - 1) + lc - bc][k];
+                System.arraycopy(part, 0, lines, 0, part.length);
+                for (int o = part.length; o < lines.length; o++) {
+                    int i = o - lc + bc;
+                    for (int j = 0; j < k - 1; j++) {
+                        lines[o][j + 1] = 1 + i * (k - 1) + j;
+                    }
+                }
+                int[] tmp = lines[bc];
+                lines[bc] = lines[lines.length - 1];
+                lines[lines.length - 1] = tmp;
+                return new PartialLiner(lines);
+            }).toList();
+            left = v * (v - 1) / k / (k - 1) - ((v - 1) / (k - 1) + lc - bc);
+        }
+        long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
