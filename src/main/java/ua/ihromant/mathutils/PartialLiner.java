@@ -267,7 +267,7 @@ public class PartialLiner {
     }
 
     public boolean isomorphic(PartialLiner second) {
-        if (!Arrays.equals(lineFreq, second.lineFreq())) {
+        if (!Arrays.equals(lineFreq, second.lineFreq)) {
             return false;
         }
         int[] partialPoints = new int[pointCount];
@@ -280,7 +280,7 @@ public class PartialLiner {
 
     private boolean isomorphic(int mapped, int fromIdx, PartialLiner second, int[] pointsMap, boolean[] ptMapped, int[] linesMap, boolean[] lnMapped) {
         int from = pointOrder[fromIdx];
-        for (int to : second.beamDist()[beams[from].length]) {
+        for (int to : second.beamDist[beams[from].length]) {
             if (ptMapped[to]) {
                 continue;
             }
