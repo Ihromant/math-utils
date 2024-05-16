@@ -2,6 +2,8 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.function.BiPredicate;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class PartialLinerTest {
@@ -61,14 +63,18 @@ public class PartialLinerTest {
 
     @Test
     public void testIsomorphic() {
+        testSample(PartialLiner::isomorphic);
+    }
+
+    private void testSample(BiPredicate<PartialLiner, PartialLiner> iso) {
         PartialLiner first7 = new PartialLiner(Liner.byStrings(new String[]{
                 "0001123",
                 "1242534",
                 "3654656"
         }).lines());
         PartialLiner second7 = new PartialLiner(new Liner(new GaloisField(2).generatePlane()).lines());
-        assertTrue(first7.isomorphic(second7));
-        assertTrue(second7.isomorphic(first7));
+        assertTrue(iso.test(first7, second7));
+        assertTrue(iso.test(second7, first7));
         PartialLiner first13 = new PartialLiner(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
@@ -80,16 +86,16 @@ public class PartialLinerTest {
                 "2468ac578bc95acbbacc9bbac9"
         }).lines());
         PartialLiner second13 = new PartialLiner(Liner.byDiffFamily(new int[]{0, 6, 8}, new int[]{0, 9, 10}).lines());
-        assertTrue(first13.isomorphic(second13));
-        assertTrue(second13.isomorphic(first13));
-        assertFalse(alt13.isomorphic(first13));
+        assertTrue(iso.test(first13, second13));
+        assertTrue(iso.test(second13, first13));
+        assertFalse(iso.test(alt13, first13));
         PartialLiner first9 = new PartialLiner(Liner.byStrings(new String[]{
                 "000011122236",
                 "134534534547",
                 "268787676858"
         }).lines());
         PartialLiner second9 = new PartialLiner(new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner().lines());
-        assertTrue(first9.isomorphic(second9));
+        assertTrue(iso.test(first9, second9));
         PartialLiner firstFlat15 = new PartialLiner(Liner.byStrings(new String[] {
                 "00000001111112222223333444455566678",
                 "13579bd3469ac34578b678a58ab78979c9a",
@@ -103,25 +109,21 @@ public class PartialLinerTest {
         PartialLiner secondFlat15 = new PartialLiner(Liner.byDiffFamily(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10}).lines());
         PartialLiner secondSpace15 = new PartialLiner(Liner.byDiffFamily(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10}).lines());
         PartialLiner thirdSpace15 = new PartialLiner(new Liner(new GaloisField(2).generateSpace()).lines());
-        assertTrue(firstFlat15.isomorphic(secondFlat15));
-        assertTrue(firstSpace15.isomorphic(secondSpace15));
-        assertTrue(firstSpace15.isomorphic(thirdSpace15));
-        assertTrue(firstSpace15.isomorphic(thirdSpace15));
-        assertFalse(firstFlat15.isomorphic(firstSpace15));
+        assertTrue(iso.test(firstFlat15, secondFlat15));
+        assertTrue(iso.test(firstSpace15, secondSpace15));
+        assertTrue(iso.test(firstSpace15, thirdSpace15));
+        assertTrue(iso.test(firstSpace15, thirdSpace15));
+        assertFalse(iso.test(firstFlat15, firstSpace15));
         PartialLiner firstPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}});
         PartialLiner secondPartial = new PartialLiner(9, new int[][]{{6, 7, 8}, {4, 5, 8}});
         PartialLiner thirdPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {3, 4, 5}});
         PartialLiner fourthPartial = new PartialLiner(9, new int[][]{{0, 3, 6}, {1, 4, 7}});
         PartialLiner fifthPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}, {1, 3, 5}});
         PartialLiner sixthPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 5, 6}, {2, 4, 6}});
-        assertTrue(firstPartial.isomorphic(secondPartial));
-        assertFalse(firstPartial.isomorphic(thirdPartial));
-        assertTrue(thirdPartial.isomorphic(fourthPartial));
-        assertTrue(fifthPartial.isomorphic(sixthPartial));
-    }
-
-    @Test
-    public void testLargeIsomorphic() {
+        assertTrue(iso.test(firstPartial, secondPartial));
+        assertFalse(iso.test(firstPartial, thirdPartial));
+        assertTrue(iso.test(thirdPartial, fourthPartial));
+        assertTrue(iso.test(fifthPartial, sixthPartial));
         for (int i = 0; i < partials.length; i++) {
             PartialLiner pl1 = new PartialLiner(partials[i]);
             for (int j = 0; j < partials.length; j++) {
@@ -129,8 +131,8 @@ public class PartialLinerTest {
                     continue;
                 }
                 PartialLiner pl2 = new PartialLiner(partials[j]);
-                assertFalse(pl1.isomorphic(pl2));
-                assertFalse(pl2.isomorphic(pl1));
+                assertFalse(iso.test(pl1, pl2));
+                assertFalse(iso.test(pl2, pl1));
             }
         }
     }
