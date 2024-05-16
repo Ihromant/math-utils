@@ -249,6 +249,18 @@ public class FinderTest {
         }
         assertEquals(cnt, nonIsomorphic.size());
         System.out.println(v + " " + k + " iso points time " + (System.currentTimeMillis() - time));
+        conf = readLast("perf", v, k);
+        dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
+        time = System.currentTimeMillis();
+        nonIsomorphic.clear();
+        for (PartialLiner data : dataSet) {
+            if (nonIsomorphic.stream().anyMatch(data::isomorphicL)) {
+                continue;
+            }
+            nonIsomorphic.add(data);
+        }
+        assertEquals(cnt, nonIsomorphic.size());
+        System.out.println(v + " " + k + " iso lines time " + (System.currentTimeMillis() - time));
 //        nonIsomorphic.clear();
 //        if (!vf2) {
 //            return;

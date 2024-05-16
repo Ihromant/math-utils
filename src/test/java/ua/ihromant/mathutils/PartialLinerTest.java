@@ -64,6 +64,7 @@ public class PartialLinerTest {
     @Test
     public void testIsomorphic() {
         testSample(PartialLiner::isomorphic);
+        testSample(PartialLiner::isomorphicL);
     }
 
     private void testSample(BiPredicate<PartialLiner, PartialLiner> iso) {

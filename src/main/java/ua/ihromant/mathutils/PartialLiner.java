@@ -278,6 +278,82 @@ public class PartialLiner {
         return isomorphic(0, 0, second, partialPoints, new boolean[pointCount], partialLines, new boolean[lines.length]);
     }
 
+    public boolean isomorphicL(PartialLiner second) {
+        if (!Arrays.equals(lineFreq, second.lineFreq)) {
+            return false;
+        }
+        int[] partialPoints = new int[pointCount];
+        int[] partialLines = new int[lines.length];
+        Arrays.fill(partialPoints, -1);
+        Arrays.fill(partialLines, -1);
+        return isomorphicL(second, 0, partialPoints, new boolean[pointCount], partialLines, new boolean[lines.length]);
+    }
+
+    private boolean isomorphicL(PartialLiner second, int mapped, int[] pointsMap, boolean[] ptMapped, int[] linesMap, boolean[] lnMapped) {
+        int from = -1;
+        boolean foundNotCrossing = false;
+        ex: for (int l = 0; l < linesMap.length; l++) {
+            if (linesMap[l] >= 0) {
+                continue;
+            }
+            for (int p : lines[l]) {
+                if (pointsMap[p] >= 0) {
+                    continue ex;
+                }
+            }
+            foundNotCrossing = true;
+            from = l;
+            break;
+        }
+        if (!foundNotCrossing) {
+            for (int i = 0; i < lines.length; i++) {
+                if (linesMap[i] < 0) {
+                    from = i;
+                    break;
+                }
+            }
+        }
+        BitSet toFilter = new BitSet();
+        if (foundNotCrossing) {
+            for (int p : pointsMap) {
+                if (p < 0) {
+                    continue;
+                }
+                for (int l : second.point(p)) {
+                    toFilter.set(l);
+                }
+            }
+        } else {
+            for (int l : linesMap) {
+                if (l < 0) {
+                    continue;
+                }
+                toFilter.set(l);
+            }
+        }
+        for (int to = toFilter.nextClearBit(0); to < linesMap.length; to = toFilter.nextClearBit(to + 1)) {
+            if (lnMapped[to] || second.lineInter[to] != lineInter[from]) {
+                continue;
+            }
+            int[] newPointsMap = pointsMap.clone();
+            int[] newLinesMap = linesMap.clone();
+            boolean[] newPtMapped = ptMapped.clone();
+            boolean[] newLnMapped = lnMapped.clone();
+            int added = mapLine(second, from, to, newPointsMap, newPtMapped, newLinesMap, newLnMapped);
+            if (added < 0) {
+                continue;
+            }
+            int newMapped = mapped + added;
+            if (newMapped == lines.length) {
+                return true;
+            }
+            if (isomorphicL(second, newMapped, newPointsMap, newPtMapped, newLinesMap, newLnMapped)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean isomorphic(int mapped, int fromIdx, PartialLiner second, int[] pointsMap, boolean[] ptMapped, int[] linesMap, boolean[] lnMapped) {
         int from = pointOrder[fromIdx];
         for (int to : second.beamDist[beams[from].length]) {
