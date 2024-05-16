@@ -472,14 +472,116 @@ public class PartialLiner1 {
         return result;
     }
 
-    public boolean hasGaps(int pt) {
-        int[] arr = lookup[pt];
-        for (int i = 0; i < pointCount; i++) {
-            if (i == pt) {
+    public boolean oldIsomorphic(PartialLiner1 second) {
+        if (!Arrays.equals(lineFreq, second.lineFreq())) {
+            return false;
+        }
+        int[] partialPoints = new int[pointCount];
+        int[] partialLines = new int[lines.length];
+        Arrays.fill(partialPoints, -1);
+        Arrays.fill(partialLines, -1);
+        initOrder();
+        return oldIsomorphic(0, second, partialPoints, new BitSet(pointCount), partialLines, new BitSet(lines.length));
+    }
+
+    private boolean oldIsomorphic(int fromIdx, PartialLiner1 second, int[] oldPointsMap, BitSet oldPoints, int[] oldLinesMap, BitSet oldLines) {
+        BitSet toMapped = new BitSet(pointCount);
+        int from = pointOrder[fromIdx];
+        for (int pp : oldPointsMap) {
+            if (pp >= 0) {
+                toMapped.set(pp);
+            }
+        }
+        for (int to : second.beamDist()[beams[from].length]) {
+            if (toMapped.get(to)) {
                 continue;
             }
-            if (arr[i] < 0) {
+            int[] newPointsMap = oldPointsMap.clone();
+            int[] newLinesMap = oldLinesMap.clone();
+            BitSet newPoints = (BitSet) oldPoints.clone();
+            BitSet newLines = (BitSet) oldLines.clone();
+            newPointsMap[from] = to;
+            BitSet newStepPoints = new BitSet(pointCount);
+            newStepPoints.set(from);
+            if (enhanceFailed(second, newStepPoints, newPointsMap, newPoints, newLinesMap, newLines)) {
+                continue;
+            }
+            if (newPoints.nextClearBit(0) == pointCount) {
                 return true;
+            }
+            int newFrom = fromIdx + 1;
+            while (newPoints.get(pointOrder[newFrom])) {
+                newFrom++;
+            }
+            if (oldIsomorphic(newFrom, second, newPointsMap, newPoints, newLinesMap, newLines)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean enhanceFailed(PartialLiner1 second, BitSet newStepPoints, int[] newPointsMap, BitSet newPoints, int[] newLinesMap, BitSet newLines) {
+        while (!newStepPoints.isEmpty()) {
+            newPoints.or(newStepPoints);
+            BitSet linesAssigned = new BitSet(lines.length);
+            for (int p1 = newPoints.nextSetBit(0); p1 >= 0; p1 = newPoints.nextSetBit(p1 + 1)) {
+                if (newStepPoints.get(p1)) {
+                    continue;
+                }
+                int p1To = newPointsMap[p1];
+                for (int p2 = newStepPoints.nextSetBit(0); p2 >= 0; p2 = newStepPoints.nextSetBit(p2 + 1)) {
+                    int lineFrom = line(p1, p2);
+                    int lineTo = second.line(p1To, newPointsMap[p2]);
+                    if (lineFrom < 0) {
+                        if (lineTo < 0) {
+                            continue;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        if (lineTo < 0) {
+                            return true;
+                        }
+                    }
+                    int oldLine = newLinesMap[lineFrom];
+                    if (oldLine >= 0) {
+                        if (oldLine != lineTo) {
+                            return true;
+                        }
+                        continue;
+                    }
+                    newLinesMap[lineFrom] = lineTo;
+                    linesAssigned.set(lineFrom);
+                }
+            }
+            newStepPoints.clear();
+            newLines.or(linesAssigned);
+            for (int l1 = newLines.nextSetBit(0); l1 >= 0; l1 = newLines.nextSetBit(l1 + 1)) {
+                int l1To = newLinesMap[l1];
+                for (int l2 = linesAssigned.nextSetBit(0); l2 >= 0; l2 = linesAssigned.nextSetBit(l2 + 1)) {
+                    int ptFrom = intersection(l1, l2);
+                    int ptTo = second.intersection(l1To, newLinesMap[l2]);
+                    if (ptFrom < 0) {
+                        if (ptTo < 0) {
+                            continue;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        if (ptTo < 0) {
+                            return true;
+                        }
+                    }
+                    int oldPoint = newPointsMap[ptFrom];
+                    if (oldPoint >= 0) {
+                        if (oldPoint != ptTo) {
+                            return true;
+                        }
+                        continue;
+                    }
+                    newPointsMap[ptFrom] = ptTo;
+                    newStepPoints.set(ptFrom);
+                }
             }
         }
         return false;
