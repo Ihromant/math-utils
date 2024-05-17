@@ -9,7 +9,6 @@ import ua.ihromant.mathutils.nauty.NautyWrapper;
 
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -25,11 +24,8 @@ public class Liner {
     private final int[][] lines;
     private final boolean[][] flags;
     private final int[][] lookup;
-    private final int[][] beamDist;
     private final int[][] beams;
     private final int[][] intersections;
-    private int[] lineFreq;
-    private int[] pointOrder;
     private int[] canon;
     private int[][] canonLines;
 
@@ -49,18 +45,9 @@ public class Liner {
                 minLineLength = line.length;
             }
         }
-        int[] beamLengths = new int[(pointCount - 1) / (minLineLength - 1) + 1];
-        for (int beamCount : beamCounts) {
-            beamLengths[beamCount]++;
-        }
         this.beams = new int[pointCount][];
-        this.beamDist = new int[beamLengths.length][0];
         for (int pt = 0; pt < pointCount; pt++) {
             int bc = beamCounts[pt];
-            if (beamDist[bc].length == 0) {
-                beamDist[bc] = new int[beamLengths[bc]];
-            }
-            beamDist[bc][beamDist[bc].length - beamLengths[bc]--] = pt;
             beams[pt] = new int[bc];
             int idx = 0;
             for (int ln = 0; ln < lines.length; ln++) {
@@ -205,10 +192,6 @@ public class Liner {
                 maxFreq = f;
             }
         }
-        this.lineFreq = new int[maxFreq + 1];
-        for (int f : freq) {
-            this.lineFreq[f]++;
-        }
         return result;
     }
 
@@ -218,36 +201,6 @@ public class Liner {
 
     public int lineCount() {
         return lines.length;
-    }
-
-    public int[][] beamDist() {
-        return beamDist;
-    }
-
-    public int[] lineFreq() {
-        return lineFreq;
-    }
-
-    public int[] pointOrder() {
-        if (pointOrder == null) {
-            int[] freq = new int[pointCount];
-            for (int[] pts : beamDist) {
-                for (int pt : pts) {
-                    freq[pt] = pts.length;
-                }
-            }
-            Integer[] arr = new Integer[pointCount];
-            for (int i = 0; i < pointCount; i++) {
-                arr[i] = i;
-            }
-            Arrays.sort(arr, Comparator.<Integer>comparingInt(pt -> freq[pt])
-                    .thenComparingInt(pt -> -beams[pt].length));
-            pointOrder = new int[pointCount];
-            for (int i = 0; i < pointCount; i++) {
-                pointOrder[i] = arr[i];
-            }
-        }
-        return pointOrder;
     }
 
     public boolean flag(int line, int point) {

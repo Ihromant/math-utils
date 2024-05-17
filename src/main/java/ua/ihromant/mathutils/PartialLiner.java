@@ -616,4 +616,46 @@ public class PartialLiner {
         }
         return false;
     }
+
+    public boolean hasNext() {
+        int[] prev = lines[lines.length - 1];
+        int fst = prev[0];
+        while (fst < pointCount && !hasGaps(fst)) {
+            fst++;
+        }
+        if (fst == pointCount) {
+            return true; // to avoid complete liner filtering
+        }
+        int[] initBlock = new int[prev.length];
+        initBlock[0] = fst;
+        int snd = fst + 1;
+        while (snd < pointCount && lookup[fst][snd] >= 0) {
+            snd++;
+        }
+        if (snd == pointCount) {
+            return false;
+        }
+        initBlock[1] = snd;
+        return hasNext(initBlock, prev.length - 2);
+    }
+
+    private boolean hasNext(int[] curr, int moreNeeded) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            for (int i = 0; i < len; i++) {
+                if (lookup[p][curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            if (moreNeeded == 1) {
+                return true;
+            }
+            int[] nextCurr = curr.clone();
+            nextCurr[len] = p;
+            if (hasNext(nextCurr, moreNeeded - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

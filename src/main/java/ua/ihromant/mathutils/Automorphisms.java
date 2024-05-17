@@ -428,53 +428,6 @@ public class Automorphisms {
         return null;
     }
 
-    public static int[] altIsomorphism(Liner first, Liner second) {
-        if (!Arrays.equals(first.lineFreq(), second.lineFreq())) {
-            return null;
-        }
-        int[] partialPoints = new int[first.pointCount()];
-        int[] partialLines = new int[first.lineCount()];
-        Arrays.fill(partialPoints, -1);
-        Arrays.fill(partialLines, -1);
-        return altIsomorphism(first, first.pointOrder(), 0, second, partialPoints, new BitSet(), partialLines, new BitSet());
-    }
-
-    private static int[] altIsomorphism(Liner first, int[] pointOrder, int fromIdx, Liner second, int[] oldPointsMap, BitSet oldPoints, int[] oldLinesMap, BitSet oldLines) {
-        BitSet toMapped = new BitSet();
-        int from = pointOrder[fromIdx];
-        for (int pp : oldPointsMap) {
-            if (pp >= 0) {
-                toMapped.set(pp);
-            }
-        }
-        for (int to : second.beamDist()[first.lines(from).length]) {
-            if (toMapped.get(to)) {
-                continue;
-            }
-            int[] newPointsMap = oldPointsMap.clone();
-            int[] newLinesMap = oldLinesMap.clone();
-            BitSet newPoints = (BitSet) oldPoints.clone();
-            BitSet newLines = (BitSet) oldLines.clone();
-            newPointsMap[from] = to;
-            BitSet newStepPoints = new BitSet();
-            newStepPoints.set(from);
-            if (enhanceFailed(first, second, newStepPoints, newPointsMap, newPoints, newLinesMap, newLines)) {
-                continue;
-            }
-            if (newPoints.nextClearBit(0) == first.pointCount()) {
-                return newPointsMap;
-            }
-            int newFrom = fromIdx;
-            while (newPoints.get(pointOrder[++newFrom])) {
-            }
-            int[] candidate = altIsomorphism(first, pointOrder, newFrom, second, newPointsMap, newPoints, newLinesMap, newLines);
-            if (candidate != null) {
-                return candidate;
-            }
-        }
-        return null;
-    }
-
     private static boolean enhanceFailed(Liner first, Liner second, BitSet newStepPoints, int[] newPointsMap, BitSet newPoints, int[] newLinesMap, BitSet newLines) {
         while (!newStepPoints.isEmpty()) {
             newPoints.or(newStepPoints);
