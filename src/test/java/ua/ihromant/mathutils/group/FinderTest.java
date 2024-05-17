@@ -47,7 +47,8 @@ public class FinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private static void blocks(PartialLiner liner, int prev, int[] curr, int moreNeeded, BitSet possible, Consumer<int[]> sink) {
+    private static void blocks(PartialLiner liner, int[] curr, int moreNeeded, BitSet possible, Consumer<int[]> sink) {
+        int prev = curr[curr.length - moreNeeded - 1];
         for (int idx = possible.nextSetBit(prev + 1); idx >= 0; idx = possible.nextSetBit(idx + 1)) {
             int[] nextCurr = curr.clone();
             nextCurr[nextCurr.length - moreNeeded] = idx;
@@ -61,7 +62,7 @@ public class FinderTest {
                     nextPossible.set(i, false);
                 }
             }
-            blocks(liner, idx, nextCurr, moreNeeded - 1, nextPossible, sink);
+            blocks(liner, nextCurr, moreNeeded - 1, nextPossible, sink);
         }
     }
 
@@ -182,7 +183,7 @@ public class FinderTest {
                 }
                 nonIsomorphic.add(liner);
             };
-            blocks(partial, snd, initBlock, k - 2, possible, blockConsumer);
+            blocks(partial, initBlock, k - 2, possible, blockConsumer);
         }
         return nonIsomorphic;
     }
@@ -333,7 +334,7 @@ public class FinderTest {
             }
             designs(variants, k, nextPartial, needed - 1, filter, cons);
         };
-        blocks(partial, snd, initBlock, k - 2, possible, blockConsumer);
+        blocks(partial, initBlock, k - 2, possible, blockConsumer);
     }
 
     @Test
