@@ -8,19 +8,15 @@ import java.util.function.Consumer;
 
 public class Automorphisms {
     public static long autCount(Liner liner) {
-        int[] partialPoints = new int[liner.pointCount()];
-        int[] partialLines = new int[liner.lineCount()];
-        Arrays.fill(partialPoints, -1);
-        Arrays.fill(partialLines, -1);
-        return autCount(liner, partialPoints, partialLines);
+        CountingConsumer cont = new CountingConsumer();
+        liner.automorphisms(cont);
+        return cont.count();
     }
 
     public static int[][] autArray(Liner liner) {
-        int[] partialPoints = new int[liner.pointCount()];
-        int[] partialLines = new int[liner.lineCount()];
-        Arrays.fill(partialPoints, -1);
-        Arrays.fill(partialLines, -1);
-        return autArray(liner, partialPoints, partialLines);
+        CollectingConsumer coll = new CollectingConsumer();
+        liner.automorphisms(coll);
+        return coll.array();
     }
 
     public static long autCount(Liner liner, int[] partialPoints, int[] partialLines) {

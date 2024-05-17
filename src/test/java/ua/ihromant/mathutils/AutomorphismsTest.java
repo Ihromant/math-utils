@@ -126,7 +126,7 @@ public class AutomorphismsTest {
             for (int j = i + 1; j < plane.pointCount(); j++) {
                 for (int k = j + 1; k < plane.pointCount(); k++) {
                     List<BitSet> cycled = iterate(plane, of(i, j, k));
-                    cycles.add(new LinkedHashSet<>(cycled.subList(cycled.indexOf(cycled.get(cycled.size() - 1)) + 1, cycled.size())));
+                    cycles.add(new LinkedHashSet<>(cycled.subList(cycled.indexOf(cycled.getLast()) + 1, cycled.size())));
                     //System.out.println(cycled);
                     lengths.set(cycled.size() - 1);
                 }

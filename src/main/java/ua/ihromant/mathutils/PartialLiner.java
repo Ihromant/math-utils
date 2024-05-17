@@ -325,7 +325,7 @@ public class PartialLiner {
                 if (p < 0) {
                     continue;
                 }
-                for (int l : second.point(p)) {
+                for (int l : second.beams[p]) {
                     toFilter.set(l);
                 }
             }
