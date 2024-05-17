@@ -177,7 +177,7 @@ public class FinderTest {
             Consumer<int[]> blockConsumer = block -> {
                 PartialLiner liner = new PartialLiner(partial, block);
                 cnt.incrementAndGet();
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(liner::isomorphic)) {
+                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(liner::isomorphicL)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
