@@ -605,34 +605,29 @@ public class PartialLiner {
         return result;
     }
 
-    private boolean isFilled(int pt) {
-        int[] arr = lookup[pt];
-        for (int i = pt + 1; i < pointCount; i++) {
-            if (arr[i] < 0) {
-                return false;
+    private int getUnassigned(int[] look, int pt) {
+        for (int i = pt + 1; i < look.length; i++) {
+            if (look[i] < 0) {
+                return i;
             }
         }
-        return true;
+        return -1;
     }
 
     public boolean hasNext() {
         int[] prev = lines[lines.length - 1];
         int fst = prev[0];
-        while (fst < pointCount && isFilled(fst)) {
-            fst++;
-        }
+        int[] look;
+        int snd;
+        do {
+            look = lookup[fst];
+            snd = getUnassigned(look, fst);
+        } while (snd < 0 && ++fst < pointCount);
         if (fst == pointCount) {
             return true; // to avoid complete liner filtering
         }
         int[] initBlock = new int[prev.length];
         initBlock[0] = fst;
-        int snd = fst + 1;
-        while (snd < pointCount && lookup[fst][snd] >= 0) {
-            snd++;
-        }
-        if (snd == pointCount) {
-            return false;
-        }
         initBlock[1] = snd;
         return hasNext(initBlock, prev.length - 2);
     }
@@ -660,18 +655,14 @@ public class PartialLiner {
     public void blocks(Consumer<int[]> cons) {
         int[] prev = lines[lines.length - 1];
         int fst = prev[0];
-        while (isFilled(fst)) {
-            fst++;
-        }
+        int[] look;
+        int snd;
+        do {
+            look = lookup[fst];
+            snd = getUnassigned(look, fst);
+        } while (snd < 0 && ++fst < pointCount);
         int[] initBlock = new int[prev.length];
         initBlock[0] = fst;
-        int snd = fst + 1;
-        while (snd < pointCount && lookup[fst][snd] >= 0) {
-            snd++;
-        }
-        if (snd == pointCount) {
-            return;
-        }
         initBlock[1] = snd;
         blocks(initBlock, prev.length - 2, cons);
     }
