@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.function.Consumer;
 
 public class PartialLiner {
     private final int pointCount;
@@ -604,23 +605,20 @@ public class PartialLiner {
         return result;
     }
 
-    public boolean hasGaps(int pt) {
+    private boolean isFilled(int pt) {
         int[] arr = lookup[pt];
-        for (int i = 0; i < pointCount; i++) {
-            if (i == pt) {
-                continue;
-            }
+        for (int i = pt + 1; i < pointCount; i++) {
             if (arr[i] < 0) {
-                return true;
+                return false;
             }
         }
-        return false;
+        return true;
     }
 
     public boolean hasNext() {
         int[] prev = lines[lines.length - 1];
         int fst = prev[0];
-        while (fst < pointCount && !hasGaps(fst)) {
+        while (fst < pointCount && isFilled(fst)) {
             fst++;
         }
         if (fst == pointCount) {
@@ -642,20 +640,57 @@ public class PartialLiner {
     private boolean hasNext(int[] curr, int moreNeeded) {
         int len = curr.length - moreNeeded;
         ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
             for (int i = 0; i < len; i++) {
-                if (lookup[p][curr[i]] >= 0) {
+                if (look[curr[i]] >= 0) {
                     continue ex;
                 }
             }
             if (moreNeeded == 1) {
                 return true;
             }
-            int[] nextCurr = curr.clone();
-            nextCurr[len] = p;
-            if (hasNext(nextCurr, moreNeeded - 1)) {
+            curr[len] = p;
+            if (hasNext(curr, moreNeeded - 1)) {
                 return true;
             }
         }
         return false;
+    }
+
+    public void blocks(Consumer<int[]> cons) {
+        int[] prev = lines[lines.length - 1];
+        int fst = prev[0];
+        while (isFilled(fst)) {
+            fst++;
+        }
+        int[] initBlock = new int[prev.length];
+        initBlock[0] = fst;
+        int snd = fst + 1;
+        while (snd < pointCount && lookup[fst][snd] >= 0) {
+            snd++;
+        }
+        if (snd == pointCount) {
+            return;
+        }
+        initBlock[1] = snd;
+        blocks(initBlock, prev.length - 2, cons);
+    }
+
+    private void blocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                cons.accept(curr);
+            } else {
+                blocks(curr, moreNeeded - 1, cons);
+            }
+        }
     }
 }

@@ -16,13 +16,11 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -39,31 +37,12 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(k, liners, l -> !l.hasNext(), cnt);
+            liners = nextStage(liners, l -> !l.hasNext(), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
         }
         System.out.println(System.currentTimeMillis() - time);
-    }
-
-    private static void blocks(PartialLiner liner, int[] curr, int moreNeeded, BitSet possible, Consumer<int[]> sink) {
-        int prev = curr[curr.length - moreNeeded - 1];
-        for (int idx = possible.nextSetBit(prev + 1); idx >= 0; idx = possible.nextSetBit(idx + 1)) {
-            int[] nextCurr = curr.clone();
-            nextCurr[nextCurr.length - moreNeeded] = idx;
-            if (moreNeeded == 1) {
-                sink.accept(nextCurr);
-                continue;
-            }
-            BitSet nextPossible = (BitSet) possible.clone();
-            for (int i = idx + 1; i < liner.pointCount(); i++) {
-                if (liner.line(idx, i) >= 0) {
-                    nextPossible.set(i, false);
-                }
-            }
-            blocks(liner, nextCurr, moreNeeded - 1, nextPossible, sink);
-        }
     }
 
     @Test
@@ -78,7 +57,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(k, liners, l -> l.checkAP() || !l.hasNext(), cnt);
+            liners = nextStage(liners, l -> l.checkAP() || !l.hasNext(), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -146,44 +125,18 @@ public class FinderTest {
         }
     }
 
-    private static List<PartialLiner> nextStage(int k, List<PartialLiner> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
-        int lc = partials.getFirst().lineCount();
-        int pc = partials.getFirst().pointCount();
+    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
         List<PartialLiner> nonIsomorphic = new ArrayList<>();
         for (PartialLiner partial : partials) {
-            int[] prev = partial.line(lc - 1);
-            int prevFst = prev[0];
-            int fst = IntStream.range(prevFst, pc - k + 1).filter(partial::hasGaps).findAny().orElseThrow();
-            int[] initBlock = new int[k];
-            initBlock[0] = fst;
-            BitSet possible = new BitSet();
-            int[] firstAssigned = partial.lookup(fst);
-            for (int i = fst + 1; i < pc; i++) {
-                if (firstAssigned[i] < 0) {
-                    possible.set(i);
-                }
-            }
-            int snd = possible.nextSetBit(fst + 1);
-            if (snd < 0) {
-                continue;
-            }
-            initBlock[1] = snd;
-            int[] secondAssigned = partial.lookup(snd);
-            possible.set(fst + 1, snd + 1, false);
-            for (int i = snd + 1; i < pc; i++) {
-                if (secondAssigned[i] >= 0) {
-                    possible.set(i, false);
-                }
-            }
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block);
+                PartialLiner liner = new PartialLiner(partial, block.clone());
                 cnt.incrementAndGet();
                 if (filter.test(liner) || nonIsomorphic.stream().anyMatch(liner::isomorphicL)) {
                     return;
                 }
                 nonIsomorphic.add(liner);
             };
-            blocks(partial, initBlock, k - 2, possible, blockConsumer);
+            partial.blocks(blockConsumer);
         }
         return nonIsomorphic;
     }
@@ -290,41 +243,16 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = PartialLiner::checkAP;
-        liners.stream().forEach(pl -> designs(v, k, pl, conf.left(), filter, des -> {
+        liners.stream().forEach(pl -> designs(pl, conf.left(), filter, des -> {
             Liner l = new Liner(v, des.lines());
             System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des.lines()));
         }));
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 
-    private static void designs(int variants, int k, PartialLiner partial, int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
-        int cl = partial.lineCount();
-        int[] prev = partial.line(cl - 1);
-        int prevFst = prev[0];
-        int fst = IntStream.range(prevFst, variants - k + 1).filter(partial::hasGaps).findAny().orElseThrow();
-        int[] initBlock = new int[k];
-        initBlock[0] = fst;
-        BitSet possible = new BitSet();
-        int[] firstAssigned = partial.lookup(fst);
-        for (int i = fst + 1; i < variants; i++) {
-            if (firstAssigned[i] < 0) {
-                possible.set(i);
-            }
-        }
-        int snd = possible.nextSetBit(fst + 1);
-        if (snd < 0) {
-            return;
-        }
-        initBlock[1] = snd;
-        int[] secondAssigned = partial.lookup(snd);
-        possible.set(fst + 1, snd + 1, false);
-        for (int i = snd + 1; i < variants; i++) {
-            if (secondAssigned[i] >= 0) {
-                possible.set(i, false);
-            }
-        }
+    private static void designs(PartialLiner partial, int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
         Consumer<int[]> blockConsumer = block -> {
-            PartialLiner nextPartial = new PartialLiner(partial, block);
+            PartialLiner nextPartial = new PartialLiner(partial, block.clone());
             if (filter.test(nextPartial)) {
                 return;
             }
@@ -332,9 +260,9 @@ public class FinderTest {
                 cons.accept(nextPartial);
                 return;
             }
-            designs(variants, k, nextPartial, needed - 1, filter, cons);
+            designs(nextPartial, needed - 1, filter, cons);
         };
-        blocks(partial, initBlock, k - 2, possible, blockConsumer);
+        partial.blocks(blockConsumer);
     }
 
     @Test
@@ -350,7 +278,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(k, liners, l -> !l.hasNext() || l.hullsOverCap(cap), cnt);
+            liners = nextStage(liners, l -> !l.hasNext() || l.hullsOverCap(cap), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -397,7 +325,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(k, liners, l -> !l.hasNext() || l.hullsOverCap(cap), cnt);
+            liners = nextStage(liners, l -> !l.hasNext() || l.hullsOverCap(cap), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
