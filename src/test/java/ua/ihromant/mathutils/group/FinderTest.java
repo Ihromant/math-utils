@@ -38,7 +38,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, PartialLiner::hasNext, PartialLiner::isomorphicL, cnt);
+            liners = nextStage(liners, PartialLiner::hasNext, PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -58,7 +58,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, l -> l.checkAP() && l.hasNext(PartialLiner::checkAP), PartialLiner::isomorphic, cnt);
+            liners = nextStage(liners, l -> l.checkAP() && l.hasNext(PartialLiner::checkAP), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -216,6 +216,16 @@ public class FinderTest {
         }
         assertEquals(cnt, nonIsomorphic.size());
         System.out.println(v + " " + k + " iso lines time " + (System.currentTimeMillis() - time));
+        time = System.currentTimeMillis();
+        nonIsomorphic.clear();
+        for (PartialLiner data : dataSet) {
+            if (nonIsomorphic.stream().anyMatch(data::isomorphicSel)) {
+                continue;
+            }
+            nonIsomorphic.add(data);
+        }
+        assertEquals(cnt, nonIsomorphic.size());
+        System.out.println(v + " " + k + " iso sel time " + (System.currentTimeMillis() - time));
 //        nonIsomorphic.clear();
 //        if (!vf2) {
 //            return;
@@ -326,7 +336,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, l -> l.hullsUnderCap(cap) && l.hasNext(l1 -> l1.hullsUnderCap(cap)), PartialLiner::isomorphic, cnt);
+            liners = nextStage(liners, l -> l.hullsUnderCap(cap) && l.hasNext(l1 -> l1.hullsUnderCap(cap)), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());

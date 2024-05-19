@@ -364,6 +364,117 @@ public class PartialLiner {
         return false;
     }
 
+    private static int findMinIdx(int[] freq, int[] arr, int[] map) {
+        int idx = -1;
+        int min = Integer.MAX_VALUE;
+        for (int i = 0; i < arr.length; i++) {
+            int minC;
+            if (map[i] < 0 && (minC = freq[arr[i]]) < min) {
+                idx = i;
+                min = minC;
+            }
+        }
+        return idx;
+    }
+
+    private static int getUnMapped(int[] arr, boolean[] map) {
+        int result = 0;
+        for (int el : arr) {
+            if (!map[el]) {
+                result++;
+            }
+        }
+        return result;
+    }
+
+    private boolean byPt(PartialLiner second, int from, int mapped, int[] pointsMap, boolean[] ptMapped, int[] perPointUnAss, int[] linesMap, boolean[] lnMapped, int[] perLineUnAss) {
+        for (int to : second.beamDist[beams[from].length]) {
+            if (ptMapped[to] || getUnMapped(second.beams[to], lnMapped) != perPointUnAss[from]) {
+                continue;
+            }
+            int[] newPointsMap = pointsMap.clone();
+            int[] newLinesMap = linesMap.clone();
+            boolean[] newPtMapped = ptMapped.clone();
+            boolean[] newLnMapped = lnMapped.clone();
+            int[] newPerPointUnAss = perPointUnAss.clone();
+            int[] newPerLineUnAss = perLineUnAss.clone();
+            int added = mapPoint(second, from, to, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
+            if (added < 0) {
+                continue;
+            }
+            int newMapped = mapped + added;
+            if (newMapped == lines.length) {
+                return true;
+            }
+            if (isomorphicSel(second, newMapped, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean byLine(PartialLiner second, int from, int mapped, int[] pointsMap, boolean[] ptMapped, int[] perPointUnAss, int[] linesMap, boolean[] lnMapped, int[] perLineUnAss) {
+        for (int to = 0; to < lines.length; to++) {
+            if (lnMapped[to] || second.lineInter[to] != lineInter[from] || getUnMapped(second.lines[to], ptMapped) != perLineUnAss[from]) {
+                continue;
+            }
+            int[] newPointsMap = pointsMap.clone();
+            int[] newLinesMap = linesMap.clone();
+            boolean[] newPtMapped = ptMapped.clone();
+            boolean[] newLnMapped = lnMapped.clone();
+            int[] newPerPointUnAss = perPointUnAss.clone();
+            int[] newPerLineUnAss = perLineUnAss.clone();
+            int added = mapLine(second, from, to, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
+            if (added < 0) {
+                continue;
+            }
+            int newMapped = mapped + added;
+            if (newMapped == lines.length) {
+                return true;
+            }
+            if (isomorphicSel(second, newMapped, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isomorphicSel(PartialLiner second) {
+        if (!Arrays.equals(lineFreq, second.lineFreq)) {
+            return false;
+        }
+        int[] partialPoints = new int[pointCount];
+        int[] partialLines = new int[lines.length];
+        Arrays.fill(partialPoints, -1);
+        Arrays.fill(partialLines, -1);
+        int[] perLineUnAss = new int[lines.length];
+        Arrays.fill(perLineUnAss, lines[0].length);
+        int[] perPointUnAss = beamCounts.clone();
+        return isomorphicSel(second, 0, partialPoints, new boolean[pointCount], perPointUnAss, partialLines, new boolean[lines.length], perLineUnAss);
+    }
+
+    private boolean isomorphicSel(PartialLiner second, int mapped, int[] pointsMap, boolean[] ptMapped, int[] perPointUnAss, int[] linesMap, boolean[] lnMapped, int[] perLineUnAss) {
+        int[] ptFreq = new int[beams[0].length + 1];
+        for (int i = 0; i < perPointUnAss.length; i++) {
+            if (pointsMap[i] >= 0) {
+                continue;
+            }
+            ptFreq[perPointUnAss[i]]++;
+        }
+        int[] lineFr = new int[lines[0].length + 1];
+        for (int i = 0; i < perLineUnAss.length; i++) {
+            if (linesMap[i] >= 0) {
+                continue;
+            }
+            lineFr[perLineUnAss[i]]++;
+        }
+        int minPtIdx = findMinIdx(ptFreq, perPointUnAss, pointsMap);
+        int minLineIdx = findMinIdx(lineFr, perLineUnAss, linesMap);
+        return ptFreq[perPointUnAss[minPtIdx]] < lineFr[perLineUnAss[minLineIdx]]
+                ? byPt(second, minPtIdx, mapped, pointsMap, ptMapped, perPointUnAss, linesMap, lnMapped, perLineUnAss)
+                : byLine(second, minLineIdx, mapped, pointsMap, ptMapped, perPointUnAss, linesMap, lnMapped, perLineUnAss);
+    }
+
     private boolean isomorphic(int mapped, int fromIdx, PartialLiner second, int[] pointsMap, boolean[] ptMapped, int[] perPointUnAss, int[] linesMap, boolean[] lnMapped, int[] perLineUnAss) {
         int from = pointOrder[fromIdx];
         for (int to : second.beamDist[beams[from].length]) {

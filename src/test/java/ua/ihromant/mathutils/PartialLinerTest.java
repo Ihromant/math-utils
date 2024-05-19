@@ -63,6 +63,7 @@ public class PartialLinerTest {
 
     @Test
     public void testIsomorphic() {
+        testSample(PartialLiner::isomorphicSel);
         testSample(PartialLiner::isomorphic);
         testSample(PartialLiner::isomorphicL);
     }
