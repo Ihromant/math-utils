@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class PartialLiner {
     private final int pointCount;
@@ -548,11 +549,11 @@ public class PartialLiner {
                                 }
                                 int l4 = lookup[pl2][po2];
                                 if (l1 >= 0 && l4 >= 0 && intersections[l1][l4] >= 0) {
-                                    return true;
+                                    return false;
                                 }
                                 int l3 = lookup[pl1][po2];
                                 if (l2 >= 0 && l3 >= 0 && intersections[l2][l3] >= 0) {
-                                    return true;
+                                    return false;
                                 }
                             }
                         }
@@ -560,10 +561,10 @@ public class PartialLiner {
                 }
             }
         }
-        return false;
+        return true;
     }
 
-    public boolean hullsOverCap(int cap) {
+    public boolean hullsUnderCap(int cap) {
         int[] ll = lines[lines.length - 1];
         BitSet last = new BitSet(pointCount);
         for (int point : ll) {
@@ -580,11 +581,11 @@ public class PartialLiner {
             while (!(additional = additional(base, additional)).isEmpty()) {
                 base.or(additional);
                 if (base.cardinality() > cap) {
-                    return true;
+                    return false;
                 }
             }
         }
-        return false;
+        return true;
     }
 
     private BitSet additional(BitSet first, BitSet second) {
@@ -646,6 +647,48 @@ public class PartialLiner {
             }
             curr[len] = p;
             if (hasNext(curr, moreNeeded - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasNext(Predicate<PartialLiner> test) {
+        int[] prev = lines[lines.length - 1];
+        int fst = prev[0];
+        int[] look;
+        int snd;
+        do {
+            look = lookup[fst];
+            snd = getUnassigned(look, fst);
+        } while (snd < 0 && ++fst < pointCount);
+        if (fst == pointCount) {
+            return true; // to avoid complete liner filtering
+        }
+        int[] initBlock = new int[prev.length];
+        initBlock[0] = fst;
+        initBlock[1] = snd;
+        return hasNext(initBlock, prev.length - 2, test);
+    }
+
+    private boolean hasNext(int[] curr, int moreNeeded, Predicate<PartialLiner> test) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                if (test.test(new PartialLiner(this, curr))) {
+                    return true;
+                } else {
+                    continue;
+                }
+            }
+            if (hasNext(curr, moreNeeded - 1, test)) {
                 return true;
             }
         }

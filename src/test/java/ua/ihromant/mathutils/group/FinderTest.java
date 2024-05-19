@@ -38,7 +38,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, l -> !l.hasNext(), PartialLiner::isomorphicL, cnt);
+            liners = nextStage(liners, PartialLiner::hasNext, PartialLiner::isomorphicL, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -58,7 +58,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, l -> !l.hasNext() || l.checkAP(), PartialLiner::isomorphic, cnt);
+            liners = nextStage(liners, l -> l.checkAP() && l.hasNext(PartialLiner::checkAP), PartialLiner::isomorphic, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -132,7 +132,7 @@ public class FinderTest {
             Consumer<int[]> blockConsumer = block -> {
                 PartialLiner liner = new PartialLiner(partial, block.clone());
                 cnt.incrementAndGet();
-                if (filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
+                if (!filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
                     return;
                 }
                 nonIsomorphic.add(liner);
@@ -236,8 +236,8 @@ public class FinderTest {
 
     @Test
     public void byPartials() {
-        String prefix = "com";
-        int v = 25;
+        String prefix = "ap";
+        int v = 28;
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k);
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
@@ -254,7 +254,7 @@ public class FinderTest {
     private static void designs(PartialLiner partial, int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
         Consumer<int[]> blockConsumer = block -> {
             PartialLiner nextPartial = new PartialLiner(partial, block.clone());
-            if (filter.test(nextPartial)) {
+            if (!filter.test(nextPartial)) {
                 return;
             }
             if (needed == 1) {
@@ -279,7 +279,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, l -> !l.hasNext() || l.hullsOverCap(cap), PartialLiner::isomorphic, cnt);
+            liners = nextStage(liners, l -> l.hullsUnderCap(cap) && l.hasNext(l1 -> l1.hullsUnderCap(cap)), PartialLiner::isomorphic, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -326,7 +326,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, l -> !l.hasNext() || l.hullsOverCap(cap), PartialLiner::isomorphic, cnt);
+            liners = nextStage(liners, l -> l.hullsUnderCap(cap) && l.hasNext(l1 -> l1.hullsUnderCap(cap)), PartialLiner::isomorphic, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
