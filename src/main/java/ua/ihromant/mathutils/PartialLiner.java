@@ -43,10 +43,10 @@ public class PartialLiner {
         }
         this.beamLengths = beamLengths.clone();
         this.beams = new int[pointCount][];
-        this.beamDist = new int[beamLengths.length][];
+        this.beamDist = new int[beamLengths.length][0];
         for (int pt = 0; pt < pointCount; pt++) {
             int bc = beamCounts[pt];
-            if (beamDist[bc] == null) {
+            if (beamDist[bc].length == 0) {
                 beamDist[bc] = new int[beamLengths[bc]];
             }
             beamDist[bc][beamDist[bc].length - beamLengths[bc]--] = pt;
@@ -141,11 +141,11 @@ public class PartialLiner {
         lineInter[pll] = ni;
         lineFreq[ni]++;
 
-        this.beamDist = new int[bl][];
+        this.beamDist = new int[bl][0];
         int[] beamLengths = this.beamLengths.clone();
         for (int pt = 0; pt < pointCount; pt++) {
             int bc = beamCounts[pt];
-            if (beamDist[bc] == null) {
+            if (beamDist[bc].length == 0) {
                 beamDist[bc] = new int[beamLengths[bc]];
             }
             beamDist[bc][beamDist[bc].length - beamLengths[bc]--] = pt;
@@ -221,9 +221,6 @@ public class PartialLiner {
         }
         int[] freq = new int[pointCount];
         for (int[] pts : beamDist) {
-            if (pts == null) {
-                continue;
-            }
             for (int pt : pts) {
                 freq[pt] = pts.length;
             }
