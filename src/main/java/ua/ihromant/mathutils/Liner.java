@@ -1,11 +1,8 @@
 package ua.ihromant.mathutils;
 
-import nl.peterbloem.kit.Order;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
-import ua.ihromant.mathutils.nauty.Nauty;
-import ua.ihromant.mathutils.nauty.NautyWrapper;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -27,8 +24,6 @@ public class Liner {
     private final int[][] lookup;
     private final int[][] beams;
     private final int[][] intersections;
-    private int[] canon;
-    private int[][] canonLines;
 
     public Liner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
@@ -585,39 +580,6 @@ public class Liner {
         throw new IllegalArgumentException();
     }
 
-    private int[] canon() {
-        if (canon == null) {
-            NautyWrapper wrap = new NautyWrapper(this);
-            Order order = Nauty.canonicalOrdering(wrap);
-            canon = new int[order.size()];
-            for (int i = 0; i < canon.length; i++) {
-                canon[i] = order.newIndex(i);
-            }
-        }
-        return canon;
-    }
-
-    private int[][] canonLines() {
-        if (canonLines == null) {
-            int[] canon = canon();
-            canonLines = new int[lines.length][];
-            for (int i = 0; i < lines.length; i++) {
-                int[] line = lines[i];
-                BitSet bs = new BitSet();
-                for (int pt : line) {
-                    bs.set(canon[pt]);
-                }
-                canonLines[canon[i + pointCount] - pointCount] = bs.stream().toArray();
-            }
-            System.out.println();
-        }
-        return canonLines;
-    }
-
-    public static boolean isomorphic(Liner a, Liner b) {
-        return Arrays.deepEquals(a.canonLines(), b.canonLines());
-    }
-
     public void automorphisms(Consumer<int[]> autConsumer) {
         int[] partialPoints = new int[pointCount];
         int[] partialLines = new int[lines.length];
@@ -693,85 +655,6 @@ public class Liner {
             }
             automorphisms(autConsumer, newMapped, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
         }
-    }
-
-    public boolean isomorphic(Liner second) {
-        int[] partialPoints = new int[pointCount];
-        int[] partialLines = new int[lines.length];
-        Arrays.fill(partialPoints, -1);
-        Arrays.fill(partialLines, -1);
-        int[] perLineUnAss = new int[lines.length];
-        Arrays.fill(perLineUnAss, lines[0].length);
-        int[] perPointUnAss = new int[pointCount];
-        Arrays.fill(perLineUnAss, beams[0].length);
-        return isomorphic(second, 0, partialPoints, new boolean[pointCount], perPointUnAss, partialLines, new boolean[lines.length], perLineUnAss);
-    }
-
-    private boolean isomorphic(Liner second, int mapped, int[] pointsMap, boolean[] ptMapped, int[] perPointUnAss, int[] linesMap, boolean[] lnMapped, int[] perLineUnAss) {
-        int from = -1;
-        boolean foundNotCrossing = false;
-        ex: for (int l = 0; l < linesMap.length; l++) {
-            if (linesMap[l] >= 0) {
-                continue;
-            }
-            for (int p : lines[l]) {
-                if (pointsMap[p] >= 0) {
-                    continue ex;
-                }
-            }
-            foundNotCrossing = true;
-            from = l;
-            break;
-        }
-        if (!foundNotCrossing) {
-            for (int i = 0; i < lines.length; i++) {
-                if (linesMap[i] < 0) {
-                    from = i;
-                    break;
-                }
-            }
-        }
-        BitSet toFilter = new BitSet();
-        if (foundNotCrossing) {
-            for (int p : pointsMap) {
-                if (p < 0) {
-                    continue;
-                }
-                for (int l : second.beams[p]) {
-                    toFilter.set(l);
-                }
-            }
-        } else {
-            for (int l : linesMap) {
-                if (l < 0) {
-                    continue;
-                }
-                toFilter.set(l);
-            }
-        }
-        for (int to = toFilter.nextClearBit(0); to < linesMap.length; to = toFilter.nextClearBit(to + 1)) {
-            if (lnMapped[to]) {
-                continue;
-            }
-            int[] newPointsMap = pointsMap.clone();
-            int[] newLinesMap = linesMap.clone();
-            boolean[] newPtMapped = ptMapped.clone();
-            boolean[] newLnMapped = lnMapped.clone();
-            int[] newPerPointUnAss = perPointUnAss.clone();
-            int[] newPerLineUnAss = perLineUnAss.clone();
-            int added = mapLine(second, from, to, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
-            if (added < 0) {
-                continue;
-            }
-            int newMapped = mapped + added;
-            if (newMapped == lines.length) {
-                return true;
-            }
-            if (isomorphic(second, newMapped, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss)) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private int mapPoint(Liner second, int from, int to, int[] newPointsMap, boolean[] newPtMapped, int[] newPerPointUnAss, int[] newLinesMap, boolean[] newLnMapped, int[] newPerLineUnAss) {
