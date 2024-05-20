@@ -131,9 +131,13 @@ public class FinderTest {
         for (PartialLiner partial : partials) {
             Consumer<int[]> blockConsumer = block -> {
                 PartialLiner liner = new PartialLiner(partial, block.clone());
-                cnt.incrementAndGet();
-                if (!filter.test(liner) || nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
+                if (!filter.test(liner)) {
                     return;
+                } else {
+                    cnt.incrementAndGet();
+                    if (nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
+                        return;
+                    }
                 }
                 nonIsomorphic.add(liner);
             };
