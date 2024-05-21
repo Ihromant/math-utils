@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -17,76 +18,41 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AutomorphismsTest {
     @Test
     public void testAutomorphisms() {
-        assertEquals(168, Automorphisms.autCount(new Liner(new GaloisField(2).generatePlane())));
-        assertEquals(432, Automorphisms.autCount(Liner.byStrings(new String[]{ // affine 3
-                "000011122236",
-                "134534534547",
-                "268787676858"
-        })));
-        assertEquals(5616, Automorphisms.autCount(new Liner(new GaloisField(3).generatePlane()))); // projective 3
-        //assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
-        assertEquals(432, Automorphisms.autCount(Liner.byStrings(new String[]{ // affine 3
-                "000011122236",
-                "134534534547",
-                "268787676858"
-        })));
-        assertEquals(20160, Automorphisms.autCount(Liner.byStrings(new String[]{ // smallest 3-dim projective
-                "00000001111112222223333444455556666",
-                "13579bd3478bc3478bc789a789a789a789a",
-                "2468ace569ade65a9edbcdecbeddebcedcb"
-        })));
-        assertEquals(6, Automorphisms.autCount(Liner.byStrings(new String[]{
-                "00000011111222223334445556",
-                "13579b3469a3467867868a7897",
-                "2468ac578bc95acbbacc9bbac9"
-        })));
-        assertEquals(39, Automorphisms.autCount(Liner.byStrings(new String[]{
-                "00000011111222223334445556",
-                "13579b3469a3467867868a7897",
-                "2468ac578bc95abcbcac9babc9"
-        })));
-        long time = System.currentTimeMillis();
-        assertEquals(12096, Automorphisms.autCount(Liner.byStrings(new String[]{
-                "0000000001111111122222222333333334444455556666777788899aabbcgko",
-                "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
-                "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
-                "3cdefopqrghijrqopqrponmklporqklmn7romnqpnmqoklrplkbopporqqrfjnr"
-        })));
-        System.out.println(System.currentTimeMillis() - time);
+        testSample(Automorphisms::autCount);
+        testSample(Automorphisms::autCountOld);
     }
 
-    @Test
-    public void testAutomorphismsOld() {
-        assertEquals(168, Automorphisms.autCountOld(new Liner(new GaloisField(2).generatePlane())));
-        assertEquals(432, Automorphisms.autCountOld(Liner.byStrings(new String[]{ // affine 3
+    private void testSample(ToLongFunction<Liner> autCount) {
+        assertEquals(168, autCount.applyAsLong(new Liner(new GaloisField(2).generatePlane())));
+        assertEquals(432, autCount.applyAsLong(Liner.byStrings(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
         })));
-        assertEquals(5616, Automorphisms.autCountOld(new Liner(new GaloisField(3).generatePlane()))); // projective 3
-        //assertEquals(120960, Automorphisms.automorphisms(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
-        assertEquals(432, Automorphisms.autCountOld(Liner.byStrings(new String[]{ // affine 3
+        assertEquals(5616, autCount.applyAsLong(new Liner(new GaloisField(3).generatePlane()))); // projective 3
+        //assertEquals(120960, autCount.applyAsLong(new Liner(new GaloisField(4).generatePlane())).count()); // projective 4
+        assertEquals(432, autCount.applyAsLong(Liner.byStrings(new String[]{ // affine 3
                 "000011122236",
                 "134534534547",
                 "268787676858"
         })));
-        assertEquals(20160, Automorphisms.autCountOld(Liner.byStrings(new String[]{ // smallest 3-dim projective
+        assertEquals(20160, autCount.applyAsLong(Liner.byStrings(new String[]{ // smallest 3-dim projective
                 "00000001111112222223333444455556666",
                 "13579bd3478bc3478bc789a789a789a789a",
                 "2468ace569ade65a9edbcdecbeddebcedcb"
         })));
-        assertEquals(6, Automorphisms.autCountOld(Liner.byStrings(new String[]{
+        assertEquals(6, autCount.applyAsLong(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95acbbacc9bbac9"
         })));
-        assertEquals(39, Automorphisms.autCountOld(Liner.byStrings(new String[]{
+        assertEquals(39, autCount.applyAsLong(Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
                 "2468ac578bc95abcbcac9babc9"
         })));
         long time = System.currentTimeMillis();
-        assertEquals(12096, Automorphisms.autCountOld(Liner.byStrings(new String[]{
+        assertEquals(12096, autCount.applyAsLong(Liner.byStrings(new String[]{
                 "0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",
                 "289abklmnba89lknmefdchgjijighfecd6klhilkgjnmhjmngiajgihigjheimq",
