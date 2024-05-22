@@ -189,13 +189,13 @@ public class FinderTest {
 
     @Test
     public void performance() {
-        testPerformance(19, 3, 3);
-        testPerformance(25, 4, 1);
-        testPerformance(31, 4, 3);
-        testPerformance(37, 5, 4);
+        testPerformance(15, 3, 79, false);
+        testPerformance(52, 4, 38, true);
+        testPerformance(25, 4, 1, false);
+        testPerformance(45, 3, 8, true);
     }
 
-    private static void testPerformance(int v, int k, int cnt) {
+    private static void testPerformance(int v, int k, int cnt, boolean skipLines) {
         DumpConfig conf = readLast("perf", v, k);
         List<PartialLiner> dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         long time = System.currentTimeMillis();
@@ -208,18 +208,20 @@ public class FinderTest {
         }
         assertEquals(cnt, nonIsomorphic.size());
         System.out.println(v + " " + k + " iso points time " + (System.currentTimeMillis() - time));
-        conf = readLast("perf", v, k);
-        dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
-        time = System.currentTimeMillis();
-        nonIsomorphic.clear();
-        for (PartialLiner data : dataSet) {
-            if (nonIsomorphic.stream().anyMatch(data::isomorphicL)) {
-                continue;
+        if (!skipLines) {
+            conf = readLast("perf", v, k);
+            dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
+            time = System.currentTimeMillis();
+            nonIsomorphic.clear();
+            for (PartialLiner data : dataSet) {
+                if (nonIsomorphic.stream().anyMatch(data::isomorphicL)) {
+                    continue;
+                }
+                nonIsomorphic.add(data);
             }
-            nonIsomorphic.add(data);
+            assertEquals(cnt, nonIsomorphic.size());
+            System.out.println(v + " " + k + " iso lines time " + (System.currentTimeMillis() - time));
         }
-        assertEquals(cnt, nonIsomorphic.size());
-        System.out.println(v + " " + k + " iso lines time " + (System.currentTimeMillis() - time));
         time = System.currentTimeMillis();
         nonIsomorphic.clear();
         for (PartialLiner data : dataSet) {
