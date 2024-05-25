@@ -17,6 +17,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -124,6 +125,26 @@ public class FinderTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static List<PartialLiner> nextStageConc(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
+        List<PartialLiner> nonIsomorphic = new CopyOnWriteArrayList<>();
+        partials.stream().parallel().forEach(partial -> {
+            Consumer<int[]> blockConsumer = block -> {
+                PartialLiner liner = new PartialLiner(partial, block.clone());
+                if (!filter.test(liner)) {
+                    return;
+                } else {
+                    cnt.incrementAndGet();
+                    if (nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
+                        return;
+                    }
+                }
+                nonIsomorphic.add(liner);
+            };
+            partial.blocks(blockConsumer);
+        });
+        return new ArrayList<>(nonIsomorphic);
     }
 
     private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
