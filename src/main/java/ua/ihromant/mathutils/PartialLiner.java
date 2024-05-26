@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.Iterator;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -833,6 +834,68 @@ public class PartialLiner {
             } else {
                 blocks(curr, moreNeeded - 1, cons);
             }
+        }
+    }
+
+    public Iterable<int[]> blocks() {
+        return BlocksIterator::new;
+    }
+
+    private class BlocksIterator implements Iterator<int[]> {
+        private final int[] block;
+        private boolean hasNext;
+
+        public BlocksIterator() {
+            int[] prev = lines[lines.length - 1];
+            int ll = prev.length;
+            this.block = new int[ll];
+            int fst = prev[0];
+            int[] look;
+            int snd;
+            do {
+                look = lookup[fst];
+                snd = getUnassigned(look, fst);
+            } while (snd < 0 && ++fst < pointCount);
+            block[0] = fst;
+            block[1] = snd;
+            for (int i = 2; i < ll; i++) {
+                block[i] = snd + i - 1;
+            }
+            this.hasNext = fst < pointCount && findNext(ll - 2);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return hasNext;
+        }
+
+        private boolean findNext(int moreNeeded) {
+            int len = block.length - moreNeeded;
+            ex: for (int p = Math.max(block[len - 1] + 1, block[len]); p < pointCount - moreNeeded + 1; p++) {
+                int[] look = lookup[p];
+                for (int i = 0; i < len; i++) {
+                    if (look[block[i]] >= 0) {
+                        continue ex;
+                    }
+                }
+                block[len] = p;
+                if (moreNeeded == 1 || findNext(moreNeeded - 1)) {
+                    return true;
+                }
+            }
+            int base = ++block[len - 1] - len + 1;
+            for (int i = len; i < block.length; i++) {
+                block[i] = base + i;
+            }
+            return false;
+        }
+
+        @Override
+        public int[] next() {
+            int[] res = block.clone();
+            block[block.length - 1]++;
+            this.hasNext = findNext(block.length - 2);
+            return res;
         }
     }
 }
