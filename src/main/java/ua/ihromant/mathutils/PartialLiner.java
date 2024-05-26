@@ -898,4 +898,66 @@ public class PartialLiner {
             return res;
         }
     }
+
+    public Iterable<int[]> blocksResolvable() {
+        return BlocksResIterator::new;
+    }
+
+    private class BlocksResIterator implements Iterator<int[]> {
+        private final int[] block;
+        private final int desired;
+        private boolean hasNext;
+
+        public BlocksResIterator() {
+            int ll = lines[0].length;
+            this.desired = lines.length / ll;
+            this.block = new int[ll];
+            int fst = 0;
+            while (beamCounts[fst] > desired) {
+                fst++;
+            }
+            block[0] = fst;
+            for (int i = 1; i < ll; i++) {
+                block[i] = fst + i;
+            }
+            this.hasNext = fst < pointCount && findNext(ll - 1);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return hasNext;
+        }
+
+        private boolean findNext(int moreNeeded) {
+            int len = block.length - moreNeeded;
+            ex: for (int p = Math.max(block[len - 1] + 1, block[len]); p < pointCount - moreNeeded + 1; p++) {
+                if (beamCounts[p] > desired) {
+                    continue;
+                }
+                int[] look = lookup[p];
+                for (int i = 0; i < len; i++) {
+                    if (look[block[i]] >= 0) {
+                        continue ex;
+                    }
+                }
+                block[len] = p;
+                if (moreNeeded == 1 || findNext(moreNeeded - 1)) {
+                    return true;
+                }
+            }
+            int base = ++block[len - 1] - len + 1;
+            for (int i = len; i < block.length; i++) {
+                block[i] = base + i;
+            }
+            return false;
+        }
+
+        @Override
+        public int[] next() {
+            int[] res = block.clone();
+            block[block.length - 1]++;
+            this.hasNext = findNext(block.length - 1);
+            return res;
+        }
+    }
 }

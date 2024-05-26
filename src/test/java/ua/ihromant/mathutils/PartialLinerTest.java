@@ -88,6 +88,20 @@ public class PartialLinerTest {
         }
         assertArrayEquals(byConsNext.toArray(int[][]::new), byIteratorNext.toArray(int[][]::new));
         assertEquals(4, byIteratorNext.size());
+        byIteratorNext.clear();
+
+        int[][] spr1 = new int[][]{
+                {0, 1, 2, 3},
+                {4, 5, 6, 7},
+                {8, 9, 10, 11},
+                {12, 13, 14, 15},
+                {0, 4, 8, 12}
+        };
+        par = new PartialLiner(spr1);
+        for (int[] bl : par.blocksResolvable()) {
+            byIteratorNext.add(bl);
+        }
+        assertEquals(27, byIteratorNext.size());
     }
 
     @Test
