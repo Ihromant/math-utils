@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.function.Function;
 import java.util.function.Predicate;
 
 public class PartialLiner {
@@ -723,13 +724,13 @@ public class PartialLiner {
         return -1;
     }
 
-    public boolean hasNext(int depth) {
+    public boolean hasNext(Function<PartialLiner, Iterable<int[]>> blocks, int depth) {
         if (depth == 0) {
             return true;
         }
-        for (int[] block : blocks()) {
+        for (int[] block : blocks.apply(this)) {
             PartialLiner part = new PartialLiner(this, block);
-            if (part.hasNext(depth - 1)) {
+            if (part.hasNext(blocks, depth - 1)) {
                 return true;
             }
         }

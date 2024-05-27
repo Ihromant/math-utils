@@ -7,7 +7,6 @@ import ua.ihromant.mathutils.PartialLiner;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -21,6 +20,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -42,7 +42,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt);
+            liners = nextStage(liners, l -> l.hasNext(PartialLiner::blocks, depth), PartialLiner::isomorphicSel, PartialLiner::blocks, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -64,7 +64,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, cnt);
+            liners = nextStage(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, PartialLiner::blocks, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -141,10 +141,11 @@ public class FinderTest {
         return new ArrayList<>(nonIsomorphic);
     }
 
-    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
+    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker,
+                                                Function<PartialLiner, Iterable<int[]>> blocks, AtomicLong cnt) {
         List<PartialLiner> nonIsomorphic = new ArrayList<>();
         for (PartialLiner partial : partials) {
-            for (int[] block : partial.blocks()) {
+            for (int[] block : blocks.apply(partial)) {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (!filter.test(liner)) {
                     continue;
@@ -334,6 +335,20 @@ public class FinderTest {
         return new DumpConfig(v, k, left, liners);
     }
 
+    private DumpConfig defaultResConfig(int v, int k) {
+        int r = v / k;
+        int[][] blocks = new int[r + 1][k];
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < k; j++) {
+                blocks[i][j] = i * k + j;
+            }
+        }
+        for (int i = 0; i < k; i++) {
+            blocks[r][i] = k * i;
+        }
+        return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - r - 1, new int[][][]{blocks});
+    }
+
     @Test
     public void generateLimitedHulls() throws IOException {
         int cap = 13;
@@ -349,7 +364,29 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(l1 -> l1.hullsUnderCap(cap), depth), PartialLiner::isomorphicSel, cnt);
+            liners = nextStage(liners, l -> l.hasNext((Predicate<PartialLiner>)  l1 -> l1.hullsUnderCap(cap), depth), PartialLiner::isomorphicSel, PartialLiner::blocks, cnt);
+            left--;
+            dump(prefix, v, k, left, liners);
+            System.out.println(left + " " + liners.size() + " " + cnt.get());
+        }
+        System.out.println(System.currentTimeMillis() - time);
+    }
+
+    @Test
+    public void generateResolvable() throws IOException {
+        String prefix = "res";
+        int v = 15;
+        int k = 3;
+        int dp = 4;
+        DumpConfig conf = readLast(prefix, v, k, () -> defaultResConfig(v, k));
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
+        int left = conf.left();
+        long time = System.currentTimeMillis();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
+        while (left > 0 && !liners.isEmpty()) {
+            AtomicLong cnt = new AtomicLong();
+            int depth = Math.min(left - 1, dp);
+            liners = nextStage(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), PartialLiner::isomorphicSel, PartialLiner::blocksResolvable, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
