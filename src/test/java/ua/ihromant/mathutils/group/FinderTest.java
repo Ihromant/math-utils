@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,7 +34,7 @@ public class FinderTest {
         int v = 15;
         int k = 3;
         int dp = 3;
-        DumpConfig conf = readLast(prefix, v, k);
+        DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
@@ -55,7 +56,7 @@ public class FinderTest {
         int v = 28;
         int k = 4;
         int dp = 4;
-        DumpConfig conf = readLast(prefix, v, k);
+        DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
@@ -88,7 +89,7 @@ public class FinderTest {
         }
     }
 
-    private static DumpConfig readLast(String prefix, int v, int k) {
+    private static DumpConfig readLast(String prefix, int v, int k, Supplier<DumpConfig> fallback) {
         try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
@@ -115,17 +116,7 @@ public class FinderTest {
             }
             return new DumpConfig(v, k, left, partials);
         } catch (FileNotFoundException e) {
-            int r = (v - 1) / (k - 1);
-            int[][] blocks = new int[r + 1][k];
-            for (int i = 0; i < r; i++) {
-                for (int j = 0; j < k - 1; j++) {
-                    blocks[i][j + 1] = 1 + i * (k - 1) + j;
-                }
-            }
-            for (int i = 0; i < k; i++) {
-                blocks[r][i] = 1 + (k - 1) * i;
-            }
-            return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - r - 1, new int[][][]{blocks});
+            return fallback.get();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -219,7 +210,7 @@ public class FinderTest {
     }
 
     private static void testPerformance(int v, int k, int cnt, boolean skipLines) {
-        DumpConfig conf = readLast("perf", v, k);
+        DumpConfig conf = readLast("perf", v, k, () -> {throw new IllegalArgumentException();});
         List<PartialLiner> dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         long time = System.currentTimeMillis();
         List<PartialLiner> nonIsomorphic = new ArrayList<>();
@@ -232,7 +223,7 @@ public class FinderTest {
         assertEquals(cnt, nonIsomorphic.size());
         System.out.println(v + " " + k + " iso points time " + (System.currentTimeMillis() - time));
         if (!skipLines) {
-            conf = readLast("perf", v, k);
+            conf = readLast("perf", v, k, () -> {throw new IllegalArgumentException();});
             dataSet = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
             time = System.currentTimeMillis();
             nonIsomorphic.clear();
@@ -278,7 +269,7 @@ public class FinderTest {
         String prefix = "ap";
         int v = 28;
         int k = 4;
-        DumpConfig conf = readLast(prefix, v, k);
+        DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
@@ -304,65 +295,55 @@ public class FinderTest {
         }
     }
 
-    @Test
-    public void generateLimitedHulls() throws IOException {
-        int cap = 15;
-        String prefix = "hs" + cap;
-        int v = 45;
-        int k = 3;
-        int dp = 4;
-        DumpConfig conf = readLast(prefix, v, k);
-        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
-        long time = System.currentTimeMillis();
-        int left = conf.left();
-        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap + ", depth " + dp);
-        while (left > 0 && !liners.isEmpty()) {
-            AtomicLong cnt = new AtomicLong();
-            int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(l1 -> l1.hullsUnderCap(cap), depth), PartialLiner::isomorphicSel, cnt);
-            left--;
-            dump(prefix, v, k, left, liners);
-            System.out.println(left + " " + liners.size() + " " + cnt.get());
+    private static DumpConfig defaultBeamConfig(int v, int k) {
+        int r = (v - 1) / (k - 1);
+        int[][] blocks = new int[r + 1][k];
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < k - 1; j++) {
+                blocks[i][j + 1] = 1 + i * (k - 1) + j;
+            }
         }
-        System.out.println(System.currentTimeMillis() - time);
+        for (int i = 0; i < k; i++) {
+            blocks[r][i] = 1 + (k - 1) * i;
+        }
+        return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - r - 1, new int[][][]{blocks});
+    }
+
+    private static DumpConfig defaultHullsConfig(int v, int k, int cap) {
+        DumpConfig common = readLast("com", cap, k, () -> {throw new IllegalArgumentException();});
+        int bc = (cap - 1) / (k - 1);
+        int lc = cap * (cap - 1) / k / (k - 1);
+        int[][][] liners = Arrays.stream(common.partials()).filter(part -> {
+            Liner l = new Liner(cap, part);
+            return l.cardSubPlanes(true).nextSetBit(0) == cap;
+        }).map(part -> {
+            int[][] lines = new int[(v - 1) / (k - 1) + lc - bc][k];
+            System.arraycopy(part, 0, lines, 0, part.length);
+            for (int o = part.length; o < lines.length; o++) {
+                int i = o - lc + bc;
+                for (int j = 0; j < k - 1; j++) {
+                    lines[o][j + 1] = 1 + i * (k - 1) + j;
+                }
+            }
+            int[] tmp = lines[bc];
+            lines[bc] = lines[lines.length - 1];
+            lines[lines.length - 1] = tmp;
+            return lines;
+        }).toArray(int[][][]::new);
+        int left = v * (v - 1) / k / (k - 1) - ((v - 1) / (k - 1) + lc - bc);
+        return new DumpConfig(v, k, left, liners);
     }
 
     @Test
-    public void generateLimitedHullsAlt() throws IOException {
+    public void generateLimitedHulls() throws IOException {
         int cap = 13;
         String prefix = "hsa" + cap;
         int v = 31;
         int k = 3;
         int dp = 4;
-        List<PartialLiner> liners;
-        int left;
-        if (new File("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt").exists()) {
-            DumpConfig conf = readLast(prefix, v, k);
-            liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
-            left = conf.left();
-        } else {
-            DumpConfig common = readLast("com", cap, k);
-            int bc = (cap - 1) / (k - 1);
-            int lc = cap * (cap - 1) / k / (k - 1);
-            liners = Arrays.stream(common.partials()).filter(part -> {
-                Liner l = new Liner(cap, part);
-                return l.cardSubPlanes(true).nextSetBit(0) == cap;
-            }).map(part -> {
-                int[][] lines = new int[(v - 1) / (k - 1) + lc - bc][k];
-                System.arraycopy(part, 0, lines, 0, part.length);
-                for (int o = part.length; o < lines.length; o++) {
-                    int i = o - lc + bc;
-                    for (int j = 0; j < k - 1; j++) {
-                        lines[o][j + 1] = 1 + i * (k - 1) + j;
-                    }
-                }
-                int[] tmp = lines[bc];
-                lines[bc] = lines[lines.length - 1];
-                lines[lines.length - 1] = tmp;
-                return new PartialLiner(lines);
-            }).toList();
-            left = v * (v - 1) / k / (k - 1) - ((v - 1) / (k - 1) + lc - bc);
-        }
+        DumpConfig conf = readLast(prefix, v, k, () -> defaultHullsConfig(v, k, cap));
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
+        int left = conf.left();
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
