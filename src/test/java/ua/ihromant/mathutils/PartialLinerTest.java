@@ -62,16 +62,12 @@ public class PartialLinerTest {
         assertArrayEquals(byArr1.lineFreq(), byLine1.lineFreq());
         assertArrayEquals(byArr2.lineFreq(), byLine2.lineFreq());
 
-        List<int[]> byConsNext = new ArrayList<>();
         List<int[]> byIteratorNext = new ArrayList<>();
 
-        base.blocks(bl -> byConsNext.add(bl.clone()));
         for (int[] bl : base.blocks()) {
             byIteratorNext.add(bl);
         }
-        assertArrayEquals(byConsNext.toArray(int[][]::new), byIteratorNext.toArray(int[][]::new));
         assertEquals(3, byIteratorNext.size());
-        byConsNext.clear();
         byIteratorNext.clear();
 
         int[][] spr = new int[][]{
@@ -82,11 +78,9 @@ public class PartialLinerTest {
                 {1, 4, 7, 10}
         };
         PartialLiner par = new PartialLiner(spr);
-        par.blocks(bl -> byConsNext.add(bl.clone()));
         for (int[] bl : par.blocks()) {
             byIteratorNext.add(bl);
         }
-        assertArrayEquals(byConsNext.toArray(int[][]::new), byIteratorNext.toArray(int[][]::new));
         assertEquals(4, byIteratorNext.size());
         byIteratorNext.clear();
 

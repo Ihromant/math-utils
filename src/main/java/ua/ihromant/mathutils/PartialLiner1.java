@@ -3,6 +3,8 @@ package ua.ihromant.mathutils;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 public class PartialLiner1 {
     private final int pointCount;
@@ -585,5 +587,127 @@ public class PartialLiner1 {
             }
         }
         return false;
+    }
+
+    private int getUnassigned(int[] look, int pt) {
+        for (int i = pt + 1; i < look.length; i++) {
+            if (look[i] < 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public boolean hasNext() {
+        int[] prev = lines[lines.length - 1];
+        int fst = prev[0];
+        int[] look;
+        int snd;
+        do {
+            look = lookup[fst];
+            snd = getUnassigned(look, fst);
+        } while (snd < 0 && ++fst < pointCount);
+        if (fst == pointCount) {
+            return true; // to avoid complete liner filtering
+        }
+        int[] initBlock = new int[prev.length];
+        initBlock[0] = fst;
+        initBlock[1] = snd;
+        return hasNext(initBlock, prev.length - 2);
+    }
+
+    private boolean hasNext(int[] curr, int moreNeeded) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            if (moreNeeded == 1) {
+                return true;
+            }
+            curr[len] = p;
+            if (hasNext(curr, moreNeeded - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasNext(Predicate<PartialLiner1> test) {
+        int[] prev = lines[lines.length - 1];
+        int fst = prev[0];
+        int[] look;
+        int snd;
+        do {
+            look = lookup[fst];
+            snd = getUnassigned(look, fst);
+        } while (snd < 0 && ++fst < pointCount);
+        if (fst == pointCount) {
+            return true; // to avoid complete liner filtering
+        }
+        int[] initBlock = new int[prev.length];
+        initBlock[0] = fst;
+        initBlock[1] = snd;
+        return hasNext(initBlock, prev.length - 2, test);
+    }
+
+    private boolean hasNext(int[] curr, int moreNeeded, Predicate<PartialLiner1> test) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                if (test.test(new PartialLiner1(this, curr))) {
+                    return true;
+                } else {
+                    continue;
+                }
+            }
+            if (hasNext(curr, moreNeeded - 1, test)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public void blocks(Consumer<int[]> cons) {
+        int[] prev = lines[lines.length - 1];
+        int fst = prev[0];
+        int[] look;
+        int snd;
+        do {
+            look = lookup[fst];
+            snd = getUnassigned(look, fst);
+        } while (snd < 0 && ++fst < pointCount);
+        int[] initBlock = new int[prev.length];
+        initBlock[0] = fst;
+        initBlock[1] = snd;
+        blocks(initBlock, prev.length - 2, cons);
+    }
+
+    private void blocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                cons.accept(curr);
+            } else {
+                blocks(curr, moreNeeded - 1, cons);
+            }
+        }
     }
 }
