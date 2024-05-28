@@ -20,7 +20,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -42,7 +41,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(PartialLiner::blocks, depth), PartialLiner::isomorphicSel, PartialLiner::blocks, cnt);
+            liners = nextStage(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -64,7 +63,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, PartialLiner::blocks, cnt);
+            liners = nextStage(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -141,11 +140,10 @@ public class FinderTest {
         return new ArrayList<>(nonIsomorphic);
     }
 
-    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker,
-                                                Function<PartialLiner, Iterable<int[]>> blocks, AtomicLong cnt) {
+    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
         List<PartialLiner> nonIsomorphic = new ArrayList<>();
         for (PartialLiner partial : partials) {
-            for (int[] block : blocks.apply(partial)) {
+            for (int[] block : partial.blocks()) {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (!filter.test(liner)) {
                     continue;
@@ -364,7 +362,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext((Predicate<PartialLiner>)  l1 -> l1.hullsUnderCap(cap), depth), PartialLiner::isomorphicSel, PartialLiner::blocks, cnt);
+            liners = nextStage(liners, l -> l.hasNext((Predicate<PartialLiner>)  l1 -> l1.hullsUnderCap(cap), depth), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -386,11 +384,30 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStage(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), PartialLiner::isomorphicSel, PartialLiner::blocksResolvable, cnt);
+            liners = nextStageResolvable(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
         }
         System.out.println(System.currentTimeMillis() - time);
+    }
+
+    private static List<PartialLiner> nextStageResolvable(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
+        List<PartialLiner> nonIsomorphic = new ArrayList<>();
+        for (PartialLiner partial : partials) {
+            for (int[] block : partial.blocksResolvable()) {
+                PartialLiner liner = new PartialLiner(partial, block);
+                if (!filter.test(liner)) {
+                    continue;
+                } else {
+                    cnt.incrementAndGet();
+                    if (nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
+                        continue;
+                    }
+                }
+                nonIsomorphic.add(liner);
+            }
+        }
+        return nonIsomorphic;
     }
 }

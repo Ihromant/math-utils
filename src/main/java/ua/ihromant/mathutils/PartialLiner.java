@@ -724,6 +724,19 @@ public class PartialLiner {
         return -1;
     }
 
+    public boolean hasNext(int depth) {
+        if (depth == 0) {
+            return true;
+        }
+        for (int[] block : blocks()) {
+            PartialLiner part = new PartialLiner(this, block);
+            if (part.hasNext(depth - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public boolean hasNext(Function<PartialLiner, Iterable<int[]>> blocks, int depth) {
         if (depth == 0) {
             return true;
