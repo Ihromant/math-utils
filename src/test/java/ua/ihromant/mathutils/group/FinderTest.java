@@ -265,24 +265,27 @@ public class FinderTest {
 
     @Test
     public void byPartials() {
-        String prefix = "ap";
-        int v = 28;
+        String prefix = "com3";
+        int v = 25;
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
-        Predicate<PartialLiner> filter = PartialLiner::checkAP;
-        liners.stream().forEach(pl -> designs(pl, conf.left(), filter, des -> {
-            Liner l = new Liner(v, des.lines());
-            System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des.lines()));
-        }));
+        Predicate<PartialLiner> filter = des -> true;
+        liners.stream().forEach(pl -> {
+            designs(pl, conf.left(), filter, des -> {
+                Liner l = new Liner(v, des.lines());
+                System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des.lines()));
+            });
+            System.out.println("Done");
+        });
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 
     private static void designs(PartialLiner partial, int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
         for (int[] block : partial.blocks()) {
-            PartialLiner nextPartial = new PartialLiner(partial, block.clone());
+            PartialLiner nextPartial = new PartialLiner(partial, block);
             if (!filter.test(nextPartial)) {
                 return;
             }
