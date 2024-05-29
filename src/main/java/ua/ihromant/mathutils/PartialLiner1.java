@@ -710,4 +710,344 @@ public class PartialLiner1 {
             }
         }
     }
+
+    private boolean byPt(PartialLiner1 second, int from, int mapped, SearchData search) {
+        for (int to : second.beamDist[beams[from].length]) {
+            if (search.ptMapped[to] || getUnMapped(second.beams[to], search.lnMapped) != search.perPointUnAss[from]) {
+                continue;
+            }
+            SearchData next = search.cloned();
+            int added = next.mapPoint(this, second, from, to);
+            if (added < 0) {
+                continue;
+            }
+            int newMapped = mapped + added;
+            if (newMapped == lines.length) {
+                return true;
+            }
+            if (isomorphicSel(second, newMapped, next)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean byLine(PartialLiner1 second, int from, int mapped, SearchData search) {
+        for (int to = 0; to < lines.length; to++) {
+            if (search.lnMapped[to] || second.lineInter[to] != lineInter[from] || getUnMapped(second.lines[to], search.ptMapped) != search.perLineUnAss[from]) {
+                continue;
+            }
+            SearchData next = search.cloned();
+            int added = next.mapLine(this, second, from, to);
+            if (added < 0) {
+                continue;
+            }
+            int newMapped = mapped + added;
+            if (newMapped == lines.length) {
+                return true;
+            }
+            if (isomorphicSel(second, newMapped, next)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean isomorphicSel(PartialLiner1 second) {
+        if (!Arrays.equals(lineFreq, second.lineFreq)) {
+            return false;
+        }
+        int[] partialPoints = new int[pointCount];
+        int[] partialLines = new int[lines.length];
+        Arrays.fill(partialPoints, -1);
+        Arrays.fill(partialLines, -1);
+        int[] perLineUnAss = new int[lines.length];
+        Arrays.fill(perLineUnAss, lines[0].length);
+        int[] perPointUnAss = beamCounts.clone();
+        SearchData search = new SearchData(partialPoints, new boolean[pointCount], perPointUnAss, partialLines, new boolean[lines.length], perLineUnAss);
+        return isomorphicSel(second, 0, search);
+    }
+
+    private boolean isomorphicSel(PartialLiner1 second, int mapped, SearchData search) {
+        int[] ptFreq = new int[beams[0].length + 1];
+        for (int i = 0; i < search.perPointUnAss.length; i++) {
+            if (search.pointsMap[i] >= 0) {
+                continue;
+            }
+            ptFreq[search.perPointUnAss[i]]++;
+        }
+        int[] lineFr = new int[lines[0].length + 1];
+        for (int i = 0; i < search.perLineUnAss.length; i++) {
+            if (search.linesMap[i] >= 0) {
+                continue;
+            }
+            lineFr[search.perLineUnAss[i]]++;
+        }
+        int minPtIdx = findMinIdx(ptFreq, search.perPointUnAss, search.pointsMap);
+        int minLineIdx = findMinIdx(lineFr, search.perLineUnAss, search.linesMap);
+        return ptFreq[search.perPointUnAss[minPtIdx]] < lineFr[search.perLineUnAss[minLineIdx]]
+                ? byPt(second, minPtIdx, mapped, search)
+                : byLine(second, minLineIdx, mapped, search);
+    }
+
+    private static int findMinIdx(int[] freq, int[] arr, int[] map) {
+        int idx = -1;
+        int min = Integer.MAX_VALUE;
+        for (int i = 0; i < arr.length; i++) {
+            int minC;
+            if (map[i] < 0 && (minC = freq[arr[i]]) < min) {
+                idx = i;
+                min = minC;
+            }
+        }
+        return idx;
+    }
+
+    private static int getUnMapped(int[] arr, boolean[] map) {
+        int result = 0;
+        for (int el : arr) {
+            if (!map[el]) {
+                result++;
+            }
+        }
+        return result;
+    }
+
+    private int mapPoint(PartialLiner1 second, int from, int to, int[] newPointsMap, boolean[] newPtMapped, int[] newPerPointUnAss, int[] newLinesMap, boolean[] newLnMapped, int[] newPerLineUnAss) {
+        if (from < 0) {
+            return to >= 0 ? -1 : 0;
+        } else {
+            if (to < 0) {
+                return -1;
+            }
+        }
+        int oldPoint = newPointsMap[from];
+        if (oldPoint >= 0) {
+            return oldPoint != to ? -1 : 0;
+        }
+        if (newPtMapped[to]) {
+            return -1;
+        }
+        newPointsMap[from] = to;
+        newPtMapped[to] = true;
+        int result = 0;
+        for (int line : beams[from]) {
+            newPerLineUnAss[line]--;
+            for (int p : lines[line]) {
+                int pMap = newPointsMap[p];
+                if (p == from || pMap < 0) {
+                    continue;
+                }
+                int lineTo = second.lookup[to][pMap];
+                int added = mapLine(second, line, lineTo, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
+                if (added < 0) {
+                    return -1;
+                }
+                result = result + added;
+                if (newPerLineUnAss[line] == 1) {
+                    int ptFrom = -1;
+                    int ptTo = -1;
+                    for (int p1 : lines[line]) {
+                        if (newPointsMap[p1] < 0) {
+                            ptFrom = p1;
+                            break;
+                        }
+                    }
+                    for (int p1 : second.lines[lineTo]) {
+                        if (!newPtMapped[p1]) {
+                            ptTo = p1;
+                            break;
+                        }
+                    }
+                    added = mapPoint(second, ptFrom, ptTo, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
+                }
+                break;
+            }
+        }
+        return result;
+    }
+
+    private int mapLine(PartialLiner1 second, int from, int to, int[] newPointsMap, boolean[] newPtMapped, int[] newPerPointUnAss, int[] newLinesMap, boolean[] newLnMapped, int[] newPerLineUnAss) {
+        if (from < 0) {
+            return to >= 0 ? -1 : 0;
+        } else {
+            if (to < 0) {
+                return -1;
+            }
+        }
+        int oldLine = newLinesMap[from];
+        if (oldLine >= 0) {
+            return oldLine != to ? -1 : 0;
+        }
+        if (newLnMapped[to]) {
+            return -1;
+        }
+        newLinesMap[from] = to;
+        newLnMapped[to] = true;
+        int result = 1;
+        for (int pt : lines[from]) {
+            newPerPointUnAss[pt]--;
+            for (int line : beams[pt]) {
+                int lineMap = newLinesMap[line];
+                if (line == from || lineMap < 0) {
+                    continue;
+                }
+                int ptTo = second.intersections[to][lineMap];
+                int added = mapPoint(second, pt, ptTo, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
+                if (added < 0) {
+                    return -1;
+                }
+                result = result + added;
+                if (newPerPointUnAss[pt] == 1) {
+                    int lineFrom = -1;
+                    int lineTo = -1;
+                    for (int l1 : beams[pt]) {
+                        if (newLinesMap[l1] < 0) {
+                            lineFrom = l1;
+                            break;
+                        }
+                    }
+                    for (int l1 : second.beams[ptTo]) {
+                        if (!newLnMapped[l1]) {
+                            lineTo = l1;
+                            break;
+                        }
+                    }
+                    added = mapLine(second, lineFrom, lineTo, newPointsMap, newPtMapped, newPerPointUnAss, newLinesMap, newLnMapped, newPerLineUnAss);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
+                }
+                break;
+            }
+        }
+        return result;
+    }
+
+    private record SearchData(int[] pointsMap, boolean[] ptMapped, int[] perPointUnAss, int[] linesMap, boolean[] lnMapped, int[] perLineUnAss) {
+        public SearchData cloned() {
+            return new SearchData(pointsMap.clone(), ptMapped.clone(), perPointUnAss.clone(), linesMap.clone(), lnMapped.clone(), perLineUnAss.clone());
+        }
+
+        private int mapPoint(PartialLiner1 first, PartialLiner1 second, int from, int to) {
+            if (from < 0) {
+                return to >= 0 ? -1 : 0;
+            } else {
+                if (to < 0) {
+                    return -1;
+                }
+            }
+            int oldPoint = pointsMap[from];
+            if (oldPoint >= 0) {
+                return oldPoint != to ? -1 : 0;
+            }
+            if (ptMapped[to]) {
+                return -1;
+            }
+            pointsMap[from] = to;
+            ptMapped[to] = true;
+            int result = 0;
+            for (int line : first.beams[from]) {
+                perLineUnAss[line]--;
+                for (int p : first.lines[line]) {
+                    int pMap = pointsMap[p];
+                    if (p == from || pMap < 0) {
+                        continue;
+                    }
+                    int lineTo = second.lookup[to][pMap];
+                    int added = mapLine(first, second, line, lineTo);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
+                    if (perLineUnAss[line] == 1) {
+                        int ptFrom = -1;
+                        int ptTo = -1;
+                        for (int p1 : first.lines[line]) {
+                            if (pointsMap[p1] < 0) {
+                                ptFrom = p1;
+                                break;
+                            }
+                        }
+                        for (int p1 : second.lines[lineTo]) {
+                            if (!ptMapped[p1]) {
+                                ptTo = p1;
+                                break;
+                            }
+                        }
+                        added = mapPoint(first, second, ptFrom, ptTo);
+                        if (added < 0) {
+                            return -1;
+                        }
+                        result = result + added;
+                    }
+                    break;
+                }
+            }
+            return result;
+        }
+
+        private int mapLine(PartialLiner1 first, PartialLiner1 second, int from, int to) {
+            if (from < 0) {
+                return to >= 0 ? -1 : 0;
+            } else {
+                if (to < 0) {
+                    return -1;
+                }
+            }
+            int oldLine = linesMap[from];
+            if (oldLine >= 0) {
+                return oldLine != to ? -1 : 0;
+            }
+            if (lnMapped[to]) {
+                return -1;
+            }
+            linesMap[from] = to;
+            lnMapped[to] = true;
+            int result = 1;
+            for (int pt : first.lines[from]) {
+                perPointUnAss[pt]--;
+                for (int line : first.beams[pt]) {
+                    int lineMap = linesMap[line];
+                    if (line == from || lineMap < 0) {
+                        continue;
+                    }
+                    int ptTo = second.intersections[to][lineMap];
+                    int added = mapPoint(first, second, pt, ptTo);
+                    if (added < 0) {
+                        return -1;
+                    }
+                    result = result + added;
+                    if (perPointUnAss[pt] == 1) {
+                        int lineFrom = -1;
+                        int lineTo = -1;
+                        for (int l1 : first.beams[pt]) {
+                            if (linesMap[l1] < 0) {
+                                lineFrom = l1;
+                                break;
+                            }
+                        }
+                        for (int l1 : second.beams[ptTo]) {
+                            if (!lnMapped[l1]) {
+                                lineTo = l1;
+                                break;
+                            }
+                        }
+                        added = mapLine(first, second, lineFrom, lineTo);
+                        if (added < 0) {
+                            return -1;
+                        }
+                        result = result + added;
+                    }
+                    break;
+                }
+            }
+            return result;
+        }
+    }
 }
