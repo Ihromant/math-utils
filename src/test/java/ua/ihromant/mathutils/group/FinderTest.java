@@ -23,6 +23,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -273,12 +274,16 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = des -> true;
-        liners.stream().forEach(pl -> {
-            designs(pl, conf.left(), filter, des -> {
-                Liner l = new Liner(v, des.lines());
-                System.out.println(l.hyperbolicIndex() + " " + Automorphisms.autCountOld(l) + " " + Arrays.deepToString(des.lines()));
+        List<PartialLiner> iso = new ArrayList<>();
+        IntStream.range(0, liners.size()).forEach(idx -> {
+            PartialLiner pl = liners.get(idx);
+            designs(pl, 11, filter, des -> {
+                if (iso.stream().anyMatch(des::isomorphicSel)) {
+                    return;
+                }
+                iso.add(des);
             });
-            System.out.println("Done");
+            System.out.println(idx + " done " + iso.size());
         });
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
@@ -287,11 +292,11 @@ public class FinderTest {
         for (int[] block : partial.blocks()) {
             PartialLiner nextPartial = new PartialLiner(partial, block);
             if (!filter.test(nextPartial)) {
-                return;
+                continue;
             }
             if (needed == 1) {
                 cons.accept(nextPartial);
-                return;
+                continue;
             }
             designs(nextPartial, needed - 1, filter, cons);
         }
