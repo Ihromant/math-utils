@@ -277,7 +277,7 @@ public class FinderTest {
         List<PartialLiner> iso = new ArrayList<>();
         IntStream.range(0, liners.size()).forEach(idx -> {
             PartialLiner pl = liners.get(idx);
-            designs(pl, 11, filter, des -> {
+            designs(pl, conf.left(), filter, des -> {
                 if (iso.stream().anyMatch(des::isomorphicSel)) {
                     return;
                 }
