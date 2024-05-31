@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.Automorphisms;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
@@ -36,8 +35,8 @@ public class FinderTest {
         int dp = 3;
         DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
-        long time = System.currentTimeMillis();
         int left = conf.left();
+        long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
@@ -141,7 +140,7 @@ public class FinderTest {
         return new ArrayList<>(nonIsomorphic);
     }
 
-    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
+    public static List<PartialLiner> nextStage(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
         List<PartialLiner> nonIsomorphic = new ArrayList<>();
         for (PartialLiner partial : partials) {
             for (int[] block : partial.blocks()) {
@@ -302,7 +301,7 @@ public class FinderTest {
         }
     }
 
-    private static DumpConfig defaultBeamConfig(int v, int k) {
+    public static int[][] beamBlocks(int v, int k) {
         int r = (v - 1) / (k - 1);
         int[][] blocks = new int[r + 1][k];
         for (int i = 0; i < r; i++) {
@@ -313,7 +312,12 @@ public class FinderTest {
         for (int i = 0; i < k; i++) {
             blocks[r][i] = 1 + (k - 1) * i;
         }
-        return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - r - 1, new int[][][]{blocks});
+        return blocks;
+    }
+
+    private static DumpConfig defaultBeamConfig(int v, int k) {
+        int[][] blocks = beamBlocks(v, k);
+        return new DumpConfig(v, k, v * (v - 1) / k / (k - 1) - blocks.length, new int[][][]{blocks});
     }
 
     private static DumpConfig defaultHullsConfig(int v, int k, int cap) {

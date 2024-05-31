@@ -1,9 +1,11 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.FinderTest;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -103,6 +105,26 @@ public class PartialLinerTest {
         testSample(PartialLiner::isomorphicSel);
         testSample(PartialLiner::isomorphic);
         testSample(PartialLiner::isomorphicL);
+    }
+
+    @Test
+    public void testPerformance() {
+        int v = 25;
+        int k = 5;
+        int dp = 3;
+        PartialLiner init = new PartialLiner(FinderTest.beamBlocks(v, k));
+        List<PartialLiner> liners = List.of(init);
+        int left = v * (v - 1) / k / (k - 1) - init.lineCount();
+        long time = System.currentTimeMillis();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
+        while (left > 0 && !liners.isEmpty()) {
+            AtomicLong cnt = new AtomicLong();
+            int depth = Math.min(left - 1, dp);
+            liners = FinderTest.nextStage(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt);
+            left--;
+            System.out.println(left + " " + liners.size() + " " + cnt.get());
+        }
+        System.out.println(System.currentTimeMillis() - time);
     }
 
     private void testSample(BiPredicate<PartialLiner, PartialLiner> iso) {
