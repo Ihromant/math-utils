@@ -14,8 +14,11 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -123,6 +126,7 @@ public class FinderTest {
 
     private static List<PartialLiner> nextStageConc(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
         List<PartialLiner> nonIsomorphic = new CopyOnWriteArrayList<>();
+        AtomicInteger ai = new AtomicInteger();
         partials.stream().parallel().forEach(partial -> {
             for (int[] block : partial.blocks()) {
                 PartialLiner liner = new PartialLiner(partial, block);
@@ -130,12 +134,13 @@ public class FinderTest {
                     continue;
                 } else {
                     cnt.incrementAndGet();
-                    if (nonIsomorphic.stream().anyMatch(l -> isoChecker.test(liner, l))) {
+                    if (nonIsomorphic.stream().parallel().anyMatch(l -> isoChecker.test(liner, l))) {
                         continue;
                     }
                 }
                 nonIsomorphic.add(liner);
             }
+            System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
         });
         return new ArrayList<>(nonIsomorphic);
     }
@@ -272,17 +277,18 @@ public class FinderTest {
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
-        Predicate<PartialLiner> filter = des -> true;
-        List<PartialLiner> iso = new ArrayList<>();
-        IntStream.range(0, liners.size()).forEach(idx -> {
+        Predicate<PartialLiner> filter = l -> true;
+        List<PartialLiner> iso = new CopyOnWriteArrayList<>();
+        AtomicInteger ai = new AtomicInteger();
+        IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             PartialLiner pl = liners.get(idx);
             designs(pl, conf.left(), filter, des -> {
-                if (iso.stream().anyMatch(des::isomorphicSel)) {
+                if (iso.stream().parallel().anyMatch(des::isomorphicSel)) {
                     return;
                 }
                 iso.add(des);
             });
-            System.out.println(idx + " done " + iso.size());
+            System.out.println(ai.incrementAndGet() + " " + idx);
         });
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
@@ -421,5 +427,122 @@ public class FinderTest {
             }
         }
         return nonIsomorphic;
+    }
+
+    @Test
+    public void generateFt() throws IOException {
+        String prefix = "com3";
+        int v = 51;
+        int k = 6;
+        int dp = 3;
+        DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
+        List<PartialLiner> nonIsomorphic = new CopyOnWriteArrayList<>(readList(prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + 1));
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
+        BitSet filter = readFilter(prefix, v, k);
+        try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "-" + v + "-" + k + ".txt", true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileOutputStream fos1 = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "done-" + v + "-" + k + ".txt", true);
+             BufferedOutputStream bos1 = new BufferedOutputStream(fos1);
+             PrintStream ps1 = new PrintStream(bos1)) {
+            long time = System.currentTimeMillis();
+            System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size() + ", depth " + dp);
+            AtomicLong cnt = new AtomicLong();
+            AtomicInteger ai = new AtomicInteger(filter.cardinality());
+            IntStream.range(0, liners.size()).parallel().forEach(idx -> {
+                if (filter.get(idx)) {
+                    return;
+                }
+                PartialLiner partial = liners.get(idx);
+                for (int[] block : partial.blocks()) {
+                    PartialLiner liner = new PartialLiner(partial, block);
+                    if (!liner.hasNext(dp)) {
+                        continue;
+                    } else {
+                        cnt.incrementAndGet();
+                        if (nonIsomorphic.stream().parallel().anyMatch(liner::isomorphicSel)) {
+                            continue;
+                        }
+                    }
+                    nonIsomorphic.add(liner);
+                    ps.println(Arrays.stream(liner.lines()).map(line -> Arrays.stream(line).mapToObj(String::valueOf)
+                            .collect(Collectors.joining(" "))).collect(Collectors.joining("\n")) + "\n");
+                    ps.flush();
+                }
+                System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
+                ps1.println(idx);
+                ps1.flush();
+            });
+            System.out.println(System.currentTimeMillis() - time);
+        }
+    }
+
+    private static List<PartialLiner> readList(String prefix, int v, int k, int pl) {
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/ft/" + prefix + "-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            List<PartialLiner> partials = new ArrayList<>();
+            c: while (true) {
+                int[][] partial = new int[pl][k];
+                for (int j = 0; j < pl; j++) {
+                    String line = br.readLine();
+                    if (line == null) {
+                        break c;
+                    }
+                    String[] pts = line.split(" ");
+                    for (int l = 0; l < k; l++) {
+                        partial[j][l] = Integer.parseInt(pts[l]);
+                    }
+                }
+                partials.add(new PartialLiner(v, partial));
+                br.readLine();
+            }
+            return partials;
+        } catch (FileNotFoundException e) {
+            return new ArrayList<>();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static BitSet readFilter(String prefix, int v, int k) {
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/ft/" + prefix + "done-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            BitSet result = new BitSet();
+            while (true) {
+                String l = br.readLine();
+                if (l == null) {
+                    break;
+                }
+                result.set(Integer.parseInt(l));
+            }
+            return result;
+        } catch (FileNotFoundException e) {
+            return new BitSet();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void filterDuplicates() throws IOException {
+        String prefix = "com3";
+        int v = 51;
+        int k = 6;
+        DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
+        int full = v * (v - 1) / k / (k - 1);
+        int size = full - conf.left() + 1;
+        List<PartialLiner> list = readList(prefix, v, k, size);
+        List<PartialLiner> filtered = Collections.synchronizedList(new ArrayList<>());
+        System.out.println("Started filtering for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + list.size());
+        IntStream.range(0, list.size()).parallel().forEach(idx -> {
+            PartialLiner part = list.get(idx);
+            if (IntStream.range(Math.max(0, idx - 30), idx).parallel().noneMatch(i -> part.isomorphicSel(list.get(i)))) {
+                filtered.add(part);
+            }
+        });
+        dump("ft/" + prefix + "a", v, k, full - size, filtered);
+        System.out.println("After filtering " + filtered.size());
     }
 }

@@ -1,7 +1,9 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.GaloisField;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
@@ -12,7 +14,7 @@ import java.util.stream.IntStream;
 public class CFinderTest {
     @Test
     public void test() {
-        int v = 9;
+        int v = 7;
         int k = 3;
         int r = (v - 1) / (k - 1);
         int b = r * v / k;
@@ -58,5 +60,14 @@ public class CFinderTest {
             };
         };
         f.accept(0, 0);
+    }
+
+    @Test
+    public void testIncidence() {
+        GaloisField fd = new GaloisField(2);
+        BitSet[] bs = fd.generatePlane();
+        for (BitSet line : bs) {
+            System.out.println(Arrays.toString(IntStream.range(0, bs.length).map(i -> line.get(i) ? 1 : 0).toArray()));
+        }
     }
 }
