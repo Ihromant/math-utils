@@ -11,15 +11,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class IncFinderTest {
     @Test
-    public void generateCom2() {
-        int v = 36;
-        int k = 6;
-        int dp = 3;
+    public void generateCom() {
+        int v = 7;
+        int k = 3;
         int b = v * (v - 1) / k / (k - 1);
         List<Inc> liners = List.of(beamBlocks(v, k));
         int left = b - liners.getFirst().b();
         long time = System.currentTimeMillis();
-        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             liners = nextStage(liners, cnt);
