@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 public class NautyAlgo {
     public static void search(GraphWrapper graph, Consumer<CellStack> partitionConsumer) {
         CellStack partition = graph.partition();
+        partition.refine(graph, new CellStack(partition));
         search(graph, partition, partitionConsumer);
     }
 
