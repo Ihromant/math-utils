@@ -13,6 +13,10 @@ public interface GraphWrapper {
 
     int color(int idx);
 
+    int pointCount();
+
+    int lineCount();
+
     boolean edge(int a, int b);
 
     static GraphWrapper forFull(Liner liner) {
@@ -25,6 +29,16 @@ public interface GraphWrapper {
             @Override
             public int color(int idx) {
                 return idx < liner.pointCount() ? 0 : 1;
+            }
+
+            @Override
+            public int pointCount() {
+                return liner.pointCount();
+            }
+
+            @Override
+            public int lineCount() {
+                return liner.lineCount();
             }
 
             @Override
@@ -52,6 +66,16 @@ public interface GraphWrapper {
             }
 
             @Override
+            public int pointCount() {
+                return liner.pointCount();
+            }
+
+            @Override
+            public int lineCount() {
+                return liner.lineCount();
+            }
+
+            @Override
             public boolean edge(int a, int b) {
                 int pc = liner.pointCount();
                 if (a < pc) {
@@ -69,5 +93,24 @@ public interface GraphWrapper {
         int[][] result = new int[colorDist.lastKey() + 1][0];
         colorDist.forEach((k, v) -> result[k] = v.stream().toArray());
         return new CellStack(size(), result);
+    }
+
+    default long[] permutedIncidence(CellStack partition) {
+        int pc = pointCount();
+        int lc = lineCount();
+        int size = size();
+        long[] arr = new long[(pc * lc + 63) / 64];
+        for (int l = pc; l < size; l++) {
+            int pl = partition.permute(l);
+            for (int p = 0; p < pc; p++) {
+                if (edge(l, p)) {
+                    int pp = partition.permute(p);
+                    int li = pl - pc;
+                    int idx = li * pc + pp;
+                    arr[idx >> 6] |= (1L << idx);
+                }
+            }
+        }
+        return arr;
     }
 }
