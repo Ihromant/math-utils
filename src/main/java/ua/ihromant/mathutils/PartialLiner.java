@@ -10,6 +10,7 @@ import java.util.function.Predicate;
 public class PartialLiner {
     private final int pointCount;
     private final int[][] lines;
+    private final boolean[][] flags;
     private final int[] beamCounts; // number of lines in beam
     private final int[] beamLengths; // distribution by beam count
     private final int[][] lookup;
@@ -27,7 +28,7 @@ public class PartialLiner {
     public PartialLiner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
-        boolean[][] flags = new boolean[lines.length][pointCount];
+        this.flags = new boolean[lines.length][pointCount];
         this.beamCounts = new int[pointCount];
         int ll = lines[0].length;
         for (int i = 0; i < lines.length; i++) {
@@ -90,6 +91,12 @@ public class PartialLiner {
         this.lines = new int[pll + 1][];
         System.arraycopy(prev.lines, 0, this.lines, 0, pll);
         this.lines[pll] = newLine;
+        this.flags = new boolean[pll + 1][];
+        System.arraycopy(prev.flags, 0, this.flags, 0, pll);
+        this.flags[pll] = new boolean[pointCount];
+        for (int p : newLine) {
+            flags[pll][p] = true;
+        }
         this.lookup = prev.lookup.clone();
         this.beams = prev.beams.clone();
         this.beamCounts = prev.beamCounts.clone();
@@ -214,6 +221,10 @@ public class PartialLiner {
 
     public int[] lineFreq() {
         return lineFreq;
+    }
+
+    public boolean flag(int line, int point) {
+        return flags[line][point];
     }
 
     private void initOrder() {
@@ -888,5 +899,31 @@ public class PartialLiner {
             this.hasNext = findNext(block.length - 1);
             return res;
         }
+    }
+
+    private static void set(long[] arr, int idx) {
+        arr[idx >> 6] |= 1L << idx;
+    }
+
+    private static void clear(long[] arr, int idx) {
+        arr[idx >> 6] &= ~(1L << idx);
+    }
+
+    private static boolean get(long[] arr, int idx) {
+        return (arr[idx >> 6] & (1L << idx)) != 0;
+    }
+
+    public long[] minimal() {
+        int size = pointCount * lines.length;
+        long[] arr = new long[(size + 63) / 64];
+        int[] pointMap = new int[pointCount];
+        Arrays.fill(pointMap, -1);
+        int[] lineMap = new int[lines.length];
+        Arrays.fill(lineMap, -1);
+        return minimal(arr, pointMap, lineMap);
+    }
+
+    public long[] minimal(long[] incidence, int[] pointMap, int[] lineMap) {
+        return new long[0];
     }
 }

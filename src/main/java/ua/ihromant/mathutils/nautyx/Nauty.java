@@ -1,4 +1,4 @@
-package ua.ihromant.mathutils.nauty;
+package ua.ihromant.mathutils.nautyx;
 
 import nl.peterbloem.kit.Order;
 
