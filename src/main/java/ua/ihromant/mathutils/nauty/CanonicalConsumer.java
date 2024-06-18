@@ -1,13 +1,12 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.Arrays;
+import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 public class CanonicalConsumer implements Consumer<CellStack> {
     private final GraphWrapper graph;
-    private long[] arr;
+    private BitSet arr;
     private final AtomicLong counter = new AtomicLong();
 
     public CanonicalConsumer(GraphWrapper graph) {
@@ -17,19 +16,23 @@ public class CanonicalConsumer implements Consumer<CellStack> {
     @Override
     public void accept(CellStack partition) {
         counter.incrementAndGet();
-        long[] permuted = graph.permutedIncidence(partition);
+        BitSet permuted = graph.permutedIncidence(partition);
         if (less(permuted)) {
             arr = permuted;
         }
     }
 
-    private boolean less(long[] candidate) {
+    private boolean less(BitSet candidate) {
         if (arr == null) {
             return true;
         }
-        for (int i = 0; i < arr.length; i++) {
-            if (Long.compareUnsigned(arr[i], candidate[i]) > 0) {
+        int len = graph.pointCount() * graph.lineCount();
+        for (int i = 0; i < len; i++) {
+            if (candidate.get(i) && !arr.get(i)) {
                 return true;
+            }
+            if (arr.get(i) && !candidate.get(i)) {
+                return false;
             }
         }
         return false;
@@ -37,24 +40,19 @@ public class CanonicalConsumer implements Consumer<CellStack> {
 
     @Override
     public String toString() {
-        String val = Arrays.stream(arr).mapToObj(v -> {
-            char[] chs = new char[64];
-            Arrays.fill(chs, '0');
-            char[] chars = Long.toBinaryString(v).toCharArray();
-            System.arraycopy(chars, 0, chs, 0, chars.length);
-            return new String(chs);
-        }).collect(Collectors.joining());
         StringBuilder builder = new StringBuilder();
         int pc = graph.pointCount();
         for (int i = 0; i < graph.lineCount(); i++) {
             int idx = pc * i;
-            builder.append(val, idx, idx + pc);
+            for (int j = 0; j < pc; j++) {
+                builder.append(arr.get(idx + j) ? '1' : '0');
+            }
             builder.append('\n');
         }
         return builder.toString();
     }
 
-    public long[] canonicalForm() {
+    public BitSet canonicalForm() {
         return arr;
     }
 

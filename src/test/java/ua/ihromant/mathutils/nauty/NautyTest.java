@@ -55,6 +55,7 @@ public class NautyTest {
                 "3654656"
         });
         System.out.println(getCanonical(byStr));
+        assertEquals(getCanonical(liner), getCanonical(byStr));
 
         Liner first9 = Liner.byStrings(new String[]{
                 "000011122236",
@@ -64,6 +65,7 @@ public class NautyTest {
         System.out.println(getCanonical(first9));
         Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
         System.out.println(getCanonical(second9));
+        assertEquals(getCanonical(first9), getCanonical(second9));
 
         Liner first13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",

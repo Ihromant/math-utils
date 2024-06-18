@@ -95,19 +95,18 @@ public interface GraphWrapper {
         return new CellStack(size(), result);
     }
 
-    default long[] permutedIncidence(CellStack partition) {
+    default BitSet permutedIncidence(CellStack partition) {
         int pc = pointCount();
         int lc = lineCount();
         int size = size();
-        long[] arr = new long[(pc * lc + 63) / 64];
+        BitSet arr = new BitSet(pc * lc);
         for (int l = pc; l < size; l++) {
             int pl = partition.permute(l);
             for (int p = 0; p < pc; p++) {
                 if (edge(l, p)) {
                     int pp = partition.permute(p);
                     int li = pl - pc;
-                    int idx = li * pc + pp;
-                    arr[idx >> 6] |= (1L << idx);
+                    arr.set(li * pc + pp);
                 }
             }
         }
