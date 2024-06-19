@@ -129,4 +129,75 @@ public record Inc(BitSet bs, int v, int b) {
         NautyAlgo.search(graph, cons);
         return cons.canonicalForm();
     }
+
+    public boolean checkAP() {
+        int last = b - 1;
+        int[] lLine = IntStream.range(0, v).filter(p -> inc(last, p)).toArray();
+        int ll = lLine.length;
+        for (int p : lLine) {
+            for (int ol = 0; ol < b; ol++) {
+                if (ol == last || !inc(ol, p)) {
+                    continue;
+                }
+                int olf = ol;
+                int[] oLine = IntStream.range(0, v).filter(p1 -> inc(olf, p1)).toArray();
+                for (int a = 0; a < ll; a++) {
+                    int pl1 = lLine[a];
+                    if (pl1 == p) {
+                        continue;
+                    }
+                    for (int b = a + 1; b < ll; b++) {
+                        int pl2 = lLine[b];
+                        if (pl2 == p) {
+                            continue;
+                        }
+                        for (int c = 0; c < ll; c++) {
+                            int po1 = oLine[c];
+                            if (po1 == p) {
+                                continue;
+                            }
+                            int l1 = line(pl1, po1);
+                            int l2 = line(pl2, po1);
+                            if (l1 < 0 && l2 < 0) {
+                                continue;
+                            }
+                            for (int d = c + 1; d < ll; d++) {
+                                int po2 = oLine[d];
+                                if (po2 == p) {
+                                    continue;
+                                }
+                                int l4 = line(pl2, po2);
+                                if (l1 >= 0 && l4 >= 0 && intersection(l1, l4) >= 0) {
+                                    return false;
+                                }
+                                int l3 = line(pl1, po2);
+                                if (l2 >= 0 && l3 >= 0 && intersection(l2, l3) >= 0) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    private int line(int p1, int p2) {
+        for (int l = 0; l < b; l++) {
+            if (inc(l, p1) && inc(l, p2)) {
+                return l;
+            }
+        }
+        return -1;
+    }
+
+    private int intersection(int l1, int l2) {
+        for (int p = 0; p < v; p++) {
+            if (inc(l1, p) && inc(l2, p)) {
+                return p;
+            }
+        }
+        return -1;
+    }
 }
