@@ -90,7 +90,7 @@ public class CellStack {
             int cnt = numEdgesDist[i];
             int val = ++numEdgesCnt[cnt];
             nonZeros.set(cnt);
-            if (val > maxCnt) {
+            if (val > maxCnt || (val == maxCnt && cnt < maxIdx)) {
                 maxCnt = val;
                 maxIdx = cnt;
             }
@@ -109,7 +109,8 @@ public class CellStack {
             }
             result[i][result[i].length - numEdgesCnt[cnt]--] = x;
         }
-        return new DistinguishResult(result, idxes[maxIdx]);
+        int largest = idxes[maxIdx];
+        return new DistinguishResult(result, largest);
     }
 
     public void refine(GraphWrapper graph, CellStack alpha) {
