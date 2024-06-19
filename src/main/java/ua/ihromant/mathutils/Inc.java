@@ -28,6 +28,10 @@ public record Inc(BitSet bs, int v, int b) {
         return bs.get(idx(l, pt));
     }
 
+    public void set(int l, int pt) {
+        bs.set(idx(l, pt));
+    }
+
     private int idx(int l, int pt) {
         return l * v + pt;
     }
