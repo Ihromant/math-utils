@@ -1,5 +1,9 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.nauty.CanonicalConsumer;
+import ua.ihromant.mathutils.nauty.GraphWrapper;
+import ua.ihromant.mathutils.nauty.NautyAlgo;
+
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
@@ -20,6 +24,7 @@ public class PartialLiner {
     private final int[] lineInter; // number of other lines intersections
     private final int[] lineFreq; // distribution by line intersections count
     private int[] pointOrder;
+    private BitSet canonical;
 
     public PartialLiner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
@@ -901,29 +906,13 @@ public class PartialLiner {
         }
     }
 
-    private static void set(long[] arr, int idx) {
-        arr[idx >> 6] |= 1L << idx;
-    }
-
-    private static void clear(long[] arr, int idx) {
-        arr[idx >> 6] &= ~(1L << idx);
-    }
-
-    private static boolean get(long[] arr, int idx) {
-        return (arr[idx >> 6] & (1L << idx)) != 0;
-    }
-
-    public long[] minimal() {
-        int size = pointCount * lines.length;
-        long[] arr = new long[(size + 63) / 64];
-        int[] pointMap = new int[pointCount];
-        Arrays.fill(pointMap, -1);
-        int[] lineMap = new int[lines.length];
-        Arrays.fill(lineMap, -1);
-        return minimal(arr, pointMap, lineMap);
-    }
-
-    public long[] minimal(long[] incidence, int[] pointMap, int[] lineMap) {
-        return new long[0];
+    public BitSet getCanonical() {
+        if (canonical == null) {
+            GraphWrapper graph = GraphWrapper.forPartial(this);
+            CanonicalConsumer cons = new CanonicalConsumer(graph);
+            NautyAlgo.search(graph, cons);
+            canonical = cons.canonicalForm();
+        }
+        return canonical;
     }
 }

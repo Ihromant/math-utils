@@ -1,4 +1,8 @@
-package ua.ihromant.mathutils.group;
+package ua.ihromant.mathutils;
+
+import ua.ihromant.mathutils.nauty.CanonicalConsumer;
+import ua.ihromant.mathutils.nauty.GraphWrapper;
+import ua.ihromant.mathutils.nauty.NautyAlgo;
 
 import java.util.BitSet;
 import java.util.Iterator;
@@ -20,7 +24,7 @@ public record Inc(BitSet bs, int v, int b) {
         return result;
     }
 
-    private boolean inc(int l, int pt) {
+    public boolean inc(int l, int pt) {
         return bs.get(idx(l, pt));
     }
 
@@ -64,14 +68,17 @@ public record Inc(BitSet bs, int v, int b) {
     }
 
     private boolean lessCol(int c1, int c2) {
+        int fstCnt = 0;
+        int sndCnt = 0;
         for (int i = 0; i < b; i++) {
-            boolean b = inc(i, c2);
-            if (b == inc(i, c1)) {
-                continue;
+            if (inc(i, c2)) {
+                sndCnt++;
             }
-            return b;
+            if (inc(i, c1)) {
+                fstCnt++;
+            }
         }
-        return false;
+        return fstCnt < sndCnt;
     }
 
     private void swapRow(int r1, int r2) {
@@ -97,13 +104,13 @@ public record Inc(BitSet bs, int v, int b) {
     public Inc sorted() {
         Inc cloned = this;
         Inc next = cloned.cloned();
-        next.colSorted();
         next.rowSorted();
+        next.colSorted();
         while (!cloned.equals(next)) {
             cloned = next;
             next = next.cloned();
-            next.colSorted();
             next.rowSorted();
+            next.colSorted();
         }
         return next;
     }
@@ -193,5 +200,12 @@ public record Inc(BitSet bs, int v, int b) {
             this.hasNext = findNext(block.length - 2);
             return res;
         }
+    }
+
+    public BitSet getCanonical() {
+        GraphWrapper graph = GraphWrapper.byInc(this);
+        CanonicalConsumer cons = new CanonicalConsumer(graph);
+        NautyAlgo.search(graph, cons);
+        return cons.canonicalForm();
     }
 }

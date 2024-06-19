@@ -44,8 +44,16 @@ public class NautyTest {
         return cons.toString();
     }
 
+    private static String getCanonical(PartialLiner liner) {
+        GraphWrapper graph = GraphWrapper.forPartial(liner);
+        CanonicalConsumer cons = new CanonicalConsumer(graph);
+        NautyAlgo.search(graph, cons);
+        System.out.println(cons.count());
+        return cons.toString();
+    }
+
     @Test
-    public void nautyTest() {
+    public void testSimplest() {
         Liner liner = new Liner(new GaloisField(2).generatePlane());
         System.out.println(getCanonical(liner));
 
@@ -66,7 +74,10 @@ public class NautyTest {
         Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
         System.out.println(getCanonical(second9));
         assertEquals(getCanonical(first9), getCanonical(second9));
+    }
 
+    @Test
+    public void test13() {
         Liner first13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
@@ -81,5 +92,40 @@ public class NautyTest {
         assertEquals(getCanonical(first13), getCanonical(second13));
         assertEquals(getCanonical(second13), getCanonical(first13));
         assertNotEquals(getCanonical(alt13), getCanonical(first13));
+    }
+
+    @Test
+    public void test15() {
+        Liner firstFlat15 = Liner.byStrings(new String[] {
+                "00000001111112222223333444455566678",
+                "13579bd3469ac34578b678a58ab78979c9a",
+                "2468ace578bde96aecdbcded9cebecaeddb"
+        });
+        Liner firstSpace15 = Liner.byStrings(new String[]{
+                "00000001111112222223333444455556666",
+                "13579bd3478bc3478bc789a789a789a789a",
+                "2468ace569ade65a9edbcdecbeddebcedcb"
+        });
+        Liner secondFlat15 = Liner.byDiffFamily(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner secondSpace15 = Liner.byDiffFamily(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
+        Liner thirdSpace15 = new Liner(new GaloisField(2).generateSpace());
+        assertEquals(getCanonical(firstFlat15), getCanonical(secondFlat15));
+        assertEquals(getCanonical(firstSpace15), getCanonical(secondSpace15));
+        assertEquals(getCanonical(firstSpace15), getCanonical(thirdSpace15));
+        assertNotEquals(getCanonical(firstFlat15), getCanonical(firstSpace15));
+    }
+
+    @Test
+    public void testPartials() {
+        PartialLiner firstPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}});
+        PartialLiner secondPartial = new PartialLiner(9, new int[][]{{6, 7, 8}, {4, 5, 8}});
+        PartialLiner thirdPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {3, 4, 5}});
+        PartialLiner fourthPartial = new PartialLiner(9, new int[][]{{0, 3, 6}, {1, 4, 7}});
+        PartialLiner fifthPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}, {1, 3, 5}});
+        PartialLiner sixthPartial = new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 5, 6}, {2, 4, 6}});
+        assertEquals(getCanonical(firstPartial), getCanonical(secondPartial));
+        assertNotEquals(getCanonical(firstPartial), getCanonical(thirdPartial));
+        assertEquals(getCanonical(thirdPartial), getCanonical(fourthPartial));
+        assertEquals(getCanonical(fifthPartial), getCanonical(sixthPartial));
     }
 }

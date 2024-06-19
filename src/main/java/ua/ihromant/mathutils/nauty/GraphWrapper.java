@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
@@ -82,6 +83,40 @@ public interface GraphWrapper {
                     return b >= pc && liner.flag(b - pc, a);
                 } else {
                     return b < pc && liner.flag(a - pc, b);
+                }
+            }
+        };
+    }
+
+    static GraphWrapper byInc(Inc inc) {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return inc.v() + inc.b();
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < inc.v() ? 0 : 1;
+            }
+
+            @Override
+            public int pointCount() {
+                return inc.v();
+            }
+
+            @Override
+            public int lineCount() {
+                return inc.b();
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                int pc = inc.v();
+                if (a < pc) {
+                    return b >= pc && inc.inc(b - pc, a);
+                } else {
+                    return b < pc && inc.inc(a - pc, b);
                 }
             }
         };
