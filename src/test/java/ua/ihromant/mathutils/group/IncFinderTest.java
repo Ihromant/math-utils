@@ -130,7 +130,7 @@ public class IncFinderTest {
                 int partialSize = lineCount - left;
                 partials = new Inc[partialsCount];
                 for (int i = 0; i < partialsCount; i++) {
-                    Inc partial = new Inc(new BitSet(v * lineCount), v, lineCount);
+                    Inc partial = new Inc(new BitSet(v * partialSize), v, partialSize);
                     for (int j = 0; j < partialSize; j++) {
                         String[] pts = br.readLine().split(" ");
                         for (int l = 0; l < k; l++) {
