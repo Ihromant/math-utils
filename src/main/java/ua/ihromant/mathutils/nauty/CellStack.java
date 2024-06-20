@@ -174,4 +174,12 @@ public class CellStack {
     public int permute(int v) {
         return cellIdx[v];
     }
+
+    public int[] permutation() {
+        return cellIdx;
+    }
+
+    public int[] reverse() {
+        return Arrays.stream(partition).mapToInt(cell -> cell[0]).toArray();
+    }
 }

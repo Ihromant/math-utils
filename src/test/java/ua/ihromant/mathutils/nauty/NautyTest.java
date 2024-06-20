@@ -6,6 +6,8 @@ import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
+import java.util.Arrays;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class NautyTest {
@@ -40,7 +42,6 @@ public class NautyTest {
         GraphWrapper graph = GraphWrapper.forFull(liner);
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);
-        System.out.println(cons.count());
         return cons.toString();
     }
 
@@ -48,7 +49,6 @@ public class NautyTest {
         GraphWrapper graph = GraphWrapper.forPartial(liner);
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);
-        System.out.println(cons.count());
         return cons.toString();
     }
 
@@ -92,6 +92,29 @@ public class NautyTest {
         assertEquals(getCanonical(first13), getCanonical(second13));
         assertEquals(getCanonical(second13), getCanonical(first13));
         assertNotEquals(getCanonical(alt13), getCanonical(first13));
+        testAutomorphisms(first13, 39);
+        testAutomorphisms(alt13, 6);
+    }
+
+    private static void testAutomorphisms(Liner first13, int autCount) {
+        int[][] firstLines = first13.lines();
+        PartialLiner part = new PartialLiner(firstLines);
+        int[][] auths = part.automorphisms();
+        assertEquals(autCount, auths.length);
+        for (int[] aut : auths) {
+            int[][] newLines = new int[firstLines.length][];
+            for (int i = 0; i < firstLines.length; i++) {
+                int[] line = firstLines[i];
+                int lineIdx = aut[i + part.pointCount()] - part.pointCount();
+                int[] newLine = line.clone();
+                for (int j = 0; j < newLine.length; j++) {
+                    newLine[j] = aut[newLine[j]];
+                }
+                Arrays.sort(newLine);
+                newLines[lineIdx] = newLine;
+            }
+            assertArrayEquals(firstLines, newLines);
+        }
     }
 
     @Test

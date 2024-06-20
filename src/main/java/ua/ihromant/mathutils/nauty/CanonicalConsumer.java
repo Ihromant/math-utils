@@ -1,13 +1,11 @@
 package ua.ihromant.mathutils.nauty;
 
 import java.util.BitSet;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 
 public class CanonicalConsumer implements Consumer<CellStack> {
     private final GraphWrapper graph;
-    private BitSet arr;
-    private final AtomicLong counter = new AtomicLong();
+    private BitSet cert;
 
     public CanonicalConsumer(GraphWrapper graph) {
         this.graph = graph;
@@ -15,23 +13,22 @@ public class CanonicalConsumer implements Consumer<CellStack> {
 
     @Override
     public void accept(CellStack partition) {
-        counter.incrementAndGet();
         BitSet permuted = graph.permutedIncidence(partition);
         if (less(permuted)) {
-            arr = permuted;
+            cert = permuted;
         }
     }
 
     private boolean less(BitSet candidate) {
-        if (arr == null) {
+        if (cert == null) {
             return true;
         }
         int len = graph.pointCount() * graph.lineCount();
         for (int i = 0; i < len; i++) {
-            if (candidate.get(i) && !arr.get(i)) {
+            if (candidate.get(i) && !cert.get(i)) {
                 return true;
             }
-            if (arr.get(i) && !candidate.get(i)) {
+            if (cert.get(i) && !candidate.get(i)) {
                 return false;
             }
         }
@@ -45,7 +42,7 @@ public class CanonicalConsumer implements Consumer<CellStack> {
         for (int i = 0; i < graph.lineCount(); i++) {
             int idx = pc * i;
             for (int j = 0; j < pc; j++) {
-                builder.append(arr.get(idx + j) ? '1' : '0');
+                builder.append(cert.get(idx + j) ? '1' : '0');
             }
             builder.append('\n');
         }
@@ -53,10 +50,6 @@ public class CanonicalConsumer implements Consumer<CellStack> {
     }
 
     public BitSet canonicalForm() {
-        return arr;
-    }
-
-    public long count() {
-        return counter.longValue();
+        return cert;
     }
 }

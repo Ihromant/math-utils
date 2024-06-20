@@ -1,13 +1,18 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -914,5 +919,23 @@ public class PartialLiner {
             canonical = cons.canonicalForm();
         }
         return canonical;
+    }
+
+    public long autCount() {
+        AtomicLong counter = new AtomicLong();
+        Consumer<int[]> cons = arr -> counter.incrementAndGet();
+        GraphWrapper wrap = GraphWrapper.forPartial(this);
+        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
+        NautyAlgo.search(wrap, aut);
+        return counter.get();
+    }
+
+    public int[][] automorphisms() {
+        List<int[]> res = new ArrayList<>();
+        Consumer<int[]> cons = res::add;
+        GraphWrapper wrap = GraphWrapper.forPartial(this);
+        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
+        NautyAlgo.search(wrap, aut);
+        return res.toArray(int[][]::new);
     }
 }
