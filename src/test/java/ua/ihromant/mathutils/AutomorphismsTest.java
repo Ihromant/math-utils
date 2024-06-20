@@ -73,6 +73,9 @@ public class AutomorphismsTest {
         time = System.currentTimeMillis();
         assertEquals(AUTH_COUNTS[order], Automorphisms.autCountOld(liner));
         System.out.println(System.currentTimeMillis() - time);
+        time = System.currentTimeMillis();
+        assertEquals(AUTH_COUNTS[order], liner.autCount());
+        System.out.println(System.currentTimeMillis() - time);
         Liner aff1 = new AffinePlane(liner, 0).toLiner();
         Liner aff2 = new AffinePlane(liner, 1).toLiner();
         time = System.currentTimeMillis();
