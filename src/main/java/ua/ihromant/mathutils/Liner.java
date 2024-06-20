@@ -3,14 +3,20 @@ package ua.ihromant.mathutils;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
+import ua.ihromant.mathutils.nauty.GraphWrapper;
+import ua.ihromant.mathutils.nauty.NautyAlgo;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -534,10 +540,6 @@ public class Liner {
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
     }
 
-    public PermutationGroup automorphisms() {
-        return new PermutationGroup(Automorphisms.autArrayOld(this));
-    }
-
     public int triangleCount() {
         return pointCount * (pointCount - 1) * (pointCount - lines[0].length); // assuming that liner is uniform
     }
@@ -771,5 +773,23 @@ public class Liner {
             }
         }
         return result;
+    }
+
+    public long autCount() {
+        AtomicLong counter = new AtomicLong();
+        Consumer<int[]> cons = arr -> counter.incrementAndGet();
+        GraphWrapper wrap = GraphWrapper.forFull(this);
+        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
+        NautyAlgo.search(wrap, aut);
+        return counter.get();
+    }
+
+    public PermutationGroup automorphisms() {
+        List<int[]> res = new ArrayList<>();
+        Consumer<int[]> cons = res::add;
+        GraphWrapper wrap = GraphWrapper.forFull(this);
+        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
+        NautyAlgo.search(wrap, aut);
+        return new PermutationGroup(res.toArray(int[][]::new));
     }
 }
