@@ -3,7 +3,7 @@ package ua.ihromant.mathutils.nauty;
 import java.util.BitSet;
 import java.util.function.Consumer;
 
-public class CanonicalConsumer implements Consumer<CellStack> {
+public class CanonicalConsumer implements Consumer<Partition> {
     private final GraphWrapper graph;
     private BitSet cert;
 
@@ -12,7 +12,7 @@ public class CanonicalConsumer implements Consumer<CellStack> {
     }
 
     @Override
-    public void accept(CellStack partition) {
+    public void accept(Partition partition) {
         BitSet permuted = graph.permutedIncidence(partition);
         if (less(permuted)) {
             cert = permuted;

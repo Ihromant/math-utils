@@ -15,8 +15,8 @@ public class NautyTest {
     public void testRefine() {
         Liner l = new Liner(new GaloisField(2).generatePlane());
         GraphWrapper graph = GraphWrapper.forFull(l);
-        CellStack base = graph.partition();
-        CellStack alpha = new CellStack(base);
+        Partition base = graph.partition();
+        SubPartition alpha = base.subPartition();
         base.refine(graph, alpha);
         PartialLiner[] partials = new PartialLiner[]{
                 new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}}),
@@ -28,12 +28,12 @@ public class NautyTest {
         };
         for (PartialLiner part : partials) {
             GraphWrapper partGraph = GraphWrapper.forPartial(part);
-            CellStack partBase = partGraph.partition();
-            CellStack partAlpha = new CellStack(partBase);
+            Partition partBase = partGraph.partition();
+            SubPartition partAlpha = partBase.subPartition();
             partBase.refine(partGraph, partAlpha);
             //System.out.println("x");
         }
-        CellStack next = base.ort(graph, 0);
+        Partition next = base.ort(graph, 0);
         next = next.ort(graph, 11);
         System.out.println();
     }
@@ -150,5 +150,27 @@ public class NautyTest {
         assertNotEquals(getCanonical(firstPartial), getCanonical(thirdPartial));
         assertEquals(getCanonical(thirdPartial), getCanonical(fourthPartial));
         assertEquals(getCanonical(fifthPartial), getCanonical(sixthPartial));
+    }
+
+    @Test
+    public void testSubPartition() {
+        SubPartition part = new SubPartition(5, new int[][]{{3}, {5}, {1}, {7}, {9}, null, null, null, null, null});
+        assertArrayEquals(new int[]{-1, 2, -1, 0, -1, 1, -1, 3, -1, 4}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 9, 0, 0, 0, 0, 0}, part.getCellMins());
+        assertEquals(5, part.getSize());
+        part.replace(3, new int[][]{{7}, {4}});
+        assertArrayEquals(new int[]{-1, 2, -1, 0, 4, 1, -1, 3, -1, 5}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 0, 0, 0, 0}, part.getCellMins());
+        assertEquals(6, part.getSize());
+        part.addButLargest(new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1));
+        assertArrayEquals(new int[]{-1, 2, 7, 0, 4, 1, -1, 3, 6, 5}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 8, 2, 0, 0}, part.getCellMins());
+        assertEquals(8, part.getSize());
+        assertEquals(2, part.remove());
+        assertArrayEquals(new int[]{-1, 2, -1, 0, 4, 1, -1, 3, 6, 5}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 8, 2, 0, 0}, part.getCellMins());
+        assertEquals(7, part.getSize());
+        assertEquals(-1, part.idxOf(2));
+        assertEquals(4, part.idxOf(4));
     }
 }

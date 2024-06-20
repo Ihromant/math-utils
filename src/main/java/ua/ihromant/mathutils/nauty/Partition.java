@@ -3,12 +3,12 @@ package ua.ihromant.mathutils.nauty;
 import java.util.Arrays;
 import java.util.BitSet;
 
-public class CellStack {
+public class Partition {
     private int cellCnt;
     private final int[] cellIdx;
     private final int[][] partition;
 
-    public CellStack(int maxCnt, int[][] partition) {
+    public Partition(int maxCnt, int[][] partition) {
         this.partition = new int[maxCnt][];
         this.cellIdx = new int[maxCnt];
         this.cellCnt = partition.length;
@@ -20,7 +20,7 @@ public class CellStack {
         }
     }
 
-    public CellStack(CellStack stack) {
+    public Partition(Partition stack) {
         this.cellCnt = stack.cellCnt;
         this.partition = new int[stack.partition.length][];
         this.cellIdx = stack.cellIdx.clone();
@@ -31,9 +31,6 @@ public class CellStack {
         System.arraycopy(partition, idx + 1, partition, idx + list.length, cellCnt - idx - 1);
         System.arraycopy(list, 0, partition, idx, list.length);
         cellCnt = cellCnt + list.length - 1;
-    }
-
-    private void updateCellIdx(int idx) {
         for (int i = idx; i < cellCnt; i++) {
             for (int el : partition[i]) {
                 cellIdx[el] = i;
@@ -41,35 +38,8 @@ public class CellStack {
         }
     }
 
-    public int idxOf(int[] elem) {
-        for (int i = 0; i < cellCnt; i++) {
-            if (Arrays.equals(elem, partition[i])) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    public void addButLargest(DistinguishResult dist) {
-        int[][] elms = dist.elms();
-        for (int i = 0; i < elms.length; i++) {
-            if (i == dist.largest()) {
-                continue;
-            }
-            partition[cellCnt++] = elms[i];
-        }
-    }
-
     public boolean isDiscrete() {
         return cellCnt == partition.length;
-    }
-
-    public boolean isEmpty() {
-        return cellCnt == 0;
-    }
-
-    public int[] remove() {
-        return partition[--cellCnt];
     }
 
     public DistinguishResult distinguish(GraphWrapper graph, int cellIdx, int[] w) {
@@ -113,18 +83,21 @@ public class CellStack {
         return new DistinguishResult(result, largest);
     }
 
-    public void refine(GraphWrapper graph, CellStack alpha) {
+    public SubPartition subPartition() {
+        return new SubPartition(cellCnt, partition);
+    }
+
+    public void refine(GraphWrapper graph, SubPartition alpha) {
         while (!alpha.isEmpty() && !isDiscrete()) {
-            int[] w = alpha.remove();
+            int wMin = alpha.remove();
             int idx = 0;
             while (idx < cellCnt) {
                 int[] xCell = partition[idx];
-                DistinguishResult dist = distinguish(graph, idx, w);
+                DistinguishResult dist = distinguish(graph, idx, partition[cellIdx[wMin]]);
                 int[][] elms = dist.elms();
                 replace(idx, elms);
-                updateCellIdx(idx);
                 idx = idx + elms.length;
-                int xIdx = alpha.idxOf(xCell);
+                int xIdx = alpha.idxOf(xCell[0]);
                 if (xIdx >= 0) {
                     alpha.replace(xIdx, elms);
                 } else {
@@ -134,10 +107,10 @@ public class CellStack {
         }
     }
 
-    public CellStack mul(int v) {
+    public Partition mul(int v) {
         int idx = cellIdx[v];
         int[] cell = partition[idx];
-        CellStack copy = new CellStack(this);
+        Partition copy = new Partition(this);
         if (cell.length == 1) {
             return copy;
         }
@@ -146,13 +119,12 @@ public class CellStack {
         System.arraycopy(cell, 0, butV, 0, vIdx);
         System.arraycopy(cell, vIdx + 1, butV, vIdx, cell.length - vIdx - 1);
         copy.replace(idx, new int[][]{{v}, butV});
-        copy.updateCellIdx(idx);
         return copy;
     }
 
-    public CellStack ort(GraphWrapper g, int v) {
-        CellStack singleton = new CellStack(partition.length, new int[][]{{v}});
-        CellStack mul = mul(v);
+    public Partition ort(GraphWrapper g, int v) {
+        SubPartition singleton = new SubPartition(cellIdx.length, v);
+        Partition mul = mul(v);
         mul.refine(g, singleton);
         return mul;
     }

@@ -122,15 +122,15 @@ public interface GraphWrapper {
         };
     }
 
-    default CellStack partition() {
+    default Partition partition() {
         SortedMap<Integer, BitSet> colorDist = new TreeMap<>();
         IntStream.range(0, size()).forEach(i -> colorDist.computeIfAbsent(color(i), j -> new BitSet(size())).set(i));
         int[][] result = new int[colorDist.lastKey() + 1][0];
         colorDist.forEach((k, v) -> result[k] = v.stream().toArray());
-        return new CellStack(size(), result);
+        return new Partition(size(), result);
     }
 
-    default BitSet permutedIncidence(CellStack partition) {
+    default BitSet permutedIncidence(Partition partition) {
         int pc = pointCount();
         int lc = lineCount();
         int size = size();
