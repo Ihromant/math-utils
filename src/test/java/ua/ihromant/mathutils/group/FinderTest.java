@@ -168,6 +168,7 @@ public class FinderTest {
 
     public static List<PartialLiner> nextStageCanon(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
         Map<BitSet, PartialLiner> nonIsomorphic = new ConcurrentHashMap<>();
+        AtomicLong counter = new AtomicLong();
         partials.stream().parallel().forEach(partial -> {
             for (int[] block : partial.blocks()) {
                 PartialLiner liner = new PartialLiner(partial, block);
@@ -175,6 +176,10 @@ public class FinderTest {
                     cnt.incrementAndGet();
                     nonIsomorphic.putIfAbsent(liner.getCanonical(), liner);
                 }
+            }
+            long val = counter.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val + " " + nonIsomorphic.size());
             }
         });
         return new ArrayList<>(nonIsomorphic.values());

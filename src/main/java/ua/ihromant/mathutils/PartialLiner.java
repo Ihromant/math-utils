@@ -170,6 +170,32 @@ public class PartialLiner {
         }
     }
 
+    public PartialLiner(boolean[][] matrix) {
+        this(lines(matrix));
+    }
+
+    private static int[][] lines(boolean[][] incidence) {
+        int k = 0;
+        for (boolean b : incidence[0]) {
+            if (b) {
+                k++;
+            }
+        }
+        int[][] lines = new int[incidence.length][k];
+        for (int l = 0; l < incidence.length; l++) {
+            int[] newLine = new int[k];
+            int idx = 0;
+            boolean[] line = incidence[l];
+            for (int p = 0; p < line.length; p++) {
+                if (line[p]) {
+                    newLine[idx++] = p;
+                }
+            }
+            lines[l] = newLine;
+        }
+        return lines;
+    }
+
     private int[][] generateLookup() {
         int[][] result = new int[pointCount][pointCount];
         for (int[] p : result) {
@@ -231,6 +257,10 @@ public class PartialLiner {
 
     public int[] lineFreq() {
         return lineFreq;
+    }
+
+    public boolean[][] flags() {
+        return flags;
     }
 
     public boolean flag(int line, int point) {
