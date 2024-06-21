@@ -14,12 +14,12 @@ public class CanonicalConsumer implements Consumer<Partition> {
     @Override
     public void accept(Partition partition) {
         BitSet permuted = graph.permutedIncidence(partition);
-        if (less(permuted)) {
+        if (more(permuted)) {
             cert = permuted;
         }
     }
 
-    private boolean less(BitSet candidate) {
+    private boolean more(BitSet candidate) {
         if (cert == null) {
             return true;
         }
