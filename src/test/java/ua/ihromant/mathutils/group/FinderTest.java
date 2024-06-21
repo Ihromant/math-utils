@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
@@ -46,7 +47,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStageCanon(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt);
+            liners = nextStageCanonWithConv(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -68,7 +69,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStageCanon(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, cnt);
+            liners = nextStageCanonWithConv(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -185,6 +186,25 @@ public class FinderTest {
         return new ArrayList<>(nonIsomorphic.values());
     }
 
+    public static List<PartialLiner> nextStageCanonWithConv(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        AtomicLong counter = new AtomicLong();
+        partials.stream().parallel().forEach(partial -> {
+            for (int[] block : partial.blocks()) {
+                PartialLiner liner = new PartialLiner(partial, block);
+                if (filter.test(liner)) {
+                    cnt.incrementAndGet();
+                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+                }
+            }
+            long val = counter.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val + " " + nonIsomorphic.size());
+            }
+        });
+        return nonIsomorphic.values().stream().map(PartialLiner::new).toList();
+    }
+
     @Test
     public void readByLeft() {
         String prefix = "ap";
@@ -291,26 +311,26 @@ public class FinderTest {
 
     @Test
     public void byPartials() throws IOException {
-        String prefix = "ap4";
+        String prefix = "ap";
         int v = 37;
         int k = 4;
         int process = 8;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
-        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
+        List<Inc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new Inc(l.flags())).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = PartialLiner::checkAP;
-        Map<BitSet, PartialLiner> iso = new ConcurrentHashMap<>();
+        Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
-            PartialLiner pl = liners.get(idx);
-            designs(pl, process, filter, des -> iso.putIfAbsent(des.getCanonical(), des));
+            PartialLiner pl = new PartialLiner(liners.get(idx));
+            designs(pl, process, filter, des -> iso.putIfAbsent(des.getCanonical(), new Inc(des.flags())));
             int val = ai.incrementAndGet();
-            if (val % 100 == 0) {
+            if (iso.size() % 10 == 0) {
                 System.out.println(val + " " + iso.size());
             }
         });
-        dump("d" + prefix, v, k, conf.left() - process, new ArrayList<>(iso.values()));
+        dump("d" + prefix, v, k, conf.left() - process, iso.values().stream().map(PartialLiner::new).toList());
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 

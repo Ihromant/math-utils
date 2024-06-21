@@ -170,24 +170,23 @@ public class PartialLiner {
         }
     }
 
-    public PartialLiner(boolean[][] matrix) {
-        this(lines(matrix));
+    public PartialLiner(Inc inc) {
+        this(lines(inc));
     }
 
-    private static int[][] lines(boolean[][] incidence) {
+    private static int[][] lines(Inc inc) {
         int k = 0;
-        for (boolean b : incidence[0]) {
-            if (b) {
+        for (int i = 0; i < inc.v(); i++) {
+            if (inc.inc(0, i)) {
                 k++;
             }
         }
-        int[][] lines = new int[incidence.length][k];
-        for (int l = 0; l < incidence.length; l++) {
+        int[][] lines = new int[inc.b()][k];
+        for (int l = 0; l < inc.b(); l++) {
             int[] newLine = new int[k];
             int idx = 0;
-            boolean[] line = incidence[l];
-            for (int p = 0; p < line.length; p++) {
-                if (line[p]) {
+            for (int p = 0; p < inc.v(); p++) {
+                if (inc.inc(l, p)) {
                     newLine[idx++] = p;
                 }
             }
