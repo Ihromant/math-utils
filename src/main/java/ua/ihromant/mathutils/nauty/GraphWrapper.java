@@ -130,18 +130,19 @@ public interface GraphWrapper {
         return new Partition(size(), result);
     }
 
-    default BitSet permutedIncidence(Partition partition) {
+    default long[] permutedIncidence(Partition partition) {
         int pc = pointCount();
         int lc = lineCount();
         int size = size();
-        BitSet arr = new BitSet(pc * lc);
+        long[] arr = new long[(pc * lc + 63) / 64];
         for (int l = pc; l < size; l++) {
             int pl = partition.permute(l);
             for (int p = 0; p < pc; p++) {
                 if (edge(l, p)) {
                     int pp = partition.permute(p);
                     int li = pl - pc;
-                    arr.set(li * pc + pp);
+                    int idx = li * pc + pp;
+                    arr[idx >> 6] |= (1L << idx);
                 }
             }
         }

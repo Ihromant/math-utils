@@ -20,6 +20,7 @@ public class AutomorphismsTest {
     public void testAutomorphisms() {
         testSample(Automorphisms::autCount);
         testSample(Automorphisms::autCountOld);
+        testSample(Liner::autCount);
     }
 
     private void testSample(ToLongFunction<Liner> autCount) {

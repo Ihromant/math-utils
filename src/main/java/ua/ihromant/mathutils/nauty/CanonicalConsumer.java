@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 public class CanonicalConsumer implements Consumer<Partition> {
     private final GraphWrapper graph;
-    private BitSet cert;
+    private long[] cert;
 
     public CanonicalConsumer(GraphWrapper graph) {
         this.graph = graph;
@@ -13,22 +13,22 @@ public class CanonicalConsumer implements Consumer<Partition> {
 
     @Override
     public void accept(Partition partition) {
-        BitSet permuted = graph.permutedIncidence(partition);
+        long[] permuted = graph.permutedIncidence(partition);
         if (more(permuted)) {
             cert = permuted;
         }
     }
 
-    private boolean more(BitSet candidate) {
+    private boolean more(long[] candidate) {
         if (cert == null) {
             return true;
         }
-        int len = graph.pointCount() * graph.lineCount();
-        for (int i = 0; i < len; i++) {
-            if (candidate.get(i) && !cert.get(i)) {
+        for (int i = 0; i < cert.length; i++) {
+            int cmp = Long.compareUnsigned(candidate[i], cert[i]);
+            if (cmp > 0) {
                 return true;
             }
-            if (cert.get(i) && !candidate.get(i)) {
+            if (cmp < 0) {
                 return false;
             }
         }
@@ -40,9 +40,10 @@ public class CanonicalConsumer implements Consumer<Partition> {
         StringBuilder builder = new StringBuilder();
         int pc = graph.pointCount();
         for (int i = 0; i < graph.lineCount(); i++) {
-            int idx = pc * i;
+            int row = pc * i;
             for (int j = 0; j < pc; j++) {
-                builder.append(cert.get(idx + j) ? '1' : '0');
+                int idx = row + j;
+                builder.append((cert[idx >> 6] & (1L << idx)) != 0 ? '1' : '0');
             }
             builder.append('\n');
         }
@@ -50,6 +51,6 @@ public class CanonicalConsumer implements Consumer<Partition> {
     }
 
     public BitSet canonicalForm() {
-        return cert;
+        return BitSet.valueOf(cert);
     }
 }
