@@ -134,12 +134,13 @@ public interface GraphWrapper {
         int pc = pointCount();
         int lc = lineCount();
         int size = size();
+        int[] perm = partition.shiftedPermutation();
         long[] arr = new long[(pc * lc + 63) / 64];
         for (int l = pc; l < size; l++) {
-            int pl = partition.permute(l);
+            int pl = perm[l];
             for (int p = 0; p < pc; p++) {
                 if (edge(l, p)) {
-                    int pp = partition.permute(p);
+                    int pp = perm[p];
                     int li = pl - pc;
                     int idx = li * pc + pp;
                     arr[idx >> 6] |= (1L << idx);
@@ -147,5 +148,21 @@ public interface GraphWrapper {
             }
         }
         return arr;
+    }
+
+    default int compareLex(long[] first, long[] second) {
+        if (first == null) {
+            return -1;
+        }
+        for (int i = 0; i < first.length; i++) {
+            int cmp = Long.compareUnsigned(first[i], second[i]);
+            if (cmp > 0) {
+                return 1;
+            }
+            if (cmp < 0) {
+                return -1;
+            }
+        }
+        return 0;
     }
 }

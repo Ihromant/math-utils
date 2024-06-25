@@ -143,12 +143,18 @@ public class Partition {
         return res;
     }
 
-    public int permute(int v) {
-        return cellIdx[v];
-    }
-
-    public int[] permutation() {
-        return cellIdx;
+    public int[] shiftedPermutation() {
+        int[] result = cellIdx.clone();
+        int[] shift = new int[cellCnt];
+        int acc = 0;
+        for (int i = 0; i < cellCnt; i++) {
+            shift[i] = acc;
+            acc = acc + partition[i].length - 1;
+        }
+        for (int i = 0; i < result.length; i++) {
+            result[i] += shift[result[i]];
+        }
+        return result;
     }
 
     public int[] reverse() {

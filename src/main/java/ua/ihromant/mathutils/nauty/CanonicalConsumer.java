@@ -1,49 +1,51 @@
 package ua.ihromant.mathutils.nauty;
 
 import java.util.BitSet;
-import java.util.function.Consumer;
+import java.util.function.BiPredicate;
 
-public class CanonicalConsumer implements Consumer<Partition> {
+public class CanonicalConsumer implements BiPredicate<Partition, int[]> {
     private final GraphWrapper graph;
-    private long[] cert;
+    private long[][] cert = new long[0][];
 
     public CanonicalConsumer(GraphWrapper graph) {
         this.graph = graph;
     }
 
     @Override
-    public void accept(Partition partition) {
-        long[] permuted = graph.permutedIncidence(partition);
-        if (more(permuted)) {
-            cert = permuted;
+    public boolean test(Partition partition, int[] ints) {
+        long[] nextCert = graph.permutedIncidence(partition);
+        if (ints.length > cert.length) {
+            recalculate(ints.length, nextCert);
+            return !partition.isDiscrete();
         }
+        long[] currCert = cert[ints.length - 1];
+        int cmp = graph.compareLex(currCert, nextCert);
+        if (cmp > 0) {
+            return false;
+        }
+        if (cmp < 0) {
+            recalculate(ints.length, nextCert);
+        }
+        return !partition.isDiscrete();
     }
 
-    private boolean more(long[] candidate) {
-        if (cert == null) {
-            return true;
-        }
-        for (int i = 0; i < cert.length; i++) {
-            int cmp = Long.compareUnsigned(candidate[i], cert[i]);
-            if (cmp > 0) {
-                return true;
-            }
-            if (cmp < 0) {
-                return false;
-            }
-        }
-        return false;
+    private void recalculate(int newLen, long[] nextCert) {
+        long[][] newCert = new long[newLen][];
+        System.arraycopy(this.cert, 0, newCert, 0, newLen - 1);
+        newCert[newLen - 1] = nextCert;
+        this.cert = newCert;
     }
 
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         int pc = graph.pointCount();
+        long[] curr = cert[cert.length - 1];
         for (int i = 0; i < graph.lineCount(); i++) {
             int row = pc * i;
             for (int j = 0; j < pc; j++) {
                 int idx = row + j;
-                builder.append((cert[idx >> 6] & (1L << idx)) != 0 ? '1' : '0');
+                builder.append((curr[idx >> 6] & (1L << idx)) != 0 ? '1' : '0');
             }
             builder.append('\n');
         }
@@ -51,6 +53,6 @@ public class CanonicalConsumer implements Consumer<Partition> {
     }
 
     public BitSet canonicalForm() {
-        return BitSet.valueOf(cert);
+        return BitSet.valueOf(cert[cert.length - 1]);
     }
 }
