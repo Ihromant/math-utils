@@ -20,6 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -185,6 +186,93 @@ public class IncFinderTest {
                 continue;
             }
             designs(nextPartial, needed - 1, filter, cons);
+        }
+    }
+
+    @Test
+    public void generateFt() throws IOException {
+        String prefix = "com";
+        int v = 25;
+        int k = 4;
+        int process = 3;
+        DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
+        Map<BitSet, Inc> nonIsomorphic = readList("ft/" + prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + process)
+                .stream().parallel().collect(Collectors.toMap(Inc::getCanonical, Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+        List<Inc> liners = Arrays.asList(conf.partials());
+        BitSet filter = readFilter("ft/" + prefix, v, k);
+        try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "-" + v + "-" + k + ".txt", true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileOutputStream fos1 = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "done-" + v + "-" + k + ".txt", true);
+             BufferedOutputStream bos1 = new BufferedOutputStream(fos1);
+             PrintStream ps1 = new PrintStream(bos1)) {
+            long time = System.currentTimeMillis();
+            System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
+            AtomicInteger ai = new AtomicInteger(filter.cardinality());
+            IntStream.range(0, liners.size()).parallel().forEach(idx -> {
+                if (filter.get(idx)) {
+                    return;
+                }
+                Inc pl = liners.get(idx);
+                designs(pl, process, l -> true, des -> {
+                    if (nonIsomorphic.putIfAbsent(des.getCanonical(), des) == null) {
+                        ps.println(des.toLines());
+                        ps.flush();
+                    }
+                });
+                System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
+                ps1.println(idx);
+                ps1.flush();
+            });
+            System.out.println(System.currentTimeMillis() - time);
+        }
+    }
+
+    private static List<Inc> readList(String prefix, int v, int k, int pl) {
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            List<Inc> partials = new ArrayList<>();
+            c: while (true) {
+                boolean[][] incidence = new boolean[pl][k];
+                for (int j = 0; j < pl; j++) {
+                    String line = br.readLine();
+                    if (line == null) {
+                        break c;
+                    }
+                    String[] pts = line.split(" ");
+                    for (int l = 0; l < k; l++) {
+                        incidence[j][Integer.parseInt(pts[l])] = true;
+                    }
+                }
+                partials.add(new Inc(incidence));
+                br.readLine();
+            }
+            return partials;
+        } catch (FileNotFoundException e) {
+            return new ArrayList<>();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static BitSet readFilter(String prefix, int v, int k) {
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "done-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            BitSet result = new BitSet();
+            while (true) {
+                String l = br.readLine();
+                if (l == null) {
+                    break;
+                }
+                result.set(Integer.parseInt(l));
+            }
+            return result;
+        } catch (FileNotFoundException e) {
+            return new BitSet();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }

@@ -61,6 +61,11 @@ public record Inc(BitSet bs, int v, int b) {
                 .collect(Collectors.joining())).collect(Collectors.joining("\n"));
     }
 
+    public String toLines() {
+        return IntStream.range(0, b).mapToObj(line -> IntStream.range(0, v).filter(pt -> inc(line, pt)).mapToObj(String::valueOf)
+                .collect(Collectors.joining(" "))).collect(Collectors.joining("\n")) + "\n";
+    }
+
     public Iterable<int[]> blocks() {
         return BlocksIterator::new;
     }
