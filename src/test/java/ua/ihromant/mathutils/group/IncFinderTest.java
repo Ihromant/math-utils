@@ -234,7 +234,7 @@ public class IncFinderTest {
              BufferedReader br = new BufferedReader(isr)) {
             List<Inc> partials = new ArrayList<>();
             c: while (true) {
-                boolean[][] incidence = new boolean[pl][k];
+                boolean[][] incidence = new boolean[pl][v];
                 for (int j = 0; j < pl; j++) {
                     String line = br.readLine();
                     if (line == null) {

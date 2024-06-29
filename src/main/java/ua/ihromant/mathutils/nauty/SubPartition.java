@@ -31,19 +31,19 @@ public class SubPartition {
         idxes[singleton] = 0;
     }
 
-    public void replace(int minIdx, int[][] splitted) {
+    public void replace(int minIdx, int[][] split) {
         for (int i = size - 1; i > minIdx; --i) {
             int min = cellMins[i];
-            idxes[min] += splitted.length - 1;
-            cellMins[i + splitted.length - 1] = min;
+            idxes[min] += split.length - 1;
+            cellMins[i + split.length - 1] = min;
         }
-        for (int i = 0; i < splitted.length; i++) {
+        for (int i = 0; i < split.length; i++) {
             int idx = minIdx + i;
-            int min = splitted[i][0];
+            int min = split[i][0];
             cellMins[idx] = min;
             idxes[min] = idx;
         }
-        size += splitted.length - 1;
+        size += split.length - 1;
     }
 
     public void addButLargest(DistinguishResult dist) {
