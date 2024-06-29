@@ -22,20 +22,28 @@ public class Partition {
 
     public Partition(Partition stack) {
         this.cellCnt = stack.cellCnt;
-        this.partition = new int[stack.partition.length][];
+        this.partition = stack.partition.clone();
         this.cellIdx = stack.cellIdx.clone();
-        System.arraycopy(stack.partition, 0, partition, 0, cellCnt);
     }
 
     public void replace(int idx, int[][] list) {
-        System.arraycopy(partition, idx + 1, partition, idx + list.length, cellCnt - idx - 1);
-        System.arraycopy(list, 0, partition, idx, list.length);
-        cellCnt = cellCnt + list.length - 1;
-        for (int i = idx; i < cellCnt; i++) {
-            for (int el : partition[i]) {
-                cellIdx[el] = i;
+        for (int i = cellCnt - 1; i > idx; i--) {
+            int[] cell = partition[i];
+            int shifted = i + list.length - 1;
+            partition[shifted] = cell;
+            for (int el : cell) {
+                cellIdx[el] = shifted;
             }
         }
+        for (int i = 0; i < list.length; i++) {
+            int[] cell = list[i];
+            int shifted = idx + i;
+            partition[shifted] = cell;
+            for (int el : cell) {
+                cellIdx[el] = shifted;
+            }
+        }
+        cellCnt = cellCnt + list.length - 1;
     }
 
     public boolean isDiscrete() {
