@@ -173,41 +173,70 @@ public class IncFinderTest {
 
     @Test
     public void byPartials() throws IOException {
-        String prefix = "com";
-        int v = 25;
+        String prefix = "ap";
+        int v = 37;
         int k = 4;
-        int process = 3;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
+        int process = conf.left();
         List<Inc> liners = Arrays.asList(conf.partials());
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
-        Predicate<Inc> filter = l -> true;
         Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
+        AtomicInteger cnt = new AtomicInteger();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             Inc pl = liners.get(idx);
-            designs(pl, process, filter, des -> iso.putIfAbsent(des.getCanonical(), des));
+            int min = designs(pl, process, PartialLiner::checkAP, des -> {
+                if (iso.putIfAbsent(des.getCanonical(), des) == null) {
+                    System.out.println(cnt.incrementAndGet());
+                    System.out.println(des.toLines());
+                }
+            });
             int val = ai.incrementAndGet();
-            if (val % 1000 == 0) {
-                System.out.println(val + " " + iso.size());
+            if (val % 1 == 0) {
+                System.out.println(val + " " + min + " " + iso.size());
             }
         });
         dump("d" + prefix, v, k, conf.left() - process, new ArrayList<>(iso.values()));
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 
-    private static void designs(Inc partial, int needed, Predicate<Inc> filter, Consumer<Inc> cons) {
+    private static int designs(Inc partial, int needed, Consumer<Inc> cons) {
+        int res = needed;
         for (int[] block : partial.blocks()) {
             Inc nextPartial = new Inc(partial, block);
+            if (needed == 1) {
+                cons.accept(nextPartial);
+                res = 0;
+            } else {
+                int next = designs(nextPartial, needed - 1, cons);
+                if (next < res) {
+                    res = next;
+                }
+            }
+        }
+        return res;
+    }
+
+    private static int designs(Inc partial, int needed, Predicate<PartialLiner> filter, Consumer<Inc> cons) {
+        int res = needed;
+        for (int[] block : partial.blocks()) {
+            PartialLiner nextPartial = new PartialLiner(new Inc(partial, block));
             if (!filter.test(nextPartial)) {
                 continue;
             }
+            Inc nextInc = new Inc(nextPartial.flags());
             if (needed == 1) {
-                cons.accept(nextPartial);
-                continue;
+                cons.accept(new Inc(nextPartial.flags()));
+                res = 0;
+            } else {
+                int next = designs(nextInc, needed - 1, filter, cons);
+                if (next < res) {
+                    res = next;
+                }
             }
-            designs(nextPartial, needed - 1, filter, cons);
         }
+        return res;
     }
 
     @Test
@@ -235,7 +264,7 @@ public class IncFinderTest {
                     return;
                 }
                 Inc pl = liners.get(idx);
-                designs(pl, process, l -> true, des -> {
+                designs(pl, process, des -> {
                     if (nonIsomorphic.putIfAbsent(des.getCanonical(), des) == null) {
                         ps.println(des.toLines());
                         ps.flush();
