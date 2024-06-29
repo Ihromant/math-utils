@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.PartialLiner;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -41,7 +42,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageCanon(liners, l -> true, cnt);
+            liners = nextStageCanon(liners, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -53,8 +54,8 @@ public class IncFinderTest {
     @Test
     public void generateAP() throws IOException {
         String prefix = "ap";
-        int v = 28;
-        int k = 4;
+        int v = 19;
+        int k = 3;
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
         int dp = 4;
@@ -65,7 +66,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageCanon(liners, Inc::checkAP, cnt);
+            liners = nextStageCanon(liners, PartialLiner::checkAP, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -88,13 +89,33 @@ public class IncFinderTest {
         return new Inc(inc, v, r + 1);
     }
 
-    public static List<Inc> nextStageCanon(List<Inc> partials, Predicate<Inc> filter, AtomicLong cnt) {
+    public static List<Inc> nextStageCanon(List<Inc> partials, AtomicLong cnt) {
         Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
-        partials.stream().parallel().filter(filter).forEach(partial -> {
+        partials.stream().parallel().forEach(partial -> {
             for (int[] block : partial.blocks()) {
                 Inc liner = new Inc(partial, block);
                 nonIsomorphic.putIfAbsent(liner.getCanonical(), liner);
                 cnt.incrementAndGet();
+            }
+        });
+        return new ArrayList<>(nonIsomorphic.values());
+    }
+
+    public static List<Inc> nextStageCanon(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        AtomicLong counter = new AtomicLong();
+        partials.stream().parallel().forEach(inc -> {
+            PartialLiner partial = new PartialLiner(inc);
+            for (int[] block : partial.blocks()) {
+                PartialLiner liner = new PartialLiner(partial, block);
+                if (filter.test(liner)) {
+                    cnt.incrementAndGet();
+                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+                }
+            }
+            long val = counter.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val + " " + nonIsomorphic.size());
             }
         });
         return new ArrayList<>(nonIsomorphic.values());
