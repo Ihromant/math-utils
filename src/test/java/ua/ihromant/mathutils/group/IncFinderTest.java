@@ -15,6 +15,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,8 +32,8 @@ public class IncFinderTest {
     @Test
     public void generateCom() throws IOException {
         String prefix = "com";
-        int v = 25;
-        int k = 4;
+        int v = 15;
+        int k = 3;
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
         DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))}));
@@ -42,7 +43,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageCanon(liners, cnt);
+            liners = nextStageAltConc(liners, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -54,19 +55,22 @@ public class IncFinderTest {
     @Test
     public void generateAP() throws IOException {
         String prefix = "ap";
-        int v = 19;
-        int k = 3;
+        String altPrefix = "ap1";
+        int v = 37;
+        int k = 4;
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
         int dp = 4;
-        DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))}));
+        DumpConfig conf = readLast(prefix, v, k, () -> k == 3
+                ? new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))})
+                : readExact(altPrefix, v, k, b + 1 - 2 * r));
         List<Inc> liners = Arrays.asList(conf.partials);
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageCanon(liners, PartialLiner::checkAP, cnt);
+            liners = nextStageAltConc(liners, PartialLiner::checkAP, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -166,6 +170,41 @@ public class IncFinderTest {
             return new DumpConfig(v, k, left, partials);
         } catch (FileNotFoundException e) {
             return fallback.get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static DumpConfig readExact(String prefix, int v, int k, int leftExpected) {
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int left;
+            int lineCount = v * (v - 1) / k / (k - 1);
+            Inc[] partials = null;
+            while ((line = br.readLine()) != null) {
+                left = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                line = br.readLine();
+                int partialsCount = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                int partialSize = lineCount - left;
+                partials = new Inc[partialsCount];
+                for (int i = 0; i < partialsCount; i++) {
+                    Inc partial = new Inc(new BitSet(v * partialSize), v, partialSize);
+                    for (int j = 0; j < partialSize; j++) {
+                        String[] pts = br.readLine().split(" ");
+                        for (int l = 0; l < k; l++) {
+                            partial.set(j, Integer.parseInt(pts[l]));
+                        }
+                    }
+                    partials[i] = partial;
+                    br.readLine();
+                }
+                if (left == leftExpected) {
+                    return new DumpConfig(v, k, left, partials);
+                }
+            }
+            throw new IllegalStateException(String.valueOf(leftExpected));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -324,5 +363,71 @@ public class IncFinderTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static List<Inc> nextStageAlt(List<Inc> partials, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
+        for (Inc inc : partials) {
+            PartialLiner partial = new PartialLiner(inc);
+            Consumer<int[]> blockConsumer = block -> {
+                PartialLiner liner = new PartialLiner(partial, block.clone());
+                cnt.incrementAndGet();
+                nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+            };
+            partial.altBlocks(blockConsumer);
+        }
+        return new ArrayList<>(nonIsomorphic.values());
+    }
+
+    private static List<Inc> nextStageAlt(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
+        for (Inc inc : partials) {
+            PartialLiner partial = new PartialLiner(inc);
+            Consumer<int[]> blockConsumer = block -> {
+                PartialLiner liner = new PartialLiner(partial, block.clone());
+                if (filter.test(liner)) {
+                    cnt.incrementAndGet();
+                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+                }
+            };
+            partial.altBlocks(blockConsumer);
+        }
+        return new ArrayList<>(nonIsomorphic.values());
+    }
+
+    private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        partials.stream().parallel().forEach(inc -> {
+            PartialLiner partial = new PartialLiner(inc);
+            Consumer<int[]> blockConsumer = block -> {
+                PartialLiner liner = new PartialLiner(partial, block.clone());
+                cnt.incrementAndGet();
+                nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+            };
+            partial.altBlocks(blockConsumer);
+        });
+        return new ArrayList<>(nonIsomorphic.values());
+    }
+
+    private static List<Inc> nextStageAltConc(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        partials.stream().parallel().forEach(inc -> {
+            PartialLiner partial = new PartialLiner(inc);
+            Consumer<int[]> blockConsumer = block -> {
+                PartialLiner liner = new PartialLiner(partial, block.clone());
+                if (filter.test(liner)) {
+                    cnt.incrementAndGet();
+                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+                }
+            };
+            partial.altBlocks(blockConsumer);
+        });
+        return new ArrayList<>(nonIsomorphic.values());
+    }
+
+    @Test
+    public void extract() throws IOException {
+        DumpConfig conf = readExact("com", 25, 4, 31);
+        dump("come", conf.v(), conf.k(), conf.left, Arrays.asList(conf.partials()));
     }
 }

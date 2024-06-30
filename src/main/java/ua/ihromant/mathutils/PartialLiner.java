@@ -765,15 +765,6 @@ public class PartialLiner {
         return result;
     }
 
-    private int getUnassigned(int[] look, int pt) {
-        for (int i = pt + 1; i < look.length; i++) {
-            if (look[i] < 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
     public boolean hasNext(int depth) {
         if (depth == 0) {
             return true;
@@ -816,6 +807,22 @@ public class PartialLiner {
         return false;
     }
 
+    public boolean hasNextAlt(Predicate<PartialLiner> test, int depth) {
+        if (!test.test(this)) {
+            return false;
+        }
+        if (depth == 0) {
+            return true;
+        }
+        for (int[] block : blocks()) {
+            PartialLiner part = new PartialLiner(this, block);
+            if (part.hasNext(test, depth - 1)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public Iterable<int[]> blocks() {
         return BlocksIterator::new;
     }
@@ -841,6 +848,15 @@ public class PartialLiner {
                 block[i] = snd + i - 1;
             }
             this.hasNext = fst < pointCount && findNext(ll - 2);
+        }
+
+        private static int getUnassigned(int[] look, int pt) {
+            for (int i = pt + 1; i < look.length; i++) {
+                if (look[i] < 0) {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         @Override
@@ -937,6 +953,83 @@ public class PartialLiner {
             block[block.length - 1]++;
             this.hasNext = findNext(block.length - 1);
             return res;
+        }
+    }
+
+    public void altBlocks(Consumer<int[]> cons) {
+        int ll = lines[0].length;
+        int first = findFirst(ll);
+        if (first < 0) {
+            return;
+        }
+        int[] block = new int[ll];
+        int snd = getUnassigned(lookup[first], first);
+        if (first > snd) {
+            block[0] = snd;
+            altBlocksMoving(block, ll - 1, first, cons);
+        } else {
+            block[0] = first;
+            block[1] = snd;
+            altBlocks(block, ll - 2, cons);
+        }
+    }
+
+    private static int getUnassigned(int[] look, int pt) {
+        for (int i = 0; i < look.length; i++) {
+            if (pt != i && look[i] < 0) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    private int findFirst(int ll) {
+        for (int i = (pointCount - ll) / (ll - 1); i > 0; i--) {
+            int[] bd = beamDist[i];
+            if (bd.length > 0) {
+                return bd[0];
+            }
+        }
+        return -1;
+    }
+
+    private void altBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                cons.accept(curr);
+            } else {
+                altBlocks(curr, moreNeeded - 1, cons);
+            }
+        }
+    }
+
+    private void altBlocksMoving(int[] curr, int moreNeeded, int first, Consumer<int[]> cons) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = (moreNeeded == 1 ? first : curr[len - 1] + 1); p <= first; p++) {
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                cons.accept(curr);
+            } else {
+                if (p == first) {
+                    altBlocks(curr, moreNeeded - 1, cons);
+                } else {
+                    altBlocksMoving(curr, moreNeeded - 1, first, cons);
+                }
+            }
         }
     }
 
