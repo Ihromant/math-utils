@@ -278,9 +278,9 @@ public class IncFinderTest {
     @Test
     public void generateFt() throws IOException {
         String prefix = "com";
-        int v = 25;
-        int k = 4;
-        int process = 3;
+        int v = 51;
+        int k = 6;
+        int process = 8;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         Map<BitSet, Inc> nonIsomorphic = readList("ft/" + prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + process)
                 .stream().parallel().collect(Collectors.toMap(Inc::getCanonical, Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
@@ -300,9 +300,11 @@ public class IncFinderTest {
                     return;
                 }
                 Inc pl = liners.get(idx);
-                designs(pl, process, des -> {
-                    if (nonIsomorphic.putIfAbsent(des.getCanonical(), des) == null) {
-                        ps.println(des.toLines());
+                PartialLiner partial = new PartialLiner(pl);
+                partial.designs(process, l -> true, des -> {
+                    Inc res = new Inc(des.flags());
+                    if (nonIsomorphic.putIfAbsent(des.getCanonical(), res) == null) {
+                        ps.println(res.toLines());
                         ps.flush();
                     }
                 });
@@ -394,6 +396,7 @@ public class IncFinderTest {
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
         Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        AtomicInteger ai = new AtomicInteger();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
@@ -402,6 +405,7 @@ public class IncFinderTest {
                 nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
             };
             partial.altBlocks(blockConsumer);
+            System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
         });
         return new ArrayList<>(nonIsomorphic.values());
     }
