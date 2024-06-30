@@ -154,22 +154,22 @@ public class NautyTest {
 
     @Test
     public void testSubPartition() {
-        SubPartition part = new SubPartition(5, new int[][]{{3}, {5}, {1}, {7}, {9}, null, null, null, null, null});
-        assertArrayEquals(new int[]{-1, 2, -1, 0, -1, 1, -1, 3, -1, 4}, part.getIdxes());
-        assertArrayEquals(new int[]{3, 5, 1, 7, 9, 0, 0, 0, 0, 0}, part.getCellMins());
-        assertEquals(5, part.getSize());
-        part.replace(3, new int[][]{{7}, {4}});
-        assertArrayEquals(new int[]{-1, 2, -1, 0, 4, 1, -1, 3, -1, 5}, part.getIdxes());
-        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 0, 0, 0, 0}, part.getCellMins());
-        assertEquals(6, part.getSize());
-        part.addButLargest(new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1));
-        assertArrayEquals(new int[]{-1, 2, 7, 0, 4, 1, -1, 3, 6, 5}, part.getIdxes());
-        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 8, 2, 0, 0}, part.getCellMins());
-        assertEquals(8, part.getSize());
-        assertEquals(2, part.remove());
-        assertArrayEquals(new int[]{-1, 2, -1, 0, 4, 1, -1, 3, 6, 5}, part.getIdxes());
-        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 8, 2, 0, 0}, part.getCellMins());
+        SubPartition part = new SubPartition(new int[][]{{3}, {5}, {1}, {7, 4}, null, {9}, {2, 6, 8}, null, null, {0}});
+        assertArrayEquals(new int[]{6, 2, 5, 0, -1, 1, -1, 3, -1, 4}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 9, 2, 0, 0, 0, 0}, part.getCellMins());
         assertEquals(7, part.getSize());
+        part.replace(3, new int[][]{{7}, {4}});
+        assertArrayEquals(new int[]{7, 2, 6, 0, 4, 1, -1, 3, -1, 5}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 0, 0}, part.getCellMins());
+        assertEquals(8, part.getSize());
+        part.addButLargest(new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1));
+        assertArrayEquals(new int[]{7, 2, 9, 0, 4, 1, -1, 3, 8, 5}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 8, 2}, part.getCellMins());
+        assertEquals(10, part.getSize());
+        assertEquals(2, part.remove());
+        assertArrayEquals(new int[]{7, 2, -1, 0, 4, 1, -1, 3, 8, 5}, part.getIdxes());
+        assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 8, 2}, part.getCellMins());
+        assertEquals(9, part.getSize());
         assertEquals(-1, part.idxOf(2));
         assertEquals(4, part.idxOf(4));
     }

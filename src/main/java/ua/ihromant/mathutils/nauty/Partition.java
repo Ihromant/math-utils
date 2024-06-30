@@ -12,11 +12,13 @@ public class Partition {
         this.partition = new int[maxCnt][];
         this.cellIdx = new int[maxCnt];
         this.cellCnt = partition.length;
-        System.arraycopy(partition, 0, this.partition, 0, partition.length);
-        for (int i = 0; i < cellCnt; i++) {
-            for (int el : partition[i]) {
-                cellIdx[el] = i;
+        int idx = 0;
+        for (int[] cell : partition) {
+            this.partition[idx] = cell;
+            for (int el : cell) {
+                cellIdx[el] = idx;
             }
+            idx = idx + cell.length;
         }
     }
 
@@ -26,22 +28,13 @@ public class Partition {
         this.cellIdx = stack.cellIdx.clone();
     }
 
-    public void replace(int idx, int[][] list) {
-        for (int i = cellCnt - 1; i > idx; i--) {
-            int[] cell = partition[i];
-            int shifted = i + list.length - 1;
-            partition[shifted] = cell;
+    private void replace(int idx, int[][] list) {
+        for (int[] cell : list) {
+            partition[idx] = cell;
             for (int el : cell) {
-                cellIdx[el] = shifted;
+                cellIdx[el] = idx;
             }
-        }
-        for (int i = 0; i < list.length; i++) {
-            int[] cell = list[i];
-            int shifted = idx + i;
-            partition[shifted] = cell;
-            for (int el : cell) {
-                cellIdx[el] = shifted;
-            }
+            idx = idx + cell.length;
         }
         cellCnt = cellCnt + list.length - 1;
     }
@@ -50,8 +43,7 @@ public class Partition {
         return cellCnt == partition.length;
     }
 
-    public DistinguishResult distinguish(GraphWrapper graph, int cellIdx, int[] w) {
-        int[] cell = partition[cellIdx];
+    private static DistinguishResult distinguish(GraphWrapper graph, int[] cell, int[] w) {
         int[] numEdgesDist = new int[graph.size()];
         for (int el : cell) {
             for (int o : w) {
@@ -92,19 +84,19 @@ public class Partition {
     }
 
     public SubPartition subPartition() {
-        return new SubPartition(cellCnt, partition);
+        return new SubPartition(partition);
     }
 
     public void refine(GraphWrapper graph, SubPartition alpha) {
         while (!alpha.isEmpty() && !isDiscrete()) {
             int wMin = alpha.remove();
             int idx = 0;
-            while (idx < cellCnt) {
+            while (idx < partition.length) {
                 int[] xCell = partition[idx];
-                DistinguishResult dist = distinguish(graph, idx, partition[cellIdx[wMin]]);
+                DistinguishResult dist = distinguish(graph, xCell, partition[cellIdx[wMin]]);
                 int[][] elms = dist.elms();
                 replace(idx, elms);
-                idx = idx + elms.length;
+                idx = idx + xCell.length;
                 int xIdx = alpha.idxOf(xCell[0]);
                 if (xIdx >= 0) {
                     alpha.replace(xIdx, elms);
@@ -131,7 +123,7 @@ public class Partition {
     }
 
     public Partition ort(GraphWrapper g, int v) {
-        SubPartition singleton = new SubPartition(cellIdx.length, v);
+        SubPartition singleton = new SubPartition(partition.length, v);
         Partition mul = mul(v);
         mul.refine(g, singleton);
         return mul;
@@ -139,14 +131,14 @@ public class Partition {
 
     public int[] smallestNonTrivial() {
         int[] res = null;
-        for (int i = 0; i < cellCnt; i++) {
-            int[] elem = partition[i];
-            if (elem.length == 1) {
-                continue;
+        int idx = 0;
+        while (idx < partition.length) {
+            int[] cell = partition[idx];
+            int cl = cell.length;
+            if (cl > 1 && (res == null || cl > res.length)) {
+                res = cell;
             }
-            if (res == null || res.length > elem.length) {
-                res = elem;
-            }
+            idx = idx + cl;
         }
         return res;
     }

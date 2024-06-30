@@ -10,15 +10,18 @@ public class SubPartition {
     private final int[] idxes;
     private int size;
 
-    public SubPartition(int cellCount, int[][] cells) {
-        this.cellMins = new int[cells.length];
-        this.idxes = new int[cells.length];
+    public SubPartition(int[][] partition) {
+        this.cellMins = new int[partition.length];
+        this.idxes = new int[partition.length];
         Arrays.fill(idxes, -1);
-        this.size = cellCount;
-        for (int i = 0; i < cellCount; i++) {
-            int min = cells[i][0];
-            cellMins[i] = min;
-            idxes[min] = i;
+        int idx = 0;
+        while (idx < partition.length) {
+            int[] cell = partition[idx];
+            int min = cell[0];
+            cellMins[size] = min;
+            idxes[min] = size;
+            size++;
+            idx = idx + cell.length;
         }
     }
 
