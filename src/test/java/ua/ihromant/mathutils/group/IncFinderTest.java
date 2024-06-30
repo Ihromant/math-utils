@@ -212,28 +212,25 @@ public class IncFinderTest {
 
     @Test
     public void byPartials() throws IOException {
-        String prefix = "ap";
-        int v = 37;
+        String prefix = "come";
+        int v = 25;
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
-        int process = conf.left();
+        int process = 5;
         List<Inc> liners = Arrays.asList(conf.partials());
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
-        AtomicInteger cnt = new AtomicInteger();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             Inc pl = liners.get(idx);
-            int min = designs(pl, process, PartialLiner::checkAP, des -> {
-                if (iso.putIfAbsent(des.getCanonical(), des) == null) {
-                    System.out.println(cnt.incrementAndGet());
-                    System.out.println(des.toLines());
-                }
+            PartialLiner partial = new PartialLiner(pl);
+            partial.designs(process, l -> true, des -> {
+                iso.putIfAbsent(des.getCanonical(), new Inc(des.flags()));
             });
             int val = ai.incrementAndGet();
             if (val % 1 == 0) {
-                System.out.println(val + " " + min + " " + iso.size());
+                System.out.println(val + " " + iso.size());
             }
         });
         dump("d" + prefix, v, k, conf.left() - process, new ArrayList<>(iso.values()));
@@ -427,7 +424,7 @@ public class IncFinderTest {
 
     @Test
     public void extract() throws IOException {
-        DumpConfig conf = readExact("com", 25, 4, 31);
+        DumpConfig conf = readExact("com", 41, 5, 63);
         dump("come", conf.v(), conf.k(), conf.left, Arrays.asList(conf.partials()));
     }
 }

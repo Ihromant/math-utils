@@ -1033,6 +1033,21 @@ public class PartialLiner {
         }
     }
 
+    public void designs(int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
+        Consumer<int[]> blockConsumer = block -> {
+            PartialLiner nextPartial = new PartialLiner(this, block.clone());
+            if (!filter.test(nextPartial)) {
+                return;
+            }
+            if (needed == 1) {
+                cons.accept(nextPartial);
+                return;
+            }
+            nextPartial.designs(needed - 1, filter, cons);
+        };
+        altBlocks(blockConsumer);
+    }
+
     public BitSet getCanonical() {
         if (canonical == null) {
             GraphWrapper graph = GraphWrapper.forPartial(this);
