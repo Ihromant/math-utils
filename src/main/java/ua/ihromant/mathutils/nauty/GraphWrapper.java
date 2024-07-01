@@ -153,11 +153,13 @@ public interface GraphWrapper {
         if (color(cell[0]) == color(w[0])) {
             return new DistinguishResult(new int[][]{cell}, 0); // TODO not true for not bipartite graphs
         }
-        int[] numEdgesDist = new int[size()];
-        for (int el : cell) {
+        int cl = cell.length;
+        int[] numEdgesDist = new int[cl];
+        for (int i = 0; i < cl; i++) {
+            int el = cell[i];
             for (int o : w) {
                 if (edge(el, o)) {
-                    numEdgesDist[el]++;
+                    numEdgesDist[i]++;
                 }
             }
         }
@@ -165,7 +167,7 @@ public interface GraphWrapper {
         int[] numEdgesCnt = new int[w.length + 1];
         int maxCnt = 0;
         int maxIdx = 0;
-        for (int i : cell) {
+        for (int i = 0; i < cl; i++) {
             int cnt = numEdgesDist[i];
             int val = ++numEdgesCnt[cnt];
             nonZeros.set(cnt);
@@ -180,13 +182,13 @@ public interface GraphWrapper {
             idxes[i] = idx++;
         }
         int[][] result = new int[nonZeros.cardinality()][];
-        for (int x : cell) {
-            int cnt = numEdgesDist[x];
+        for (int ix = 0; ix < cl; ix++) {
+            int cnt = numEdgesDist[ix];
             int i = idxes[cnt];
             if (result[i] == null) {
                 result[i] = new int[numEdgesCnt[cnt]];
             }
-            result[i][result[i].length - numEdgesCnt[cnt]--] = x;
+            result[i][result[i].length - numEdgesCnt[cnt]--] = cell[ix];
         }
         int largest = idxes[maxIdx];
         return new DistinguishResult(result, largest);
