@@ -148,4 +148,47 @@ public interface GraphWrapper {
         }
         return arr;
     }
+
+    default DistinguishResult distinguish(int[] cell, int[] w) {
+        if (color(cell[0]) == color(w[0])) {
+            return new DistinguishResult(new int[][]{cell}, 0); // TODO not true for not bipartite graphs
+        }
+        int[] numEdgesDist = new int[size()];
+        for (int el : cell) {
+            for (int o : w) {
+                if (edge(el, o)) {
+                    numEdgesDist[el]++;
+                }
+            }
+        }
+        BitSet nonZeros = new BitSet(w.length + 1);
+        int[] numEdgesCnt = new int[w.length + 1];
+        int maxCnt = 0;
+        int maxIdx = 0;
+        for (int i : cell) {
+            int cnt = numEdgesDist[i];
+            int val = ++numEdgesCnt[cnt];
+            nonZeros.set(cnt);
+            if (val > maxCnt || (val == maxCnt && cnt < maxIdx)) {
+                maxCnt = val;
+                maxIdx = cnt;
+            }
+        }
+        int[] idxes = new int[w.length + 1];
+        int idx = 0;
+        for (int i = nonZeros.nextSetBit(0); i >= 0; i = nonZeros.nextSetBit(i + 1)) {
+            idxes[i] = idx++;
+        }
+        int[][] result = new int[nonZeros.cardinality()][];
+        for (int x : cell) {
+            int cnt = numEdgesDist[x];
+            int i = idxes[cnt];
+            if (result[i] == null) {
+                result[i] = new int[numEdgesCnt[cnt]];
+            }
+            result[i][result[i].length - numEdgesCnt[cnt]--] = x;
+        }
+        int largest = idxes[maxIdx];
+        return new DistinguishResult(result, largest);
+    }
 }
