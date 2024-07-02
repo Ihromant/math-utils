@@ -538,4 +538,47 @@ public class BatchLinerTest {
             assertEquals(of(25), p.cardSubPlanes(true));
         }
     }
+
+    @Test
+    public void test_ap_19_3() {
+        int v = 19;
+        int[][][] liners = readLast(getClass().getResourceAsStream("/ap-19-3.txt"), v, 3);
+        for (int i = 0; i < liners.length; i++) {
+            Liner liner = new Liner(v, liners[i]);
+            long ac = Automorphisms.autCountOld(liner);
+            if (ac != 1) {
+                System.out.println(i + " " + liner.hyperbolicIndex() + " " + ac);
+            }
+        }
+    }
+
+    private static int[][][] readLast(InputStream is, int v, int k) {
+        try (InputStreamReader isr = new InputStreamReader(is);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int left;
+            int lineCount = v * (v - 1) / k / (k - 1);
+            int[][][] partials = null;
+            while ((line = br.readLine()) != null) {
+                left = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                line = br.readLine();
+                int partialsCount = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                int partialSize = lineCount - left;
+                partials = new int[partialsCount][partialSize][k];
+                for (int i = 0; i < partialsCount; i++) {
+                    int[][] partial = partials[i];
+                    for (int j = 0; j < partialSize; j++) {
+                        String[] pts = br.readLine().split(" ");
+                        for (int l = 0; l < k; l++) {
+                            partial[j][l] = Integer.parseInt(pts[l]);
+                        }
+                    }
+                    br.readLine();
+                }
+            }
+            return partials;
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
