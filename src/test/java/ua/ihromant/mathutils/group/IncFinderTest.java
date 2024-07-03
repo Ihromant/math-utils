@@ -78,30 +78,6 @@ public class IncFinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    @Test
-    public void generateResolvable() throws IOException {
-        String prefix = "res";
-        int v = 21;
-        int k = 3;
-        int dp = 4;
-        int b = v * (v - 1) / k / (k - 1);
-        int r = v / k;
-        DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(resBlocks(v, k))}));
-        List<Inc> liners = Arrays.asList(conf.partials);
-        int left = conf.left();
-        long time = System.currentTimeMillis();
-        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
-        while (left > 0 && !liners.isEmpty()) {
-            AtomicLong cnt = new AtomicLong();
-            int depth = Math.min(left - 1, dp);
-            liners = nextStageResolvable(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), cnt);
-            left--;
-            dump(prefix, v, k, left, liners);
-            System.out.println(left + " " + liners.size() + " " + cnt.get());
-        }
-        System.out.println(System.currentTimeMillis() - time);
-    }
-
     public static Inc beamBlocks(int v, int k) {
         int r = (v - 1) / (k - 1);
         BitSet inc = new BitSet(r * v + v);
@@ -113,20 +89,6 @@ public class IncFinderTest {
         }
         for (int i = 0; i < k; i++) {
             inc.set(r * v + 1 + (k - 1) * i);
-        }
-        return new Inc(inc, v, r + 1);
-    }
-
-    private Inc resBlocks(int v, int k) {
-        int r = v / k;
-        BitSet inc = new BitSet(r * v + v);
-        for (int i = 0; i < r; i++) {
-            for (int j = 0; j < k; j++) {
-                inc.set(i * v + i * k + j);
-            }
-        }
-        for (int i = 0; i < k; i++) {
-            inc.set(r * v + k * i);
         }
         return new Inc(inc, v, r + 1);
     }
@@ -428,21 +390,6 @@ public class IncFinderTest {
                 }
             };
             partial.altBlocks(blockConsumer);
-        }
-        return new ArrayList<>(nonIsomorphic.values());
-    }
-
-    private static List<Inc> nextStageResolvable(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
-        for (Inc inc : partials) {
-            PartialLiner partial = new PartialLiner(inc);
-            for (int[] block : partial.blocksResolvable()) {
-                PartialLiner liner = new PartialLiner(partial, block);
-                if (filter.test(liner)) {
-                    cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
-                }
-            }
         }
         return new ArrayList<>(nonIsomorphic.values());
     }

@@ -905,10 +905,10 @@ public class PartialLiner {
 
         public BlocksResIterator() {
             int ll = lines[0].length;
-            this.desired = lines.length * ll / pointCount + 1;
+            this.desired = lines.length / ll;
             this.block = new int[ll];
             int fst = 0;
-            while (beamCounts[fst] == desired) {
+            while (beamCounts[fst] > desired) {
                 fst++;
             }
             block[0] = fst;
@@ -926,7 +926,7 @@ public class PartialLiner {
         private boolean findNext(int moreNeeded) {
             int len = block.length - moreNeeded;
             ex: for (int p = Math.max(block[len - 1] + 1, block[len]); p < pointCount - moreNeeded + 1; p++) {
-                if (beamCounts[p] == desired) {
+                if (beamCounts[p] > desired) {
                     continue;
                 }
                 int[] look = lookup[p];
