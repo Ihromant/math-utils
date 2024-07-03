@@ -14,9 +14,10 @@ public class NautyAlgo {
             partitionConsumer.accept(partition);
             return;
         }
-        int[] smallest = partition.smallestNonTrivial();
-        for (int v : smallest) {
-            Partition next = partition.ort(graph, v);
+        int smallestIdx = partition.largestNonTrivial();
+        int[] cell = partition.cellByIdx(smallestIdx);
+        for (int sh = 0; sh < cell.length; sh++) {
+            Partition next = partition.ort(graph, smallestIdx, sh);
             search(graph, next, partitionConsumer);
         }
     }

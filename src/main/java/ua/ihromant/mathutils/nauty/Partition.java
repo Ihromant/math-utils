@@ -44,6 +44,10 @@ public class Partition {
         return new SubPartition(partition);
     }
 
+    public int[] cellByIdx(int idx) {
+        return partition[idx];
+    }
+
     public void refine(GraphWrapper graph, SubPartition alpha) {
         while (!alpha.isEmpty() && !isDiscrete()) {
             int wMin = alpha.remove();
@@ -64,39 +68,38 @@ public class Partition {
         }
     }
 
-    public Partition mul(int v) {
-        int idx = cellIdx[v];
-        int[] cell = partition[idx];
-        while (cell == null) {
-            cell = partition[--idx];
-        }
+    private Partition mul(int cellIdx, int shift) {
+        int[] cell = partition[cellIdx];
         Partition copy = new Partition(this);
         if (cell.length == 1) {
             return copy;
         }
         int[] butV = new int[cell.length - 1];
-        int vIdx = Arrays.binarySearch(cell, v);
-        System.arraycopy(cell, 0, butV, 0, vIdx);
-        System.arraycopy(cell, vIdx + 1, butV, vIdx, cell.length - vIdx - 1);
-        copy.replace(idx, new int[][]{{v}, butV});
+        System.arraycopy(cell, 0, butV, 0, shift);
+        System.arraycopy(cell, shift + 1, butV, shift, cell.length - shift - 1);
+        copy.replace(cellIdx, new int[][]{{cell[shift]}, butV});
         return copy;
     }
 
-    public Partition ort(GraphWrapper g, int v) {
+    public Partition ort(GraphWrapper g, int cellIdx, int shift) {
+        int[] cell = partition[cellIdx];
+        int v = cell[shift];
         SubPartition singleton = new SubPartition(partition.length, v);
-        Partition mul = mul(v);
+        Partition mul = mul(cellIdx, shift);
         mul.refine(g, singleton);
         return mul;
     }
 
-    public int[] smallestNonTrivial() {
-        int[] res = null;
+    public int largestNonTrivial() {
+        int res = -1;
+        int maxL = Integer.MIN_VALUE;
         int idx = 0;
         while (idx < partition.length) {
             int[] cell = partition[idx];
             int cl = cell.length;
-            if (cl > 1 && (res == null || cl > res.length)) {
-                res = cell;
+            if (cl > 1 && (res < 0 || maxL < cl)) {
+                maxL = cl;
+                res = idx;
             }
             idx = idx + cl;
         }

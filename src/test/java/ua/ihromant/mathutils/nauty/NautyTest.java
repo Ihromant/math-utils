@@ -33,8 +33,8 @@ public class NautyTest {
             partBase.refine(partGraph, partAlpha);
             //System.out.println("x");
         }
-        Partition next = base.ort(graph, 0);
-        next = next.ort(graph, 11);
+        Partition next = base.ort(graph, 0, 0);
+        next = next.ort(graph, 11, 0);
         System.out.println();
     }
 
