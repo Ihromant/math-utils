@@ -44,7 +44,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAltConc(liners, cnt);
+            liners = nextStageAlt(liners, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -95,7 +95,7 @@ public class IncFinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStageResolvable(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), cnt);
+            liners = nextStageResolvableConc(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -454,6 +454,21 @@ public class IncFinderTest {
         return new ArrayList<>(nonIsomorphic.values());
     }
 
+    private static List<Inc> nextStageResolvableConc(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
+        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        partials.stream().parallel().forEach(inc -> {
+            PartialLiner partial = new PartialLiner(inc);
+            for (int[] block : partial.blocksResolvable()) {
+                PartialLiner liner = new PartialLiner(partial, block);
+                if (filter.test(liner)) {
+                    cnt.incrementAndGet();
+                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+                }
+            }
+        });
+        return new ArrayList<>(nonIsomorphic.values());
+    }
+
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
         Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
@@ -465,7 +480,7 @@ public class IncFinderTest {
                 nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
             };
             partial.altBlocks(blockConsumer);
-            System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
+            //System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
         });
         return new ArrayList<>(nonIsomorphic.values());
     }

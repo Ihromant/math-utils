@@ -15,9 +15,8 @@ public class Partition {
         for (int[] cell : partition) {
             this.partition[idx] = cell;
             for (int el : cell) {
-                cellIdx[el] = idx;
+                cellIdx[el] = idx++;
             }
-            idx = idx + cell.length;
         }
     }
 
@@ -31,9 +30,8 @@ public class Partition {
         for (int[] cell : list) {
             partition[idx] = cell;
             for (int el : cell) {
-                cellIdx[el] = idx;
+                cellIdx[el] = idx++;
             }
-            idx = idx + cell.length;
         }
         cellCnt = cellCnt + list.length - 1;
     }
@@ -69,6 +67,9 @@ public class Partition {
     public Partition mul(int v) {
         int idx = cellIdx[v];
         int[] cell = partition[idx];
+        while (cell == null) {
+            cell = partition[--idx];
+        }
         Partition copy = new Partition(this);
         if (cell.length == 1) {
             return copy;
