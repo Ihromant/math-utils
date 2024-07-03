@@ -42,16 +42,16 @@ public class FinderTest {
         int k = 3;
         int dp = 3;
         DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
-        List<Inc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new Inc(l.flags())).collect(Collectors.toList());
+        List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).collect(Collectors.toList());
         int left = conf.left();
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStageCanonWithConv(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt).toList();
+            liners = nextStage(liners, l -> l.hasNext(depth), PartialLiner::isomorphicSel, cnt);
             left--;
-            dump(prefix, v, k, left, liners.size(), liners.stream());
+            dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
         }
         System.out.println(System.currentTimeMillis() - time);
@@ -80,6 +80,21 @@ public class FinderTest {
     }
 
     private record DumpConfig(int v, int k, int left, int[][][] partials) {}
+
+    private static void dump(String prefix, int v, int k, int left, List<PartialLiner> liners) throws IOException {
+        try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            ps.println(left + " blocks left");
+            ps.println(liners.size() + " partials");
+            for (PartialLiner l : liners) {
+                for (int[] line : l.lines()) {
+                    ps.println(Arrays.stream(line).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+                }
+                ps.println();
+            }
+        }
+    }
 
     private static void dump(String prefix, int v, int k, int left, int size, Stream<Inc> liners) throws IOException {
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);

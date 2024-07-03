@@ -113,4 +113,16 @@ public class Partition {
     public int[] reverse() {
         return Arrays.stream(partition).mapToInt(cell -> cell[0]).toArray();
     }
+
+    public int[] cellSizes() {
+        int[] result = new int[cellCnt];
+        int idx = 0;
+        int resIdx = 0;
+        while (resIdx < result.length) {
+            int len = partition[idx].length;
+            result[resIdx++] = len;
+            idx = idx + len;
+        }
+        return result;
+    }
 }
