@@ -87,7 +87,9 @@ public class IncFinderTest {
         int dp = 4;
         int b = v * (v - 1) / k / (k - 1);
         int r = v / k;
-        DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(resBlocks(v, k))}));
+        DumpConfig conf = readLast(prefix, v, k, () -> v == k * k
+                ? new DumpConfig(v, k, b - 2 * r - 1, new Inc[]{squareBlocks(k)})
+                : new DumpConfig(v, k, b - r - 1, new Inc[]{(resBlocks(v, k))}));
         List<Inc> liners = Arrays.asList(conf.partials);
         int left = conf.left();
         long time = System.currentTimeMillis();
@@ -123,13 +125,36 @@ public class IncFinderTest {
         BitSet inc = new BitSet(r * v + v);
         for (int i = 0; i < r; i++) {
             for (int j = 0; j < k; j++) {
-                inc.set(i * v + i * k + j);
+                inc.set(idx(i, i * k + j, v));
             }
         }
         for (int i = 0; i < k; i++) {
-            inc.set(r * v + k * i);
+            inc.set(idx(r, k * i, v));
         }
         return new Inc(inc, v, r + 1);
+    }
+
+    private int idx(int l, int pt, int v) {
+        return l * v + pt;
+    }
+
+    private Inc squareBlocks(int k) {
+        int v = k * k;
+        BitSet inc = new BitSet(2 * k * k * k);
+        for (int i = 0; i < k; i++) {
+            for (int j = 0; j < k; j++) {
+                inc.set(idx(i, i * k + j, v));
+            }
+        }
+        for (int i = 0; i < k; i++) {
+            for (int j = 0; j < k; j++) {
+                inc.set(idx(k + i, j * k + i, v));
+            }
+        }
+        for (int i = 0; i < k; i++) {
+            inc.set(idx(2 * k, k * i + i, v));
+        }
+        return new Inc(inc, v, 2 * k + 1);
     }
 
     public static List<Inc> nextStageCanon(List<Inc> partials, AtomicLong cnt) {
