@@ -20,7 +20,8 @@ public class AutomorphismsTest {
     public void testAutomorphisms() {
         testSample(Automorphisms::autCount);
         testSample(Automorphisms::autCountOld);
-        testSample(Liner::autCount);
+        testSample(Liner::autCountNew);
+        testSample(Liner::autCountOld);
     }
 
     private void testSample(ToLongFunction<Liner> autCount) {
@@ -75,7 +76,10 @@ public class AutomorphismsTest {
         assertEquals(AUTH_COUNTS[order], Automorphisms.autCountOld(liner));
         System.out.println(System.currentTimeMillis() - time);
         time = System.currentTimeMillis();
-        assertEquals(AUTH_COUNTS[order], liner.autCount());
+        assertEquals(AUTH_COUNTS[order], liner.autCountNew());
+        System.out.println(System.currentTimeMillis() - time);
+        time = System.currentTimeMillis();
+        assertEquals(AUTH_COUNTS[order], liner.autCountOld());
         System.out.println(System.currentTimeMillis() - time);
         Liner aff1 = new AffinePlane(liner, 0).toLiner();
         Liner aff2 = new AffinePlane(liner, 1).toLiner();

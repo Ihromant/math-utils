@@ -149,11 +149,31 @@ public interface GraphWrapper {
         return arr;
     }
 
-    default DistinguishResult distinguish(int[] cell, int[] w) {
-        if (color(cell[0]) == color(w[0])) {
-            return new DistinguishResult(new int[][]{cell}, 0); // TODO not true for not bipartite graphs
+    default long[] fragment(BitSet singulars, int[] permutation) {
+        int pc = pointCount();
+        int lc = lineCount();
+        long[] arr = new long[(pc * lc + 63) / 64];
+        for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
+            int ut = permutation[u];
+            for (int v = 0; v < size(); v++) {
+                if (edge(u, v)) {
+                    int vt = permutation[v];
+                    int p = Math.min(ut, vt);
+                    int l = Math.max(ut, vt);
+                    int idx = (l - pc) * pc + p;
+                    arr[idx >> 6] |= (1L << idx);
+                }
+            }
         }
+        return arr;
+    }
+
+    default DistinguishResult distinguish(int[] cell, int[] w) {
         int cl = cell.length;
+        BitSet singulars = new BitSet(size());
+        if (cl == 1 || color(cell[0]) == color(w[0])) {
+            return new DistinguishResult(new int[][]{cell}, 0, singulars); // TODO not true for not bipartite graphs
+        }
         int[] numEdgesDist = new int[cl];
         for (int i = 0; i < cl; i++) {
             int el = cell[i];
@@ -186,11 +206,15 @@ public interface GraphWrapper {
             int cnt = numEdgesDist[ix];
             int i = idxes[cnt];
             if (result[i] == null) {
-                result[i] = new int[numEdgesCnt[cnt]];
+                int size = numEdgesCnt[cnt];
+                result[i] = new int[size];
+                if (size == 1) {
+                    singulars.set(cell[ix]);
+                }
             }
             result[i][result[i].length - numEdgesCnt[cnt]--] = cell[ix];
         }
         int largest = idxes[maxIdx];
-        return new DistinguishResult(result, largest);
+        return new DistinguishResult(result, largest, singulars);
     }
 }

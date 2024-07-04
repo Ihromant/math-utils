@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
-public record DistinguishResult(int[][] elms, int largest) {
+import java.util.BitSet;
 
+public record DistinguishResult(int[][] elms, int largest, BitSet singulars) {
 }

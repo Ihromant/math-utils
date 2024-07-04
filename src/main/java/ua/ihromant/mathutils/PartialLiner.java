@@ -1,9 +1,11 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
+import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
+import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
+import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -1058,12 +1060,22 @@ public class PartialLiner {
         return canonical;
     }
 
+    public BitSet getCanonicalNew() {
+        if (canonical == null) {
+            GraphWrapper graph = GraphWrapper.forPartial(this);
+            CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
+            NautyAlgoNew.search(graph, cons);
+            canonical = cons.canonicalForm();
+        }
+        return canonical;
+    }
+
     public long autCount() {
         AtomicLong counter = new AtomicLong();
         Consumer<int[]> cons = arr -> counter.incrementAndGet();
         GraphWrapper wrap = GraphWrapper.forPartial(this);
-        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
-        NautyAlgo.search(wrap, aut);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
+        NautyAlgoNew.search(wrap, aut);
         return counter.get();
     }
 
@@ -1071,8 +1083,8 @@ public class PartialLiner {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
         GraphWrapper wrap = GraphWrapper.forPartial(this);
-        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
-        NautyAlgo.search(wrap, aut);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
+        NautyAlgoNew.search(wrap, aut);
         return res.toArray(int[][]::new);
     }
 }

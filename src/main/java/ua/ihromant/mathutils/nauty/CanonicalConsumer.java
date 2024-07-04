@@ -54,3 +54,4 @@ public class CanonicalConsumer implements Consumer<Partition> {
         return BitSet.valueOf(cert);
     }
 }
+

@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedReader;
@@ -65,8 +66,8 @@ public class BatchAffineTest {
     }
 
     @Test
-    public void testAutomorphisms2() throws IOException {
-        String name = "dhall9";
+    public void testAutomorphisms() throws IOException {
+        String name = "hall9";
         int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -75,7 +76,7 @@ public class BatchAffineTest {
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 long time = System.currentTimeMillis();
-                System.out.println(name + " dropped " + dl + " count " + Automorphisms.autCountOld(new AffinePlane(proj, dl).toLiner()) + " time " + (System.currentTimeMillis() - time));
+                System.out.println(name + " dropped " + dl + " count " + new AffinePlane(proj, dl).toLiner().autCountNew() + " time " + (System.currentTimeMillis() - time));
             }
         }
     }
@@ -157,18 +158,17 @@ public class BatchAffineTest {
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            Map<Integer, Liner> nonIsomorphic = new HashMap<>();
-            br: for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
-                System.out.println(dl);
-                Liner aff = new AffinePlane(proj, dl).toLiner();
-                for (Liner l : nonIsomorphic.values()) {
-                    if (Automorphisms.isomorphism(l, aff) != null) {
-                        continue br;
-                    }
-                }
-                nonIsomorphic.put(dl, aff);
+            Map<BitSet, Integer> nonIsomorphic = new HashMap<>();
+            for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
+                Partition partition = new Partition(proj.pointCount() + proj.lineCount(), new int[][]{
+                        IntStream.range(0, proj.pointCount()).toArray(),
+                        {dl + proj.pointCount()},
+                        IntStream.range(0, proj.lineCount()).filter(l -> l != dl).map(i -> i + proj.pointCount()).toArray()
+                });
+                Integer v = nonIsomorphic.putIfAbsent(proj.getCanonical(partition), dl);
+                System.out.println(dl + " " + (v == null ? "Unique" : "Non Unique"));
             }
-            System.out.println("Non isomorphic " + nonIsomorphic.keySet());
+            System.out.println("Non isomorphic " + nonIsomorphic.values());
         }
     }
 

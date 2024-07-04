@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.nauty;
 
 import java.util.Arrays;
+import java.util.BitSet;
 
 public class Partition {
     private int cellCnt;
@@ -48,7 +49,7 @@ public class Partition {
         return partition[idx];
     }
 
-    public void refine(GraphWrapper graph, SubPartition alpha) {
+    public void refine(GraphWrapper graph, SubPartition alpha, BitSet singulars) {
         while (!alpha.isEmpty() && !isDiscrete()) {
             int wMin = alpha.remove();
             int idx = 0;
@@ -57,6 +58,7 @@ public class Partition {
                 DistinguishResult dist = graph.distinguish(xCell, partition[cellIdx[wMin]]);
                 int[][] elms = dist.elms();
                 replace(idx, elms);
+                singulars.or(dist.singulars());
                 idx = idx + xCell.length;
                 int xIdx = alpha.idxOf(xCell[0]);
                 if (xIdx >= 0) {
@@ -68,26 +70,48 @@ public class Partition {
         }
     }
 
-    private Partition mul(int cellIdx, int shift) {
-        int[] cell = partition[cellIdx];
-        Partition copy = new Partition(this);
-        if (cell.length == 1) {
-            return copy;
-        }
-        int[] butV = new int[cell.length - 1];
-        System.arraycopy(cell, 0, butV, 0, shift);
-        System.arraycopy(cell, shift + 1, butV, shift, cell.length - shift - 1);
-        copy.replace(cellIdx, new int[][]{{cell[shift]}, butV});
-        return copy;
-    }
-
-    public Partition ort(GraphWrapper g, int cellIdx, int shift) {
+    public BitSet ort(GraphWrapper g, int cellIdx, int shift) {
         int[] cell = partition[cellIdx];
         int v = cell[shift];
         SubPartition singleton = new SubPartition(partition.length, v);
-        Partition mul = mul(cellIdx, shift);
-        mul.refine(g, singleton);
-        return mul;
+        BitSet result = new BitSet(g.size());
+        int[] butV = new int[cell.length - 1];
+        System.arraycopy(cell, 0, butV, 0, shift);
+        System.arraycopy(cell, shift + 1, butV, shift, cell.length - shift - 1);
+        replace(cellIdx, new int[][]{{v}, butV});
+        result.set(v);
+        if (butV.length == 1) {
+            result.set(butV[0]);
+        }
+        refine(g, singleton, result);
+        return result;
+    }
+
+    public BitSet singulars() {
+        BitSet result = new BitSet(partition.length);
+        int idx = 0;
+        while (idx < partition.length) {
+            int[] cell = partition[idx];
+            int cl = cell.length;
+            if (cl == 1) {
+                result.set(cell[0]);
+            }
+            idx = idx + cl;
+        }
+        return result;
+    }
+
+    public int firstNonTrivial() {
+        int idx = 0;
+        while (idx < partition.length) {
+            int[] cell = partition[idx];
+            int cl = cell.length;
+            if (cl > 1) {
+                return idx;
+            }
+            idx = idx + cl;
+        }
+        throw new IllegalStateException();
     }
 
     public int largestNonTrivial() {

@@ -4,8 +4,12 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
+import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
+import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
+import ua.ihromant.mathutils.nauty.NautyAlgoNew;
+import ua.ihromant.mathutils.nauty.Partition;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -775,7 +779,16 @@ public class Liner {
         return result;
     }
 
-    public long autCount() {
+    public long autCountNew() {
+        AtomicLong counter = new AtomicLong();
+        Consumer<int[]> cons = arr -> counter.incrementAndGet();
+        GraphWrapper wrap = GraphWrapper.forFull(this);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
+        NautyAlgoNew.search(wrap, aut);
+        return counter.get();
+    }
+
+    public long autCountOld() {
         AtomicLong counter = new AtomicLong();
         Consumer<int[]> cons = arr -> counter.incrementAndGet();
         GraphWrapper wrap = GraphWrapper.forFull(this);
@@ -788,8 +801,22 @@ public class Liner {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
         GraphWrapper wrap = GraphWrapper.forFull(this);
-        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
-        NautyAlgo.search(wrap, aut);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
+        NautyAlgoNew.search(wrap, aut);
         return new PermutationGroup(res.toArray(int[][]::new));
+    }
+
+    public BitSet getCanonical() {
+        GraphWrapper graph = GraphWrapper.forFull(this);
+        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
+        NautyAlgoNew.search(graph, cons);
+        return cons.canonicalForm();
+    }
+
+    public BitSet getCanonical(Partition partition) {
+        GraphWrapper graph = GraphWrapper.forFull(this);
+        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
+        NautyAlgoNew.search(graph, partition, cons);
+        return cons.canonicalForm();
     }
 }

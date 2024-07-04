@@ -1,8 +1,8 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.mathutils.nauty.CanonicalConsumer;
+import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
-import ua.ihromant.mathutils.nauty.NautyAlgo;
+import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 
 import java.util.BitSet;
 import java.util.Iterator;
@@ -149,8 +149,8 @@ public record Inc(BitSet bs, int v, int b) {
 
     public BitSet getCanonical() {
         GraphWrapper graph = GraphWrapper.byInc(this);
-        CanonicalConsumer cons = new CanonicalConsumer(graph);
-        NautyAlgo.search(graph, cons);
+        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
+        NautyAlgoNew.search(graph, cons);
         return cons.canonicalForm();
     }
 
