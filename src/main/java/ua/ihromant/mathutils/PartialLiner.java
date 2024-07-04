@@ -1006,7 +1006,7 @@ public class PartialLiner {
             }
             curr[len] = p;
             if (moreNeeded == 1) {
-                cons.accept(curr);
+                cons.accept(curr.clone());
             } else {
                 altBlocks(curr, moreNeeded - 1, cons);
             }
@@ -1024,7 +1024,7 @@ public class PartialLiner {
             }
             curr[len] = p;
             if (moreNeeded == 1) {
-                cons.accept(curr);
+                cons.accept(curr.clone());
             } else {
                 if (p == first) {
                     altBlocks(curr, moreNeeded - 1, cons);
@@ -1037,7 +1037,7 @@ public class PartialLiner {
 
     public void designs(int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
         Consumer<int[]> blockConsumer = block -> {
-            PartialLiner nextPartial = new PartialLiner(this, block.clone());
+            PartialLiner nextPartial = new PartialLiner(this, block);
             if (!filter.test(nextPartial)) {
                 return;
             }

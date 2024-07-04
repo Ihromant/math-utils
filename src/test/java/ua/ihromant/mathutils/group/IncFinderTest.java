@@ -44,7 +44,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAlt(liners, cnt);
+            liners = nextStageAltConc(liners, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -409,12 +409,27 @@ public class IncFinderTest {
         }
     }
 
+    public static List<Inc> nextStageOld(List<Inc> partials, AtomicLong cnt) {
+        List<PartialLiner> nonIsomorphic = new ArrayList<>();
+        for (Inc inc : partials) {
+            PartialLiner partial = new PartialLiner(inc);
+            partial.altBlocks(block -> {
+                PartialLiner liner = new PartialLiner(partial, block);
+                cnt.incrementAndGet();
+                if (nonIsomorphic.stream().noneMatch(liner::isomorphicSel)) {
+                    nonIsomorphic.add(liner);
+                }
+            });
+        }
+        return nonIsomorphic.stream().map(l -> new Inc(l.flags())).toList();
+    }
+
     private static List<Inc> nextStageAlt(List<Inc> partials, AtomicLong cnt) {
         Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block.clone());
+                PartialLiner liner = new PartialLiner(partial, block);
                 cnt.incrementAndGet();
                 nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
             };
@@ -428,7 +443,7 @@ public class IncFinderTest {
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block.clone());
+                PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
                     nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
@@ -475,7 +490,7 @@ public class IncFinderTest {
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block.clone());
+                PartialLiner liner = new PartialLiner(partial, block);
                 cnt.incrementAndGet();
                 nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
             };
@@ -490,7 +505,7 @@ public class IncFinderTest {
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block.clone());
+                PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
                     nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
