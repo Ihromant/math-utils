@@ -1,11 +1,12 @@
 package ua.ihromant.mathutils.nauty;
 
+import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
 public class CanonicalConsumerNew implements NodeChecker {
     private final GraphWrapper graph;
-    private List<long[]> certs = List.of();
+    private List<long[]> certs = new ArrayList<>();
 
     public CanonicalConsumerNew(GraphWrapper graph) {
         this.graph = graph;
@@ -29,14 +30,41 @@ public class CanonicalConsumerNew implements NodeChecker {
         return cmp == 0 && !discrete;
     }
 
+    @Override
+    public BitSet filter(int lvl, PartitionFragment[] fragments) {
+        BitSet result = new BitSet(fragments.length);
+        long[] minimal = certs.size() == lvl ? null : certs.get(lvl);
+        for (int i = 0; i < fragments.length; i++) {
+            long[] fragment = fragments[i].fragment();
+            int cmp = compare(minimal, fragment);
+            if (cmp == 1) {
+                result.clear();
+                minimal = fragment;
+                result.set(i, !fragments[i].partition().isDiscrete());
+            }
+            if (cmp == 0) {
+                result.set(i, !fragments[i].partition().isDiscrete());
+            }
+        }
+        if (certs.size() == lvl) {
+            certs.add(minimal);
+        } else {
+            certs.set(lvl, minimal);
+        }
+        return result;
+    }
+
     private int compare(long[] curr, long[] candidate) {
+        if (curr == null) {
+            return 1;
+        }
         for (int i = 0; i < curr.length; i++) {
             int cmp = Long.compareUnsigned(candidate[i], curr[i]);
             if (cmp > 0) {
-                return -1;
+                return 1;
             }
             if (cmp < 0) {
-                return 1;
+                return -1;
             }
         }
         return 0;

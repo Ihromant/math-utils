@@ -1,12 +1,14 @@
 package ua.ihromant.mathutils.nauty;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class AutomorphismConsumerNew implements NodeChecker {
     private final Consumer<int[]> autConsumer;
-    private List<long[]> certs = List.of();
+    private List<long[]> certs = new ArrayList<>();
     private int[] permutation;
 
     public AutomorphismConsumerNew(GraphWrapper graph, Consumer<int[]> autConsumer) {
@@ -38,5 +40,35 @@ public class AutomorphismConsumerNew implements NodeChecker {
             autConsumer.accept(res);
         }
         return !discrete;
+    }
+
+    @Override
+    public BitSet filter(int lvl, PartitionFragment[] arr) {
+        BitSet result = new BitSet(arr.length);
+        if (certs.size() == lvl) {
+            certs.add(arr[0].fragment());
+        }
+        long[] last = certs.get(lvl);
+        for (int i = 0; i < arr.length; i++) {
+            long[] fragment = arr[i].fragment();
+            if (!Arrays.equals(last, fragment)) {
+                continue;
+            }
+            Partition partition = arr[i].partition();
+            if (partition.isDiscrete()) {
+                if (permutation == null) {
+                    permutation = partition.permutation();
+                }
+                int[] reverse = partition.reverse();
+                int[] res = new int[reverse.length];
+                for (int j = 0; j < reverse.length; j++) {
+                    res[j] = reverse[permutation[j]];
+                }
+                autConsumer.accept(res);
+            } else {
+                result.set(i);
+            }
+        }
+        return result;
     }
 }
