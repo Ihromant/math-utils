@@ -21,24 +21,25 @@ public class CanonicalConsumerNew implements NodeChecker {
         int idx = path.size() - 1;
         long[] curr = certs.get(idx);
         long[] cand = path.get(idx);
-        if (more(curr, cand)) {
+        int cmp = compare(curr, cand);
+        if (cmp == 1) {
             certs = path;
             return !discrete;
         }
-        return !discrete;
+        return cmp == 0 && !discrete;
     }
 
-    private boolean more(long[] curr, long[] candidate) {
+    private int compare(long[] curr, long[] candidate) {
         for (int i = 0; i < curr.length; i++) {
             int cmp = Long.compareUnsigned(candidate[i], curr[i]);
             if (cmp > 0) {
-                return false;
+                return -1;
             }
             if (cmp < 0) {
-                return true;
+                return 1;
             }
         }
-        return false;
+        return 0;
     }
 
     @Override
