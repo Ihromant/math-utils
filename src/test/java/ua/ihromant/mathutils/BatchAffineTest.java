@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -170,6 +171,260 @@ public class BatchAffineTest {
             }
             System.out.println("Non isomorphic " + nonIsomorphic.values());
         }
+    }
+
+    @Test
+    public void testClassification() throws IOException {
+        String name = "dhall9";
+        int k = 9;
+        System.out.println(name);
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            int cnt = k * k + k + 1;
+            int[] arr = IntStream.range(0, cnt).toArray();
+            for (int dl : dropped.getOrDefault(name, arr)) {
+                String shear = shearRank(proj, k, dl);
+                String central = centralRank(proj, k, dl);
+                String translation = translationRank(proj, k, dl);
+                String hyperScale = hyperScaleRank(proj, k, dl);
+                System.out.println(dl + " " + translation + " " + shear + " " + central + " " + hyperScale);
+            }
+        }
+    }
+
+    private static String translationRank(Liner proj, int k, int dl) {
+        int cnt = k * k + k + 1;
+        BitSet result = new BitSet(cnt);
+        for (int dir : proj.points(dl)) {
+            int[] fixPts = new int[cnt];
+            int[] fixLn = new int[cnt];
+            Arrays.fill(fixPts, -1);
+            Arrays.fill(fixLn, -1);
+            for (int pt : proj.points(dl)) {
+                fixPts[pt] = pt;
+            }
+            for (int l : proj.lines(dir)) {
+                fixLn[l] = l;
+            }
+            int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+            BitSet forRemoval = new BitSet(cnt * cnt);
+            for (int x = 0; x < cnt; x++) {
+                if (proj.flag(dl, x)) {
+                    continue;
+                }
+                int ln = proj.line(x, dir);
+                for (int y : proj.points(ln)) {
+                    if (y == dir) {
+                        continue;
+                    }
+                    forRemoval.set(x * cnt + y);
+                }
+            }
+            int idx = 0;
+            while (idx < auths.length && !forRemoval.isEmpty()) {
+                int[] aut = auths[idx++];
+                for (int x = 0; x < cnt; x++) {
+                    int y = aut[x];
+                    forRemoval.clear(x * cnt + y);
+                }
+            }
+            if (forRemoval.isEmpty()) {
+                result.set(dir);
+            }
+        }
+        return switch ((Integer) result.cardinality()) {
+            case 0 -> "0";
+            case 1 -> "1";
+            case Integer i when i == k + 1 -> "2";
+            default -> throw new IllegalStateException();
+        };
+    }
+
+    private static String centralRank(Liner proj, int k, int dl) {
+        int cnt = k * k + k + 1;
+        BitSet result = new BitSet(cnt);
+        for (int o = 0; o < cnt; o++) {
+            if (proj.flag(dl, o)) {
+                continue;
+            }
+            int[] fixPts = new int[cnt];
+            int[] fixLn = new int[cnt];
+            Arrays.fill(fixPts, -1);
+            Arrays.fill(fixLn, -1);
+            for (int pt : proj.points(dl)) {
+                fixPts[pt] = pt;
+            }
+            for (int ln : proj.lines(o)) {
+                fixLn[ln] = ln;
+            }
+            fixPts[o] = o;
+            fixLn[dl] = dl;
+            int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+            BitSet forRemoval = new BitSet(cnt * cnt);
+            for (int x = 0; x < cnt; x++) {
+                if (x == o || proj.flag(dl, x)) {
+                    continue;
+                }
+                int ox = proj.line(o, x);
+                for (int y : proj.points(ox)) {
+                    if (o == y || proj.flag(dl, y)) {
+                        continue;
+                    }
+                    forRemoval.set(x * cnt + y);
+                }
+            }
+            int idx = 0;
+            while (idx < auths.length && !forRemoval.isEmpty()) {
+                int[] aut = auths[idx++];
+                for (int x = 0; x < cnt; x++) {
+                    int y = aut[x];
+                    forRemoval.clear(x * cnt + y);
+                }
+            }
+            if (forRemoval.isEmpty()) {
+                result.set(o);
+            }
+        }
+        return switch ((Integer) result.cardinality()) {
+            case 0 -> "0";
+            case 1 -> "1";
+            case Integer i when i == k -> "2";
+            case Integer i when i == k * k -> "3";
+            default -> throw new IllegalStateException();
+        };
+    }
+
+
+    private static String shearRank(Liner proj, int k, int dl) {
+        int cnt = k * k + k + 1;
+        BitSet result = new BitSet(cnt);
+        for (int fixL = 0; fixL < cnt; fixL++) {
+            if (fixL == dl) {
+                continue;
+            }
+            int dir = proj.intersection(dl, fixL);
+            int[] fixLPts = proj.points(fixL);
+            int[] fixPts = new int[cnt];
+            int[] fixLn = new int[cnt];
+            Arrays.fill(fixPts, -1);
+            Arrays.fill(fixLn, -1);
+            for (int pt : fixLPts) {
+                fixPts[pt] = pt;
+            }
+            fixLn[dl] = dl;
+            fixLn[fixL] = fixL;
+            int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+            BitSet forRemoval = new BitSet(cnt * cnt);
+            for (int l : proj.lines(dir)) {
+                if (l == fixL || l == dl) {
+                    continue;
+                }
+                for (int x : proj.points(l)) {
+                    if (x == dir) {
+                        continue;
+                    }
+                    for (int y : proj.points(l)) {
+                        if (y == dir) {
+                            continue;
+                        }
+                        forRemoval.set(x * cnt + y);
+                    }
+                }
+            }
+            int idx = 0;
+            while (idx < auths.length && !forRemoval.isEmpty()) {
+                int[] aut = auths[idx++];
+                for (int x = 0; x < cnt; x++) {
+                    int y = aut[x];
+                    forRemoval.clear(x * cnt + y);
+                }
+            }
+            if (forRemoval.isEmpty()) {
+                result.set(fixL);
+            }
+        }
+        return switch ((Integer) result.cardinality()) {
+            case 0 -> "0";
+            case 1 -> "1";
+            case Integer i when i == k -> "2par";
+            case Integer i when i == k + 1 -> "2beam";
+            case Integer i when i == k * k + k -> "3";
+            default -> throw new IllegalStateException();
+        };
+    }
+
+    private record HyperScale(int dir, int l) {}
+
+    public static String hyperScaleRank(Liner proj, int k, int dl) {
+        int cnt = k * k + k + 1;
+        Set<HyperScale> result = new HashSet<>();
+        for (int dir : proj.points(dl)) {
+            for (int fixL = 0; fixL < cnt; fixL++) {
+                if (fixL == dl || proj.flag(fixL, dir)) {
+                    continue;
+                }
+                int[] fixLPts = proj.points(fixL);
+                int[] fixPts = new int[cnt];
+                int[] fixLn = new int[cnt];
+                Arrays.fill(fixPts, -1);
+                Arrays.fill(fixLn, -1);
+                for (int pt : fixLPts) {
+                    fixPts[pt] = pt;
+                }
+                fixLn[dl] = dl;
+                fixLn[fixL] = fixL;
+                fixPts[dir] = dir;
+                int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+                BitSet forRemoval = new BitSet(cnt * cnt);
+                for (int d : proj.lines(dir)) {
+                    if (d == dl) {
+                        continue;
+                    }
+                    for (int x : proj.points(d)) {
+                        if (proj.flag(dl, x) || proj.flag(fixL, x)) {
+                            continue;
+                        }
+                        for (int y : proj.points(d)) {
+                            if (proj.flag(dl, y) || proj.flag(fixL, y)) {
+                                continue;
+                            }
+                            forRemoval.set(x * cnt + y);
+                        }
+                    }
+                }
+                int idx = 0;
+                while (idx < auths.length && !forRemoval.isEmpty()) {
+                    int[] aut = auths[idx++];
+                    for (int x = 0; x < cnt; x++) {
+                        int y = aut[x];
+                        forRemoval.clear(x * cnt + y);
+                    }
+                }
+                if (forRemoval.isEmpty()) {
+                    result.add(new HyperScale(dir, fixL));
+                }
+            }
+        }
+        BitSet dirs = result.stream().mapToInt(HyperScale::dir).collect(BitSet::new, BitSet::set, BitSet::or);
+        BitSet lines = result.stream().mapToInt(HyperScale::l).collect(BitSet::new, BitSet::set, BitSet::or);
+        String dirRank = switch ((Integer) dirs.cardinality()) {
+            case 0 -> "0";
+            case 1 -> "1";
+            case Integer i when i == k || i == k + 1 -> "2";
+            default -> throw new IllegalStateException();
+        };
+        String lineRank = switch ((Integer) lines.cardinality()) {
+            case 0 -> "0";
+            case 1 -> "1";
+            case Integer i when i == k -> "2par";
+            case Integer i when i == k + 1 -> "2beam";
+            case Integer i when i == k * k + k -> "3";
+            default -> throw new IllegalStateException();
+        };
+        return dirRank + " " + lineRank;
     }
 
     @Test
@@ -545,9 +800,12 @@ public class BatchAffineTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
-            "hughes9", new int[]{0, 3}
-            //"bbh1", new int[]{0, 192, 193, 269},
-            //      "bbh2", new int[]{0, 28},
+            "hughes9", new int[]{0, 3},
+            "bbh1", new int[]{0, 192, 193, 269},
+            "bbh2", new int[]{0, 28},
+            "dbbh2", new int[]{0, 1, 21},
+            "bbs4", new int[]{0, 108, 270},
+            "dbbs4", new int[]{0, 228, 241}
             //"", new int[]{}
     );
 
