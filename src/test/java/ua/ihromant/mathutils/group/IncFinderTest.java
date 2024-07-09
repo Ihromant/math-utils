@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -28,6 +29,7 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.LongStream;
 
 public class IncFinderTest {
     @Test
@@ -246,7 +248,7 @@ public class IncFinderTest {
             String line;
             int left;
             int lineCount = v * (v - 1) / k / (k - 1);
-            Inc[] partials = null;
+            Inc[] partials;
             while ((line = br.readLine()) != null) {
                 left = Integer.parseInt(line.substring(0, line.indexOf(' ')));
                 line = br.readLine();
@@ -507,6 +509,50 @@ public class IncFinderTest {
             }
         });
         return new ArrayList<>(nonIsomorphic.values());
+    }
+
+    @Test
+    public void randomizer1() {
+        String prefix = "com";
+        int v = 51;
+        int k = 6;
+        int cap = 54;
+        DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
+        long[] freqs = new long[conf.left() - cap];
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials.length);
+        AtomicLong al = new AtomicLong();
+        Predicate<PartialLiner> filter = l -> true;
+        LongStream.range(0, Long.MAX_VALUE).parallel().forEach(l -> {
+            PartialLiner pl = new PartialLiner(conf.partials[ThreadLocalRandom.current().nextInt(conf.partials.length)]);
+            try {
+                PartialLiner res = randomize(pl, filter, conf.left() - cap);
+                res.designs(cap, filter, full -> System.out.println("Found " + Arrays.deepToString(full.lines())));
+                freqs[0]++;
+            } catch (IllegalStateException e) {
+                freqs[Integer.parseInt(e.getMessage())]++;
+            }
+            if (al.incrementAndGet() % 1000 == 0) {
+                System.out.println(Arrays.toString(freqs));
+            }
+        });
+    }
+
+    public PartialLiner randomize(PartialLiner partial, Predicate<PartialLiner> filter, int steps) {
+        if (steps == 0) {
+            return partial;
+        }
+        List<int[]> blocks = new ArrayList<>();
+        partial.altBlocks(bl -> {
+            PartialLiner pl = new PartialLiner(partial, bl);
+            if (filter.test(pl)) {
+                blocks.add(bl);
+            }
+        });
+        if (blocks.isEmpty()) {
+            throw new IllegalStateException(String.valueOf(steps));
+        }
+        PartialLiner next = new PartialLiner(partial, blocks.get(ThreadLocalRandom.current().nextInt(blocks.size())));
+        return randomize(next, filter, steps - 1);
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
