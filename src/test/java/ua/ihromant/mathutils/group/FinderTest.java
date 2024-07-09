@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.BSInc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
@@ -64,7 +64,7 @@ public class FinderTest {
         int k = 4;
         int dp = 4;
         DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
-        List<Inc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new Inc(l.flags())).collect(Collectors.toList());
+        List<BSInc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new BSInc(l.flags())).collect(Collectors.toList());
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
@@ -96,7 +96,7 @@ public class FinderTest {
         }
     }
 
-    private static void dump(String prefix, int v, int k, int left, int size, Stream<Inc> liners) throws IOException {
+    private static void dump(String prefix, int v, int k, int left, int size, Stream<BSInc> liners) throws IOException {
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
@@ -204,8 +204,8 @@ public class FinderTest {
         return new ArrayList<>(nonIsomorphic.values());
     }
 
-    public static Stream<Inc> nextStageCanonWithConv(List<Inc> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+    public static Stream<BSInc> nextStageCanonWithConv(List<BSInc> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
+        Map<BitSet, BSInc> nonIsomorphic = new ConcurrentHashMap<>();
         AtomicLong counter = new AtomicLong();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
@@ -213,7 +213,7 @@ public class FinderTest {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new Inc(liner.flags()));
+                    nonIsomorphic.putIfAbsent(liner.getCanonical(), new BSInc(liner.flags()));
                 }
             }
             long val = counter.incrementAndGet();
@@ -254,7 +254,7 @@ public class FinderTest {
                 }
                 if (left == leftNeeded) {
                     List<PartialLiner> liners = Arrays.stream(partials).map(PartialLiner::new).toList();
-                    dump(newPrefix, v, k, left, liners.size(), liners.stream().map(l -> new Inc(l.flags())));
+                    dump(newPrefix, v, k, left, liners.size(), liners.stream().map(l -> new BSInc(l.flags())));
                     return;
                 }
             }
@@ -335,16 +335,16 @@ public class FinderTest {
         int k = 4;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         int process = conf.left();
-        List<Inc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new Inc(l.flags())).toList();
+        List<BSInc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new BSInc(l.flags())).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = PartialLiner::checkAP;
-        Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
+        Map<BitSet, BSInc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             PartialLiner pl = new PartialLiner(liners.get(idx));
             designs(pl, process, filter, des -> {
-                iso.putIfAbsent(des.getCanonical(), new Inc(des.flags()));
+                iso.putIfAbsent(des.getCanonical(), new BSInc(des.flags()));
                 System.out.println(Arrays.toString(des.lines()));
             });
             int val = ai.incrementAndGet();
@@ -363,11 +363,11 @@ public class FinderTest {
         int k = 3;
         int process = 2;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
-        List<Inc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new Inc(l.flags())).toList();
+        List<BSInc> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).map(l -> new BSInc(l.flags())).toList();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = l -> true;
-        Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
+        Map<BitSet, BSInc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "-" + v + "-" + k + ".txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
@@ -375,7 +375,7 @@ public class FinderTest {
             IntStream.range(0, liners.size()).parallel().forEach(idx -> {
                 PartialLiner pl = new PartialLiner(liners.get(idx));
                 designs(pl, process, filter, des -> {
-                    if (iso.putIfAbsent(des.getCanonical(), new Inc(des.flags())) == null) {
+                    if (iso.putIfAbsent(des.getCanonical(), new BSInc(des.flags())) == null) {
                         ps.println(Arrays.stream(des.lines()).map(line -> Arrays.stream(line).mapToObj(String::valueOf)
                                 .collect(Collectors.joining(" "))).collect(Collectors.joining("\n")) + "\n");
                         ps.flush();
@@ -481,7 +481,7 @@ public class FinderTest {
             int depth = Math.min(left - 1, dp);
             liners = nextStageCanon(liners, l -> l.hasNext((Predicate<PartialLiner>)  l1 -> l1.hullsUnderCap(cap), depth), PartialLiner::isomorphicSel, cnt);
             left--;
-            dump(prefix, v, k, left, liners.size(), liners.stream().map(l -> new Inc(l.flags())));
+            dump(prefix, v, k, left, liners.size(), liners.stream().map(l -> new BSInc(l.flags())));
             System.out.println(left + " " + liners.size() + " " + cnt.get());
         }
         System.out.println(System.currentTimeMillis() - time);
@@ -503,7 +503,7 @@ public class FinderTest {
             int depth = Math.min(left - 1, dp);
             liners = nextStageResolvable(liners, l -> l.hasNext(PartialLiner::blocksResolvable, depth), PartialLiner::isomorphicSel, cnt);
             left--;
-            dump(prefix, v, k, left, liners.size(), liners.stream().map(p -> new Inc(p.flags())));
+            dump(prefix, v, k, left, liners.size(), liners.stream().map(p -> new BSInc(p.flags())));
             System.out.println(left + " " + liners.size() + " " + cnt.get());
         }
         System.out.println(System.currentTimeMillis() - time);
@@ -640,7 +640,7 @@ public class FinderTest {
 //                filtered.add(part);
 //            }
 //        });
-        dump("ft/" + prefix + "a", v, k, full - size, list.size(), list.stream().map(p -> new Inc(p.flags())));
+        dump("ft/" + prefix + "a", v, k, full - size, list.size(), list.stream().map(p -> new BSInc(p.flags())));
         System.out.println("After filtering " + filtered.size());
     }
 }

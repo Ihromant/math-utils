@@ -172,11 +172,11 @@ public class PartialLiner {
         }
     }
 
-    public PartialLiner(Inc inc) {
+    public PartialLiner(BSInc inc) {
         this(lines(inc));
     }
 
-    private static int[][] lines(Inc inc) {
+    private static int[][] lines(BSInc inc) {
         int k = 0;
         for (int i = 0; i < inc.v(); i++) {
             if (inc.inc(0, i)) {

@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.mathutils.BSInc;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
