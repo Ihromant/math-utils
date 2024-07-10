@@ -179,7 +179,8 @@ public class IncFinderTest {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                    Inc next = liner.toInc();
+                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
                 }
             }
             long val = counter.incrementAndGet();
@@ -291,7 +292,8 @@ public class IncFinderTest {
             Inc pl = liners.get(idx);
             PartialLiner partial = new PartialLiner(pl);
             partial.designs(process, l -> true, des -> {
-                iso.putIfAbsent(des.getCanonical(), des.toInc());
+                Inc next = des.toInc();
+                iso.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
             });
             int val = ai.incrementAndGet();
             if (val % 1 == 0) {
@@ -368,7 +370,7 @@ public class IncFinderTest {
                 PartialLiner partial = new PartialLiner(pl);
                 partial.designs(process, l -> true, des -> {
                     Inc res = des.toInc();
-                    if (nonIsomorphic.putIfAbsent(des.getCanonical(), res) == null) {
+                    if (nonIsomorphic.putIfAbsent(res.removeTwins().getCanonicalOld(), res) == null) {
                         ps.println(res.toLines());
                         ps.flush();
                     }
@@ -455,9 +457,9 @@ public class IncFinderTest {
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block);
+                Inc next = inc.addLine(block);
                 cnt.incrementAndGet();
-                nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
             };
             partial.altBlocks(blockConsumer);
         }
@@ -472,7 +474,8 @@ public class IncFinderTest {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                    Inc next = liner.toInc();
+                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
                 }
             };
             partial.altBlocks(blockConsumer);
@@ -488,7 +491,8 @@ public class IncFinderTest {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                    Inc next = liner.toInc();
+                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
                 }
             }
         }
@@ -503,7 +507,8 @@ public class IncFinderTest {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                    Inc next = liner.toInc();
+                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
                 }
             }
         });
@@ -560,9 +565,9 @@ public class IncFinderTest {
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
             Consumer<int[]> blockConsumer = block -> {
-                PartialLiner liner = new PartialLiner(partial, block);
+                Inc liner = new PartialLiner(partial, block).toInc();
                 cnt.incrementAndGet();
-                nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                nonIsomorphic.putIfAbsent(liner.removeTwins().getCanonicalOld(), liner);
             };
             partial.altBlocks(blockConsumer);
             //System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
@@ -578,7 +583,8 @@ public class IncFinderTest {
                 PartialLiner liner = new PartialLiner(partial, block);
                 if (filter.test(liner)) {
                     cnt.incrementAndGet();
-                    nonIsomorphic.putIfAbsent(liner.getCanonical(), liner.toInc());
+                    Inc next = liner.toInc();
+                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
                 }
             };
             partial.altBlocks(blockConsumer);

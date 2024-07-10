@@ -45,7 +45,7 @@ public record LInc(long[] beams, int b) implements Inc {
         if (v == beams.length) {
             return this;
         } else {
-            return new LInc(IntStream.range(0, this.b).filter(filtered::get).mapToLong(i -> beams[i]).toArray(), b);
+            return new LInc(IntStream.range(0, beams.length).filter(filtered::get).mapToLong(i -> beams[i]).toArray(), b);
         }
     }
 
