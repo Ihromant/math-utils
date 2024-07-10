@@ -24,19 +24,8 @@ public interface Inc {
 
     Inc addLine(int[] line);
 
-    static Inc forFlags(boolean[][] matrix) {
-        int b = matrix.length;
-        int v = matrix[0].length;
-        Inc res = b <= Long.SIZE ? new LInc(new long[v], b) : new BSInc(new BitSet(v * b), v, b);
-        for (int l = 0; l < b; l++) {
-            boolean[] row = matrix[l];
-            for (int pt = 0; pt < v; pt++) {
-                if (row[pt]) {
-                    res.set(l, pt);
-                }
-            }
-        }
-        return res;
+    static Inc empty(int v, int b) {
+        return b <= Long.SIZE ? new LInc(new long[v], b) : new BSInc(new BitSet(v * b), v, b);
     }
 
     default String toLines() {

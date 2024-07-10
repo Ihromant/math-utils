@@ -5,27 +5,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public record BSInc(BitSet bs, int v, int b) implements Inc {
-    public BSInc(boolean[][] incidence) {
-        this(fromMatrix(incidence), incidence[0].length, incidence.length);
-    }
-
-    public BSInc(BSInc that, int[] row) {
+    private BSInc(BSInc that, int[] row) {
         this(mergeRow(that, row), that.v, that.b + 1);
-    }
-
-    private static BitSet fromMatrix(boolean[][] matrix) {
-        int v = matrix[0].length;
-        int all = matrix.length * v;
-        BitSet result = new BitSet(all);
-        for (int i = 0; i < matrix.length; i++) {
-            boolean[] row = matrix[i];
-            for (int j = 0; j < row.length; j++) {
-                if (row[j]) {
-                    result.set(i * v + j);
-                }
-            }
-        }
-        return result;
     }
 
     private static BitSet mergeRow(BSInc that, int[] row) {

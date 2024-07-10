@@ -172,11 +172,11 @@ public class PartialLiner {
         }
     }
 
-    public PartialLiner(BSInc inc) {
+    public PartialLiner(Inc inc) {
         this(lines(inc));
     }
 
-    private static int[][] lines(BSInc inc) {
+    private static int[][] lines(Inc inc) {
         int k = 0;
         for (int i = 0; i < inc.v(); i++) {
             if (inc.inc(0, i)) {
@@ -262,6 +262,20 @@ public class PartialLiner {
 
     public boolean[][] flags() {
         return flags;
+    }
+
+    public Inc toInc() {
+        int b = lines.length;
+        Inc res = lines.length <= Long.SIZE ? new LInc(new long[pointCount], b) : new BSInc(new BitSet(pointCount * b), pointCount, b);
+        for (int l = 0; l < b; l++) {
+            boolean[] row = flags[l];
+            for (int pt = 0; pt < pointCount; pt++) {
+                if (row[pt]) {
+                    res.set(l, pt);
+                }
+            }
+        }
+        return res;
     }
 
     public boolean flag(int line, int point) {
