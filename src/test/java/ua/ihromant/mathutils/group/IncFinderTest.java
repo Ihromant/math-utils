@@ -41,7 +41,7 @@ public class IncFinderTest {
         int r = (v - 1) / (k - 1);
         DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))}));
         List<Inc> liners = Arrays.asList(conf.partials);
-        int left = b - liners.getFirst().b();
+        int left = conf.left();
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
         while (left > 0 && !liners.isEmpty()) {
