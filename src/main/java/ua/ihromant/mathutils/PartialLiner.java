@@ -1064,6 +1064,67 @@ public class PartialLiner {
         altBlocks(blockConsumer);
     }
 
+    private int findSparseFirst(int ll) {
+        int r = (pointCount - 1) / (ll - 1);
+        for (int i = 0; i < r; i++) {
+            int[] bd = beamDist[i];
+            if (bd.length > 0) {
+                return bd[0];
+            }
+        }
+        return -1;
+    }
+
+    private int findSparseSecond(int ll, int first) {
+        int r = (pointCount - 1) / (ll - 1);
+        int[] look = lookup[first];
+        for (int i = 0; i < r; i++) {
+            int[] bd = beamDist[i];
+            for (int pt : bd) {
+                if (pt != first && look[pt] < 0) {
+                    return pt;
+                }
+            }
+        }
+        return -1;
+    }
+
+    public void sparseBlocks(Consumer<int[]> cons) {
+        int ll = lines[0].length;
+        int fst = findSparseFirst(ll);
+        if (fst < 0) {
+            return;
+        }
+        int snd = findSparseSecond(ll, fst);
+        int[] curr = new int[ll];
+        curr[0] = fst;
+        curr[1] = snd;
+        sparseBlocks(curr, ll - 2, cons);
+    }
+
+    private void sparseBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = len == 2 ? 0 : curr[len - 1] + 1; p < pointCount; p++) {
+            if (p == curr[0] || p == curr[1]) {
+                continue;
+            }
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                int[] res = curr.clone();
+                Arrays.sort(res);
+                cons.accept(res);
+            } else {
+                sparseBlocks(curr, moreNeeded - 1, cons);
+            }
+        }
+    }
+
     public BitSet getCanonical() {
         if (canonical == null) {
             GraphWrapper graph = GraphWrapper.forPartial(this);

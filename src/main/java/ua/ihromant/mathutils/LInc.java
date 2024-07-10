@@ -33,11 +33,7 @@ public record LInc(long[] beams, int b) implements Inc {
         filtered.set(0, bl);
         for (Map.Entry<Long, BitSet> e : dist.entrySet()) {
             long k = e.getKey();
-            if (k != 0) {
-                BitSet v = e.getValue();
-                v.clear(v.nextSetBit(0));
-                filtered.xor(v);
-            } else {
+            if ((k & (k - 1)) == 0) {
                 filtered.xor(e.getValue());
             }
         }
@@ -45,7 +41,37 @@ public record LInc(long[] beams, int b) implements Inc {
         if (v == beams.length) {
             return this;
         } else {
-            return new LInc(IntStream.range(0, beams.length).filter(filtered::get).mapToLong(i -> beams[i]).toArray(), b);
+            BitSet notSingle = new BitSet(b);
+            long[] newBeams = IntStream.range(0, beams.length).filter(filtered::get).mapToLong(i -> beams[i]).toArray();
+            out: for (int l = 0; l < b; l++) {
+                for (int fst = 0; fst < newBeams.length; fst++) {
+                    if ((newBeams[fst] & (1L << l)) == 0) {
+                        continue;
+                    }
+                    for (int snd = fst + 1; snd < newBeams.length; snd++) {
+                        if ((newBeams[snd] & (1L << l)) == 0) {
+                            notSingle.set(l);
+                            continue out;
+                        }
+                    }
+                }
+            }
+            Inc res = new LInc(newBeams, b);
+            if (notSingle.cardinality() == b) {
+                return new LInc(newBeams, b);
+            } else {
+                Inc alt = new LInc(new long[newBeams.length], notSingle.cardinality());
+                int newL = 0;
+                for (int oldL = notSingle.nextSetBit(0); oldL >= 0; oldL = notSingle.nextSetBit(oldL + 1)) {
+                    for (int pt = 0; pt < newBeams.length; pt++) {
+                        if (res.inc(oldL, pt)) {
+                            alt.set(newL, pt);
+                        }
+                    }
+                    newL++;
+                }
+                return alt;
+            }
         }
     }
 
