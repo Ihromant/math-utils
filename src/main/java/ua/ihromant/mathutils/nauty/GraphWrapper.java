@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
 import java.util.BitSet;
+import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
@@ -91,8 +92,11 @@ public interface GraphWrapper {
     default Partition partition() {
         SortedMap<Integer, BitSet> colorDist = new TreeMap<>();
         IntStream.range(0, size()).forEach(i -> colorDist.computeIfAbsent(color(i), j -> new BitSet(size())).set(i));
-        int[][] result = new int[colorDist.lastKey() + 1][0];
-        colorDist.forEach((k, v) -> result[k] = v.stream().toArray());
+        int[][] result = new int[colorDist.size()][0];
+        int idx = 0;
+        for (Map.Entry<Integer, BitSet> e : colorDist.entrySet()) {
+            result[idx++] = e.getValue().stream().toArray();
+        }
         return new Partition(size(), result);
     }
 
