@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.mathutils.BSInc;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
@@ -15,10 +14,6 @@ public interface GraphWrapper {
 
     int color(int idx);
 
-    int pointCount();
-
-    int lineCount();
-
     boolean edge(int a, int b);
 
     static GraphWrapper forFull(Liner liner) {
@@ -31,16 +26,6 @@ public interface GraphWrapper {
             @Override
             public int color(int idx) {
                 return idx < liner.pointCount() ? 0 : 1;
-            }
-
-            @Override
-            public int pointCount() {
-                return liner.pointCount();
-            }
-
-            @Override
-            public int lineCount() {
-                return liner.lineCount();
             }
 
             @Override
@@ -68,16 +53,6 @@ public interface GraphWrapper {
             }
 
             @Override
-            public int pointCount() {
-                return liner.pointCount();
-            }
-
-            @Override
-            public int lineCount() {
-                return liner.lineCount();
-            }
-
-            @Override
             public boolean edge(int a, int b) {
                 int pc = liner.pointCount();
                 if (a < pc) {
@@ -102,16 +77,6 @@ public interface GraphWrapper {
             }
 
             @Override
-            public int pointCount() {
-                return inc.v();
-            }
-
-            @Override
-            public int lineCount() {
-                return inc.b();
-            }
-
-            @Override
             public boolean edge(int a, int b) {
                 int pc = inc.v();
                 if (a < pc) {
@@ -132,17 +97,14 @@ public interface GraphWrapper {
     }
 
     default long[] permutedIncidence(Partition partition) {
-        int pc = pointCount();
-        int lc = lineCount();
-        int size = size();
-        long[] arr = new long[(pc * lc + 63) / 64];
-        for (int l = pc; l < size; l++) {
+        int vc = size();
+        long[] arr = new long[(vc * vc + 63) / 64];
+        for (int l = 0; l < vc; l++) {
             int pl = partition.permute(l);
-            for (int p = 0; p < pc; p++) {
+            for (int p = 0; p < vc; p++) {
                 if (edge(l, p)) {
                     int pp = partition.permute(p);
-                    int li = pl - pc;
-                    int idx = li * pc + pp;
+                    int idx = pl * vc + pp;
                     arr[idx >> 6] |= (1L << idx);
                 }
             }
@@ -151,17 +113,14 @@ public interface GraphWrapper {
     }
 
     default long[] fragment(BitSet singulars, int[] permutation) {
-        int pc = pointCount();
-        int lc = lineCount();
-        long[] arr = new long[(pc * lc + 63) / 64];
+        int vc = size();
+        long[] arr = new long[(vc * vc + 63) / 64];
         for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
             int ut = permutation[u];
             for (int v = 0; v < size(); v++) {
                 if (edge(u, v)) {
                     int vt = permutation[v];
-                    int p = Math.min(ut, vt);
-                    int l = Math.max(ut, vt);
-                    int idx = (l - pc) * pc + p;
+                    int idx = ut * vc + vt;
                     arr[idx >> 6] |= (1L << idx);
                 }
             }

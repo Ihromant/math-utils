@@ -45,11 +45,11 @@ public class CanonicalConsumerNew implements NodeChecker {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        int pc = graph.pointCount();
+        int vc = graph.size();
         long[] cert = certs.getLast();
-        for (int i = 0; i < graph.lineCount(); i++) {
-            int row = pc * i;
-            for (int j = 0; j < pc; j++) {
+        for (int i = 0; i < vc; i++) {
+            int row = vc * i;
+            for (int j = 0; j < vc; j++) {
                 int idx = row + j;
                 builder.append((cert[idx >> 6] & (1L << idx)) != 0 ? '1' : '0');
             }
