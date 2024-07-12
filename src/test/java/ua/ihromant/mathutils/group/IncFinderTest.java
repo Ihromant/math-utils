@@ -344,13 +344,13 @@ public class IncFinderTest {
 
     @Test
     public void generateFt() throws IOException {
-        String prefix = "com";
-        int v = 51;
+        String prefix = "com1";
+        int v = 61;
         int k = 6;
-        int process = 8;
+        int process = 1;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         Map<BitSet, Inc> nonIsomorphic = readList("ft/" + prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + process)
-                .stream().parallel().collect(Collectors.toMap(Inc::getCanonicalOld, Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+                .stream().parallel().collect(Collectors.toMap(l -> l.removeTwins().getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         List<Inc> liners = Arrays.asList(conf.partials());
         BitSet filter = readFilter("ft/" + prefix, v, k);
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "-" + v + "-" + k + ".txt", true);
