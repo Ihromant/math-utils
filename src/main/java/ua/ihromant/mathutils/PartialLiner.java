@@ -1001,6 +1001,16 @@ public class PartialLiner {
         return -1;
     }
 
+    private int findFirstOld(int ll) {
+        for (int i = (pointCount - ll) / (ll - 1); i > 0; i--) {
+            int[] bd = beamDist[i];
+            if (bd.length > 0) {
+                return bd[0];
+            }
+        }
+        return -1;
+    }
+
     private int findFirst(int ll) {
         int r = (pointCount - 1) / (ll - 1);
         int[] full = IntStream.range(0, pointCount).filter(i -> beamCounts[i] == r).toArray();
