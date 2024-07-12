@@ -17,6 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 public class PartialLiner {
     private final int pointCount;
@@ -32,6 +33,7 @@ public class PartialLiner {
     private final int[] lineFreq; // distribution by line intersections count
     private int[] pointOrder;
     private BitSet canonical;
+    private int[] availableLines;
 
     public PartialLiner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
@@ -1000,13 +1002,23 @@ public class PartialLiner {
     }
 
     private int findFirst(int ll) {
-        for (int i = (pointCount - ll) / (ll - 1); i > 0; i--) {
-            int[] bd = beamDist[i];
-            if (bd.length > 0) {
-                return bd[0];
+        int r = (pointCount - 1) / (ll - 1);
+        int[] full = IntStream.range(0, pointCount).filter(i -> beamCounts[i] == r).toArray();
+        BitSet filter = new BitSet(pointCount);
+        for (int i = 0; i < full.length; i++) {
+            for (int j = i + 1; j < full.length; j++) {
+                for (int pt : lines[lookup[full[i]][full[j]]]) {
+                    filter.set(pt);
+                }
             }
+            filter.set(full[i]);
         }
-        return -1;
+        int[] availableLines = availableLines();
+        int res = IntStream.range(0, pointCount)
+                .filter(i -> beamCounts[i] != r && !filter.get(i)).reduce((a, b) -> availableLines[b] < availableLines[a] ? b : a)
+                .orElseGet(() -> IntStream.range(0, pointCount)
+                        .filter(i -> beamCounts[i] != r).reduce((a, b) -> availableLines[b] < availableLines[a] ? b : a).orElseThrow());
+        return availableLines[res] == 0 ? -1 : res;
     }
 
     private void altBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
@@ -1161,5 +1173,42 @@ public class PartialLiner {
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
         return res.toArray(int[][]::new);
+    }
+
+    private int availableLines(int pt) {
+        int ll = lines[0].length;
+        int[] arr = new int[ll];
+        arr[0] = pt;
+        return availableLines(arr, arr.length - 1, pt);
+    }
+
+    private int availableLines(int[] arr, int remaining, int pt) {
+        int len = arr.length - remaining;
+        int res = 0;
+        ex: for (int p = len == 1 ? 0 : arr[arr.length - remaining] + 1; p < pointCount; p++) {
+            if (p == pt) {
+                continue;
+            }
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[arr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            if (remaining == 1) {
+                res++;
+            } else {
+                arr[len] = p;
+                res = res + availableLines(arr, remaining - 1, pt);
+            }
+        }
+        return res;
+    }
+
+    public int[] availableLines() {
+        if (availableLines == null) {
+            availableLines = IntStream.range(0, pointCount).map(this::availableLines).toArray();
+        }
+        return availableLines;
     }
 }

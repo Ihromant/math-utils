@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -636,5 +637,34 @@ public class BatchLinerTest {
         int r = (v - 1) / (k - 1);
         int b = v * (v - 1) / k / (k - 1);
         FinderTest.dump("come", v, k, b - 3 * (r - 1), new ArrayList<>(unT.values()));
+    }
+
+    @Test
+    public void test_com_25_4() {
+        int v = 25;
+        int k = 4;
+        int[][][] liners = readLast(getClass().getResourceAsStream("/come-" + v + "-" + k + ".txt"), v, k);
+        int[][] res = new int[liners.length][];
+        int idx = 0;
+        for (int[][] full : liners) {
+            PartialLiner pl = new PartialLiner(v, full);
+            res[idx++] = pl.availableLines();
+        }
+        Arrays.sort(res, Comparator.comparingInt(arr -> IntStream.of(arr).sum()));
+        for (int[] av : res) {
+            System.out.println(IntStream.of(av).sum() + " " + Arrays.toString(av));// + " " + Arrays.deepToString(pl.lines()));
+        }
+    }
+
+    @Test
+    public void findNotSuitable() {
+        int v = 25;
+        int k = 4;
+        int[][][] liners = readLast(getClass().getResourceAsStream("/comz1-" + v + "-" + k + ".txt"), v, k);
+        Map<BitSet, PartialLiner> ordered = Arrays.stream(liners).map(arr -> new PartialLiner(v, arr))
+                .collect(Collectors.toMap(PartialLiner::getCanonical, Function.identity()));
+        Arrays.stream(readLast(getClass().getResourceAsStream("/comz-" + v + "-" + k + ".txt"), v, k))
+                .filter(arr -> !ordered.containsKey(new PartialLiner(v, arr).getCanonical()))
+                .forEach(arr -> System.out.println(Arrays.deepToString(arr)));
     }
 }
