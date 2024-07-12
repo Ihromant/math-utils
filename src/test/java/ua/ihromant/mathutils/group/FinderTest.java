@@ -81,7 +81,7 @@ public class FinderTest {
 
     private record DumpConfig(int v, int k, int left, int[][][] partials) {}
 
-    private static void dump(String prefix, int v, int k, int left, List<PartialLiner> liners) throws IOException {
+    public static void dump(String prefix, int v, int k, int left, List<PartialLiner> liners) throws IOException {
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {

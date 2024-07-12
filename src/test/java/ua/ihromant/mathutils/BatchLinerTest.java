@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
+import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
 
 import java.io.BufferedOutputStream;
@@ -17,8 +18,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
@@ -514,22 +517,9 @@ public class BatchLinerTest {
 
     @Test
     public void test25_4() throws IOException {
-        String[][] designs = new String[18][4];
-        try (InputStream is = getClass().getResourceAsStream("/S(2,4,25).txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            String line;
-            int counter = 0;
-            while ((line = br.readLine()) != null) {
-                designs[counter][0] = line;
-                designs[counter][1] = br.readLine();
-                designs[counter][2] = br.readLine();
-                designs[counter][3] = br.readLine();
-                counter++;
-            }
-        }
+        Liner[] designs = getLiners25();
         for (int i = 0; i < designs.length; i++) {
-            Liner p = Liner.byStrings(designs[i]);
+            Liner p = designs[i];
             assertEquals(25, p.pointCount());
             assertEquals(50, p.lineCount());
             HyperbolicPlaneTest.testCorrectness(p, of(4));
@@ -537,6 +527,25 @@ public class BatchLinerTest {
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
             assertEquals(of(25), p.cardSubPlanes(true));
         }
+    }
+
+    private Liner[] getLiners25() throws IOException {
+        Liner[] designs = new Liner[18];
+        try (InputStream is = getClass().getResourceAsStream("/S(2,4,25).txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int counter = 0;
+            while ((line = br.readLine()) != null) {
+                String[] design = new String[4];
+                design[0] = line;
+                design[1] = br.readLine();
+                design[2] = br.readLine();
+                design[3] = br.readLine();
+                designs[counter++] = Liner.byStrings(design);
+            }
+        }
+        return designs;
     }
 
     @Test
@@ -580,5 +589,52 @@ public class BatchLinerTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @Test
+    public void test_com_13_3() throws IOException {
+        int v = 25;
+        int k = 4;
+        //int[][][] liners = readLast(getClass().getResourceAsStream("/como-" + v + "-" + k + ".txt"), v, k);
+        int[][][] liners = Arrays.stream(getLiners25()).map(Liner::lines).toArray(int[][][]::new);
+        Map<BitSet, PartialLiner> un = new HashMap<>();
+        Map<BitSet, PartialLiner> unP = new HashMap<>();
+        Map<BitSet, PartialLiner> unT = new HashMap<>();
+        for (int[][] full : liners) {
+            Map<BitSet, PartialLiner> unique = new HashMap<>();
+            Map<BitSet, PartialLiner> uniquePairs = new HashMap<>();
+            Map<BitSet, PartialLiner> uniqueTriples = new HashMap<>();
+            Liner lnr = new Liner(v, full);
+            for (int[] line : full) {
+                BitSet set = of(line);
+                PartialLiner liner = new PartialLiner(v, Arrays.stream(full).filter(l -> Arrays.stream(l).anyMatch(set::get)).toArray(int[][]::new));
+                unique.putIfAbsent(liner.getCanonical(), liner);
+            }
+            for (int i : IntStream.range(0, v).toArray()) {
+                for (int j : IntStream.range(i + 1, v).toArray()) {
+                    PartialLiner liner = new PartialLiner(v, Arrays.stream(full).filter(l -> Arrays.stream(l).anyMatch(pt -> pt == i || pt == j)).toArray(int[][]::new));
+                    uniquePairs.putIfAbsent(liner.getCanonical(), liner);
+                }
+            }
+            for (int i : IntStream.range(0, v).toArray()) {
+                for (int j : IntStream.range(i + 1, v).toArray()) {
+                    for (int m : IntStream.range(j + 1, v).toArray()) {
+                        if (lnr.flag(lnr.line(i, j), m)) {
+                            continue;
+                        }
+                        PartialLiner liner = new PartialLiner(v, Arrays.stream(full).filter(l -> Arrays.stream(l).anyMatch(pt -> pt == i || pt == j || pt == m)).toArray(int[][]::new));
+                        uniqueTriples.putIfAbsent(liner.getCanonical(), liner);
+                    }
+                }
+            }
+            System.out.println(unique.size() + " " + uniquePairs.size() + " " + uniqueTriples.size() + " " + Automorphisms.autCountOld(new Liner(v, full)));
+            un.putAll(unique);
+            unP.putAll(uniquePairs);
+            unT.putAll(uniqueTriples);
+        }
+        System.out.println(un.size() + " " + unP.size() + " " + unT.size());
+        int r = (v - 1) / (k - 1);
+        int b = v * (v - 1) / k / (k - 1);
+        FinderTest.dump("come", v, k, b - 3 * (r - 1), new ArrayList<>(unT.values()));
     }
 }
