@@ -643,16 +643,15 @@ public class BatchLinerTest {
     public void test_com_25_4() {
         int v = 25;
         int k = 4;
-        int[][][] liners = readLast(getClass().getResourceAsStream("/come-" + v + "-" + k + ".txt"), v, k);
-        int[][] res = new int[liners.length][];
+        int[][][] liners = readLast(getClass().getResourceAsStream("/comz-" + v + "-" + k + ".txt"), v, k);
+        int[][][] res = new int[liners.length][][];
         int idx = 0;
         for (int[][] full : liners) {
             PartialLiner pl = new PartialLiner(v, full);
             res[idx++] = pl.availableLines();
         }
-        Arrays.sort(res, Comparator.comparingInt(arr -> IntStream.of(arr).sum()));
-        for (int[] av : res) {
-            System.out.println(IntStream.of(av).sum() + " " + Arrays.toString(av));// + " " + Arrays.deepToString(pl.lines()));
+        for (int[][] av : res) {
+            System.out.println(Arrays.deepToString(av));// + " " + Arrays.deepToString(pl.lines()));
         }
     }
 

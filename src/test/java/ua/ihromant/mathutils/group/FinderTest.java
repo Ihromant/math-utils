@@ -71,7 +71,7 @@ public class FinderTest {
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
             int depth = Math.min(left - 1, dp);
-            liners = nextStageCanonWithConv(liners, l -> l.hasNext(PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, cnt).toList();
+            liners = nextStageCanonWithConv(liners, l -> l.hasNext((Predicate<PartialLiner>) PartialLiner::checkAP, depth), PartialLiner::isomorphicSel, cnt).toList();
             left--;
             dump(prefix, v, k, left, liners.size(), liners.stream());
             System.out.println(left + " " + liners.size() + " " + cnt.get());

@@ -17,7 +17,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.stream.IntStream;
 
 public class PartialLiner {
     private final int pointCount;
@@ -33,7 +32,6 @@ public class PartialLiner {
     private final int[] lineFreq; // distribution by line intersections count
     private int[] pointOrder;
     private BitSet canonical;
-    private int[] availableLines;
 
     public PartialLiner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
@@ -976,64 +974,42 @@ public class PartialLiner {
 
     public void altBlocks(Consumer<int[]> cons) {
         int ll = lines[0].length;
-        int first = findFirst(ll);
-        if (first < 0) {
+        int pair = findFirstPair();
+        if (pair < 0) {
             return;
         }
         int[] block = new int[ll];
-        int snd = getUnassigned(lookup[first], first);
-        if (first > snd) {
-            block[0] = snd;
-            altBlocksMoving(block, ll - 1, first, cons);
-        } else {
-            block[0] = first;
-            block[1] = snd;
-            altBlocks(block, ll - 2, cons);
-        }
+        block[0] = pair / pointCount;
+        block[1] = pair % pointCount;
+        altBlocks(block, ll - 2, cons);
     }
 
-    private static int getUnassigned(int[] look, int pt) {
-        for (int i = 0; i < look.length; i++) {
-            if (pt != i && look[i] < 0) {
-                return i;
-            }
-        }
-        return -1;
-    }
-
-    private int findFirstOld(int ll) {
-        for (int i = (pointCount - ll) / (ll - 1); i > 0; i--) {
-            int[] bd = beamDist[i];
-            if (bd.length > 0) {
-                return bd[0];
-            }
-        }
-        return -1;
-    }
-
-    private int findFirst(int ll) {
-        int r = (pointCount - 1) / (ll - 1);
-        int[] full = IntStream.range(0, pointCount).filter(i -> beamCounts[i] == r).toArray();
-        BitSet filter = new BitSet(pointCount);
-        for (int i = 0; i < full.length; i++) {
-            for (int j = i + 1; j < full.length; j++) {
-                for (int pt : lines[lookup[full[i]][full[j]]]) {
-                    filter.set(pt);
+    private int findFirstPair() {
+        int result = -1;
+        int minAv = Integer.MAX_VALUE;
+        int[][] available = availableLines();
+        for (int i = 0; i < pointCount; i++) {
+            int[] look = lookup[i];
+            for (int j = i + 1; j < pointCount; j++) {
+                if (look[j] >= 0) {
+                    continue;
+                }
+                int av = available[i][j];
+                if (minAv > av) {
+                    minAv = av;
+                    result = i * pointCount + j;
                 }
             }
-            filter.set(full[i]);
         }
-        int[] availableLines = availableLines();
-        int res = IntStream.range(0, pointCount)
-                .filter(i -> beamCounts[i] != r && !filter.get(i)).reduce((a, b) -> availableLines[b] < availableLines[a] ? b : a)
-                .orElseGet(() -> IntStream.range(0, pointCount)
-                        .filter(i -> beamCounts[i] != r).reduce((a, b) -> availableLines[b] < availableLines[a] ? b : a).orElseThrow());
-        return availableLines[res] == 0 ? -1 : res;
+        return result;
     }
 
     private void altBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
         int len = curr.length - moreNeeded;
-        ex: for (int p = curr[len - 1] + 1; p < pointCount; p++) {
+        ex: for (int p = (len == 2 ? 0 : curr[len - 1] + 1); p < pointCount; p++) {
+            if (p == curr[0] || p == curr[1]) {
+                continue;
+            }
             int[] look = lookup[p];
             for (int i = 0; i < len; i++) {
                 if (look[curr[i]] >= 0) {
@@ -1045,28 +1021,6 @@ public class PartialLiner {
                 cons.accept(curr.clone());
             } else {
                 altBlocks(curr, moreNeeded - 1, cons);
-            }
-        }
-    }
-
-    private void altBlocksMoving(int[] curr, int moreNeeded, int first, Consumer<int[]> cons) {
-        int len = curr.length - moreNeeded;
-        ex: for (int p = (moreNeeded == 1 ? first : curr[len - 1] + 1); p <= first; p++) {
-            int[] look = lookup[p];
-            for (int i = 0; i < len; i++) {
-                if (look[curr[i]] >= 0) {
-                    continue ex;
-                }
-            }
-            curr[len] = p;
-            if (moreNeeded == 1) {
-                cons.accept(curr.clone());
-            } else {
-                if (p == first) {
-                    altBlocks(curr, moreNeeded - 1, cons);
-                } else {
-                    altBlocksMoving(curr, moreNeeded - 1, first, cons);
-                }
             }
         }
     }
@@ -1185,40 +1139,108 @@ public class PartialLiner {
         return res.toArray(int[][]::new);
     }
 
-    private int availableLines(int pt) {
+    public int[][] availableLines() {
+        int[][] result = new int[pointCount][pointCount];
         int ll = lines[0].length;
-        int[] arr = new int[ll];
-        arr[0] = pt;
-        return availableLines(arr, arr.length - 1, pt);
+        int[] curr = new int[ll];
+        availableLines(result, curr, ll);
+        return result;
     }
 
-    private int availableLines(int[] arr, int remaining, int pt) {
-        int len = arr.length - remaining;
-        int res = 0;
-        ex: for (int p = len == 1 ? 0 : arr[arr.length - remaining] + 1; p < pointCount; p++) {
-            if (p == pt) {
-                continue;
-            }
+    private void availableLines(int[][] dist, int[] arr, int needed) {
+        int ll = arr.length;
+        int len = ll - needed;
+        ex: for (int p = len == 0 ? 0 : arr[len - 1] + 1; p < pointCount; p++) {
             int[] look = lookup[p];
             for (int i = 0; i < len; i++) {
                 if (look[arr[i]] >= 0) {
                     continue ex;
                 }
             }
-            if (remaining == 1) {
-                res++;
+            arr[len] = p;
+            if (needed == 1) {
+                for (int i = 0; i < ll; i++) {
+                    int a = arr[i];
+                    for (int j = i + 1; j < ll; j++) {
+                        int b = arr[j];
+                        dist[a][b]++;
+                        dist[b][a]++;
+                    }
+                }
             } else {
-                arr[len] = p;
-                res = res + availableLines(arr, remaining - 1, pt);
+                availableLines(dist, arr, needed - 1);
             }
         }
-        return res;
     }
 
-    public int[] availableLines() {
-        if (availableLines == null) {
-            availableLines = IntStream.range(0, pointCount).map(this::availableLines).toArray();
+    public boolean checkAP(int[] line) {
+        int ll = line.length;
+        for (int p : line) {
+            int[] beam = beams[p];
+            for (int ol : beam) {
+                int[] oLine = lines[ol];
+                for (int a = 0; a < ll; a++) {
+                    int pl1 = line[a];
+                    if (pl1 == p) {
+                        continue;
+                    }
+                    for (int b = a + 1; b < ll; b++) {
+                        int pl2 = line[b];
+                        if (pl2 == p) {
+                            continue;
+                        }
+                        for (int c = 0; c < ll; c++) {
+                            int po1 = oLine[c];
+                            if (po1 == p) {
+                                continue;
+                            }
+                            int l1 = lookup[pl1][po1];
+                            int l2 = lookup[pl2][po1];
+                            if (l1 < 0 && l2 < 0) {
+                                continue;
+                            }
+                            for (int d = c + 1; d < ll; d++) {
+                                int po2 = oLine[d];
+                                if (po2 == p) {
+                                    continue;
+                                }
+                                int l4 = lookup[pl2][po2];
+                                if (l1 >= 0 && l4 >= 0 && intersections[l1][l4] >= 0) {
+                                    return false;
+                                }
+                                int l3 = lookup[pl1][po2];
+                                if (l2 >= 0 && l3 >= 0 && intersections[l2][l3] >= 0) {
+                                    return false;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
-        return availableLines;
+        return true;
+    }
+
+    public boolean hullsUnderCap(int[] line, int cap) {
+        BitSet last = new BitSet(pointCount);
+        for (int point : line) {
+            last.set(point);
+        }
+        for (int pt = 0; pt < pointCount; pt++) {
+            if (last.get(pt)) {
+                continue;
+            }
+            BitSet base = (BitSet) last.clone();
+            base.set(pt);
+            BitSet additional = new BitSet(pointCount);
+            additional.set(pt);
+            while (!(additional = additional(base, additional)).isEmpty()) {
+                base.or(additional);
+                if (base.cardinality() > cap) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }
