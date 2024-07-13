@@ -648,7 +648,7 @@ public class BatchLinerTest {
         int idx = 0;
         for (int[][] full : liners) {
             PartialLiner pl = new PartialLiner(v, full);
-            res[idx++] = pl.availableLines();
+            res[idx++] = pl.availableLines((p, b) -> true);
         }
         for (int[][] av : res) {
             System.out.println(Arrays.deepToString(av));// + " " + Arrays.deepToString(pl.lines()));

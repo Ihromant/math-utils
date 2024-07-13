@@ -23,6 +23,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -291,7 +292,7 @@ public class IncFinderTest {
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             Inc pl = liners.get(idx);
             PartialLiner partial = new PartialLiner(pl);
-            partial.designs(process, l -> true, des -> {
+            partial.designs(process, (p, b) -> true, des -> {
                 Inc next = des.toInc();
                 iso.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
             });
@@ -368,7 +369,7 @@ public class IncFinderTest {
                 }
                 Inc pl = liners.get(idx);
                 PartialLiner partial = new PartialLiner(pl);
-                partial.designs(process, l -> true, des -> {
+                partial.designs(process, (p, b) -> true, des -> {
                     Inc res = des.toInc();
                     if (nonIsomorphic.putIfAbsent(res.removeTwins().getCanonicalOld(), res) == null) {
                         ps.println(res.toLines());
@@ -441,13 +442,13 @@ public class IncFinderTest {
         List<PartialLiner> nonIsomorphic = new ArrayList<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
-            partial.altBlocks(block -> {
+            for (int[] block : partial.altBlocks((p, b) -> true)) {
                 PartialLiner liner = new PartialLiner(partial, block);
                 cnt.incrementAndGet();
                 if (nonIsomorphic.stream().noneMatch(liner::isomorphicSel)) {
                     nonIsomorphic.add(liner);
                 }
-            });
+            }
         }
         return nonIsomorphic.stream().map(PartialLiner::toInc).toList();
     }
@@ -456,29 +457,25 @@ public class IncFinderTest {
         Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
-            Consumer<int[]> blockConsumer = block -> {
+            for (int[] block : partial.altBlocks((p, b) -> true)) {
                 Inc next = inc.addLine(block);
                 cnt.incrementAndGet();
                 nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
-            };
-            partial.altBlocks(blockConsumer);
+            }
         }
         return new ArrayList<>(nonIsomorphic.values());
     }
 
-    private static List<Inc> nextStageAlt(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
+    private static List<Inc> nextStageAlt(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, AtomicLong cnt) {
         Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
-            Consumer<int[]> blockConsumer = block -> {
+            for (int[] block : partial.altBlocks(filter)) {
                 PartialLiner liner = new PartialLiner(partial, block);
-                if (filter.test(liner)) {
-                    cnt.incrementAndGet();
-                    Inc next = liner.toInc();
-                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
-                }
-            };
-            partial.altBlocks(blockConsumer);
+                cnt.incrementAndGet();
+                Inc next = liner.toInc();
+                nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
+            }
         }
         return new ArrayList<>(nonIsomorphic.values());
     }
@@ -525,7 +522,7 @@ public class IncFinderTest {
         long[] freqs = new long[conf.left() - cap];
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials.length);
         AtomicLong al = new AtomicLong();
-        Predicate<PartialLiner> filter = l -> true;
+        BiPredicate<PartialLiner, int[]> filter = (p, b) -> true;
         LongStream.range(0, Long.MAX_VALUE).parallel().forEach(l -> {
             PartialLiner pl = new PartialLiner(conf.partials[ThreadLocalRandom.current().nextInt(conf.partials.length)]);
             try {
@@ -541,17 +538,14 @@ public class IncFinderTest {
         });
     }
 
-    public PartialLiner randomize(PartialLiner partial, Predicate<PartialLiner> filter, int steps) {
+    public PartialLiner randomize(PartialLiner partial, BiPredicate<PartialLiner, int[]> filter, int steps) {
         if (steps == 0) {
             return partial;
         }
         List<int[]> blocks = new ArrayList<>();
-        partial.altBlocks(bl -> {
-            PartialLiner pl = new PartialLiner(partial, bl);
-            if (filter.test(pl)) {
-                blocks.add(bl);
-            }
-        });
+        for (int[] bl : partial.altBlocks(filter)) {
+            blocks.add(bl);
+        }
         if (blocks.isEmpty()) {
             throw new IllegalStateException(String.valueOf(steps));
         }
@@ -564,30 +558,26 @@ public class IncFinderTest {
         AtomicInteger ai = new AtomicInteger();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
-            Consumer<int[]> blockConsumer = block -> {
+            for (int[] block : partial.altBlocks((p, b) -> true)) {
                 Inc liner = new PartialLiner(partial, block).toInc();
                 cnt.incrementAndGet();
                 nonIsomorphic.putIfAbsent(liner.removeTwins().getCanonicalOld(), liner);
-            };
-            partial.altBlocks(blockConsumer);
+            }
             //System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
         });
         return new ArrayList<>(nonIsomorphic.values());
     }
 
-    private static List<Inc> nextStageAltConc(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
+    private static List<Inc> nextStageAltConc(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, AtomicLong cnt) {
         Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
-            Consumer<int[]> blockConsumer = block -> {
+            for (int[] block : partial.altBlocks(filter)) {
                 PartialLiner liner = new PartialLiner(partial, block);
-                if (filter.test(liner)) {
-                    cnt.incrementAndGet();
-                    Inc next = liner.toInc();
-                    nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
-                }
-            };
-            partial.altBlocks(blockConsumer);
+                cnt.incrementAndGet();
+                Inc next = liner.toInc();
+                nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
+            }
         });
         return new ArrayList<>(nonIsomorphic.values());
     }
@@ -606,7 +596,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAlt(liners, l -> l.hullsUnderCap(cap), cnt);
+            liners = nextStageAlt(liners, (p, b) -> p.hullsUnderCap(b, cap), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());

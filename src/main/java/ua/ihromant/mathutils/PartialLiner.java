@@ -14,6 +14,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -972,72 +973,103 @@ public class PartialLiner {
         }
     }
 
-    public void altBlocks(Consumer<int[]> cons) {
-        int ll = lines[0].length;
-        int pair = findFirstPair();
-        if (pair < 0) {
-            return;
-        }
-        int[] block = new int[ll];
-        block[0] = pair / pointCount;
-        block[1] = pair % pointCount;
-        altBlocks(block, ll - 2, cons);
-    }
+    private class AltBlocksIterator implements Iterator<int[]> {
+        private final int[] block;
+        private final BiPredicate<PartialLiner, int[]> pred;
+        private boolean hasNext;
 
-    private int findFirstPair() {
-        int result = -1;
-        int minAv = Integer.MAX_VALUE;
-        int[][] available = availableLines();
-        for (int i = 0; i < pointCount; i++) {
-            int[] look = lookup[i];
-            for (int j = i + 1; j < pointCount; j++) {
-                if (look[j] >= 0) {
-                    continue;
-                }
-                int av = available[i][j];
-                if (minAv > av) {
-                    minAv = av;
-                    result = i * pointCount + j;
-                }
-            }
-        }
-        return result;
-    }
-
-    private void altBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
-        int len = curr.length - moreNeeded;
-        ex: for (int p = (len == 2 ? 0 : curr[len - 1] + 1); p < pointCount; p++) {
-            if (p == curr[0] || p == curr[1]) {
-                continue;
-            }
-            int[] look = lookup[p];
-            for (int i = 0; i < len; i++) {
-                if (look[curr[i]] >= 0) {
-                    continue ex;
-                }
-            }
-            curr[len] = p;
-            if (moreNeeded == 1) {
-                cons.accept(curr.clone());
-            } else {
-                altBlocks(curr, moreNeeded - 1, cons);
-            }
-        }
-    }
-
-    public void designs(int needed, Predicate<PartialLiner> filter, Consumer<PartialLiner> cons) {
-        Consumer<int[]> blockConsumer = block -> {
-            PartialLiner nextPartial = new PartialLiner(this, block);
-            if (!filter.test(nextPartial)) {
+        public AltBlocksIterator(BiPredicate<PartialLiner, int[]> pred) {
+            this.pred = pred;
+            int ll = lines[0].length;
+            this.block = new int[ll];
+            int pair = findFirstPair(pred);
+            if (pair < 0) {
                 return;
             }
+            block[0] = pair / pointCount;
+            block[1] = pair % pointCount;
+            for (int i = 2; i < ll; i++) {
+                block[i] = i - 2;
+            }
+            this.hasNext = findNext(ll - 2);
+        }
+
+        private int findFirstPair(BiPredicate<PartialLiner, int[]> pred) {
+            int result = -1;
+            int minAv = Integer.MAX_VALUE;
+            int[][] available = availableLines(pred);
+            for (int i = 0; i < pointCount; i++) {
+                int[] look = lookup[i];
+                for (int j = i + 1; j < pointCount; j++) {
+                    if (look[j] >= 0) {
+                        continue;
+                    }
+                    int av = available[i][j];
+                    if (minAv > av) {
+                        minAv = av;
+                        result = i * pointCount + j;
+                    }
+                }
+            }
+            return result;
+        }
+
+        @Override
+        public boolean hasNext() {
+            return hasNext;
+        }
+
+        private boolean findNext(int moreNeeded) {
+            int len = block.length - moreNeeded;
+            ex: for (int p = Math.max(len == 2 ? 0 : block[len - 1] + 1, block[len]); p < pointCount - moreNeeded + 1; p++) {
+                if (p == block[0] || p == block[1]) {
+                    continue;
+                }
+                int[] look = lookup[p];
+                for (int i = 0; i < len; i++) {
+                    if (look[block[i]] >= 0) {
+                        continue ex;
+                    }
+                }
+                block[len] = p;
+                if (moreNeeded == 1) {
+                    if (pred.test(PartialLiner.this, block)) {
+                        return true;
+                    }
+                } else if (findNext(moreNeeded - 1)) {
+                    return true;
+                }
+            }
+            int base = ++block[len - 1] - len + 1;
+            for (int i = len; i < block.length; i++) {
+                block[i] = base + i;
+            }
+            return false;
+        }
+
+        @Override
+        public int[] next() {
+            int[] res = block.clone();
+            Arrays.sort(res);
+            block[block.length - 1]++;
+            this.hasNext = findNext(block.length - 2);
+            return res;
+        }
+    }
+
+    public Iterable<int[]> altBlocks(BiPredicate<PartialLiner, int[]> pred) {
+        return () -> new AltBlocksIterator(pred);
+    }
+
+    public void designs(int needed, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+        for (int[] block : altBlocks(pred)) {
+            PartialLiner nextPartial = new PartialLiner(this, block);
             if (needed == 1) {
                 cons.accept(nextPartial);
                 return;
             }
-            nextPartial.designs(needed - 1, filter, cons);
-        };
-        altBlocks(blockConsumer);
+            nextPartial.designs(needed - 1, pred, cons);
+        }
     }
 
     private int findSparseFirst(int ll) {
@@ -1139,15 +1171,15 @@ public class PartialLiner {
         return res.toArray(int[][]::new);
     }
 
-    public int[][] availableLines() {
+    public int[][] availableLines(BiPredicate<PartialLiner, int[]> pred) {
         int[][] result = new int[pointCount][pointCount];
         int ll = lines[0].length;
         int[] curr = new int[ll];
-        availableLines(result, curr, ll);
+        availableLines(result, curr, ll, pred);
         return result;
     }
 
-    private void availableLines(int[][] dist, int[] arr, int needed) {
+    private void availableLines(int[][] dist, int[] arr, int needed, BiPredicate<PartialLiner, int[]> pred) {
         int ll = arr.length;
         int len = ll - needed;
         ex: for (int p = len == 0 ? 0 : arr[len - 1] + 1; p < pointCount; p++) {
@@ -1159,16 +1191,18 @@ public class PartialLiner {
             }
             arr[len] = p;
             if (needed == 1) {
-                for (int i = 0; i < ll; i++) {
-                    int a = arr[i];
-                    for (int j = i + 1; j < ll; j++) {
-                        int b = arr[j];
-                        dist[a][b]++;
-                        dist[b][a]++;
+                if (pred.test(this, arr)) {
+                    for (int i = 0; i < ll; i++) {
+                        int a = arr[i];
+                        for (int j = i + 1; j < ll; j++) {
+                            int b = arr[j];
+                            dist[a][b]++;
+                            dist[b][a]++;
+                        }
                     }
                 }
             } else {
-                availableLines(dist, arr, needed - 1);
+                availableLines(dist, arr, needed - 1, pred);
             }
         }
     }
