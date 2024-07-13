@@ -49,7 +49,7 @@ public record LInc(long[] beams, int b) implements Inc {
                         continue;
                     }
                     for (int snd = fst + 1; snd < newBeams.length; snd++) {
-                        if ((newBeams[snd] & (1L << l)) == 0) {
+                        if ((newBeams[snd] & (1L << l)) != 0) {
                             notSingle.set(l);
                             continue out;
                         }
