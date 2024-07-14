@@ -174,7 +174,7 @@ public class PartialLiner {
     }
 
     public PartialLiner(Inc inc) {
-        this(lines(inc));
+        this(inc.v(), lines(inc));
     }
 
     private static int[][] lines(Inc inc) {
