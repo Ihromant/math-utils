@@ -824,16 +824,13 @@ public class PartialLiner {
         return false;
     }
 
-    public boolean hasNextAlt(Predicate<PartialLiner> test, int depth) {
-        if (!test.test(this)) {
-            return false;
-        }
+    public boolean hasNextAlt(BiPredicate<PartialLiner, int[]> test, int depth) {
         if (depth == 0) {
             return true;
         }
-        for (int[] block : blocks()) {
+        for (int[] block : altBlocks(test)) {
             PartialLiner part = new PartialLiner(this, block);
-            if (part.hasNext(test, depth - 1)) {
+            if (part.hasNextAlt(test, depth - 1)) {
                 return true;
             }
         }
@@ -1061,15 +1058,21 @@ public class PartialLiner {
         return () -> new AltBlocksIterator(pred);
     }
 
-    public void designs(int needed, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+    public int designs(int needed, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+        int res = needed;
         for (int[] block : altBlocks(pred)) {
             PartialLiner nextPartial = new PartialLiner(this, block);
             if (needed == 1) {
                 cons.accept(nextPartial);
-                return;
+                res = 0;
+            } else {
+                int next = nextPartial.designs(needed - 1, pred, cons);
+                if (next < res) {
+                    res = next;
+                }
             }
-            nextPartial.designs(needed - 1, pred, cons);
         }
+        return res;
     }
 
     private int findSparseFirst(int ll) {
