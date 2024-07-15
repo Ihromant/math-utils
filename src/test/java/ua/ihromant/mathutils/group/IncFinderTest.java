@@ -41,7 +41,7 @@ public class IncFinderTest {
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
         DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))}));
-        List<Inc> liners = Arrays.asList(conf.partials);
+        List<Inc> liners = Arrays.asList(conf.partials());
         int left = conf.left();
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
@@ -68,7 +68,7 @@ public class IncFinderTest {
         DumpConfig conf = readLast(prefix, v, k, () -> k == 3
                 ? new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))})
                 : readExact(altPrefix, v, k, b + 1 - 2 * r));
-        List<Inc> liners = Arrays.asList(conf.partials);
+        List<Inc> liners = Arrays.asList(conf.partials());
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
@@ -93,7 +93,7 @@ public class IncFinderTest {
         DumpConfig conf = readLast(prefix, v, k, () -> v == k * k
                 ? new DumpConfig(v, k, b - 2 * r - 1, new Inc[]{squareBlocks(k)})
                 : new DumpConfig(v, k, b - r - 1, new Inc[]{(resBlocks(v, k))}));
-        List<Inc> liners = Arrays.asList(conf.partials);
+        List<Inc> liners = Arrays.asList(conf.partials());
         int left = conf.left();
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
@@ -108,7 +108,7 @@ public class IncFinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    public static Inc beamBlocks(int v, int k) {
+    private static Inc beamBlocks(int v, int k) {
         int r = (v - 1) / (k - 1);
         int b = r + 1;
         Inc res = Inc.empty(v, b);
@@ -192,9 +192,7 @@ public class IncFinderTest {
         return new ArrayList<>(nonIsomorphic.values());
     }
 
-    private record DumpConfig(int v, int k, int left, Inc[] partials) {}
-
-    private static void dump(String prefix, int v, int k, int left, List<Inc> liners) throws IOException {
+    public static void dump(String prefix, int v, int k, int left, List<Inc> liners) throws IOException {
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
@@ -520,11 +518,11 @@ public class IncFinderTest {
         int cap = 54;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         long[] freqs = new long[conf.left() - cap];
-        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials.length);
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials().length);
         AtomicLong al = new AtomicLong();
         BiPredicate<PartialLiner, int[]> filter = (p, b) -> true;
         LongStream.range(0, Long.MAX_VALUE).parallel().forEach(l -> {
-            PartialLiner pl = new PartialLiner(conf.partials[ThreadLocalRandom.current().nextInt(conf.partials.length)]);
+            PartialLiner pl = new PartialLiner(conf.partials()[ThreadLocalRandom.current().nextInt(conf.partials().length)]);
             try {
                 PartialLiner res = randomize(pl, filter, conf.left() - cap);
                 res.designs(cap, filter, full -> System.out.println("Found " + Arrays.deepToString(full.lines())));
@@ -559,7 +557,7 @@ public class IncFinderTest {
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks((p, b) -> true)) {
-                Inc liner = new PartialLiner(partial, block).toInc();
+                Inc liner = inc.addLine(block);
                 cnt.incrementAndGet();
                 nonIsomorphic.putIfAbsent(liner.removeTwins().getCanonicalOld(), liner);
             }
@@ -590,13 +588,13 @@ public class IncFinderTest {
         int k = 3;
         int dp = 4;
         DumpConfig conf = readLast(prefix, v, k, () -> defaultHullsConfig(v, k, cap));
-        List<Inc> liners = Arrays.asList(conf.partials);
+        List<Inc> liners = Arrays.asList(conf.partials());
         int left = conf.left();
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAlt(liners, (p, b) -> p.hullsUnderCap(b, cap), cnt);
+            liners = nextStageAltConc(liners, (p, b) -> p.hullsUnderCap(b, cap), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -635,7 +633,7 @@ public class IncFinderTest {
     @Test
     public void extract() throws IOException {
         DumpConfig conf = readExact("com", 91, 10, 71);
-        dump("come", conf.v(), conf.k(), conf.left, Arrays.asList(conf.partials()));
+        dump("come", conf.v(), conf.k(), conf.left(), Arrays.asList(conf.partials()));
     }
 
     @Test

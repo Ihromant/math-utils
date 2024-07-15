@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.mathutils.BSInc;
 import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.InversivePlane;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 
@@ -118,6 +118,40 @@ public interface GraphWrapper {
                     return b >= pc && inc.inc(b - pc, a);
                 } else {
                     return b < pc && inc.inc(a - pc, b);
+                }
+            }
+        };
+    }
+
+    static GraphWrapper forInversive(InversivePlane inv) {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return inv.pointCount() + inv.blockCount();
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < inv.pointCount() ? 0 : 1;
+            }
+
+            @Override
+            public int pointCount() {
+                return inv.pointCount();
+            }
+
+            @Override
+            public int lineCount() {
+                return inv.blockCount();
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                int pc = inv.pointCount();
+                if (a < pc) {
+                    return b >= pc && inv.flag(b - pc, a);
+                } else {
+                    return b < pc && inv.flag(a - pc, b);
                 }
             }
         };
