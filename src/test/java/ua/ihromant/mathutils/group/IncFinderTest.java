@@ -512,12 +512,13 @@ public class IncFinderTest {
 
     @Test
     public void randomizer1() {
-        String prefix = "com";
+        String prefix = "com1";
         int v = 51;
         int k = 6;
-        int cap = 54;
+        int cap = 44;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         long[] freqs = new long[conf.left() - cap];
+        Map<Integer, Long> rests = new ConcurrentHashMap<>();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials().length);
         AtomicLong al = new AtomicLong();
         BiPredicate<PartialLiner, int[]> filter = (p, b) -> true;
@@ -525,13 +526,13 @@ public class IncFinderTest {
             PartialLiner pl = new PartialLiner(conf.partials()[ThreadLocalRandom.current().nextInt(conf.partials().length)]);
             try {
                 PartialLiner res = randomize(pl, filter, conf.left() - cap);
-                res.designs(cap, filter, full -> System.out.println("Found " + Arrays.deepToString(full.lines())));
+                rests.compute(res.designs(cap, filter, full -> System.out.println("Found " + Arrays.deepToString(full.lines()))), (a, b) -> b == null ? 1 : b + 1);
                 freqs[0]++;
             } catch (IllegalStateException e) {
                 freqs[Integer.parseInt(e.getMessage())]++;
             }
             if (al.incrementAndGet() % 1000 == 0) {
-                System.out.println(Arrays.toString(freqs));
+                System.out.println(rests + " " + Arrays.toString(freqs));
             }
         });
     }
