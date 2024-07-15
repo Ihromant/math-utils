@@ -497,4 +497,29 @@ public class GaloisField {
 
         return next;
     }
+
+    public static long combinations(int n, int k) {
+        if (n < 2 * k) {
+            return combinations(n, n - k);
+        }
+        if (k == 0) {
+            return 1;
+        }
+        long result = 1;
+        for (int i = 1; i <= k; i++) {
+            result = result * (n - i + 1) / i;
+        }
+        return result;
+    }
+
+    public static boolean admissible(int t, int v, int k) {
+        for (int s = 0; s < t; s++) {
+            long left = combinations(v - s, t - s);
+            long right = combinations(k - s, t - s);
+            if (left % right != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
 }

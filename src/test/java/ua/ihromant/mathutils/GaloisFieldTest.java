@@ -530,4 +530,19 @@ public class GaloisFieldTest {
             }
         }
     }
+
+    @Test
+    public void testCombinations() {
+        assertEquals(1, GaloisField.combinations(3, 3));
+        assertEquals(5, GaloisField.combinations(5, 4));
+        assertEquals(20, GaloisField.combinations(6, 3));
+        assertEquals(35, GaloisField.combinations(7, 4));
+    }
+
+    @Test
+    public void printAdmissible() {
+        int t = 3;
+        int k = 7;
+        System.out.println(IntStream.range(0, 200).filter(v -> GaloisField.admissible(t, v, k)).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+    }
 }
