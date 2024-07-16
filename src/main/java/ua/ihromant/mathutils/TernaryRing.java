@@ -124,6 +124,24 @@ public interface TernaryRing {
         return true;
     }
 
+    default boolean addPowerAssoc() {
+        for (int a : elements()) {
+            if (add(add(a, a), a) != add(a, add(a, a))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    default boolean mulPowerAssoc() {
+        for (int a : elements()) {
+            if (mul(mul(a, a), a) != mul(a, mul(a, a))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     default boolean addComm() {
         for (int a : elements()) {
             for (int b : elements()) {

@@ -668,6 +668,8 @@ public class BatchAffineTest {
                         + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
                         + ", linear:" + (ring.isLinear() ? 1 : 0)
                         + ", 1comm:" + (ring.oneComm() ? 1 : 0)
+                        + ", addPAss:" + (ring.addPowerAssoc() ? 1 : 0)
+                        + ", mulPAss:" + (ring.mulPowerAssoc() ? 1 : 0)
                 );
             }
         }
