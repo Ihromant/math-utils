@@ -517,7 +517,7 @@ public class IncFinderTest {
         int k = 6;
         int cap = 44;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
-        long[] freqs = new long[conf.left() - cap];
+        long[] freqs = new long[conf.left() - cap + 1];
         Map<Integer, Long> rests = new ConcurrentHashMap<>();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials().length);
         AtomicLong al = new AtomicLong();
