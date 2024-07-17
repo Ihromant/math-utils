@@ -361,10 +361,8 @@ public class IncFinderTest {
             long time = System.currentTimeMillis();
             System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
             AtomicInteger ai = new AtomicInteger(filter.cardinality());
-            IntStream.range(0, liners.size()).parallel().forEach(idx -> {
-                if (filter.get(idx)) {
-                    return;
-                }
+            int[] toProcess = IntStream.range(0, liners.size()).filter(idx -> !filter.get(idx)).toArray();
+            Arrays.stream(toProcess).parallel().forEach(idx -> {
                 Inc pl = liners.get(idx);
                 PartialLiner partial = new PartialLiner(pl);
                 partial.designs(process, (p, b) -> true, des -> {
