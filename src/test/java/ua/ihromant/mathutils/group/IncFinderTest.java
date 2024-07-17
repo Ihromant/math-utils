@@ -553,32 +553,27 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
-        AtomicInteger ai = new AtomicInteger();
-        partials.stream().parallel().forEach(inc -> {
+        Map<BitSet, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks((p, b) -> true)) {
                 Inc liner = inc.addLine(block);
                 cnt.incrementAndGet();
-                nonIsomorphic.putIfAbsent(liner.removeTwins().getCanonicalOld(), liner);
+                sink.accept(liner);
             }
-            //System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
-        });
-        return new ArrayList<>(nonIsomorphic.values());
+        }).collect(Collectors.toMap(l -> l.removeTwins().getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+        return new ArrayList<>(nonIso.values());
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
-        partials.stream().parallel().forEach(inc -> {
+        Map<BitSet, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks(filter)) {
-                PartialLiner liner = new PartialLiner(partial, block);
+                Inc liner = inc.addLine(block);
                 cnt.incrementAndGet();
-                Inc next = liner.toInc();
-                nonIsomorphic.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
+                sink.accept(liner);
             }
-        });
-        return new ArrayList<>(nonIsomorphic.values());
+        }).collect(Collectors.toMap(l -> l.removeTwins().getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+        return new ArrayList<>(nonIso.values());
     }
 
     @Test
