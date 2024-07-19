@@ -2,6 +2,9 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.BitSet;
+import java.util.stream.IntStream;
+
 public record FixInc(FixBS[] lines, int v) implements Inc {
     @Override
     public int b() {
@@ -20,7 +23,46 @@ public record FixInc(FixBS[] lines, int v) implements Inc {
 
     @Override
     public Inc removeTwins() {
-        return this; // TODO
+        int[] beamCounts = new int[v];
+        for (FixBS line : lines) {
+            for (int pt = line.nextSetBit(0); pt >= 0; pt = line.nextSetBit(pt + 1)) {
+                beamCounts[pt]++;
+            }
+        }
+        BitSet filtered = new BitSet(v);
+        IntStream.range(0, v).filter(i -> beamCounts[i] > 1).forEach(filtered::set);
+        int pCard = filtered.cardinality();
+        if (v == pCard) {
+            return this;
+        } else {
+            FixBS[] newLines = IntStream.range(0, lines.length).mapToObj(i -> new FixBS(pCard)).toArray(FixBS[]::new);
+            int idx = 0;
+            for (int pt = filtered.nextSetBit(0); pt >= 0; pt = filtered.nextSetBit(pt + 1)) {
+                for (int l = 0; l < lines.length; l++) {
+                    if (inc(l, pt)) {
+                        newLines[l].set(idx);
+                    }
+                }
+                idx++;
+            }
+            BitSet filteredLines = new BitSet(lines.length);
+            for (int l = 0; l < pCard; l++) {
+                if (newLines[l].cardinality() > 1) {
+                    filteredLines.set(l);
+                }
+            }
+            int fCard = filteredLines.cardinality();
+            if (fCard == lines.length) {
+                return new FixInc(newLines, pCard);
+            } else {
+                FixBS[] res = new FixBS[fCard];
+                int lIdx = 0;
+                for (int ln = filteredLines.nextSetBit(0); ln >= 0; ln = filteredLines.nextSetBit(ln + 1)) {
+                    res[ln] = newLines[lIdx++];
+                }
+                return new FixInc(res, pCard);
+            }
+        }
     }
 
     @Override
