@@ -2,7 +2,6 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.util.BitSet;
 import java.util.stream.IntStream;
 
 public record FixInc(FixBS[] lines, int v) implements Inc {
@@ -29,7 +28,7 @@ public record FixInc(FixBS[] lines, int v) implements Inc {
                 beamCounts[pt]++;
             }
         }
-        BitSet filtered = new BitSet(v);
+        FixBS filtered = new FixBS(v);
         IntStream.range(0, v).filter(i -> beamCounts[i] > 1).forEach(filtered::set);
         int pCard = filtered.cardinality();
         if (v == pCard) {
@@ -45,7 +44,7 @@ public record FixInc(FixBS[] lines, int v) implements Inc {
                 }
                 idx++;
             }
-            BitSet filteredLines = new BitSet(lines.length);
+            FixBS filteredLines = new FixBS(lines.length);
             for (int l = 0; l < pCard; l++) {
                 if (newLines[l].cardinality() > 1) {
                     filteredLines.set(l);
