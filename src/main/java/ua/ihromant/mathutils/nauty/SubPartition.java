@@ -49,10 +49,9 @@ public class SubPartition {
         size += split.length - 1;
     }
 
-    public void addButLargest(DistinguishResult dist) {
-        int[][] elms = dist.elms();
+    public void addButLargest(int[][] elms, int largest) {
         for (int i = 0; i < elms.length; i++) {
-            if (i == dist.largest()) {
+            if (i == largest) {
                 continue;
             }
             int min = elms[i][0];

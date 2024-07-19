@@ -198,7 +198,8 @@ public class NautyTest {
         assertArrayEquals(new int[]{7, 2, 6, 0, 4, 1, -1, 3, -1, 5}, part.getIdxes());
         assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 0, 0}, part.getCellMins());
         assertEquals(8, part.getSize());
-        part.addButLargest(new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1, new BitSet()));
+        DistinguishResult res = new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1, new BitSet());
+        part.addButLargest(res.elms(), res.largest());
         assertArrayEquals(new int[]{7, 2, 9, 0, 4, 1, -1, 3, 8, 5}, part.getIdxes());
         assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 8, 2}, part.getCellMins());
         assertEquals(10, part.getSize());

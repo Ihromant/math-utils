@@ -57,14 +57,18 @@ public class Partition {
                 int[] xCell = partition[idx];
                 DistinguishResult dist = graph.distinguish(xCell, partition[cellIdx[wMin]]);
                 int[][] elms = dist.elms();
-                replace(idx, elms);
+                if (elms.length > 1) {
+                    replace(idx, elms);
+                }
                 singulars.or(dist.singulars());
                 idx = idx + xCell.length;
                 int xIdx = alpha.idxOf(xCell[0]);
                 if (xIdx >= 0) {
-                    alpha.replace(xIdx, elms);
+                    if (elms.length > 1) {
+                        alpha.replace(xIdx, elms);
+                    }
                 } else {
-                    alpha.addButLargest(dist);
+                    alpha.addButLargest(elms, dist.largest());
                 }
             }
         }
