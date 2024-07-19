@@ -45,7 +45,7 @@ public record FixInc(FixBS[] lines, int v) implements Inc {
                 idx++;
             }
             FixBS filteredLines = new FixBS(lines.length);
-            for (int l = 0; l < pCard; l++) {
+            for (int l = 0; l < newLines.length; l++) {
                 if (newLines[l].cardinality() > 1) {
                     filteredLines.set(l);
                 }
@@ -57,7 +57,7 @@ public record FixInc(FixBS[] lines, int v) implements Inc {
                 FixBS[] res = new FixBS[fCard];
                 int lIdx = 0;
                 for (int ln = filteredLines.nextSetBit(0); ln >= 0; ln = filteredLines.nextSetBit(ln + 1)) {
-                    res[ln] = newLines[lIdx++];
+                    res[lIdx++] = newLines[ln];
                 }
                 return new FixInc(res, pCard);
             }

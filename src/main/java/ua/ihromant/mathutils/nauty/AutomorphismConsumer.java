@@ -1,12 +1,14 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class AutomorphismConsumer implements Consumer<Partition> {
     private final GraphWrapper graph;
     private final Consumer<int[]> autConsumer;
-    private long[] cert;
+    private FixBS cert;
     private int[] permutation;
 
     public AutomorphismConsumer(GraphWrapper graph, Consumer<int[]> autConsumer) {
@@ -16,12 +18,12 @@ public class AutomorphismConsumer implements Consumer<Partition> {
 
     @Override
     public void accept(Partition partition) {
-        long[] currCert = graph.permutedIncidence(partition);
+        FixBS currCert = graph.permutedIncidence(partition);
         if (cert == null) {
             cert = currCert;
             permutation = partition.permutation();
         }
-        if (Arrays.equals(cert, currCert)) {
+        if (Arrays.equals(cert.words(), currCert.words())) {
             int[] reverse = partition.reverse();
             int[] res = new int[reverse.length];
             for (int i = 0; i < reverse.length; i++) {

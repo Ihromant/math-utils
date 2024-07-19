@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -186,7 +187,7 @@ public class FinderTest {
     }
 
     public static List<PartialLiner> nextStageCanon(List<PartialLiner> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
-        Map<BitSet, PartialLiner> nonIsomorphic = new ConcurrentHashMap<>();
+        Map<FixBS, PartialLiner> nonIsomorphic = new ConcurrentHashMap<>();
         AtomicLong counter = new AtomicLong();
         partials.stream().parallel().forEach(partial -> {
             for (int[] block : partial.blocks()) {
@@ -205,7 +206,7 @@ public class FinderTest {
     }
 
     public static Stream<Inc> nextStageCanonWithConv(List<Inc> partials, Predicate<PartialLiner> filter, BiPredicate<PartialLiner, PartialLiner> isoChecker, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         AtomicLong counter = new AtomicLong();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
@@ -339,7 +340,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = PartialLiner::checkAP;
-        Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             PartialLiner pl = new PartialLiner(liners.get(idx));
@@ -367,7 +368,7 @@ public class FinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
         Predicate<PartialLiner> filter = l -> true;
-        Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/partials/ft/" + prefix + "-" + v + "-" + k + ".txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
@@ -535,7 +536,7 @@ public class FinderTest {
         int k = 6;
         int dp = 3;
         DumpConfig conf = readLast(prefix, v, k, () -> defaultBeamConfig(v, k));
-        Map<BitSet, PartialLiner> nonIsomorphic = readList(prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + 1)
+        Map<FixBS, PartialLiner> nonIsomorphic = readList(prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + 1)
                 .stream().collect(Collectors.toMap(PartialLiner::getCanonical, Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         List<PartialLiner> liners = Arrays.stream(conf.partials()).map(PartialLiner::new).toList();
         BitSet filter = readFilter(prefix, v, k);

@@ -2,10 +2,10 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
-import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +32,7 @@ public class PartialLiner {
     private final int[] lineInter; // number of other lines intersections
     private final int[] lineFreq; // distribution by line intersections count
     private int[] pointOrder;
-    private BitSet canonical;
+    private FixBS canonical;
 
     public PartialLiner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
@@ -1136,21 +1136,11 @@ public class PartialLiner {
         }
     }
 
-    public BitSet getCanonical() {
+    public FixBS getCanonical() {
         if (canonical == null) {
             GraphWrapper graph = GraphWrapper.forPartial(this);
             CanonicalConsumer cons = new CanonicalConsumer(graph);
             NautyAlgo.search(graph, cons);
-            canonical = cons.canonicalForm();
-        }
-        return canonical;
-    }
-
-    public BitSet getCanonicalNew() {
-        if (canonical == null) {
-            GraphWrapper graph = GraphWrapper.forPartial(this);
-            CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
-            NautyAlgoNew.search(graph, cons);
             canonical = cons.canonicalForm();
         }
         return canonical;

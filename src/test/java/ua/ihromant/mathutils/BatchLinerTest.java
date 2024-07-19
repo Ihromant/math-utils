@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -598,13 +599,13 @@ public class BatchLinerTest {
         int k = 4;
         //int[][][] liners = readLast(getClass().getResourceAsStream("/como-" + v + "-" + k + ".txt"), v, k);
         int[][][] liners = Arrays.stream(getLiners25()).map(Liner::lines).toArray(int[][][]::new);
-        Map<BitSet, PartialLiner> un = new HashMap<>();
-        Map<BitSet, PartialLiner> unP = new HashMap<>();
-        Map<BitSet, PartialLiner> unT = new HashMap<>();
+        Map<FixBS, PartialLiner> un = new HashMap<>();
+        Map<FixBS, PartialLiner> unP = new HashMap<>();
+        Map<FixBS, PartialLiner> unT = new HashMap<>();
         for (int[][] full : liners) {
-            Map<BitSet, PartialLiner> unique = new HashMap<>();
-            Map<BitSet, PartialLiner> uniquePairs = new HashMap<>();
-            Map<BitSet, PartialLiner> uniqueTriples = new HashMap<>();
+            Map<FixBS, PartialLiner> unique = new HashMap<>();
+            Map<FixBS, PartialLiner> uniquePairs = new HashMap<>();
+            Map<FixBS, PartialLiner> uniqueTriples = new HashMap<>();
             Liner lnr = new Liner(v, full);
             for (int[] line : full) {
                 BitSet set = of(line);
@@ -660,7 +661,7 @@ public class BatchLinerTest {
         int v = 25;
         int k = 4;
         int[][][] liners = readLast(getClass().getResourceAsStream("/comz1-" + v + "-" + k + ".txt"), v, k);
-        Map<BitSet, PartialLiner> ordered = Arrays.stream(liners).map(arr -> new PartialLiner(v, arr))
+        Map<FixBS, PartialLiner> ordered = Arrays.stream(liners).map(arr -> new PartialLiner(v, arr))
                 .collect(Collectors.toMap(PartialLiner::getCanonical, Function.identity()));
         Arrays.stream(readLast(getClass().getResourceAsStream("/comz-" + v + "-" + k + ".txt"), v, k))
                 .filter(arr -> !ordered.containsKey(new PartialLiner(v, arr).getCanonical()))

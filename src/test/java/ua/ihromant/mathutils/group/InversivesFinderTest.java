@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.InversivePlane;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedReader;
 import java.io.FileInputStream;
@@ -12,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +60,7 @@ public class InversivesFinderTest {
     }
 
     private static List<Inc> nextStageAlt(List<Inc> partials, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             InversivePlane partial = new InversivePlane(inc);
             for (int[] block : partial.blocks()) {
@@ -73,7 +73,7 @@ public class InversivesFinderTest {
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         partials.stream().parallel().forEach(inc -> {
             InversivePlane partial = new InversivePlane(inc);
             for (int[] block : partial.blocks()) {

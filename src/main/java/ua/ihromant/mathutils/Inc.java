@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
 import java.util.Iterator;
@@ -25,7 +26,7 @@ public interface Inc {
     Inc addLine(int[] line);
 
     static Inc empty(int v, int b) {
-        return b <= Long.SIZE ? new LInc(new long[v], b) : new BSInc(new BitSet(v * b), v, b);
+        return new FixInc(IntStream.range(0, b).mapToObj(i -> new FixBS(v)).toArray(FixBS[]::new), v);
     }
 
     default String toLines() {
@@ -127,7 +128,7 @@ public interface Inc {
         return cons.canonicalForm();
     }
 
-    default BitSet getCanonicalOld() {
+    default FixBS getCanonicalOld() {
         GraphWrapper graph = GraphWrapper.byInc(this);
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);

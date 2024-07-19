@@ -1,11 +1,12 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.BitSet;
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.function.Consumer;
 
 public class CanonicalConsumer implements Consumer<Partition> {
     private final GraphWrapper graph;
-    private long[] cert;
+    private FixBS cert;
 
     public CanonicalConsumer(GraphWrapper graph) {
         this.graph = graph;
@@ -13,26 +14,17 @@ public class CanonicalConsumer implements Consumer<Partition> {
 
     @Override
     public void accept(Partition partition) {
-        long[] permuted = graph.permutedIncidence(partition);
+        FixBS permuted = graph.permutedIncidence(partition);
         if (more(permuted)) {
             cert = permuted;
         }
     }
 
-    private boolean more(long[] candidate) {
+    private boolean more(FixBS candidate) {
         if (cert == null) {
             return true;
         }
-        for (int i = 0; i < cert.length; i++) {
-            int cmp = Long.compareUnsigned(candidate[i], cert[i]);
-            if (cmp > 0) {
-                return true;
-            }
-            if (cmp < 0) {
-                return false;
-            }
-        }
-        return false;
+        return candidate.compareTo(cert) > 0;
     }
 
     @Override
@@ -43,15 +35,15 @@ public class CanonicalConsumer implements Consumer<Partition> {
             int row = pc * i;
             for (int j = 0; j < pc; j++) {
                 int idx = row + j;
-                builder.append((cert[idx >> 6] & (1L << idx)) != 0 ? '1' : '0');
+                builder.append(cert.get(idx) ? '1' : '0');
             }
             builder.append('\n');
         }
         return builder.toString();
     }
 
-    public BitSet canonicalForm() {
-        return BitSet.valueOf(cert);
+    public FixBS canonicalForm() {
+        return cert;
     }
 }
 

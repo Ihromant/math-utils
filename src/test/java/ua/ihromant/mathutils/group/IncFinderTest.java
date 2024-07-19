@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -160,7 +161,7 @@ public class IncFinderTest {
     }
 
     public static List<Inc> nextStageCanon(List<Inc> partials, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         partials.stream().parallel().forEach(partial -> {
             for (int[] block : partial.blocks()) {
                 Inc liner = partial.addLine(block);
@@ -172,7 +173,7 @@ public class IncFinderTest {
     }
 
     public static List<Inc> nextStageCanon(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         AtomicLong counter = new AtomicLong();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
@@ -285,7 +286,7 @@ public class IncFinderTest {
         List<Inc> liners = Arrays.asList(conf.partials());
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
         long time = System.currentTimeMillis();
-        Map<BitSet, Inc> iso = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             Inc pl = liners.get(idx);
@@ -348,7 +349,7 @@ public class IncFinderTest {
         int k = 6;
         int process = 1;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
-        Map<BitSet, Inc> nonIsomorphic = readList("ft/" + prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + process)
+        Map<FixBS, Inc> nonIsomorphic = readList("ft/" + prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + process)
                 .stream().parallel().collect(Collectors.toMap(l -> l.removeTwins().getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         List<Inc> liners = Arrays.asList(conf.partials());
         BitSet filter = readFilter("ft/" + prefix, v, k);
@@ -359,7 +360,7 @@ public class IncFinderTest {
              BufferedOutputStream bos1 = new BufferedOutputStream(fos1);
              PrintStream ps1 = new PrintStream(bos1)) {
             long time = System.currentTimeMillis();
-            System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size());
+            System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + liners.size() + ", processing " + process);
             AtomicInteger ai = new AtomicInteger(filter.cardinality());
             int[] toProcess = IntStream.range(0, liners.size()).filter(idx -> !filter.get(idx)).toArray();
             Arrays.stream(toProcess).parallel().forEach(idx -> {
@@ -450,7 +451,7 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageAlt(List<Inc> partials, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks((p, b) -> true)) {
@@ -463,7 +464,7 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageAlt(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks(filter)) {
@@ -477,7 +478,7 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageResolvable(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new HashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new HashMap<>();
         for (Inc inc : partials) {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.blocksResolvable()) {
@@ -493,7 +494,7 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageResolvableConc(List<Inc> partials, Predicate<PartialLiner> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIsomorphic = new ConcurrentHashMap<>();
+        Map<FixBS, Inc> nonIsomorphic = new ConcurrentHashMap<>();
         partials.stream().parallel().forEach(inc -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.blocksResolvable()) {
@@ -551,7 +552,7 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
+        Map<FixBS, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks((p, b) -> true)) {
                 Inc liner = inc.addLine(block);
@@ -563,7 +564,7 @@ public class IncFinderTest {
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, AtomicLong cnt) {
-        Map<BitSet, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
+        Map<FixBS, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : partial.altBlocks(filter)) {
                 Inc liner = inc.addLine(block);

@@ -4,6 +4,7 @@ import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.InversivePlane;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
 import java.util.SortedMap;
@@ -165,23 +166,22 @@ public interface GraphWrapper {
         return new Partition(size(), result);
     }
 
-    default long[] permutedIncidence(Partition partition) {
+    default FixBS permutedIncidence(Partition partition) {
         int pc = pointCount();
         int lc = lineCount();
         int size = size();
-        long[] arr = new long[(pc * lc + 63) / 64];
+        FixBS bs = new FixBS(pc * lc);
         for (int l = pc; l < size; l++) {
             int pl = partition.permute(l);
             for (int p = 0; p < pc; p++) {
                 if (edge(l, p)) {
                     int pp = partition.permute(p);
                     int li = pl - pc;
-                    int idx = li * pc + pp;
-                    arr[idx >> 6] |= (1L << idx);
+                    bs.set(li * pc + pp);
                 }
             }
         }
-        return arr;
+        return bs;
     }
 
     default long[] fragment(BitSet singulars, int[] permutation) {

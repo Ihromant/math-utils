@@ -315,4 +315,8 @@ public class FixBS implements Comparable<FixBS> {
 
         return next;
     }
+
+    public long[] words() {
+        return words;
+    }
 }

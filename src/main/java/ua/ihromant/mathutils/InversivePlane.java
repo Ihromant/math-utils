@@ -5,7 +5,6 @@ import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.Iterator;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
@@ -103,7 +102,7 @@ public class InversivePlane {
 
     public Inc toInc() {
         int b = lines.length;
-        Inc res = lines.length <= Long.SIZE ? new LInc(new long[pointCount], b) : new BSInc(new BitSet(pointCount * b), pointCount, b);
+        Inc res = Inc.empty(pointCount, b);
         for (int l = 0; l < b; l++) {
             boolean[] row = flags[l];
             for (int pt = 0; pt < pointCount; pt++) {
