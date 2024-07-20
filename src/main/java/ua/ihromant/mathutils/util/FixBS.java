@@ -247,7 +247,7 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     public FixBS copy() {
-        return new FixBS(words);
+        return new FixBS(words.clone());
     }
 
     /**
