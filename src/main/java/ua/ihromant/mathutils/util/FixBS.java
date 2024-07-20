@@ -316,6 +316,32 @@ public class FixBS implements Comparable<FixBS> {
         return next;
     }
 
+    public static Stream<FixBS> fixedFirst(int n, int k, int fst) {
+        FixBS base = new FixBS(n);
+        base.set(fst, fst + k);
+        return Stream.iterate(base, Objects::nonNull, prev -> nextChoice(n, prev, fst));
+    }
+
+    private static FixBS nextChoice(int n, FixBS prev, int fst) {
+        FixBS next = prev.copy();
+        int max = n;
+        int cnt = 1;
+        while (max >= 0 && prev.get(--max)) {
+            cnt++;
+        }
+        max = prev.previousSetBit(max);
+        if (max == fst) {
+            return null;
+        }
+
+        next.clear(max, n);
+        for (int i = 0; i < cnt; i++) {
+            next.set(max + i + 1);
+        }
+
+        return next;
+    }
+
     public long[] words() {
         return words;
     }
