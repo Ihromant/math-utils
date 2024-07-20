@@ -10,6 +10,7 @@ public class FixBSTest {
     @Test
     public void testChoices() {
         assertEquals(35, FixBS.choices(7, 4).count());
+        assertEquals(4, FixBS.fixedFirst(7, 4, 2).count());
     }
 
     @Test
