@@ -309,9 +309,7 @@ public class FixBS implements Comparable<FixBS> {
         }
 
         next.clear(max, n);
-        for (int i = 0; i < cnt; i++) {
-            next.set(max + i + 1);
-        }
+        next.set(max + 1, max + cnt + 1);
 
         return next;
     }
@@ -335,9 +333,7 @@ public class FixBS implements Comparable<FixBS> {
         }
 
         next.clear(max, n);
-        for (int i = 0; i < cnt; i++) {
-            next.set(max + i + 1);
-        }
+        next.set(max + 1, max + cnt + 1);
 
         return next;
     }
