@@ -184,10 +184,10 @@ public interface GraphWrapper {
         return bs;
     }
 
-    default long[] fragment(BitSet singulars, int[] permutation) {
+    default FixBS fragment(BitSet singulars, int[] permutation) {
         int pc = pointCount();
         int lc = lineCount();
-        long[] arr = new long[(pc * lc + 63) / 64];
+        FixBS res = new FixBS(pc * lc);
         for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
             int ut = permutation[u];
             for (int v = 0; v < size(); v++) {
@@ -195,12 +195,11 @@ public interface GraphWrapper {
                     int vt = permutation[v];
                     int p = Math.min(ut, vt);
                     int l = Math.max(ut, vt);
-                    int idx = (l - pc) * pc + p;
-                    arr[idx >> 6] |= (1L << idx);
+                    res.set((l - pc) * pc + p);
                 }
             }
         }
-        return arr;
+        return res;
     }
 
     default DistinguishResult distinguish(int[] cell, int[] w) {

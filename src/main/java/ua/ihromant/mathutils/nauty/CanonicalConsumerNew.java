@@ -1,64 +1,52 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.BitSet;
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.List;
 
 public class CanonicalConsumerNew implements NodeChecker {
     private final GraphWrapper graph;
-    private List<long[]> certs = List.of();
+    private List<FixBS> certs = List.of();
 
     public CanonicalConsumerNew(GraphWrapper graph) {
         this.graph = graph;
     }
 
     @Override
-    public boolean check(Partition partition, List<long[]> path) {
+    public boolean check(Partition partition, List<FixBS> path) {
         boolean discrete = partition.isDiscrete();
         if (certs.size() < path.size()) {
             certs = path;
             return !discrete;
         }
         int idx = path.size() - 1;
-        long[] curr = certs.get(idx);
-        long[] cand = path.get(idx);
-        int cmp = compare(curr, cand);
-        if (cmp == 1) {
+        FixBS curr = certs.get(idx);
+        FixBS cand = path.get(idx);
+        int cmp = curr.compareTo(cand);
+        if (cmp > 0) {
             certs = path;
             return !discrete;
         }
         return cmp == 0 && !discrete;
     }
 
-    private int compare(long[] curr, long[] candidate) {
-        for (int i = 0; i < curr.length; i++) {
-            int cmp = Long.compareUnsigned(candidate[i], curr[i]);
-            if (cmp > 0) {
-                return -1;
-            }
-            if (cmp < 0) {
-                return 1;
-            }
-        }
-        return 0;
-    }
-
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         int pc = graph.pointCount();
-        long[] cert = certs.getLast();
+        FixBS cert = certs.getLast();
         for (int i = 0; i < graph.lineCount(); i++) {
             int row = pc * i;
             for (int j = 0; j < pc; j++) {
                 int idx = row + j;
-                builder.append((cert[idx >> 6] & (1L << idx)) != 0 ? '1' : '0');
+                builder.append(cert.get(idx) ? '1' : '0');
             }
             builder.append('\n');
         }
         return builder.toString();
     }
 
-    public BitSet canonicalForm() {
-        return BitSet.valueOf(certs.getLast());
+    public FixBS canonicalForm() {
+        return certs.getLast();
     }
 }

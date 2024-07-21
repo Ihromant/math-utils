@@ -304,44 +304,6 @@ public class IncFinderTest {
         System.out.println("Finished, time elapsed " + (System.currentTimeMillis() - time));
     }
 
-    private static int designs(Inc partial, int needed, Consumer<Inc> cons) {
-        int res = needed;
-        for (int[] block : partial.blocks()) {
-            Inc nextPartial = partial.addLine(block);
-            if (needed == 1) {
-                cons.accept(nextPartial);
-                res = 0;
-            } else {
-                int next = designs(nextPartial, needed - 1, cons);
-                if (next < res) {
-                    res = next;
-                }
-            }
-        }
-        return res;
-    }
-
-    private static int designs(Inc partial, int needed, Predicate<PartialLiner> filter, Consumer<Inc> cons) {
-        int res = needed;
-        for (int[] block : partial.blocks()) {
-            PartialLiner nextPartial = new PartialLiner(partial.addLine(block));
-            if (!filter.test(nextPartial)) {
-                continue;
-            }
-            Inc nextInc = nextPartial.toInc();
-            if (needed == 1) {
-                cons.accept(nextInc);
-                res = 0;
-            } else {
-                int next = designs(nextInc, needed - 1, filter, cons);
-                if (next < res) {
-                    res = next;
-                }
-            }
-        }
-        return res;
-    }
-
     @Test
     public void generateFt() throws IOException {
         String prefix = "com1";

@@ -121,7 +121,7 @@ public interface Inc {
         }
     }
 
-    default BitSet getCanonicalNew() {
+    default FixBS getCanonicalNew() {
         GraphWrapper graph = GraphWrapper.byInc(this);
         CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
         NautyAlgoNew.search(graph, cons);

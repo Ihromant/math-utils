@@ -1,12 +1,14 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
 public class AutomorphismConsumerNew implements NodeChecker {
     private final Consumer<int[]> autConsumer;
-    private List<long[]> certs = List.of();
+    private List<FixBS> certs = List.of();
     private int[] permutation;
 
     public AutomorphismConsumerNew(GraphWrapper graph, Consumer<int[]> autConsumer) {
@@ -14,15 +16,15 @@ public class AutomorphismConsumerNew implements NodeChecker {
     }
 
     @Override
-    public boolean check(Partition partition, List<long[]> path) {
+    public boolean check(Partition partition, List<FixBS> path) {
         boolean discrete = partition.isDiscrete();
         if (certs.size() < path.size()) {
             certs = path;
         } else {
             int idx = path.size() - 1;
-            long[] curr = certs.get(idx);
-            long[] cand = path.get(idx);
-            if (!Arrays.equals(curr, cand)) {
+            FixBS curr = certs.get(idx);
+            FixBS cand = path.get(idx);
+            if (!Arrays.equals(curr.words(), cand.words())) {
                 return false;
             }
         }

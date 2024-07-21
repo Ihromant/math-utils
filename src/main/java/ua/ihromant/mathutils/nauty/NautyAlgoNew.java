@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
@@ -9,8 +11,8 @@ public class NautyAlgoNew {
         Partition partition = graph.partition();
         BitSet singulars = new BitSet(graph.size());
         partition.refine(graph, partition.subPartition(), singulars);
-        long[] fragment = graph.fragment(singulars, partition.permutation());
-        List<long[]> path = new ArrayList<>();
+        FixBS fragment = graph.fragment(singulars, partition.permutation());
+        List<FixBS> path = new ArrayList<>();
         path.add(fragment);
         if (checker.check(partition, path)) {
             search(graph, partition, path, checker);
@@ -20,22 +22,22 @@ public class NautyAlgoNew {
     public static void search(GraphWrapper graph, Partition partition, NodeChecker checker) {
         BitSet singulars = partition.singulars();
         partition.refine(graph, partition.subPartition(), singulars);
-        long[] fragment = graph.fragment(singulars, partition.permutation());
-        List<long[]> path = new ArrayList<>();
+        FixBS fragment = graph.fragment(singulars, partition.permutation());
+        List<FixBS> path = new ArrayList<>();
         path.add(fragment);
         if (checker.check(partition, path)) {
             search(graph, partition, path, checker);
         }
     }
 
-    public static void search(GraphWrapper graph, Partition partition, List<long[]> path, NodeChecker checker) {
+    public static void search(GraphWrapper graph, Partition partition, List<FixBS> path, NodeChecker checker) {
         int smallestIdx = partition.firstNonTrivial();
         int[] cell = partition.cellByIdx(smallestIdx);
         for (int sh = 0; sh < cell.length; sh++) {
             Partition next = new Partition(partition);
             BitSet singulars = next.ort(graph, smallestIdx, sh);
-            long[] fragment = or(graph.fragment(singulars, next.permutation()), path.getLast());
-            List<long[]> newPath = new ArrayList<>(path);
+            FixBS fragment = or(graph.fragment(singulars, next.permutation()), path.getLast());
+            List<FixBS> newPath = new ArrayList<>(path);
             newPath.add(fragment);
             if (checker.check(next, newPath)) {
                 search(graph, next, newPath, checker);
@@ -43,10 +45,8 @@ public class NautyAlgoNew {
         }
     }
 
-    private static long[] or(long[] to, long[] from) {
-        for (int i = 0; i < to.length; i++) {
-            to[i] |= from[i];
-        }
+    private static FixBS or(FixBS to, FixBS from) {
+        to.or(from);
         return to;
     }
 }

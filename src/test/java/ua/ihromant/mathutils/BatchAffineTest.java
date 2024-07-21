@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
+import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedReader;
@@ -158,7 +159,7 @@ public class BatchAffineTest {
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readTxt(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
-            Map<BitSet, Integer> nonIsomorphic = new HashMap<>();
+            Map<FixBS, Integer> nonIsomorphic = new HashMap<>();
             for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
                 Partition partition = new Partition(proj.pointCount() + proj.lineCount(), new int[][]{
                         IntStream.range(0, proj.pointCount()).toArray(),

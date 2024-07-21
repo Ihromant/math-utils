@@ -10,6 +10,7 @@ import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 import ua.ihromant.mathutils.nauty.Partition;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -806,14 +807,14 @@ public class Liner {
         return new PermutationGroup(res.toArray(int[][]::new));
     }
 
-    public BitSet getCanonical() {
+    public FixBS getCanonical() {
         GraphWrapper graph = GraphWrapper.forFull(this);
         CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
         NautyAlgoNew.search(graph, cons);
         return cons.canonicalForm();
     }
 
-    public BitSet getCanonical(Partition partition) {
+    public FixBS getCanonical(Partition partition) {
         GraphWrapper graph = GraphWrapper.forFull(this);
         CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
         NautyAlgoNew.search(graph, partition, cons);
