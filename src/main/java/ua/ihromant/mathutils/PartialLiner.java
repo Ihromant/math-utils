@@ -1203,26 +1203,26 @@ public class PartialLiner {
     public boolean checkAP(int[] line) {
         int ll = line.length;
         for (int p : line) {
-            int[] beam = beams[p];
-            for (int ol : beam) {
-                int[] oLine = lines[ol];
-                for (int a = 0; a < ll; a++) {
-                    int pl1 = line[a];
-                    if (pl1 == p) {
+            for (int a = 0; a < ll; a++) {
+                int pl1 = line[a];
+                if (pl1 == p) {
+                    continue;
+                }
+                for (int b = a + 1; b < ll; b++) {
+                    int pl2 = line[b];
+                    if (pl2 == p) {
                         continue;
                     }
-                    for (int b = a + 1; b < ll; b++) {
-                        int pl2 = line[b];
-                        if (pl2 == p) {
-                            continue;
-                        }
+                    for (int ol : beams[p]) {
+                        int[] oLine = lines[ol];
                         for (int c = 0; c < ll; c++) {
                             int po1 = oLine[c];
                             if (po1 == p) {
                                 continue;
                             }
-                            int l1 = lookup[pl1][po1];
-                            int l2 = lookup[pl2][po1];
+                            int[] lk = lookup[po1];
+                            int l1 = lk[pl1];
+                            int l2 = lk[pl2];
                             if (l1 < 0 && l2 < 0) {
                                 continue;
                             }
@@ -1231,11 +1231,12 @@ public class PartialLiner {
                                 if (po2 == p) {
                                     continue;
                                 }
-                                int l4 = lookup[pl2][po2];
+                                int[] lk1 = lookup[po2];
+                                int l4 = lk1[pl2];
                                 if (l1 >= 0 && l4 >= 0 && intersections[l1][l4] >= 0) {
                                     return false;
                                 }
-                                int l3 = lookup[pl1][po2];
+                                int l3 = lk1[pl1];
                                 if (l2 >= 0 && l3 >= 0 && intersections[l2][l3] >= 0) {
                                     return false;
                                 }
