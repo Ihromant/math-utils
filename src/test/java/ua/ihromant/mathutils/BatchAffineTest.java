@@ -7,6 +7,8 @@ import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -458,6 +460,65 @@ public class BatchAffineTest {
                 System.out.println(counts);
             }
         }
+    }
+
+    @Test
+    public void calculateCentralMatrix() throws IOException {
+        int k = 16;
+        for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
+            String name = f.getName();
+            try (InputStream is = new FileInputStream(f);
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = readTxt(br);
+                HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+                int[][] central = new int[proj.pointCount()][proj.lineCount()];
+                for (int o = 0; o < proj.pointCount(); o++) {
+                    for (int l = 0; l < proj.lineCount(); l++) {
+                        central[o][l]++;
+                        int a = findA(proj, o, l);
+                        int oa = proj.line(o, a);
+                        ex: for (int a1 : proj.line(oa)) {
+                            if (a == a1 || o == a1 || proj.flag(l, a1)) {
+                                continue;
+                            }
+                            for (int ob : proj.lines(o)) {
+                                if (ob == l || ob == oa) {
+                                    continue;
+                                }
+                                for (int oc : proj.lines(o)) {
+                                    if (oc == l || oc == oa || oc == ob) {
+                                        continue;
+                                    }
+                                    for (int b : proj.points(ob)) {
+                                        if (b == o || proj.flag(l, b)) {
+                                            continue;
+                                        }
+                                        for (int c : proj.points(oc)) {
+                                            if (c == o || proj.flag(l, c)) {
+                                                continue;
+                                            }
+                                            int b1 = proj.intersection(ob, proj.line(proj.intersection(proj.line(a, b), l), a1));
+                                            int c1 = proj.intersection(oc, proj.line(proj.intersection(proj.line(a, c), l), a1));
+                                            if (!proj.flag(l, proj.intersection(proj.line(b, c), proj.line(b1, c1)))) {
+                                                continue ex;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            central[o][l]++;
+                        }
+                    }
+                }
+                System.out.println(name);
+                Arrays.stream(central).forEach(ln -> System.out.println(Arrays.stream(ln).mapToObj(i -> Integer.toString(i, 36)).collect(Collectors.joining())));
+            }
+        }
+    }
+
+    private static int findA(Liner proj, int o, int l) {
+        return IntStream.range(0, proj.pointCount()).filter(a -> a != o && !proj.flag(l, a)).findAny().orElseThrow();
     }
 
     @Test
