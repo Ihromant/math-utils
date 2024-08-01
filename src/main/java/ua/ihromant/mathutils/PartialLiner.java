@@ -975,11 +975,11 @@ public class PartialLiner {
         private final BiPredicate<PartialLiner, int[]> pred;
         private boolean hasNext;
 
-        public AltBlocksIterator(BiPredicate<PartialLiner, int[]> pred) {
+        public AltBlocksIterator(BiPredicate<PartialLiner, int[]> pred, boolean minimal) {
             this.pred = pred;
             int ll = lines[0].length;
             this.block = new int[ll];
-            int pair = findFirstPair(pred);
+            int pair = minimal ? findMinimalPair() : findFirstPair(pred);
             if (pair < 0) {
                 return;
             }
@@ -989,6 +989,19 @@ public class PartialLiner {
                 block[i] = i - 2;
             }
             this.hasNext = findNext(ll - 2);
+        }
+
+        private int findMinimalPair() {
+            for (int i = 0; i < 2 * pointCount - 2; i++) {
+                int hf = (i + 1) / 2;
+                for (int j = Math.max(0, i - pointCount + 1); j < hf; j++) {
+                    int k = i - j;
+                    if (lookup[j][k] < 0) {
+                        return j * pointCount + k;
+                    }
+                }
+            }
+            return -1;
         }
 
         private int findFirstPair(BiPredicate<PartialLiner, int[]> pred) {
@@ -1054,8 +1067,12 @@ public class PartialLiner {
         }
     }
 
+    public Iterable<int[]> altBlocks(BiPredicate<PartialLiner, int[]> pred, boolean minimal) {
+        return () -> new AltBlocksIterator(pred, minimal);
+    }
+
     public Iterable<int[]> altBlocks(BiPredicate<PartialLiner, int[]> pred) {
-        return () -> new AltBlocksIterator(pred);
+        return () -> new AltBlocksIterator(pred, false);
     }
 
     public int designs(int needed, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
