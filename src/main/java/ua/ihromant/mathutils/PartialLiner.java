@@ -979,9 +979,12 @@ public class PartialLiner {
             this.pred = pred;
             int ll = lines[0].length;
             this.block = new int[ll];
-            int pair = minimal ? findMinimalPair() : findFirstPair(pred);
+            int pair = findFirstPair(pred);
             if (pair < 0) {
                 return;
+            }
+            if (minimal) {
+                pair = findMinimalPair();
             }
             block[0] = pair / pointCount;
             block[1] = pair % pointCount;
@@ -1016,6 +1019,9 @@ public class PartialLiner {
                     }
                     int av = available[i][j];
                     if (minAv > av) {
+                        if (av == 0) {
+                            return -1;
+                        }
                         minAv = av;
                         result = i * pointCount + j;
                     }
