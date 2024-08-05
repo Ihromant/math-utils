@@ -134,4 +134,22 @@ public interface Inc {
         NautyAlgo.search(graph, cons);
         return cons.canonicalForm();
     }
+
+    default Matrix sqrInc() {
+        int v = v();
+        int b = b();
+        int[][] res = new int[v][v];
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                int cnt = 0;
+                for (int l = 0; l < b; l++) {
+                    if (inc(l, i) && inc(l, j)) {
+                        cnt++;
+                    }
+                }
+                res[i][j] = res[j][i] = cnt;
+            }
+        }
+        return new Matrix(res);
+    }
 }

@@ -138,6 +138,12 @@ public class FixBS implements Comparable<FixBS> {
         }
     }
 
+    public void and(FixBS set) {
+        for (int i = 0; i < words.length; i++) {
+            words[i] &= set.words[i];
+        }
+    }
+
     public int nextSetBit(int fromIndex) {
         int u = wordIndex(fromIndex);
         if (u >= words.length) {

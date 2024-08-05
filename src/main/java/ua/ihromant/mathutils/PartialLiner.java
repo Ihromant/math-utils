@@ -33,6 +33,7 @@ public class PartialLiner {
     private final int[] lineFreq; // distribution by line intersections count
     private int[] pointOrder;
     private FixBS canonical;
+    private int[] sqr;
 
     public PartialLiner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
@@ -1098,6 +1099,44 @@ public class PartialLiner {
         return res;
     }
 
+    private static int min = Integer.MAX_VALUE;
+
+    public int altDesigns(int needed, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+        int res = needed;
+        List<PartialLiner> nextPartials = new ArrayList<>();
+        for (int[] block : altBlocks(pred)) {
+            PartialLiner nextPartial = new PartialLiner(this, block);
+            if (needed == 1) {
+                cons.accept(nextPartial);
+                res = 0;
+            } else {
+                nextPartials.add(nextPartial);
+            }
+        }
+        nextPartials.sort((a, b) -> cmpArr(a.sqr(), b.sqr()));
+        for (PartialLiner nextPartial : nextPartials) {
+            int next = nextPartial.altDesigns(needed - 1, pred, cons);
+            if (next < res) {
+                res = next;
+            }
+            if (next < min) {
+                min = next;
+                System.out.println(min);
+            }
+        }
+        return res;
+    }
+
+    private static int cmpArr(int[] fst, int[] snd) {
+        for (int i = 0; i < fst.length; i++) {
+            int r = Integer.compare(fst[i], snd[i]);
+            if (r != 0) {
+                return r;
+            }
+        }
+        return 0;
+    }
+
     private int findSparseFirst(int ll) {
         int r = (pointCount - 1) / (ll - 1);
         for (int i = 0; i < r; i++) {
@@ -1293,5 +1332,25 @@ public class PartialLiner {
             }
         }
         return true;
+    }
+
+    public int[] sqr() {
+        if (sqr == null) {
+            int[] res = new int[pointCount];
+            for (int i = 0; i < pointCount; i++) {
+                for (int j = i + 1; j < pointCount; j++) {
+                    int cnt = 0;
+                    for (int k = 0; k < pointCount; k++) {
+                        int[] look = lookup[k];
+                        if (look[j] >= 0 && look[i] >= 0) {
+                            cnt++;
+                        }
+                    }
+                    res[cnt]++;
+                }
+            }
+            sqr = res;
+        }
+        return sqr;
     }
 }
