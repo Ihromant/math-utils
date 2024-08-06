@@ -25,8 +25,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -641,30 +641,36 @@ public class BatchLinerTest {
     }
 
     @Test
-    public void test_com_25_4() {
+    public void test_com_25_4() throws IOException {
         int v = 25;
         int k = 4;
-        int[][][] liners = readLast(getClass().getResourceAsStream("/comz-" + v + "-" + k + ".txt"), v, k);
-        int[][][] res = new int[liners.length][][];
-        int idx = 0;
+        int[][][] liners = readLast(getClass().getResourceAsStream("/com1-" + v + "-" + k + ".txt"), v, k);
+        FixBS[] ex = Arrays.stream(getLiners25()).map(Liner::getCanonical).toArray(FixBS[]::new);
         for (int[][] full : liners) {
-            PartialLiner pl = new PartialLiner(v, full);
-            res[idx++] = pl.availableLines((p, b) -> true);
-        }
-        for (int[][] av : res) {
-            System.out.println(Arrays.deepToString(av));// + " " + Arrays.deepToString(pl.lines()));
+            Liner pl = new Liner(v, full);
+            FixBS can = pl.getCanonical();
+            System.out.println(IntStream.range(0, ex.length).filter(i -> ex[i].equals(can)).findAny().orElseThrow());
         }
     }
 
     @Test
-    public void findNotSuitable() {
-        int v = 25;
-        int k = 4;
-        int[][][] liners = readLast(getClass().getResourceAsStream("/comz1-" + v + "-" + k + ".txt"), v, k);
-        Map<FixBS, PartialLiner> ordered = Arrays.stream(liners).map(arr -> new PartialLiner(v, arr))
-                .collect(Collectors.toMap(PartialLiner::getCanonical, Function.identity()));
-        Arrays.stream(readLast(getClass().getResourceAsStream("/comz-" + v + "-" + k + ".txt"), v, k))
-                .filter(arr -> !ordered.containsKey(new PartialLiner(v, arr).getCanonical()))
-                .forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+    public void checkMatrices() {
+        int v = 51;
+        int k = 6;
+        int[][][] liners = readLast(getClass().getResourceAsStream("/com-" + v + "-" + k + ".txt"), v, k);
+        Arrays.stream(liners)
+                .map(arr -> new PartialLiner(v, arr).toInc())
+                .map(FixInc.class::cast)
+                .map(fi -> fi.sqrInc().sqr())
+                .map(mt -> {
+                    Map<Integer, Integer> fr = new TreeMap<>();
+                    for (int i = 0; i < v; i++) {
+                        for (int j = i + 1; j < v; j++) {
+                            fr.compute(mt.vals()[i][j], (a, b) -> b == null ? 1 : b + 1);
+                        }
+                    }
+                    return fr;
+                })
+                .forEach(mt -> System.out.println(mt + "\n"));
     }
 }

@@ -59,22 +59,19 @@ public class IncFinderTest {
     @Test
     public void generateAP() throws IOException {
         String prefix = "ap";
-        String altPrefix = "ap1";
         int v = 28;
         int k = 4;
         int b = v * (v - 1) / k / (k - 1);
         int r = (v - 1) / (k - 1);
         int dp = 4;
-        DumpConfig conf = readLast(prefix, v, k, () -> k == 3
-                ? new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))})
-                : readExact(altPrefix, v, k, b + 1 - 2 * r));
+        DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))}));
         List<Inc> liners = Arrays.asList(conf.partials());
         long time = System.currentTimeMillis();
         int left = conf.left();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAltConc(liners, PartialLiner::checkAP, cnt);
+            liners = nextStageAltConc(liners, PartialLiner::checkAP, false, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -240,7 +237,7 @@ public class IncFinderTest {
         }
     }
 
-    private static DumpConfig readExact(String prefix, int v, int k, int leftExpected) {
+    private static DumpConfig readExact(String prefix, int v, int k, int leftExpected, Integer val) {
         try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
@@ -261,6 +258,9 @@ public class IncFinderTest {
                         for (int l = 0; l < k; l++) {
                             partial.set(j, Integer.parseInt(pts[l]));
                         }
+                    }
+                    if (val != null && val == i && left == leftExpected) {
+                        return new DumpConfig(v, k, left, new Inc[]{partial});
                     }
                     partials[i] = partial;
                     br.readLine();
@@ -287,16 +287,19 @@ public class IncFinderTest {
         long time = System.currentTimeMillis();
         Map<FixBS, Inc> iso = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
+        Map<Integer, Integer> dist = new ConcurrentHashMap<>();
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             Inc pl = liners.get(idx);
             PartialLiner partial = new PartialLiner(pl);
-            partial.designs(process, (p, b) -> true, des -> {
+            dist.compute(partial.designs(process, (p, b) -> true, des -> {
                 Inc next = des.toInc();
-                iso.putIfAbsent(next.removeTwins().getCanonicalOld(), next);
-            });
+                if (iso.putIfAbsent(next.removeTwins().getCanonicalOld(), next) == null) {
+                    System.out.println("Found " + next.toLines());
+                }
+            }), (a, b) -> b == null ? 1 : b + 1);
             int val = ai.incrementAndGet();
-            if (val % 1 == 0) {
-                System.out.println(val + " " + iso.size());
+            if (val % 100 == 0) {
+                System.out.println(val + " " + iso.size() + " " + dist);
             }
         });
         dump("d" + prefix, v, k, conf.left() - process, new ArrayList<>(iso.values()));
@@ -334,7 +337,10 @@ public class IncFinderTest {
                         ps.flush();
                     }
                 });
-                System.out.println(ai.incrementAndGet() + " " + nonIsomorphic.size());
+                int val = ai.incrementAndGet();
+                if (val % 1000 == 0) {
+                    System.out.println(val + " " + nonIsomorphic.size());
+                }
                 ps1.println(idx);
                 ps1.flush();
             });
@@ -471,8 +477,8 @@ public class IncFinderTest {
     }
 
     @Test
-    public void randomizer1() {
-        String prefix = "com1";
+    public void randomizer() {
+        String prefix = "com";
         int v = 51;
         int k = 6;
         int cap = 44;
@@ -524,10 +530,10 @@ public class IncFinderTest {
         return new ArrayList<>(nonIso.values());
     }
 
-    private static List<Inc> nextStageAltConc(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, AtomicLong cnt) {
+    private static List<Inc> nextStageAltConc(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, boolean minimal, AtomicLong cnt) {
         Map<FixBS, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
-            for (int[] block : partial.altBlocks(filter)) {
+            for (int[] block : partial.altBlocks(filter, minimal)) {
                 Inc liner = inc.addLine(block);
                 cnt.incrementAndGet();
                 sink.accept(liner);
@@ -550,7 +556,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAltConc(liners, (p, b) -> p.hullsUnderCap(b, cap), cnt);
+            liners = nextStageAltConc(liners, (p, b) -> p.hullsUnderCap(b, cap), false, cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -588,7 +594,7 @@ public class IncFinderTest {
 
     @Test
     public void extract() throws IOException {
-        DumpConfig conf = readExact("com", 91, 10, 71);
+        DumpConfig conf = readExact("com", 91, 10, 71, null);
         dump("come", conf.v(), conf.k(), conf.left(), Arrays.asList(conf.partials()));
     }
 
