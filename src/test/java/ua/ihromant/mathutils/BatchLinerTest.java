@@ -655,21 +655,32 @@ public class BatchLinerTest {
 
     @Test
     public void checkMatrices() {
-        int v = 51;
-        int k = 6;
+        int v = 25;
+        int k = 4;
         int[][][] liners = readLast(getClass().getResourceAsStream("/com-" + v + "-" + k + ".txt"), v, k);
         Arrays.stream(liners)
-                .map(arr -> new PartialLiner(v, arr).toInc())
-                .map(FixInc.class::cast)
-                .map(fi -> fi.sqrInc().sqr())
-                .map(mt -> {
+                .map(arr -> {
+                    PartialLiner lnr = new PartialLiner(v, arr);
+                    FixInc fi = (FixInc) lnr.toInc();
+                    Matrix mt = fi.sqrInc().sqr();
                     Map<Integer, Integer> fr = new TreeMap<>();
                     for (int i = 0; i < v; i++) {
                         for (int j = i + 1; j < v; j++) {
-                            fr.compute(mt.vals()[i][j], (a, b) -> b == null ? 1 : b + 1);
+                            if (lnr.line(i, j) < 0) {
+                                fr.compute(mt.vals()[i][j], (a, b) -> b == null ? 1 : b + 1);
+                            }
                         }
                     }
                     return fr;
+//                    int[][] vals = Arrays.stream(mt.vals()).map(int[]::clone).toArray(int[][]::new);
+//                    for (int i = 0; i < v; i++) {
+//                        for (int j = 0; j < v; j++) {
+//                            if (i == j || lnr.line(i, j) >= 0) {
+//                                vals[i][j] = 0;
+//                            }
+//                        }
+//                    }
+//                    return new Matrix(vals);
                 })
                 .forEach(mt -> System.out.println(mt + "\n"));
     }
