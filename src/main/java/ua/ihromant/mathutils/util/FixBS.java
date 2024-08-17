@@ -199,6 +199,15 @@ public class FixBS implements Comparable<FixBS> {
         }
     }
 
+    public boolean intersects(FixBS set) {
+        for (int i = 0; i < words.length; i++) {
+            if ((words[i] & set.words[i]) != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public int length() {
         int wiu = words.length;
         while (wiu > 0 && words[--wiu] == 0) {

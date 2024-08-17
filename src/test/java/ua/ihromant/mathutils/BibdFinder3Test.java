@@ -9,6 +9,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -130,10 +133,7 @@ public class BibdFinder3Test {
             System.out.println(v + " " + k);
         }
         destination.println(v + " " + k);
-        FixBS filter = new FixBS(v);
-        if (v % k == 0) {
-            IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
-        }
+        FixBS filter = baseFilter(v, k);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
         Consumer<int[][]> designConsumer = design -> {
@@ -180,10 +180,7 @@ public class BibdFinder3Test {
 
     private static void findByHint(int[] hint, int v, int k) {
         System.out.println(v + " " + k + " " + Arrays.toString(hint));
-        FixBS filter = new FixBS(v);
-        if (v % k == 0) {
-            IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
-        }
+        FixBS filter = baseFilter(v, k);
         for (int i : hint) {
             for (int j : hint) {
                 if (i >= j) {
@@ -201,5 +198,91 @@ public class BibdFinder3Test {
         };
         allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer, null);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
+    }
+
+    private static FixBS baseFilter(int v, int k) {
+        FixBS filter = new FixBS(v);
+        if (v % k == 0) {
+            IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
+        }
+        return filter;
+    }
+
+    @Test
+    public void testCycles() {
+        int v = 91;
+        int k = 6;
+        int prev = start(v, k);
+        FixBS filter = baseFilter(v, k);
+        Map<FixBS, FixBS> map = new ConcurrentHashMap<>();
+        calcCycles(v, k, prev, filter, 1, arr -> {
+            DiffPair dp = diff(v, arr);
+            map.put(dp.diff, dp.tuple);
+        });
+        System.out.println(map.size());
+        DiffPair[] pairs = map.entrySet().stream().map(e -> new DiffPair(e.getKey(), e.getValue())).toArray(DiffPair[]::new);
+        map.clear();
+        Arrays.sort(pairs, Comparator.comparing(DiffPair::diff).reversed());
+        search(v, pairs, filter, v / k / (k - 1), new FixBS[0], des -> System.out.println(Arrays.deepToString(des)));
+    }
+
+    private static void search(int v, DiffPair[] pairs, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
+        int unMapped = filter.nextClearBit(1);
+        FixBS bot = new FixBS(v);
+        bot.set(unMapped, v);
+        FixBS top = of(v, new int[]{unMapped, v - 1});
+        int lowIdx = -Arrays.binarySearch(pairs, new DiffPair(bot, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
+        int hiIdx = -Arrays.binarySearch(pairs, lowIdx, pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
+        if (curr.length == 0) {
+            System.out.println(lowIdx + " " + hiIdx + " " + (hiIdx - lowIdx));
+        }
+        IntStream.range(lowIdx, hiIdx).parallel().mapToObj(i -> pairs[i]).forEach(dp -> {
+            if (dp.diff.intersects(filter)) {
+                return;
+            }
+            FixBS nextFilter = filter.copy();
+            nextFilter.or(dp.diff);
+            FixBS[] next = new FixBS[curr.length + 1];
+            System.arraycopy(curr, 0, next, 0, curr.length);
+            next[curr.length] = dp.tuple;
+            if (needed == 2) {
+                nextFilter.flip(1, v);
+                int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
+                if (idx < 0) {
+                    return;
+                }
+                FixBS[] fin = new FixBS[next.length + 1];
+                System.arraycopy(next, 0, fin, 0, next.length);
+                fin[next.length] = pairs[idx].tuple;
+                designSink.accept(fin);
+            } else {
+                search(v, pairs, nextFilter, needed - 1, next, designSink);
+            }
+        });
+    }
+
+    private static FixBS of(int v, int[] tuple) {
+        FixBS res = new FixBS(v);
+        for (int i : tuple) {
+            res.set(i);
+        }
+        return res;
+    }
+
+    private record DiffPair(FixBS diff, FixBS tuple) {}
+
+    private DiffPair diff(int v, int[] tuple) {
+        FixBS diff = new FixBS(v);
+        FixBS tpl = new FixBS(v);
+        for (int i = 0; i < tuple.length; i++) {
+            int fst = tuple[i];
+            for (int j = i + 1; j < tuple.length; j++) {
+                int dff = tuple[j] - fst;
+                diff.set(dff);
+                diff.set(v - dff);
+            }
+            tpl.set(fst);
+        }
+        return new DiffPair(diff, tpl);
     }
 }
