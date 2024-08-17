@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -8,14 +9,13 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public class BibdFinder3Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
-    private static void calcCycles(int variants, int needed, BitSet filter, BitSet whiteList,
+    private static void calcCycles(int variants, int needed, FixBS filter, FixBS whiteList,
                                    int[] tuple, Consumer<int[]> sink) {
         int tl = tuple.length;
         int last = tuple[tl - 1];
@@ -36,8 +36,8 @@ public class BibdFinder3Test {
                 sink.accept(nextTuple);
                 continue;
             }
-            BitSet newFilter = (BitSet) filter.clone();
-            BitSet newWhiteList = (BitSet) whiteList.clone();
+            FixBS newFilter = filter.copy();
+            FixBS newWhiteList = whiteList.copy();
             for (int val : tuple) {
                 int diff = idx - val;
                 int outDiff = variants - idx + val;
@@ -58,12 +58,12 @@ public class BibdFinder3Test {
         }
     }
 
-    private static void calcCycles(int variants, int size, int prev, BitSet filter, int blocksNeeded, Consumer<int[]> sink) {
-        BitSet whiteList = (BitSet) filter.clone();
+    private static void calcCycles(int variants, int size, int prev, FixBS filter, int blocksNeeded, Consumer<int[]> sink) {
+        FixBS whiteList = filter.copy();
         whiteList.flip(1, variants);
         IntStream.range(prev, variants - blocksNeeded * bounds[size - 1]).filter(whiteList::get).parallel().forEach(idx -> {
-            BitSet newWhiteList = (BitSet) whiteList.clone();
-            BitSet newFilter = (BitSet) filter.clone();
+            FixBS newWhiteList = whiteList.copy();
+            FixBS newFilter = filter.copy();
             int rev = variants - idx;
             newWhiteList.set(rev, false);
             if (rev % 2 == 0) {
@@ -81,11 +81,11 @@ public class BibdFinder3Test {
         });
     }
 
-    private static void calcCyclesSingle(int variants, int size, int idx, BitSet filter, Consumer<int[]> sink) {
-        BitSet whiteList = (BitSet) filter.clone();
+    private static void calcCyclesSingle(int variants, int size, int idx, FixBS filter, Consumer<int[]> sink) {
+        FixBS whiteList = filter.copy();
         whiteList.flip(1, variants);
-        BitSet newWhiteList = (BitSet) whiteList.clone();
-        BitSet newFilter = (BitSet) filter.clone();
+        FixBS newWhiteList = whiteList.copy();
+        FixBS newFilter = filter.copy();
         int rev = variants - idx;
         newWhiteList.set(rev, false);
         if (rev % 2 == 0) {
@@ -130,7 +130,10 @@ public class BibdFinder3Test {
             System.out.println(v + " " + k);
         }
         destination.println(v + " " + k);
-        BitSet filter = v % k == 0 ? IntStream.range(1, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v);
+        FixBS filter = new FixBS(v);
+        if (v % k == 0) {
+            IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
+        }
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
         Consumer<int[][]> designConsumer = design -> {
@@ -141,7 +144,7 @@ public class BibdFinder3Test {
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
-    private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, BitSet filter,
+    private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, FixBS filter,
                                           Consumer<int[][]> designSink, Integer single) {
         int cl = curr.length;
         int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
@@ -151,7 +154,7 @@ public class BibdFinder3Test {
             if (needed == 1) {
                 designSink.accept(nextCurr);
             }
-            BitSet nextFilter = (BitSet) filter.clone();
+            FixBS nextFilter = filter.copy();
             for (int i = 0; i < k; i++) {
                 for (int j = i + 1; j < k; j++) {
                     int l = block[j];
@@ -177,7 +180,10 @@ public class BibdFinder3Test {
 
     private static void findByHint(int[] hint, int v, int k) {
         System.out.println(v + " " + k + " " + Arrays.toString(hint));
-        BitSet filter = v % k == 0 ? IntStream.range(1, k).map(i -> i * v / k).collect(BitSet::new, BitSet::set, BitSet::or) : new BitSet(v);
+        FixBS filter = new FixBS(v);
+        if (v % k == 0) {
+            IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
+        }
         for (int i : hint) {
             for (int j : hint) {
                 if (i >= j) {
