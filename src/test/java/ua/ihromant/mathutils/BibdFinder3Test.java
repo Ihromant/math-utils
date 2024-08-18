@@ -209,9 +209,25 @@ public class BibdFinder3Test {
     }
 
     @Test
-    public void testCycles() {
+    public void cyclesToConsole() {
         int v = 91;
         int k = 6;
+        logCycles(System.out, v, k);
+    }
+
+    @Test
+    public void cyclesToFile() throws IOException {
+        int v = 101;
+        int k = 5;
+        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logCycles(ps, v, k);
+        }
+    }
+
+    private void logCycles(PrintStream ps, int v, int k) {
         int prev = start(v, k);
         FixBS filter = baseFilter(v, k);
         Map<FixBS, FixBS> map = new ConcurrentHashMap<>();
@@ -229,7 +245,10 @@ public class BibdFinder3Test {
             idxes[i] = -Arrays.binarySearch(pairs, idxes[i - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
         }
         //checkGraph(pairs, idxes);
-        search(v, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> System.out.println(Arrays.deepToString(des)));
+        search(v, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> {
+            ps.println(Arrays.deepToString(des));
+            ps.flush();
+        });
     }
 
     private static void checkGraph(DiffPair[] pairs, int[] idxes) {
@@ -260,6 +279,7 @@ public class BibdFinder3Test {
         if (curr.length == 0) {
             System.out.println(lowIdx + " " + hiIdx + " " + (hiIdx - lowIdx));
         }
+        AtomicInteger ai = new AtomicInteger();
         IntStream.range(lowIdx, hiIdx).parallel().mapToObj(i -> pairs[i]).forEach(dp -> {
             if (dp.diff.intersects(filter)) {
                 return;
@@ -281,6 +301,12 @@ public class BibdFinder3Test {
                 designSink.accept(fin);
             } else {
                 search(v, pairs, idxes, nextFilter, needed - 1, next, designSink);
+            }
+            if (curr.length == 0) {
+                int val = ai.incrementAndGet();
+                if (val % 10 == 0) {
+                    System.out.println(val);
+                }
             }
         });
     }
