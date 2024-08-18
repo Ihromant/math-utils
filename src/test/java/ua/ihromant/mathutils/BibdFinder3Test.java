@@ -223,16 +223,21 @@ public class BibdFinder3Test {
         DiffPair[] pairs = map.entrySet().stream().map(e -> new DiffPair(e.getKey(), e.getValue())).toArray(DiffPair[]::new);
         map.clear();
         Arrays.sort(pairs, Comparator.comparing(DiffPair::diff).reversed());
-        search(v, pairs, filter, v / k / (k - 1), new FixBS[0], des -> System.out.println(Arrays.deepToString(des)));
+        int[] idxes = new int[v / k];
+        for (int i = 1; i < idxes.length; i++) {
+            FixBS top = of(v, new int[]{i, v - 1});
+            idxes[i] = -Arrays.binarySearch(pairs, idxes[i - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
+        }
+        search(v, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> System.out.println(Arrays.deepToString(des)));
     }
 
-    private static void search(int v, DiffPair[] pairs, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
+    private static void search(int v, DiffPair[] pairs, int[] idxes, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
         int unMapped = filter.nextClearBit(1);
-        FixBS bot = new FixBS(v);
-        bot.set(unMapped, v);
-        FixBS top = of(v, new int[]{unMapped, v - 1});
-        int lowIdx = -Arrays.binarySearch(pairs, new DiffPair(bot, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
-        int hiIdx = -Arrays.binarySearch(pairs, lowIdx, pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
+        if (unMapped >= idxes.length) {
+            return;
+        }
+        int lowIdx = idxes[unMapped - 1];
+        int hiIdx = idxes[unMapped];
         if (curr.length == 0) {
             System.out.println(lowIdx + " " + hiIdx + " " + (hiIdx - lowIdx));
         }
@@ -256,7 +261,7 @@ public class BibdFinder3Test {
                 fin[next.length] = pairs[idx].tuple;
                 designSink.accept(fin);
             } else {
-                search(v, pairs, nextFilter, needed - 1, next, designSink);
+                search(v, pairs, idxes, nextFilter, needed - 1, next, designSink);
             }
         });
     }
