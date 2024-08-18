@@ -228,7 +228,26 @@ public class BibdFinder3Test {
             FixBS top = of(v, new int[]{i, v - 1});
             idxes[i] = -Arrays.binarySearch(pairs, idxes[i - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
         }
+        //checkGraph(pairs, idxes);
         search(v, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> System.out.println(Arrays.deepToString(des)));
+    }
+
+    private static void checkGraph(DiffPair[] pairs, int[] idxes) {
+        int[][] graph = new int[pairs.length][];
+        IntStream.range(0, pairs.length).parallel().forEach(i -> {
+            FixBS diff = pairs[i].diff;
+            IntStream.Builder arr = IntStream.builder();
+            for (int j = diff.nextClearBit(diff.nextSetBit(0)); j < idxes.length; j = diff.nextClearBit(j + 1)) {
+                int top = idxes[j];
+                for (int l = idxes[j - 1]; l < top; l++) {
+                    if (!pairs[l].diff.intersects(diff)) {
+                        arr.accept(l);
+                    }
+                }
+            }
+            graph[i] = arr.build().toArray();
+        });
+        System.out.println(Arrays.stream(graph).mapToInt(g -> g.length).sum());
     }
 
     private static void search(int v, DiffPair[] pairs, int[] idxes, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
