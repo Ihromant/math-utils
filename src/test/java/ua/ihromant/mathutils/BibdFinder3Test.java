@@ -253,9 +253,7 @@ public class BibdFinder3Test {
         int[][] idxes = new int[vk][vk + 1];
         for (int i = 1; i < idxes.length + 1; i++) {
             int[] arr = idxes[i - 1];
-            if (i > 1) {
-                arr[0] = idxes[i - 2][vk];
-            }
+            arr[0] = i == 1 ? 0 : idxes[i - 2][vk];
             for (int j = 1; j < arr.length; j++) {
                 FixBS top = of(v, new int[]{i, i + j, v - 1});
                 arr[j] = -Arrays.binarySearch(pairs, arr[j - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
@@ -290,7 +288,6 @@ public class BibdFinder3Test {
         if (curr.length == 0) {
             System.out.println(idxes[0][0] + " " + idxes[1][0]);
         }
-        //AtomicInteger ai = new AtomicInteger();
         for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk + 1; i = filter.nextClearBit(i + 1)) {
             int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
             int hiIdx = idxes[unMapped - 1][i - unMapped];
@@ -316,12 +313,6 @@ public class BibdFinder3Test {
                 } else {
                     search(v, vk, pairs, idxes, nextFilter, needed - 1, next, designSink);
                 }
-//                if (curr.length == 0) {
-//                    int val = ai.incrementAndGet();
-//                    if (val % 10 == 0) {
-//                        System.out.println(val);
-//                    }
-//                }
             });
         }
     }
