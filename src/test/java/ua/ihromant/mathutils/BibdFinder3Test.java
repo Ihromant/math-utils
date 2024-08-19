@@ -111,13 +111,13 @@ public class BibdFinder3Test {
 
     @Test
     public void toFile() throws IOException {
-        int v = 105;
+        int v = 101;
         int k = 5;
         File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt");
-        try (FileOutputStream fos = new FileOutputStream(f);
+        try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logResults(ps, v, k, null);
+            logResults(ps, v, k, 25);
         }
     }
 
@@ -139,6 +139,7 @@ public class BibdFinder3Test {
         Consumer<int[][]> designConsumer = design -> {
             counter.incrementAndGet();
             destination.println(Arrays.deepToString(design));
+            destination.flush();
         };
         allDifferenceSets(v, k, new int[0][], v / k / (k - 1), filter, designConsumer, single);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
