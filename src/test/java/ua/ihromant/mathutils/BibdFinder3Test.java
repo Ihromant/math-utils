@@ -117,7 +117,7 @@ public class BibdFinder3Test {
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logResults(ps, v, k, 26);
+            logResults(ps, v, k, 27);
         }
     }
 
@@ -340,5 +340,56 @@ public class BibdFinder3Test {
             tpl.set(fst);
         }
         return new DiffPair(diff, tpl);
+    }
+
+    private record Search(int v, int vk, DiffPair[] pairs, int[][] idxes) {
+        private void search(Consumer<FixBS[]> designSink) {
+            int k = v / vk;
+            FixBS filter = baseFilter(v, k);
+            System.out.println(idxes[1][0]);
+            IntStream.range(0, idxes[1][0]).parallel().mapToObj(i -> pairs[i]).forEach(dp -> {
+                FixBS nextFilter = filter.copy();
+                nextFilter.or(dp.diff);
+                FixBS[] next = new FixBS[]{dp.tuple};
+                search(nextFilter, v / k / (k - 1) - 1, next, designSink);
+            });
+        }
+
+        private void search(FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
+            int unMapped = filter.nextClearBit(1);
+            if (unMapped > idxes.length) {
+                return;
+            }
+            if (curr.length == 0) {
+                System.out.println(idxes[0][0] + " " + idxes[1][0]);
+            }
+            for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk + 1; i = filter.nextClearBit(i + 1)) {
+                int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
+                int hiIdx = idxes[unMapped - 1][i - unMapped];
+                IntStream.range(lowIdx, hiIdx).parallel().mapToObj(idx -> pairs[idx]).forEach(dp -> {
+                    if (dp.diff.intersects(filter)) {
+                        return;
+                    }
+                    FixBS nextFilter = filter.copy();
+                    nextFilter.or(dp.diff);
+                    FixBS[] next = new FixBS[curr.length + 1];
+                    System.arraycopy(curr, 0, next, 0, curr.length);
+                    next[curr.length] = dp.tuple;
+                    if (needed == 2) {
+                        nextFilter.flip(1, v);
+                        int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
+                        if (idx < 0) {
+                            return;
+                        }
+                        FixBS[] fin = new FixBS[next.length + 1];
+                        System.arraycopy(next, 0, fin, 0, next.length);
+                        fin[next.length] = pairs[idx].tuple;
+                        designSink.accept(fin);
+                    } else {
+                        search(nextFilter, needed - 1, next, designSink);
+                    }
+                });
+            }
+        }
     }
 }
