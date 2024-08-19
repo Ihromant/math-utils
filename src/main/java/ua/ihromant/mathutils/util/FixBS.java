@@ -12,7 +12,11 @@ public class FixBS implements Comparable<FixBS> {
     private static final int BITS_PER_WORD = 1 << ADDRESS_BITS_PER_WORD;
 
     public FixBS(int n) {
-        this.words = new long[wordIndex(n - 1) + 1];
+        this.words = new long[len(n)];
+    }
+
+    public static int len(int n) {
+        return wordIndex(n - 1) + 1;
     }
 
     public FixBS(long[] arr) {

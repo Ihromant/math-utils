@@ -3,8 +3,12 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -117,7 +121,7 @@ public class BibdFinder3Test {
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logResults(ps, v, k, 27);
+            logResults(ps, v, k, 28);
         }
     }
 
@@ -210,7 +214,7 @@ public class BibdFinder3Test {
     }
 
     @Test
-    public void cyclesToConsole() {
+    public void cyclesToConsole() throws IOException {
         int v = 91;
         int k = 6;
         logCycles(System.out, v, k);
@@ -228,7 +232,7 @@ public class BibdFinder3Test {
         }
     }
 
-    private void logCycles(PrintStream ps, int v, int k) {
+    private void logCycles(PrintStream ps, int v, int k) throws IOException {
         int prev = start(v, k);
         FixBS filter = baseFilter(v, k);
         Map<FixBS, FixBS> map = new ConcurrentHashMap<>();
@@ -239,9 +243,14 @@ public class BibdFinder3Test {
         System.out.println(map.size());
         DiffPair[] pairs = map.entrySet().stream().map(e -> new DiffPair(e.getKey(), e.getValue())).toArray(DiffPair[]::new);
         map.clear();
-        Arrays.sort(pairs, Comparator.comparing(DiffPair::diff).reversed());
+        Arrays.parallelSort(pairs, Comparator.comparing(DiffPair::diff).reversed());
+        //dump(pairs, v, k);
+        processPairs(ps, v, k, pairs);
+    }
+
+    private static void processPairs(PrintStream ps, int v, int k, DiffPair[] pairs) {
         int[][] idxes = calcIdxes(v, k, pairs);
-        //checkGraph(pairs, idxes);
+        FixBS filter = baseFilter(v, k);
         search(v, v / k, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> {
             ps.println(Arrays.deepToString(des));
             ps.flush();
@@ -347,7 +356,8 @@ public class BibdFinder3Test {
             int k = v / vk;
             FixBS filter = baseFilter(v, k);
             System.out.println(idxes[1][0]);
-            IntStream.range(0, idxes[1][0]).parallel().mapToObj(i -> pairs[i]).forEach(dp -> {
+            IntStream.range(0, idxes[1][0]).parallel().forEach(i -> {
+                DiffPair dp = pairs[i];
                 FixBS nextFilter = filter.copy();
                 nextFilter.or(dp.diff);
                 FixBS[] next = new FixBS[]{dp.tuple};
@@ -390,6 +400,48 @@ public class BibdFinder3Test {
                     }
                 });
             }
+        }
+    }
+
+    private static void dump(DiffPair[] pairs, int v, int k) throws IOException {
+        File f = new File("/home/ihromant/maths/diffSets/new", "pairs" + k + "-" + v + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             DataOutputStream dos = new DataOutputStream(bos)) {
+            for (DiffPair pair : pairs) {
+                for (long word : pair.diff.words()) {
+                    dos.writeLong(word);
+                }
+                for (long word : pair.tuple.words()) {
+                    dos.writeLong(word);
+                }
+            }
+        }
+    }
+
+    private static final Map<Integer, Integer> sizes = Map.of(169, 478054096, 175, 253044480);
+
+    private static DiffPair[] read(int v, int k) throws IOException {
+        File f = new File("/home/ihromant/maths/diffSets/new", "pairs" + k + "-" + v + ".txt");
+        try (FileInputStream fis = new FileInputStream(f);
+             BufferedInputStream bis = new BufferedInputStream(fis);
+             DataInputStream dis = new DataInputStream(bis)) {
+            DiffPair[] result = new DiffPair[sizes.get(v)];
+            int idx = 0;
+            while (idx < result.length) {
+                int sz = FixBS.len(v);
+                long[] diff = new long[sz];
+                for (int i = 0; i < sz; i++) {
+                    diff[i] = dis.readLong();
+                }
+                long[] tuple = new long[sz];
+                for (int i = 0; i < sz; i++) {
+                    tuple[i] = dis.readLong();
+                }
+                result[idx] = new DiffPair(new FixBS(diff), new FixBS(tuple));
+                idx++;
+            }
+            return result;
         }
     }
 }
