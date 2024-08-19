@@ -305,20 +305,19 @@ public class BibdFinder3Test {
                 }
                 FixBS nextFilter = filter.copy();
                 nextFilter.or(dp.diff);
-                FixBS[] next = new FixBS[curr.length + 1];
-                System.arraycopy(curr, 0, next, 0, curr.length);
-                next[curr.length] = dp.tuple;
                 if (needed == 2) {
                     nextFilter.flip(1, v);
                     int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
                     if (idx < 0) {
                         return;
                     }
-                    FixBS[] fin = new FixBS[next.length + 1];
-                    System.arraycopy(next, 0, fin, 0, next.length);
-                    fin[next.length] = pairs[idx].tuple;
+                    FixBS[] fin = curr.clone();
+                    fin[curr.length - 2] = dp.tuple;
+                    fin[curr.length - 1] = pairs[idx].tuple;
                     designSink.accept(fin);
                 } else {
+                    FixBS[] next = curr.clone();
+                    next[curr.length - needed] = dp.tuple;
                     search(v, vk, pairs, idxes, nextFilter, needed - 1, next, designSink);
                 }
             });
@@ -354,8 +353,9 @@ public class BibdFinder3Test {
         private void search(Consumer<FixBS[]> designSink) {
             int k = v / vk;
             FixBS filter = baseFilter(v, k);
+            int needed = v / k / (k - 1);
             System.out.println(idxes[1][0]);
-            search(filter, v / k / (k - 1), new FixBS[0], designSink);
+            search(filter, needed, new FixBS[needed], designSink);
         }
 
         private void search(FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
@@ -378,13 +378,13 @@ public class BibdFinder3Test {
                         if (idx < 0) {
                             return;
                         }
-                        FixBS[] fin = Arrays.copyOf(curr, curr.length + 2);
-                        fin[curr.length] = dp.tuple;
-                        fin[curr.length + 1] = pairs[idx].tuple;
+                        FixBS[] fin = curr.clone();
+                        fin[curr.length - 2] = dp.tuple;
+                        fin[curr.length - 1] = pairs[idx].tuple;
                         designSink.accept(fin);
                     } else {
-                        FixBS[] next = Arrays.copyOf(curr, curr.length + 1);
-                        next[curr.length] = dp.tuple;
+                        FixBS[] next = curr.clone();
+                        next[curr.length - needed] = dp.tuple;
                         search(nextFilter, needed - 1, next, designSink);
                     }
                 });
