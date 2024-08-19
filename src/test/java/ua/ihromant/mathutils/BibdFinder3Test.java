@@ -250,8 +250,7 @@ public class BibdFinder3Test {
 
     private static void processPairs(PrintStream ps, int v, int k, DiffPair[] pairs) {
         int[][] idxes = calcIdxes(v, k, pairs);
-        FixBS filter = baseFilter(v, k);
-        search(v, v / k, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> {
+        new Search(v, v / k, pairs, idxes).search(des -> {
             ps.println(Arrays.deepToString(des));
             ps.flush();
         });
@@ -356,22 +355,13 @@ public class BibdFinder3Test {
             int k = v / vk;
             FixBS filter = baseFilter(v, k);
             System.out.println(idxes[1][0]);
-            IntStream.range(0, idxes[1][0]).parallel().forEach(i -> {
-                DiffPair dp = pairs[i];
-                FixBS nextFilter = filter.copy();
-                nextFilter.or(dp.diff);
-                FixBS[] next = new FixBS[]{dp.tuple};
-                search(nextFilter, v / k / (k - 1) - 1, next, designSink);
-            });
+            search(filter, v / k / (k - 1), new FixBS[0], designSink);
         }
 
         private void search(FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
             int unMapped = filter.nextClearBit(1);
             if (unMapped > idxes.length) {
                 return;
-            }
-            if (curr.length == 0) {
-                System.out.println(idxes[0][0] + " " + idxes[1][0]);
             }
             for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk + 1; i = filter.nextClearBit(i + 1)) {
                 int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
