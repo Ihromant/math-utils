@@ -117,7 +117,7 @@ public class BibdFinder3Test {
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logResults(ps, v, k, 25);
+            logResults(ps, v, k, 26);
         }
     }
 
@@ -240,16 +240,28 @@ public class BibdFinder3Test {
         DiffPair[] pairs = map.entrySet().stream().map(e -> new DiffPair(e.getKey(), e.getValue())).toArray(DiffPair[]::new);
         map.clear();
         Arrays.sort(pairs, Comparator.comparing(DiffPair::diff).reversed());
-        int[] idxes = new int[v / k];
-        for (int i = 1; i < idxes.length; i++) {
-            FixBS top = of(v, new int[]{i, v - 1});
-            idxes[i] = -Arrays.binarySearch(pairs, idxes[i - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
-        }
+        int[][] idxes = calcIdxes(v, k, pairs);
         //checkGraph(pairs, idxes);
-        search(v, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> {
+        search(v, v / k, pairs, idxes, filter, v / k / (k - 1), new FixBS[0], des -> {
             ps.println(Arrays.deepToString(des));
             ps.flush();
         });
+    }
+
+    private static int[][] calcIdxes(int v, int k, DiffPair[] pairs) {
+        int vk = v / k;
+        int[][] idxes = new int[vk][vk + 1];
+        for (int i = 1; i < idxes.length + 1; i++) {
+            int[] arr = idxes[i - 1];
+            if (i > 1) {
+                arr[0] = idxes[i - 2][vk];
+            }
+            for (int j = 1; j < arr.length; j++) {
+                FixBS top = of(v, new int[]{i, i + j, v - 1});
+                arr[j] = -Arrays.binarySearch(pairs, arr[j - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
+            }
+        }
+        return idxes;
     }
 
     private static void checkGraph(DiffPair[] pairs, int[] idxes) {
@@ -270,46 +282,48 @@ public class BibdFinder3Test {
         System.out.println(Arrays.stream(graph).mapToInt(g -> g.length).sum());
     }
 
-    private static void search(int v, DiffPair[] pairs, int[] idxes, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
+    private static void search(int v, int vk, DiffPair[] pairs, int[][] idxes, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
         int unMapped = filter.nextClearBit(1);
         if (unMapped >= idxes.length) {
             return;
         }
-        int lowIdx = idxes[unMapped - 1];
-        int hiIdx = idxes[unMapped];
         if (curr.length == 0) {
-            System.out.println(lowIdx + " " + hiIdx + " " + (hiIdx - lowIdx));
+            System.out.println(idxes[0][0] + " " + idxes[1][0]);
         }
-        AtomicInteger ai = new AtomicInteger();
-        IntStream.range(lowIdx, hiIdx).parallel().mapToObj(i -> pairs[i]).forEach(dp -> {
-            if (dp.diff.intersects(filter)) {
-                return;
-            }
-            FixBS nextFilter = filter.copy();
-            nextFilter.or(dp.diff);
-            FixBS[] next = new FixBS[curr.length + 1];
-            System.arraycopy(curr, 0, next, 0, curr.length);
-            next[curr.length] = dp.tuple;
-            if (needed == 2) {
-                nextFilter.flip(1, v);
-                int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
-                if (idx < 0) {
+        //AtomicInteger ai = new AtomicInteger();
+        for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk + 1; i = filter.nextClearBit(i + 1)) {
+            int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
+            int hiIdx = idxes[unMapped - 1][i - unMapped];
+            IntStream.range(lowIdx, hiIdx).parallel().mapToObj(idx -> pairs[idx]).forEach(dp -> {
+                if (dp.diff.intersects(filter)) {
                     return;
                 }
-                FixBS[] fin = new FixBS[next.length + 1];
-                System.arraycopy(next, 0, fin, 0, next.length);
-                fin[next.length] = pairs[idx].tuple;
-                designSink.accept(fin);
-            } else {
-                search(v, pairs, idxes, nextFilter, needed - 1, next, designSink);
-            }
-            if (curr.length == 0) {
-                int val = ai.incrementAndGet();
-                if (val % 10 == 0) {
-                    System.out.println(val);
+                FixBS nextFilter = filter.copy();
+                nextFilter.or(dp.diff);
+                FixBS[] next = new FixBS[curr.length + 1];
+                System.arraycopy(curr, 0, next, 0, curr.length);
+                next[curr.length] = dp.tuple;
+                if (needed == 2) {
+                    nextFilter.flip(1, v);
+                    int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
+                    if (idx < 0) {
+                        return;
+                    }
+                    FixBS[] fin = new FixBS[next.length + 1];
+                    System.arraycopy(next, 0, fin, 0, next.length);
+                    fin[next.length] = pairs[idx].tuple;
+                    designSink.accept(fin);
+                } else {
+                    search(v, vk, pairs, idxes, nextFilter, needed - 1, next, designSink);
                 }
-            }
-        });
+//                if (curr.length == 0) {
+//                    int val = ai.incrementAndGet();
+//                    if (val % 10 == 0) {
+//                        System.out.println(val);
+//                    }
+//                }
+            });
+        }
     }
 
     private static FixBS of(int v, int[] tuple) {
