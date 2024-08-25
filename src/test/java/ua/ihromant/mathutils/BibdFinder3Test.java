@@ -25,12 +25,13 @@ public class BibdFinder3Test {
     private static void calcCycles(int variants, int needed, FixBS filter, FixBS whiteList,
                                    int[] tuple, Consumer<int[]> sink) {
         int tl = tuple.length;
-        int last = tuple[tl - 1];
+        int lastVal = tuple[tl - 1];
         int second = tuple[1];
-        int min = needed == 1 ? Math.max(variants - second + 1, last + 1) : last + 1;
-        int max = Math.min(variants - bounds[needed], last + second);
+        boolean last = needed == 1;
+        int min = last ? Math.max(variants - second + 1, lastVal + 1) : lastVal + 1;
+        int max = Math.min(variants - bounds[needed], lastVal + second);
         if (tl < 3) {
-            if (needed == 1) {
+            if (last) {
                 max = Math.min(max, (variants + second) / 2 + 1);
             }
         } else {
@@ -39,7 +40,7 @@ public class BibdFinder3Test {
         for (int idx = whiteList.nextSetBit(min); idx >= 0 && idx < max; idx = whiteList.nextSetBit(idx + 1)) {
             int[] nextTuple = Arrays.copyOf(tuple, tl + 1);
             nextTuple[tl] = idx;
-            if (needed == 1) {
+            if (last) {
                 sink.accept(nextTuple);
                 continue;
             }
