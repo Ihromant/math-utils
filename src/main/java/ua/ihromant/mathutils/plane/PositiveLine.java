@@ -2,6 +2,8 @@ package ua.ihromant.mathutils.plane;
 
 import ua.ihromant.mathutils.Rational;
 
+import java.util.concurrent.ThreadLocalRandom;
+
 public record PositiveLine(Rational y, Rational tan) implements MoultonLine {
     @Override
     public MoultonPoint intersection(MoultonLine other) {
@@ -40,6 +42,12 @@ public record PositiveLine(Rational y, Rational tan) implements MoultonLine {
     @Override
     public MoultonLine parallelThrough(MoultonPoint point) {
         return new PositiveLine(point.y().sub(atX(point.x())).add(y), tan);
+    }
+
+    @Override
+    public MoultonPoint randomPoint() {
+        Rational x = Rational.of(ThreadLocalRandom.current().nextInt(-5, 5));
+        return new MoultonPoint(x, atX(x));
     }
 
     public Rational atX(Rational x) {

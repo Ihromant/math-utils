@@ -138,17 +138,17 @@ public class DesargueTest {
     private static void drawLine(Graphics gr, Point first, Point second) {
         first = first.mul(MUL);
         second = second.mul(MUL);
-        gr.drawLine(first.x().numer(), first.y().numer(), second.x().numer(), second.y().numer());
+        gr.drawLine((int) first.x().numer(), (int) first.y().numer(), (int) second.x().numer(), (int) second.y().numer());
     }
 
     private static void drawLine(BufferedWriter wr, Point first, Point second) throws IOException {
         first = first.mul(MUL);
         second = second.mul(MUL);
-        int dx = second.x().numer() - first.x().numer();
-        int dy = second.y().numer() - first.y().numer();
-        int gcd = Rational.gcd(Math.abs(dx), Math.abs(dy));
-        int nX = dx / gcd;
-        int nY = dy / gcd;
+        long dx = second.x().numer() - first.x().numer();
+        long dy = second.y().numer() - first.y().numer();
+        long gcd = Rational.gcd(Math.abs(dx), Math.abs(dy));
+        long nX = dx / gcd;
+        long nY = dy / gcd;
         wr.write("\\put(" + first.x() + "," + first.y() + ")" +
                 "{\\color{" + "black" + "}" +
                 "\\line(" + nX + "," + nY + "){" + Math.max(Math.abs(dx), Math.abs(dy)) + "}}\n");

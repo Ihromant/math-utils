@@ -1,8 +1,14 @@
 package ua.ihromant.mathutils;
 
+import java.math.BigInteger;
+
 public record Point(Rational x, Rational y) {
-    public static Point of(int x, int y) {
+    public static Point of(long x, long y) {
         return new Point(Rational.of(x), Rational.of(y));
+    }
+
+    public static Point of(BigInteger x, BigInteger y) {
+        return new Point(Rational.of(x.longValue()), Rational.of(y.longValue()));
     }
 
     public Point add(Point that) {

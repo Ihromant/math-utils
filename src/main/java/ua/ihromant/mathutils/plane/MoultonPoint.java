@@ -18,7 +18,7 @@ public record MoultonPoint(Rational x, Rational y) {
         Rational dy = other.y.sub(this.y);
         Rational tan = dy.div(dx);
         if (tan.compareTo(Rational.ZERO) < 0) {
-            if (this.x.numer() > 0 && other.x.numer() > 0) {
+            if (this.x.numer() >= 0 && other.x.numer() >= 0) {
                 Rational y = this.y.sub(this.x.mul(tan));
                 return new NegativeLine(y, tan);
             }

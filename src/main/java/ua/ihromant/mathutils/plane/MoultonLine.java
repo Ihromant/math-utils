@@ -8,4 +8,6 @@ public sealed interface MoultonLine permits VerticalLine, PositiveLine, Negative
     boolean isParallel(MoultonLine other);
 
     MoultonLine parallelThrough(MoultonPoint point);
+
+    MoultonPoint randomPoint();
 }

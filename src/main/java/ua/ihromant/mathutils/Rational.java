@@ -3,23 +3,23 @@ package ua.ihromant.mathutils;
 import java.util.List;
 import java.util.stream.Stream;
 
-public record Rational(int numer, int denom) implements Comparable<Rational> {
+public record Rational(long numer, long denom) implements Comparable<Rational> {
     public static final Rational ZERO = new Rational(0, 1);
 
-    public static int gcd(int a, int b) {
+    public static long gcd(long a, long b) {
         return b == 0 ? a : gcd(b, a % b);
     }
 
-    public static Rational of(int i) {
+    public static Rational of(long i) {
         return new Rational(i, 1);
     }
 
-    public static Rational of(int numer, int denom) {
+    public static Rational of(long numer, long denom) {
         boolean neg = numer < 0;
         if (neg) {
             numer = -numer;
         }
-        int gcd = gcd(numer, denom);
+        long gcd = gcd(numer, denom);
         return new Rational((neg ? -numer : numer) / gcd, denom / gcd);
     }
 
@@ -28,11 +28,11 @@ public record Rational(int numer, int denom) implements Comparable<Rational> {
     }
 
     public Rational add(Rational that) {
-        return of(this.numer * that.denom + this.denom * that.numer, that.denom * that.denom);
+        return of(this.numer * that.denom + this.denom * that.numer, this.denom * that.denom);
     }
 
     public Rational sub(Rational that) {
-        return of(this.numer * that.denom - this.denom * that.numer, that.denom * that.denom);
+        return of(this.numer * that.denom - this.denom * that.numer, this.denom * that.denom);
     }
 
     public Rational mul(Rational that) {
@@ -40,7 +40,9 @@ public record Rational(int numer, int denom) implements Comparable<Rational> {
     }
 
     public Rational div(Rational that) {
-        return of(this.numer * that.denom, this.denom * that.numer);
+        boolean neg = that.numer < 0;
+        return neg ? of(-this.numer * that.denom, -this.denom * that.numer)
+                : of(this.numer * that.denom, this.denom * that.numer);
     }
 
     public boolean isInt() {
@@ -83,12 +85,12 @@ public record Rational(int numer, int denom) implements Comparable<Rational> {
     public static final List<Rational> LATEX_SLOPES = Stream.concat(SIMPLE_SLOPES.stream(),
             SIMPLE_SLOPES.stream().map(Rational::neg)).toList();
 
-    public int max() {
+    public long max() {
         return Math.max(Math.abs(numer), denom);
     }
 
     @Override
     public int compareTo(Rational o) {
-        return this.numer * o.denom - this.denom * o.numer;
+        return (int) (this.numer * o.denom - this.denom * o.numer);
     }
 }
