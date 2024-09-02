@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 import java.util.List;
 import java.util.stream.Stream;
 
-public record Rational(int numer, int denom) {
+public record Rational(int numer, int denom) implements Comparable<Rational> {
     public static final Rational ZERO = new Rational(0, 1);
 
     public static int gcd(int a, int b) {
@@ -15,11 +15,12 @@ public record Rational(int numer, int denom) {
     }
 
     public static Rational of(int numer, int denom) {
-        if (numer == 0 && denom == 0) {
-            return ZERO;
+        boolean neg = numer < 0;
+        if (neg) {
+            numer = -numer;
         }
         int gcd = gcd(numer, denom);
-        return new Rational(numer / gcd, denom / gcd);
+        return new Rational((neg ? -numer : numer) / gcd, denom / gcd);
     }
 
     public Rational neg() {
@@ -84,5 +85,10 @@ public record Rational(int numer, int denom) {
 
     public int max() {
         return Math.max(Math.abs(numer), denom);
+    }
+
+    @Override
+    public int compareTo(Rational o) {
+        return this.numer * o.denom - this.denom * o.numer;
     }
 }
