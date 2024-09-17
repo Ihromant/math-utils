@@ -1,8 +1,7 @@
 package ua.ihromant.mathutils.field;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.HyperbolicPlaneTest;
-import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.PartialLiner;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -12,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class LinearSpaceTest {
     @Test
@@ -40,6 +40,8 @@ public class LinearSpaceTest {
         BitSet a = planes.keySet().iterator().next();
         BitSet b = planes.keySet().stream().filter(pl -> !a.intersects(pl)).findFirst().orElseThrow();
         BitSet abHull = sp.hull(a, b);
+        Set<PartialLiner> liners = ConcurrentHashMap.newKeySet();
+        AtomicInteger cnt = new AtomicInteger();
         planes.keySet().stream().filter(pl -> !abHull.intersects(pl)).parallel().forEach(c -> {
             BitSet acHull = sp.hull(a, c);
             BitSet bcHull = sp.hull(b, c);
@@ -75,17 +77,22 @@ public class LinearSpaceTest {
                             return f;
                         }).stream().toArray();
                         int[][] lines = structure.values().stream().map(bs -> bs.stream().map(pt -> Arrays.binarySearch(list, pt)).toArray()).toArray(int[][]::new);
-                        System.out.println("Found");
-                        Liner plane = new Liner(list.length, lines);
-                        HyperbolicPlaneTest.testCorrectness(plane, of(10));
-                        System.out.println(testDesargues(plane));
+                        PartialLiner plane = new PartialLiner(list.length, lines);
+                        if (cnt.incrementAndGet() % 10 == 0) {
+                            System.out.println(cnt.get());
+                        }
+                        if (liners.stream().noneMatch(plane::isomorphicSel)) {
+                            liners.add(plane);
+                            System.out.println(liners.size());
+                            System.out.println(testDesargues(plane));
+                        }
                     }
                 }
             }
         });
     }
 
-    private static boolean testDesargues(Liner l) {
+    private static boolean testDesargues(PartialLiner l) {
         for (int o = 0; o < l.pointCount(); o++) {
             for (int l1 : l.point(o)) {
                 for (int l2 : l.point(o)) {
@@ -123,7 +130,7 @@ public class LinearSpaceTest {
                                                 int i1 = l.intersection(l.line(a1, b1), l.line(a2, b2));
                                                 int i2 = l.intersection(l.line(a1, c1), l.line(a2, c2));
                                                 int i3 = l.intersection(l.line(c1, b1), l.line(c2, b2));
-                                                if (!l.collinear(i1, i2, i3)) {
+                                                if (l.line(i1, i2) != l.line(i2, i3)) {
                                                     return false;
                                                 }
                                             }
