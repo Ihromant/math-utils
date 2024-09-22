@@ -20,7 +20,7 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     public FixBS(long[] arr) {
-        this.words = arr.clone();
+        this.words = arr;
     }
 
     private static int wordIndex(int bitIndex) {
