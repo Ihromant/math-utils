@@ -185,37 +185,31 @@ public class BibdFinder4Test {
     }
 
     @Test
-    public void randomizeDesigns1() {
-        int v = 217;
-        int k = 7;
+    public void randomizeDesigns() {
+        int v = 126;
+        int k = 6;
         int random = 2;
         int blocksNeeded = v / k / (k - 1);
         System.out.println(v + " " + k);
         FixBS filter = baseFilter(v, k);
-        ConcurrentHashMap<String, Integer> cnt = new ConcurrentHashMap<>();
-        AtomicInteger valz = new AtomicInteger();
-        LongStream.range(0, Long.MAX_VALUE).parallel().forEach(x -> {
-            int[][] hints = randomizeHint(v, k, new int[0][], blocksNeeded, random, filter);
-            FixBS ftr = filter.copy();
-            for (int[] hint : hints) {
-                for (int i : hint) {
-                    for (int j : hint) {
-                        if (i >= j) {
-                            continue;
+        IntStream.range(0, 20).parallel().forEach(x -> {
+            while (true) {
+                int[][] hints = randomizeHint(v, k, new int[0][], blocksNeeded, random, filter);
+                FixBS ftr = filter.copy();
+                for (int[] hint : hints) {
+                    for (int i : hint) {
+                        for (int j : hint) {
+                            if (i >= j) {
+                                continue;
+                            }
+                            ftr.set(j - i);
+                            ftr.set(v - j + i);
                         }
-                        ftr.set(j - i);
-                        ftr.set(v - j + i);
                     }
                 }
+                Consumer<int[][]> designConsumer = design -> System.out.println(Arrays.deepToString(design));
+                allDifferenceSets(v, k, hints, blocksNeeded - random, ftr, designConsumer);
             }
-            Consumer<int[][]> designConsumer = design -> System.out.println(Arrays.deepToString(design));
-            allDifferenceSets(v, k, hints, blocksNeeded - random, ftr, designConsumer);
-//            String name = Thread.currentThread().getName();
-//            int idx = name.lastIndexOf('-');
-//            cnt.compute(idx >= 0 ? name.substring(idx + 1) : name, (tn, c) -> c == null ? 1 : c + 1);
-//            if (valz.incrementAndGet() % 1000 == 0) {
-//                System.out.println(cnt);
-//            }
         });
     }
 
