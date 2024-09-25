@@ -194,36 +194,21 @@ public class BibdFinder4Test {
         FixBS filter = baseFilter(v, k);
         IntStream.range(0, 20).parallel().forEach(x -> {
             while (true) {
-                int[][] hints = randomizeHint(v, k, new int[0][], blocksNeeded, random, filter);
-                FixBS ftr = filter.copy();
-                for (int[] hint : hints) {
-                    for (int i : hint) {
-                        for (int j : hint) {
-                            if (i >= j) {
-                                continue;
-                            }
-                            ftr.set(j - i);
-                            ftr.set(v - j + i);
-                        }
-                    }
-                }
+                FixBS ftr = randomizeHint(v, k, blocksNeeded, random, filter);
                 Consumer<int[][]> designConsumer = design -> System.out.println(Arrays.deepToString(design));
-                allDifferenceSets(v, k, hints, blocksNeeded - random, ftr, designConsumer);
+                allDifferenceSets(v, k, new int[0][], blocksNeeded - random, ftr, designConsumer);
             }
         });
     }
 
-    private static int[][] randomizeHint(int variants, int k, int[][] curr, int blocksNeeded, int needed, FixBS filter) {
-        int cl = curr.length;
+    private static FixBS randomizeHint(int variants, int k, int blocksNeeded, int needed, FixBS filter) {
         if (needed == 0) {
-            return curr;
+            return filter;
         }
-        int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
+        int prev = filter.nextClearBit(start(variants, k));
         while (true) {
-            int[] block = randomizeCycle(variants, k, prev, filter, blocksNeeded - cl);
+            int[] block = randomizeCycle(variants, k, prev, filter, blocksNeeded + needed - 2);
             if (block != null) {
-                int[][] nextCurr = Arrays.copyOf(curr, cl + 1);
-                nextCurr[cl] = block;
                 FixBS nextFilter = filter.copy();
                 for (int i = 0; i < k; i++) {
                     for (int j = i + 1; j < k; j++) {
@@ -233,7 +218,7 @@ public class BibdFinder4Test {
                         nextFilter.set(variants - l + s);
                     }
                 }
-                return randomizeHint(variants, k, nextCurr, blocksNeeded, needed - 1, nextFilter);
+                return randomizeHint(variants, k, blocksNeeded, needed - 1, nextFilter);
             }
         }
     }
