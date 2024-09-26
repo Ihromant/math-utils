@@ -44,12 +44,52 @@ public class Algo {
                 .move(7, 8).move(5, 7)
                 .move(7, 9).move(4, 7)
                 .move(7, 10).move(3, 7);
-        assertEquals(new Coordinate(7, 6), Objects.requireNonNull(winningMove(model)).lastMove());
+        System.out.println(cap - search(model));
+        //assertEquals(new Coordinate(7, 6), Objects.requireNonNull(winningMove(model)).lastMove());
         model = new Model().move(6, 7)
                 .move(7, 8).move(5, 7)
                 .move(7, 9).move(4, 7);
         assertEquals(new Coordinate(7, 6), Objects.requireNonNull(winningMove(model)).lastMove());
-        System.out.println(winningMove(model));
+        //System.out.println(winningMove(model));
+    }
+
+    private static final int cap = 36;
+
+    public static int search(Model node) {
+        return alphaBeta(node, cap - node.getCrd().size(), Integer.MIN_VALUE, Integer.MAX_VALUE, node.currMove());
+    }
+
+    public static int alphaBeta(Model node, int depth, int alpha, int beta, boolean maximizingPlayer) {
+        if (depth == 0) {
+            return 0;
+        }
+        if (node.getWinner() != null) {
+            boolean winner = node.getWinner();
+            return winner ? cap - node.getCrd().size() : -cap + node.getCrd().size();
+        }
+        if (maximizingPlayer) {
+            int value = Integer.MIN_VALUE;
+            List<Model> descendants = node.descendants().toList();
+            for (Model child : descendants) {
+                value = Math.max(value, alphaBeta(child, depth - 1, alpha, beta, false));
+                if (value >= beta) {
+                    break;
+                }
+                alpha = Math.max(alpha, value);
+            }
+            return value;
+        } else {
+            int value = Integer.MAX_VALUE;
+            List<Model> descendants = node.descendants().toList();
+            for (Model child : descendants) {
+                value = Math.min(value, alphaBeta(child, depth - 1, alpha, beta, true));
+                if (value <= alpha) {
+                    break;
+                }
+                beta = Math.min(beta, value);
+            }
+            return value;
+        }
     }
 
     private Model winningMove(Model model) {

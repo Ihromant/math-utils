@@ -21,9 +21,9 @@ public class Model {
     private final int y;
 
     public Model() {
-        this.crd = Set.of(new Coordinate(size / 2, size / 2));
         this.fields = new Boolean[size][size];
         this.fields[size / 2][size / 2] = Boolean.TRUE;
+        this.crd = Set.of(new Coordinate(size / 2, size / 2));
         this.frames = generateFrames();
         this.winner = null;
         this.x = size / 2;
@@ -31,10 +31,10 @@ public class Model {
     }
 
     private Model(Model that, int x, int y) {
-        this.crd = new HashSet<>(that.crd);
-        this.crd.add(new Coordinate(x, y));
         this.fields = Arrays.stream(that.fields).map(Boolean[]::clone).toArray(Boolean[][]::new);
+        this.crd = new HashSet<>(that.crd);
         this.fields[x][y] = currMove();
+        this.crd.add(new Coordinate(x, y));
         this.frames = generateFrames();
         this.winner = findWinner(x, y);
         this.x = x;
@@ -72,7 +72,7 @@ public class Model {
     }
 
     public Boolean currMove() {
-        return crd.size() % 2 == 1;
+        return crd.size() % 2 == 0;
     }
 
     public Stream<Model> descendants() {
