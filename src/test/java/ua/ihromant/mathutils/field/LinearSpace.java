@@ -1,7 +1,9 @@
 package ua.ihromant.mathutils.field;
 
 import java.util.BitSet;
+import java.util.List;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class LinearSpace {
     private final int p;
@@ -11,7 +13,7 @@ public class LinearSpace {
     public LinearSpace(int p, int n) {
         this.p = p;
         this.n = n;
-        this.powList = IntStream.range(0, n).map(i -> pow(p, i)).toArray();
+        this.powList = IntStream.range(0, n + 1).map(i -> pow(p, i)).toArray();
     }
 
     public static int pow(int a, int b) {
@@ -107,5 +109,42 @@ public class LinearSpace {
             res.set(i);
         }
         return res;
+    }
+
+    public List<Bijection> bijections() {
+        return bijections(n, new BitSet(), new int[n]).distinct().toList();
+    }
+
+    private Stream<Bijection> bijections(int needed, BitSet hull, int[] baseMap) {
+        return IntStream.range(1, powList[n]).filter(i -> !hull.get(i)).boxed().mapMulti((i, sink) -> {
+            int[] nextBaseMap = baseMap.clone();
+            nextBaseMap[nextBaseMap.length - needed] = i;
+            if (needed == 1) {
+                sink.accept(toBijection(nextBaseMap));
+                return;
+            }
+            BitSet nextHull = (BitSet) hull.clone();
+            for (int j = hull.nextSetBit(0); j >= 0; j = hull.nextSetBit(j + 1)) {
+                for (int c = 1; c < p; c++) {
+                    nextHull.set(add(j, mul(i, c)));
+                }
+            }
+            for (int c = 1; c < p; c++) {
+                nextHull.set(mul(i, c));
+            }
+            bijections(needed - 1, nextHull, nextBaseMap).forEach(sink);
+        });
+    }
+
+    private Bijection toBijection(int[] baseMap) {
+        int[] arr = new int[powList[n]];
+        for (int i = 0; i < arr.length; i++) {
+            int[] muls = new int[n];
+            for (int j = 0; j < muls.length; j++) {
+                muls[j] = mul(baseMap[j], crd(i, j));
+            }
+            arr[i] = add(muls);
+        }
+        return new Bijection(arr);
     }
 }

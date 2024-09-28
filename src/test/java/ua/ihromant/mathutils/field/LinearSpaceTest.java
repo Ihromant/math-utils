@@ -231,6 +231,12 @@ public class LinearSpaceTest {
         return structure;
     }
 
+    @Test
+    public void testBijections() {
+        List<Bijection> bijections = new LinearSpace(2, 4).bijections();
+        System.out.println(bijections.size());
+    }
+
     private static void enhance(Map<Integer, BitSet> map, int line, int... pts) {
         BitSet val = map.get(line);
         if (val != null) {
