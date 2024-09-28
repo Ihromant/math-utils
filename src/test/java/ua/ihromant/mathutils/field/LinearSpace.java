@@ -1,45 +1,45 @@
 package ua.ihromant.mathutils.field;
 
 import java.util.BitSet;
+import java.util.stream.IntStream;
 
 public class LinearSpace {
     private final int p;
     private final int n;
-    private final int pow;
-    private final int bitCount;
-    private final int mask;
+    private final int[] powList;
 
     public LinearSpace(int p, int n) {
         this.p = p;
         this.n = n;
-        int zeros = Integer.numberOfLeadingZeros(p - 1);
-        this.bitCount = Integer.SIZE - Integer.numberOfLeadingZeros(p - 1);
-        this.pow = 1 << (bitCount * n);
-        this.mask = 0xffffffff >>> zeros;
+        this.powList = IntStream.range(0, n).map(i -> pow(p, i)).toArray();
     }
 
-    public int convert(int base) {
-        int res = 0;
-        for (int i = 0; i < n; i++) {
-            int shift = bitCount * i;
-            int acrd = base % p;
-            base = base / p;
-            res = res | (acrd << shift);
+    public static int pow(int a, int b) {
+        if (b == 0) {
+            return 1;
         }
-        return res;
+        if (b == 1) {
+            return a;
+        }
+        if ((b & 1) == 0) {
+            return pow(a * a, b / 2);
+        } else {
+            return a * pow(a * a, b / 2);
+        }
     }
 
     public int crd(int v, int crd) {
-        return (v >>> (bitCount * crd)) & mask;
+        return (v / powList[crd]) % p;
     }
 
-    public int add(int a, int b) {
+    public int add(int... numbers) {
         int res = 0;
         for (int i = 0; i < n; i++) {
-            int shift = bitCount * i;
-            int acrd = (a >>> shift) & mask;
-            int bcrd = (b >>> shift) & mask;
-            res = res | (((acrd + bcrd) % p) << shift);
+            int sum = 0;
+            for (int number : numbers) {
+                sum = sum + crd(number, i);
+            }
+            res = res + powList[i] * (sum % p);
         }
         return res;
     }
@@ -47,9 +47,8 @@ public class LinearSpace {
     public int mul(int a, int cff) {
         int res = 0;
         for (int i = 0; i < n; i++) {
-            int shift = bitCount * i;
-            int acrd = (a >>> shift) & mask;
-            res = res | (((acrd * cff) % p) << shift);
+            int acrd = crd(a, i);
+            res = res + powList[i] * ((acrd * cff) % p);
         }
         return res;
     }
@@ -57,9 +56,8 @@ public class LinearSpace {
     public int scalar(int a, int b) {
         int res = 0;
         for (int i = 0; i < n; i++) {
-            int shift = bitCount * i;
-            int acrd = (a >>> shift) & mask;
-            int bcrd = (b >>> shift) & mask;
+            int acrd = crd(a, i);
+            int bcrd = crd(b, i);
             res = res + (acrd * bcrd);
         }
         return res % p;
@@ -69,12 +67,14 @@ public class LinearSpace {
         return mul(a, p - 1);
     }
 
-    public BitSet hull(int fst, int snd) {
+    public BitSet hull(int... arr) {
         BitSet bs = new BitSet();
-        for (int i = 0; i < p; i++) {
-            for (int j = 0; j < p; j++) {
-                bs.set(add(mul(fst, i), mul(snd, j)));
+        for (int i = 0; i < powList[arr.length]; i++) {
+            int[] mul = new int[arr.length];
+            for (int j = 0; j < arr.length; j++) {
+                mul[j] = mul(arr[j], crd(i, j));
             }
+            bs.set(add(mul));
         }
         bs.set(0, false);
         return bs;
@@ -99,13 +99,12 @@ public class LinearSpace {
         int a = bs.nextSetBit(0);
         int b = bs.stream().filter(c -> c != a && c != neg(a)).findFirst().orElseThrow();
         BitSet res = new BitSet();
-        int pow = (int) Math.pow(p, n);
+        int pow = pow(p, n);
         for (int i = 1; i < pow; i++) {
-            int c = convert(i);
-            if (scalar(a, c) != 0 || scalar(b, c) != 0) {
+            if (scalar(a, i) != 0 || scalar(b, i) != 0) {
                 continue;
             }
-            res.set(c);
+            res.set(i);
         }
         return res;
     }

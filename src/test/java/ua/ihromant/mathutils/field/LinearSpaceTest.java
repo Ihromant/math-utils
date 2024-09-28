@@ -19,16 +19,14 @@ public class LinearSpaceTest {
         int p = 3;
         int n = 6;
         LinearSpace sp = new LinearSpace(p, n);
-        int pow = (int) Math.pow(p, n);
+        int pow = LinearSpace.pow(p, n);
         Map<BitSet, Integer> planes = new HashMap<>();
         for (int i = 1; i < pow; i++) {
-            int a = sp.convert(i);
             for (int j = 1; j < pow; j++) {
-                int b = sp.convert(j);
-                if (a == b || a == sp.neg(b)) {
+                if (i == j || i == sp.neg(j)) {
                     continue;
                 }
-                planes.putIfAbsent(sp.hull(a, b), planes.size());
+                planes.putIfAbsent(sp.hull(i, j), planes.size());
             }
         }
         System.out.println(planes.size());
