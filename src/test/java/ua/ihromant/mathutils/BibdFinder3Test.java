@@ -15,6 +15,7 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -159,6 +160,7 @@ public class BibdFinder3Test {
             nextCurr[cl] = block;
             if (needed == 1) {
                 designSink.accept(nextCurr);
+                return;
             }
             FixBS nextFilter = filter.copy();
             for (int i = 0; i < k; i++) {
@@ -225,12 +227,38 @@ public class BibdFinder3Test {
     public void cyclesToFile() throws IOException {
         int v = 101;
         int k = 5;
-        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt");
+        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "r.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             logCycles(ps, v, k);
         }
+    }
+
+    @Test
+    public void pairsToConsole() {
+        int v = 121;
+        int k = 6;
+        logPairs(System.out, v, k);
+    }
+
+    private void logPairs(PrintStream ps, int v, int k) {
+        FixBS filter = baseFilter(v, k);
+        Set<FixBS> set = ConcurrentHashMap.newKeySet();
+        Consumer<int[][]> designConsumer = design -> {
+            DiffPair dp = diff(v, design);
+            FixBS df = dp.diff();
+            set.add(df);
+            FixBS comp = new FixBS(v);
+            comp.set(1, v);
+            comp.xor(filter);
+            comp.xor(df);
+            if (set.contains(comp)) {
+                ps.println(df);
+            }
+        };
+        allDifferenceSets(v, k, new int[0][], 2, filter, designConsumer, null);
+        System.out.println(set.size());
     }
 
     private void logCycles(PrintStream ps, int v, int k) throws IOException {
@@ -334,6 +362,23 @@ public class BibdFinder3Test {
     }
 
     private record DiffPair(FixBS diff, FixBS tuple) {}
+
+    private DiffPair diff(int v, int[][] tuples) {
+        FixBS diff = new FixBS(v);
+        FixBS tpl = new FixBS(v);
+        for (int[] tuple : tuples) {
+            for (int i = 0; i < tuple.length; i++) {
+                int fst = tuple[i];
+                for (int j = i + 1; j < tuple.length; j++) {
+                    int dff = tuple[j] - fst;
+                    diff.set(dff);
+                    diff.set(v - dff);
+                }
+                tpl.set(fst);
+            }
+        }
+        return new DiffPair(diff, tpl);
+    }
 
     private DiffPair diff(int v, int[] tuple) {
         FixBS diff = new FixBS(v);
