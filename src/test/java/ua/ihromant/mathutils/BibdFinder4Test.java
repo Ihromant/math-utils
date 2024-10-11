@@ -9,12 +9,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
-import java.util.stream.LongStream;
 
 public class BibdFinder4Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
@@ -131,6 +129,7 @@ public class BibdFinder4Test {
             nextCurr[cl] = block;
             if (needed == 1) {
                 designSink.accept(nextCurr);
+                return;
             }
             FixBS nextFilter = filter.copy();
             for (int i = 0; i < k; i++) {
@@ -186,8 +185,8 @@ public class BibdFinder4Test {
 
     @Test
     public void randomizeDesigns() {
-        int v = 126;
-        int k = 6;
+        int v = 211;
+        int k = 7;
         int random = 2;
         int blocksNeeded = v / k / (k - 1);
         System.out.println(v + " " + k);
@@ -227,10 +226,10 @@ public class BibdFinder4Test {
         FixBS whiteList = filter.copy();
         whiteList.flip(1, variants);
         int[] arr = IntStream.range(prev, variants - blocksNeeded * bounds[size - 1]).filter(whiteList::get).toArray();
-        if (arr.length < 2) {
+        if (arr.length < 1) {
             return null;
         }
-        int idx = arr[ThreadLocalRandom.current().nextInt(arr.length / 2)];
+        int idx = arr[ThreadLocalRandom.current().nextInt(arr.length)];
         FixBS newWhiteList = whiteList.copy();
         FixBS newFilter = filter.copy();
         int rev = variants - idx;

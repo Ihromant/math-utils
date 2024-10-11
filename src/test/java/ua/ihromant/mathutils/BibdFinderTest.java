@@ -41,7 +41,7 @@ public class BibdFinderTest {
         int k = 4;
         boolean divides = v % k == 0;
         int add = v % k == 0 ? 1 : 0;
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "f.txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
