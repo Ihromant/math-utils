@@ -41,7 +41,7 @@ public class BibdFinderTest {
         int k = 4;
         boolean divides = v % k == 0;
         int add = v % k == 0 ? 1 : 0;
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt"));
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "r.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
@@ -53,8 +53,8 @@ public class BibdFinderTest {
             AtomicLong counter = new AtomicLong();
             ps.println(v + " " + k);
             br.lines().skip(1).parallel().forEach(line -> {
-                String cut = line.replace("[[", "").replace("]]", "");
-                String[] arrays = cut.split("\\], \\[");
+                String cut = line.replace("[{", "").replace("}]", "");
+                String[] arrays = cut.split("\\}, \\{");
                 int[][] diffSet = Stream.concat(divides ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
                         Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
                 Arrays.sort(diffSet, Comparator.comparingInt(a -> a[1]));
