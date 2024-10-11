@@ -117,13 +117,13 @@ public class BibdFinder3Test {
 
     @Test
     public void toFile() throws IOException {
-        int v = 101;
-        int k = 5;
+        int v = 76;
+        int k = 4;
         File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logResults(ps, v, k, 28);
+            logResults(ps, v, k, null);
         }
     }
 
@@ -225,40 +225,14 @@ public class BibdFinder3Test {
 
     @Test
     public void cyclesToFile() throws IOException {
-        int v = 101;
-        int k = 5;
+        int v = 76;
+        int k = 4;
         File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "r.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             logCycles(ps, v, k);
         }
-    }
-
-    @Test
-    public void pairsToConsole() {
-        int v = 121;
-        int k = 6;
-        logPairs(System.out, v, k);
-    }
-
-    private void logPairs(PrintStream ps, int v, int k) {
-        FixBS filter = baseFilter(v, k);
-        Set<FixBS> set = ConcurrentHashMap.newKeySet();
-        Consumer<int[][]> designConsumer = design -> {
-            DiffPair dp = diff(v, design);
-            FixBS df = dp.diff();
-            set.add(df);
-            FixBS comp = new FixBS(v);
-            comp.set(1, v);
-            comp.xor(filter);
-            comp.xor(df);
-            if (set.contains(comp)) {
-                ps.println(df);
-            }
-        };
-        allDifferenceSets(v, k, new int[0][], 2, filter, designConsumer, null);
-        System.out.println(set.size());
     }
 
     private void logCycles(PrintStream ps, int v, int k) throws IOException {
@@ -279,6 +253,7 @@ public class BibdFinder3Test {
 
     private static void processPairs(PrintStream ps, int v, int k, DiffPair[] pairs) {
         int[][] idxes = calcIdxes(v, k, pairs);
+        ps.println(v + " " + k);
         new Search(v, v / k, pairs, idxes).search(des -> {
             ps.println(Arrays.deepToString(des));
             ps.flush();
@@ -299,60 +274,6 @@ public class BibdFinder3Test {
         return idxes;
     }
 
-    private static void checkGraph(DiffPair[] pairs, int[] idxes) {
-        int[][] graph = new int[pairs.length][];
-        IntStream.range(0, pairs.length).parallel().forEach(i -> {
-            FixBS diff = pairs[i].diff;
-            IntStream.Builder arr = IntStream.builder();
-            for (int j = diff.nextClearBit(diff.nextSetBit(0)); j < idxes.length; j = diff.nextClearBit(j + 1)) {
-                int top = idxes[j];
-                for (int l = idxes[j - 1]; l < top; l++) {
-                    if (!pairs[l].diff.intersects(diff)) {
-                        arr.accept(l);
-                    }
-                }
-            }
-            graph[i] = arr.build().toArray();
-        });
-        System.out.println(Arrays.stream(graph).mapToInt(g -> g.length).sum());
-    }
-
-    private static void search(int v, int vk, DiffPair[] pairs, int[][] idxes, FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
-        int unMapped = filter.nextClearBit(1);
-        if (unMapped >= idxes.length) {
-            return;
-        }
-        if (curr.length == 0) {
-            System.out.println(idxes[0][0] + " " + idxes[1][0]);
-        }
-        for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk + 1; i = filter.nextClearBit(i + 1)) {
-            int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
-            int hiIdx = idxes[unMapped - 1][i - unMapped];
-            IntStream.range(lowIdx, hiIdx).parallel().mapToObj(idx -> pairs[idx]).forEach(dp -> {
-                if (dp.diff.intersects(filter)) {
-                    return;
-                }
-                FixBS nextFilter = filter.copy();
-                nextFilter.or(dp.diff);
-                if (needed == 2) {
-                    nextFilter.flip(1, v);
-                    int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
-                    if (idx < 0) {
-                        return;
-                    }
-                    FixBS[] fin = curr.clone();
-                    fin[curr.length - 2] = dp.tuple;
-                    fin[curr.length - 1] = pairs[idx].tuple;
-                    designSink.accept(fin);
-                } else {
-                    FixBS[] next = curr.clone();
-                    next[curr.length - needed] = dp.tuple;
-                    search(v, vk, pairs, idxes, nextFilter, needed - 1, next, designSink);
-                }
-            });
-        }
-    }
-
     private static FixBS of(int v, int[] tuple) {
         FixBS res = new FixBS(v);
         for (int i : tuple) {
@@ -362,23 +283,6 @@ public class BibdFinder3Test {
     }
 
     private record DiffPair(FixBS diff, FixBS tuple) {}
-
-    private DiffPair diff(int v, int[][] tuples) {
-        FixBS diff = new FixBS(v);
-        FixBS tpl = new FixBS(v);
-        for (int[] tuple : tuples) {
-            for (int i = 0; i < tuple.length; i++) {
-                int fst = tuple[i];
-                for (int j = i + 1; j < tuple.length; j++) {
-                    int dff = tuple[j] - fst;
-                    diff.set(dff);
-                    diff.set(v - dff);
-                }
-                tpl.set(fst);
-            }
-        }
-        return new DiffPair(diff, tpl);
-    }
 
     private DiffPair diff(int v, int[] tuple) {
         FixBS diff = new FixBS(v);
