@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.gomoku.Range;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedInputStream;
@@ -14,6 +15,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -219,22 +221,24 @@ public class BibdFinder3Test {
     public void cyclesToConsole() throws IOException {
         int v = 91;
         int k = 6;
-        logCycles(System.out, v, k);
+        int depth = 4;
+        logCycles(System.out, v, k, depth);
     }
 
     @Test
     public void cyclesToFile() throws IOException {
         int v = 76;
         int k = 4;
+        int depth = 4;
         File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "r.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logCycles(ps, v, k);
+            logCycles(ps, v, k, depth);
         }
     }
 
-    private void logCycles(PrintStream ps, int v, int k) throws IOException {
+    private void logCycles(PrintStream ps, int v, int k, int depth) throws IOException {
         int prev = start(v, k);
         FixBS filter = baseFilter(v, k);
         Map<FixBS, FixBS> map = new ConcurrentHashMap<>();
@@ -247,13 +251,14 @@ public class BibdFinder3Test {
         map.clear();
         Arrays.parallelSort(pairs, Comparator.comparing(DiffPair::diff).reversed());
         //dump(pairs, v, k);
-        processPairs(ps, v, k, pairs);
+        processPairs(ps, v, k, depth, pairs);
     }
 
-    private static void processPairs(PrintStream ps, int v, int k, DiffPair[] pairs) {
+    private static void processPairs(PrintStream ps, int v, int k, int depth, DiffPair[] pairs) {
         int[][] idxes = calcIdxes(v, k, pairs);
+        Map<Integer, Object> ranges = calcRanges(v, depth, pairs);
         ps.println(v + " " + k);
-        new Search(v, k, pairs, idxes).search(des -> {
+        new Search(v, k, pairs, idxes, depth, ranges).search(des -> {
             ps.println(Arrays.deepToString(des));
             if (k > 5) {
                 ps.flush();
@@ -273,6 +278,42 @@ public class BibdFinder3Test {
             }
         }
         return idxes;
+    }
+
+    private static Map<Integer, Object> calcRanges(int v, int depth, DiffPair[] pairs) {
+        Map<Integer, Object> result = new HashMap<>();
+        FixBS prev = first(pairs[0].diff, v, depth);
+        int prevIdx = 0;
+        int idx = 0;
+        while (++idx < pairs.length) {
+            FixBS next = first(pairs[idx].diff, v, depth);
+            if (!next.equals(prev)) {
+                updateMap(result, v, prev, new Range(prevIdx, idx - 1));
+                prevIdx = idx;
+                prev = next;
+            }
+        }
+        updateMap(result, v, prev, new Range(prevIdx, pairs.length - 1));
+        return result;
+    }
+
+    @SuppressWarnings({"unchecked"})
+    private static void updateMap(Map<Integer, Object> map, int v, FixBS bs, Range range) {
+        int last = bs.previousSetBit(v);
+        for (int i = bs.nextSetBit(0); i != last; i = bs.nextSetBit(i + 1)) {
+            map = (Map<Integer, Object>) map.computeIfAbsent(i, k -> new HashMap<>());
+        }
+        map.put(last, range);
+    }
+
+    private static FixBS first(FixBS bs, int v, int depth) {
+        FixBS res = new FixBS(v);
+        int val = bs.nextSetBit(0);
+        while (depth-- > 0) {
+            res.set(val);
+            val = bs.nextSetBit(val + 1);
+        }
+        return res;
     }
 
     private static FixBS of(int v, int[] tuple) {
@@ -300,12 +341,18 @@ public class BibdFinder3Test {
         return new DiffPair(diff, tpl);
     }
 
-    private record Search(int v, int k, DiffPair[] pairs, int[][] idxes) {
+    private record Search(int v, int k, DiffPair[] pairs, int[][] idxes, int depth, Map<Integer, Object> ranges) {
         private void search(Consumer<FixBS[]> designSink) {
             FixBS filter = baseFilter(v, k);
             int needed = v / k / (k - 1);
             System.out.println(idxes[1][0]);
-            search(filter, needed, new FixBS[needed], designSink);
+            Arrays.stream(pairs, 0, idxes[1][0]).parallel().forEach(dp -> {
+                FixBS nextFilter = filter.copy();
+                nextFilter.or(dp.diff);
+                FixBS[] next = new FixBS[needed];
+                next[0] = dp.tuple;
+                search(nextFilter, needed - 1, next, designSink);
+            });
         }
 
         private void search(FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
@@ -317,7 +364,7 @@ public class BibdFinder3Test {
             for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk; i = filter.nextClearBit(i + 1)) {
                 int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
                 int hiIdx = idxes[unMapped - 1][i - unMapped];
-                IntStream.range(lowIdx, hiIdx).parallel().mapToObj(idx -> pairs[idx]).forEach(dp -> {
+                Arrays.stream(pairs, lowIdx, hiIdx).forEach(dp -> {
                     if (dp.diff.intersects(filter)) {
                         return;
                     }
