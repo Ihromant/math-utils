@@ -37,45 +37,56 @@ public class BibdFinderTest {
     // 1428546
     @Test
     public void filterIsomorphic() throws IOException {
-        int v = 73;
+        int v = 76;
         int k = 4;
-        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/", k + "-" + v + ".txt"));
+        boolean divides = v % k == 0;
+        int add = v % k == 0 ? 1 : 0;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "f.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr);
              FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            String line = br.readLine();
             CyclicGroup gr = new CyclicGroup(v);
             int[][] auths = gr.auth();
-            Set<Set<BitSet>> unique = new HashSet<>();
             long time = System.currentTimeMillis();
             AtomicLong counter = new AtomicLong();
             ps.println(v + " " + k);
-            while ((line = br.readLine()) != null) {
-                String cut = line.replace("{{", "").replace("}}", "");
-                String[] arrays = cut.split("\\}, \\{");
-                int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
-                        .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
-                IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+            br.lines().skip(1).parallel().forEach(line -> {
+                String cut = line.replace("[[", "").replace("]]", "");
+                String[] arrays = cut.split("\\], \\[");
+                int[][] diffSet = Stream.concat(divides ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
+                        Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
+                Arrays.sort(diffSet, Comparator.comparingInt(a -> a[1]));
+                IntStream.range(0, 1 << (diffSet.length - add)).map(i -> divides ? i * 2 : i).forEach(comb -> {
                     int[][] diffs = IntStream.range(0, diffSet.length)
-                            .mapToObj(i -> ((1 << i) & comb) == 0 ? minimalTuple(diffSet[i].clone(), v) : mirrorTuple(gr, minimalTuple(diffSet[i], v)))
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : minimalTuple(mirrorTuple(gr, diffSet[i]), v))
                             .toArray(int[][]::new);
-                    if (Arrays.stream(auths).noneMatch(auth -> {
-                        Set<BitSet> result = new HashSet<>();
-                        for (int[] arr : diffs) {
-                            result.add(of(minimalTuple(applyAuth(arr, auth), v)));
+                    if (Arrays.stream(auths).allMatch(auth -> {
+                        int[][] result = new int[diffs.length][];
+                        for (int i = 0; i < diffs.length; i++) {
+                            result[i] = minimalTuple(applyAuth(diffs[i], auth), v);
                         }
-                        return unique.contains(result);
+                        Arrays.sort(result, Comparator.comparingInt(a -> a[1]));
+                        for (int i = 0; i < diffs.length; i++) {
+                            for (int j = 0; j < k; j++) {
+                                if (diffs[i][j] > result[i][j]) {
+                                    return false;
+                                }
+                                if (diffs[i][j] < result[i][j]) {
+                                    return true;
+                                }
+                            }
+                        }
+                        return true;
                     })) {
-                        HyperbolicPlaneTest.testCorrectness(Liner.byDiffFamily(v, diffs), of(k));
-                        unique.add(Arrays.stream(diffs).map(BibdFinderTest::of).collect(Collectors.toSet()));
+                        //HyperbolicPlaneTest.testCorrectness(Liner.byDiffFamily(v, diffs), of(k));
                         ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
                                 .collect(Collectors.joining(", ", "{", "}")));
                         counter.incrementAndGet();
                     }
                 });
-            }
+            });
             System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
         }
     }

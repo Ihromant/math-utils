@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.util;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class FixBS implements Comparable<FixBS> {
@@ -279,6 +280,10 @@ public class FixBS implements Comparable<FixBS> {
 
     public FixBS copy() {
         return new FixBS(words.clone());
+    }
+
+    public IntStream stream() {
+        return IntStream.iterate(nextSetBit(0), i -> i >= 0, i -> nextSetBit(i + 1));
     }
 
     /**
