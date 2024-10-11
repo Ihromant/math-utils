@@ -15,7 +15,6 @@ import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -254,18 +253,20 @@ public class BibdFinder3Test {
     private static void processPairs(PrintStream ps, int v, int k, DiffPair[] pairs) {
         int[][] idxes = calcIdxes(v, k, pairs);
         ps.println(v + " " + k);
-        new Search(v, v / k, pairs, idxes).search(des -> {
+        new Search(v, k, pairs, idxes).search(des -> {
             ps.println(Arrays.deepToString(des));
-            ps.flush();
+            if (k > 5) {
+                ps.flush();
+            }
         });
     }
 
     private static int[][] calcIdxes(int v, int k, DiffPair[] pairs) {
-        int vk = v / k;
-        int[][] idxes = new int[vk][vk + 1];
+        int vk = v / (k - 1);
+        int[][] idxes = new int[vk][vk];
         for (int i = 1; i < idxes.length + 1; i++) {
             int[] arr = idxes[i - 1];
-            arr[0] = i == 1 ? 0 : idxes[i - 2][vk];
+            arr[0] = i == 1 ? 0 : idxes[i - 2][vk - 1];
             for (int j = 1; j < arr.length; j++) {
                 FixBS top = of(v, new int[]{i, i + j, v - 1});
                 arr[j] = -Arrays.binarySearch(pairs, arr[j - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
@@ -299,9 +300,8 @@ public class BibdFinder3Test {
         return new DiffPair(diff, tpl);
     }
 
-    private record Search(int v, int vk, DiffPair[] pairs, int[][] idxes) {
+    private record Search(int v, int k, DiffPair[] pairs, int[][] idxes) {
         private void search(Consumer<FixBS[]> designSink) {
-            int k = v / vk;
             FixBS filter = baseFilter(v, k);
             int needed = v / k / (k - 1);
             System.out.println(idxes[1][0]);
@@ -310,10 +310,11 @@ public class BibdFinder3Test {
 
         private void search(FixBS filter, int needed, FixBS[] curr, Consumer<FixBS[]> designSink) {
             int unMapped = filter.nextClearBit(1);
+            int vk = v / (k - 1);
             if (unMapped > idxes.length) {
                 return;
             }
-            for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk + 1; i = filter.nextClearBit(i + 1)) {
+            for (int i = filter.nextClearBit(unMapped + 1); i < unMapped + vk; i = filter.nextClearBit(i + 1)) {
                 int lowIdx = idxes[unMapped - 1][i - unMapped - 1];
                 int hiIdx = idxes[unMapped - 1][i - unMapped];
                 IntStream.range(lowIdx, hiIdx).parallel().mapToObj(idx -> pairs[idx]).forEach(dp -> {
