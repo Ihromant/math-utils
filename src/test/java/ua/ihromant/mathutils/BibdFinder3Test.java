@@ -358,7 +358,7 @@ public class BibdFinder3Test {
 
         @SuppressWarnings("unchecked")
         private void searchAlt(FixBS filter, int needed, int vk, FixBS[] curr, Consumer<FixBS[]> designSink) {
-            int unMapped = filter.nextSetBit(1);
+            int unMapped = filter.nextClearBit(1);
             Object v = ranges.get(unMapped);
             if (v == null) {
                 return;
