@@ -94,8 +94,8 @@ public class BibdFinderTest {
 
     @Test
     public void calcIsomorphic() throws IOException {
-        int v = 51;
-        int k = 3;
+        int v = 88;
+        int k = 4;
         boolean divides = v % k == 0;
         int add = v % k == 0 ? 1 : 0;
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "r.txt"));
@@ -122,7 +122,10 @@ public class BibdFinderTest {
                         return;
                     }
                     counters[card].incrementAndGet();
-                    counter.incrementAndGet();
+                    long val = counter.incrementAndGet();
+                    if (val % 10000 == 0) {
+                        System.out.println(val + " " + IntStream.range(0, v).filter(i -> counters[i].get() != 0).mapToObj(i -> i + "=" + counters[i].get()).collect(Collectors.joining(",")));
+                    }
                 });
             });
             System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
