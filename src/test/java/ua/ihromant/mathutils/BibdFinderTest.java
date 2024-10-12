@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -89,6 +90,67 @@ public class BibdFinderTest {
             });
             System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
         }
+    }
+
+    @Test
+    public void calcIsomorphic() throws IOException {
+        int v = 51;
+        int k = 3;
+        boolean divides = v % k == 0;
+        int add = v % k == 0 ? 1 : 0;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "r.txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr)) {
+            CyclicGroup gr = new CyclicGroup(v);
+            int[][] auths = gr.auth();
+            long time = System.currentTimeMillis();
+            AtomicInteger[] counters = IntStream.range(0, v).mapToObj(i -> new AtomicInteger()).toArray(AtomicInteger[]::new);
+            AtomicLong counter = new AtomicLong();
+            System.out.println(v + " " + k);
+            br.lines().skip(1).parallel().forEach(line -> {
+                String cut = line.replace("[{", "").replace("}]", "");
+                String[] arrays = cut.split("\\}, \\{");
+                int[][] diffSet = Stream.concat(divides ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
+                        Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
+                Arrays.sort(diffSet, Comparator.comparingInt(a -> a[1]));
+                IntStream.range(0, 1 << (diffSet.length - add)).map(i -> divides ? i * 2 : i).forEach(comb -> {
+                    int[][] diffs = IntStream.range(0, diffSet.length)
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i] : minimalTuple(mirrorTuple(gr, diffSet[i]), v))
+                            .toArray(int[][]::new);
+                    int card = auts(auths, diffs, v, k);
+                    if (card < 0) {
+                        return;
+                    }
+                    counters[card].incrementAndGet();
+                    counter.incrementAndGet();
+                });
+            });
+            System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
+            System.out.println(IntStream.range(0, v).filter(i -> counters[i].get() != 0).mapToObj(i -> i + "=" + counters[i].get()).collect(Collectors.joining(",")));
+        }
+    }
+
+    private static int auts(int[][] auths, int[][] diffs, int v, int k) {
+        int res = 0;
+        ex: for (int[] auth : auths) {
+            int[][] result = new int[diffs.length][];
+            for (int i = 0; i < diffs.length; i++) {
+                result[i] = minimalTuple(applyAuth(diffs[i], auth), v);
+            }
+            Arrays.sort(result, Comparator.comparingInt(a -> a[1]));
+            for (int i = 0; i < diffs.length; i++) {
+                for (int j = 0; j < k; j++) {
+                    if (diffs[i][j] > result[i][j]) {
+                        return -1;
+                    }
+                    if (diffs[i][j] < result[i][j]) {
+                        continue ex;
+                    }
+                }
+            }
+            res++;
+        }
+        return res;
     }
 
     private static int[] applyAuth(int[] arr, int[] auth) {
