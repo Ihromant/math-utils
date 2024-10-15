@@ -15,9 +15,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,25 +28,25 @@ import java.util.stream.IntStream;
 
 public class BibdFinder3Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
-    private static void calcCycles(int variants, int needed, FixBS filter, FixBS whiteList,
+    private static void calcCycles(int v, int k, int needed, FixBS filter, FixBS whiteList,
                                    int[] tuple, Consumer<int[]> sink) {
         int tl = tuple.length;
         int lastVal = tuple[tl - 1];
         int second = tuple[1];
-        boolean last = needed == 1;
-        int min = last ? Math.max(variants - second + 1, lastVal + 1) : lastVal + 1;
-        int max = Math.min(variants - bounds[needed], lastVal + second);
+        boolean last = tl == k - 1;
+        int min = last ? Math.max(v - second + 1, lastVal + 1) : lastVal + 1;
+        int max = Math.min(v - bounds[needed], lastVal + second);
         if (tl < 3) {
             if (last) {
-                max = Math.min(max, (variants + second) / 2 + 1);
+                max = Math.min(max, (v + second) / 2 + 1);
             }
         } else {
-            max = Math.min(max, variants - tuple[2] + second - bounds[needed - 1]);
+            max = Math.min(max, v - tuple[2] + second - bounds[needed - 1]);
         }
         for (int idx = whiteList.nextSetBit(min); idx >= 0 && idx < max; idx = whiteList.nextSetBit(idx + 1)) {
             int[] nextTuple = Arrays.copyOf(tuple, tl + 1);
             nextTuple[tl] = idx;
-            if (last) {
+            if (needed == 1) {
                 sink.accept(nextTuple);
                 continue;
             }
@@ -52,66 +54,77 @@ public class BibdFinder3Test {
             FixBS newWhiteList = whiteList.copy();
             for (int val : tuple) {
                 int diff = idx - val;
-                int outDiff = variants - idx + val;
+                int outDiff = v - idx + val;
                 if (outDiff % 2 == 0) {
-                    newWhiteList.set((idx + outDiff / 2) % variants, false);
+                    newWhiteList.clear((idx + outDiff / 2) % v);
                 }
                 newFilter.set(diff);
                 newFilter.set(outDiff);
                 for (int nv : nextTuple) {
-                    newWhiteList.set((nv + diff) % variants, false);
-                    newWhiteList.set((nv + outDiff) % variants, false);
+                    newWhiteList.clear((nv + diff) % v);
+                    newWhiteList.clear((nv + outDiff) % v);
                 }
             }
             for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                newWhiteList.set((idx + diff) % variants, false);
+                newWhiteList.clear((idx + diff) % v);
             }
-            calcCycles(variants, needed - 1, newFilter, newWhiteList, nextTuple, sink);
+            calcCycles(v, k, needed - 1, newFilter, newWhiteList, nextTuple, sink);
         }
     }
 
-    private static void calcCycles(int variants, int size, int prev, FixBS filter, int blocksNeeded, Consumer<int[]> sink) {
+    private static void calcCycles(int v, int k, int sizeNeeded, int prev, FixBS filter, int blocksNeeded, Consumer<int[]> sink) {
         FixBS whiteList = filter.copy();
-        whiteList.flip(1, variants);
-        IntStream.range(prev, variants - blocksNeeded * bounds[size - 1]).filter(whiteList::get).parallel().forEach(idx -> {
+        whiteList.flip(1, v);
+        IntStream.range(prev, v - blocksNeeded * bounds[k - 1]).filter(whiteList::get).forEach(idx -> {
+            int[] arr = new int[]{0, idx};
+            if (sizeNeeded == 2) {
+                sink.accept(arr);
+                return;
+            }
             FixBS newWhiteList = whiteList.copy();
             FixBS newFilter = filter.copy();
-            int rev = variants - idx;
-            newWhiteList.set(rev, false);
+            int rev = v - idx;
+            newWhiteList.clear(rev);
             if (rev % 2 == 0) {
-                newWhiteList.set(idx + rev / 2, false);
+                newWhiteList.clear(idx + rev / 2);
             }
             newFilter.set(idx);
             newFilter.set(rev);
             for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                newWhiteList.set((idx + diff) % variants, false);
+                newWhiteList.clear((idx + diff) % v);
             }
-            calcCycles(variants, size - 2, newFilter, newWhiteList, new int[]{0, idx}, sink);
-            if (filter.cardinality() <= size) {
-                System.out.println(idx);
-            }
+            calcCycles(v, k, sizeNeeded - 2, newFilter, newWhiteList, arr, sink);
         });
     }
 
-    private static void calcCyclesSingle(int variants, int size, int idx, FixBS filter, Consumer<int[]> sink) {
-        FixBS whiteList = filter.copy();
-        whiteList.flip(1, variants);
-        FixBS newWhiteList = whiteList.copy();
+    private static void calcCyclesWithInitial(int v, int k, FixBS filter, Consumer<int[]> sink, int... initial) {
         FixBS newFilter = filter.copy();
-        int rev = variants - idx;
-        newWhiteList.set(rev, false);
-        if (rev % 2 == 0) {
-            newWhiteList.set(idx + rev / 2, false);
+        for (int i = 0; i < initial.length; i++) {
+            int fst = initial[i];
+            for (int j = i + 1; j < initial.length; j++) {
+                int snd = initial[j];
+                int diff = snd - fst;
+                int outDiff = v - snd + fst;
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+            }
         }
-        newFilter.set(idx);
-        newFilter.set(rev);
-        for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-            newWhiteList.set((idx + diff) % variants, false);
+        FixBS whiteList = newFilter.copy();
+        whiteList.flip(1, v);
+        for (int i = 0; i < initial.length; i++) {
+            int fst = initial[i];
+            for (int j = i + 1; j < initial.length; j++) {
+                int snd = initial[j];
+                int outDiff = v - snd + fst;
+                if (outDiff % 2 == 0) {
+                    whiteList.clear((snd + outDiff / 2) % v);
+                }
+            }
+            for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                whiteList.clear((fst + diff) % v);
+            }
         }
-        calcCycles(variants, size - 2, newFilter, newWhiteList, new int[]{0, idx}, sink);
-        if (filter.cardinality() <= size) {
-            System.out.println(idx);
-        }
+        calcCycles(v, k, k - initial.length, newFilter, whiteList, initial, sink);
     }
 
     private static int start(int v, int k) {
@@ -134,7 +147,44 @@ public class BibdFinder3Test {
     public void toConsole() {
         int v = 175;
         int k = 7;
-        logResults(System.out, v, k, 32);
+        logResults(System.out, v, k, 51);
+    }
+
+    @Test
+    public void withDepth() throws IOException {
+        int v = 76;
+        int k = 4;
+        int depth = 3;
+        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "t.txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logResultsDepth(ps, v, k, depth);
+        }
+    }
+
+    private static void logResultsDepth(PrintStream destination, int v, int k, int depth) {
+        if (destination != System.out) {
+            System.out.println(v + " " + k);
+        }
+        destination.println(v + " " + k);
+        int blocksNeeded = v / k / (k - 1);
+        FixBS filter = baseFilter(v, k);
+        List<int[]> initial = new ArrayList<>();
+        calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, initial::add);
+        System.out.println("Initial depth " + depth + " and size " + initial.size());
+        AtomicInteger counter = new AtomicInteger();
+        long time = System.currentTimeMillis();
+        Consumer<int[][]> designConsumer = design -> {
+            counter.incrementAndGet();
+            destination.println(Arrays.deepToString(design));
+            destination.flush();
+        };
+        initial.stream().parallel().forEach(init -> {
+            allDifferenceSets(v, k, new int[0][], blocksNeeded, filter, designConsumer, init);
+            System.out.println(Arrays.toString(init));
+        });
+        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     private static void logResults(PrintStream destination, int v, int k, Integer single) {
@@ -155,9 +205,8 @@ public class BibdFinder3Test {
     }
 
     private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, FixBS filter,
-                                          Consumer<int[][]> designSink, Integer single) {
+                                          Consumer<int[][]> designSink, int... initial) {
         int cl = curr.length;
-        int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
         Consumer<int[]> blockSink = block -> {
             int[][] nextCurr = Arrays.copyOf(curr, cl + 1);
             nextCurr[cl] = block;
@@ -174,12 +223,13 @@ public class BibdFinder3Test {
                     nextFilter.set(variants - l + s);
                 }
             }
-            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink, null);
+            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
         };
-        if (single != null) {
-            calcCyclesSingle(variants, k, single, filter, blockSink);
+        if (initial.length > 0) {
+            calcCyclesWithInitial(variants, k, filter, blockSink, initial);
         } else {
-            calcCycles(variants, k, prev, filter, needed, blockSink);
+            int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
+            calcCycles(variants, k, k, prev, filter, needed, blockSink);
         }
     }
 
@@ -207,7 +257,7 @@ public class BibdFinder3Test {
             counter.incrementAndGet();
             System.out.println(Arrays.deepToString(design));
         };
-        allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer, null);
+        allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
@@ -220,7 +270,7 @@ public class BibdFinder3Test {
     }
 
     @Test
-    public void cyclesToConsole() throws IOException {
+    public void cyclesToConsole() {
         int v = 91;
         int k = 6;
         logCycles(System.out, v, k);
@@ -238,11 +288,11 @@ public class BibdFinder3Test {
         }
     }
 
-    private void logCycles(PrintStream ps, int v, int k) throws IOException {
+    private void logCycles(PrintStream ps, int v, int k) {
         int prev = start(v, k);
         FixBS filter = baseFilter(v, k);
         Map<FixBS, FixBS> map = new ConcurrentHashMap<>();
-        calcCycles(v, k, prev, filter, 1, arr -> {
+        calcCycles(v, k, k, prev, filter, 1, arr -> {
             DiffPair dp = diff(v, arr);
             map.put(dp.diff, dp.tuple);
         });
@@ -308,7 +358,6 @@ public class BibdFinder3Test {
     }
 
     private static void updateMap(Range base, int v, FixBS bs, Range range) {
-        int last = bs.previousSetBit(v);
         for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i + 1)) {
             if (base.min > i) {
                 base.min = i;
