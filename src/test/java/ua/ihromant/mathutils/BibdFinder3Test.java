@@ -39,9 +39,6 @@ public class BibdFinder3Test {
         int spaceMax = smallest * unset + unset * (unset - 1) / 2;
         int dff = v - lastVal - spaceMax;
         int min = lastVal + Math.max(1, dff);
-        if (last) {
-            min = Math.max(v - second + 1, min);
-        }
         int max = Math.min(v - bounds[unset], lastVal + second);
         if (tl < 3) {
             if (last) {
