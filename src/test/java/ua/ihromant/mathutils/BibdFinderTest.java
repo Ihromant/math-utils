@@ -54,8 +54,10 @@ public class BibdFinderTest {
             AtomicLong counter = new AtomicLong();
             ps.println(v + " " + k);
             br.lines().skip(1).parallel().forEach(line -> {
-                String cut = line.replace("[{", "").replace("}]", "");
-                String[] arrays = cut.split("\\}, \\{");
+                String cut = line.replace("[[", "").replace("]]", "")
+                        .replace("{{", "").replace("}}", "")
+                        .replace("[{", "").replace("}]", "");
+                String[] arrays = cut.split("\\], \\[|\\}, \\{");
                 int[][] diffSet = Stream.concat(divides ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
                         Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
                 Arrays.sort(diffSet, Comparator.comparingInt(a -> a[1]));
@@ -108,8 +110,10 @@ public class BibdFinderTest {
             AtomicLong counter = new AtomicLong();
             System.out.println(v + " " + k);
             br.lines().skip(1).parallel().forEach(line -> {
-                String cut = line.replace("[{", "").replace("}]", "");
-                String[] arrays = cut.split("\\}, \\{");
+                String cut = line.replace("[[", "").replace("]]", "")
+                        .replace("{{", "").replace("}}", "")
+                        .replace("[{", "").replace("}]", "");
+                String[] arrays = cut.split("\\], \\[|\\}, \\{");
                 int[][] diffSet = Stream.concat(divides ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty(),
                         Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(int[][]::new);
                 Arrays.sort(diffSet, Comparator.comparingInt(a -> a[1]));
