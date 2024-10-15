@@ -41,7 +41,7 @@ public class BibdFinder3Test {
         int min = lastVal + Math.max(1, dff);
         int max = Math.min(v - bounds[unset], lastVal + second);
         if (tl == 2) {
-            max = Math.min(max, lastVal + (sp - bounds[unset]) / 2 + 1);
+            max = Math.min(max, lastVal + (sp - bounds[unset - 1]) / 2);
         } else {
             max = Math.min(max, v - tuple[2] + second - bounds[unset - 1]);
         }
@@ -150,6 +150,14 @@ public class BibdFinder3Test {
         int v = 175;
         int k = 7;
         logResults(System.out, v, k, 51);
+    }
+
+    @Test
+    public void logDepth() {
+        int v = 76;
+        int k = 4;
+        int depth = 3;
+        logResultsDepth(System.out, v, k, depth);
     }
 
     @Test
