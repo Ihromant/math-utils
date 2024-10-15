@@ -33,15 +33,16 @@ public class BibdFinder3Test {
         int tl = tuple.length;
         int lastVal = tuple[tl - 1];
         int second = tuple[1];
-        boolean last = tl == k - 1;
+        int unset = k - tl;
+        boolean last = unset == 1;
         int min = last ? Math.max(v - second + 1, lastVal + 1) : lastVal + 1;
-        int max = Math.min(v - bounds[needed], lastVal + second);
+        int max = Math.min(v - bounds[unset], lastVal + second);
         if (tl < 3) {
             if (last) {
                 max = Math.min(max, (v + second) / 2 + 1);
             }
         } else {
-            max = Math.min(max, v - tuple[2] + second - bounds[needed - 1]);
+            max = Math.min(max, v - tuple[2] + second - bounds[unset - 1]);
         }
         for (int idx = whiteList.nextSetBit(min); idx >= 0 && idx < max; idx = whiteList.nextSetBit(idx + 1)) {
             int[] nextTuple = Arrays.copyOf(tuple, tl + 1);
