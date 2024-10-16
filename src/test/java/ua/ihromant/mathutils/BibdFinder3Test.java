@@ -43,7 +43,7 @@ public class BibdFinder3Test {
         int sp = v - lastVal;
         int dff = sp - spaceMax;
         int min = lastVal + Math.max(1, dff);
-        int max = Math.min(v - bounds[unset], lastVal + second);
+        int max = Math.min(v - bounds[unset], lastVal + second - (tl == 2 ? 1 : 0));
         if (tl == 2) {
             max = Math.min(max, lastVal + (sp - bounds[unset - 1]) / 2);
         } else {
