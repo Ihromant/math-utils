@@ -8,12 +8,14 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,9 +23,11 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class BibdFinder3Test {
@@ -157,7 +161,7 @@ public class BibdFinder3Test {
         int v = 76;
         int k = 4;
         int depth = 3;
-        logResultsDepth(System.out, v, k, depth);
+        logResultsDepth(System.out, v, k, depth, Set.of());
     }
 
     @Test
@@ -165,23 +169,31 @@ public class BibdFinder3Test {
         int v = 76;
         int k = 4;
         int depth = 3;
-        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "t.txt");
+        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "-" + depth + "t.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            logResultsDepth(ps, v, k, depth);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Set<FixBS> set = br.lines().filter(l -> l.length() < 20).map(l -> {
+                return of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
+                        .mapToInt(Integer::parseInt).toArray());
+            }).collect(Collectors.toSet());
+            logResultsDepth(ps, v, k, depth, set);
         }
     }
 
-    private static void logResultsDepth(PrintStream destination, int v, int k, int depth) {
-        if (destination != System.out) {
-            System.out.println(v + " " + k);
-        }
-        destination.println(v + " " + k);
+    private static void logResultsDepth(PrintStream destination, int v, int k, int depth, Set<FixBS> processed) {
+        System.out.println(v + " " + k);
         int blocksNeeded = v / k / (k - 1);
         FixBS filter = baseFilter(v, k);
         List<int[]> initial = new ArrayList<>();
-        calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, initial::add);
+        calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, arr -> {
+            if (!processed.contains(of(v, arr))) {
+                initial.add(arr);
+            }
+        });
         System.out.println("Initial depth " + depth + " and size " + initial.size());
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
@@ -192,7 +204,10 @@ public class BibdFinder3Test {
         };
         initial.stream().parallel().forEach(init -> {
             allDifferenceSets(v, k, new int[0][], blocksNeeded, filter, designConsumer, init);
-            System.out.println(Arrays.toString(init));
+            destination.println(Arrays.toString(init));
+            if (destination != System.out) {
+                System.out.println(Arrays.toString(init));
+            }
         });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
