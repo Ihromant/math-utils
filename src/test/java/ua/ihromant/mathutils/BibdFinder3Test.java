@@ -205,6 +205,7 @@ public class BibdFinder3Test {
         initial.stream().parallel().forEach(init -> {
             allDifferenceSets(v, k, new int[0][], blocksNeeded, filter, designConsumer, init);
             destination.println(Arrays.toString(init));
+            destination.flush();
             if (destination != System.out) {
                 System.out.println(Arrays.toString(init));
             }
