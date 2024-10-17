@@ -311,6 +311,10 @@ public interface TernaryRing {
         return 2 + perm[idx - 2];
     }
 
+    default OptionalInt orderTwoElem() {
+        return IntStream.range(2, order()).filter(i -> add(i, i) == 0).findAny();
+    }
+
     default Iterable<Integer> elements() {
         return () -> IntStream.range(0, order()).boxed().iterator();
     }

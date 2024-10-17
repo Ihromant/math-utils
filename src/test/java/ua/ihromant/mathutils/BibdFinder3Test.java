@@ -162,7 +162,7 @@ public class BibdFinder3Test {
         int v = 76;
         int k = 4;
         int depth = 3;
-        logResultsDepth(System.out, v, k, depth, Set.of());
+        limitCores(() -> logResultsDepth(System.out, v, k, depth, Set.of()));
     }
 
     @Test
@@ -181,40 +181,43 @@ public class BibdFinder3Test {
                 return of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
                         .mapToInt(Integer::parseInt).toArray());
             }).collect(Collectors.toSet());
-            logResultsDepth(ps, v, k, depth, set);
+            limitCores(() -> logResultsDepth(ps, v, k, depth, set));
+        }
+    }
+
+    private static void limitCores(Runnable exec) {
+        try (ForkJoinPool ex = new ForkJoinPool(20)) {
+            ex.submit(exec);
         }
     }
 
     private static void logResultsDepth(PrintStream destination, int v, int k, int depth, Set<FixBS> processed) {
-        try (ForkJoinPool ex = new ForkJoinPool(20)) {
-            System.out.println(v + " " + k);
-            int blocksNeeded = v / k / (k - 1);
-            FixBS filter = baseFilter(v, k);
-            List<int[]> initial = new ArrayList<>();
-            calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, arr -> {
-                if (!processed.contains(of(v, arr))) {
-                    initial.add(arr);
-                }
-            });
-            System.out.println("Initial depth " + depth + " and size " + initial.size());
-            AtomicInteger counter = new AtomicInteger();
-            long time = System.currentTimeMillis();
-            Consumer<int[][]> designConsumer = design -> {
-                counter.incrementAndGet();
-                destination.println(Arrays.deepToString(design));
-                destination.flush();
-            };
-            ex.submit(() ->
-                    initial.stream().parallel().forEach(init -> {
-                        allDifferenceSets(v, k, new int[0][], blocksNeeded, filter, designConsumer, init);
-                        destination.println(Arrays.toString(init));
-                        destination.flush();
-                        if (destination != System.out) {
-                            System.out.println(Arrays.toString(init));
-                        }
-                        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
-                    }));
-        }
+        System.out.println(v + " " + k);
+        int blocksNeeded = v / k / (k - 1);
+        FixBS filter = baseFilter(v, k);
+        List<int[]> initial = new ArrayList<>();
+        calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, arr -> {
+            if (!processed.contains(of(v, arr))) {
+                initial.add(arr);
+            }
+        });
+        System.out.println("Initial depth " + depth + " and size " + initial.size());
+        AtomicInteger counter = new AtomicInteger();
+        long time = System.currentTimeMillis();
+        Consumer<int[][]> designConsumer = design -> {
+            counter.incrementAndGet();
+            destination.println(Arrays.deepToString(design));
+            destination.flush();
+        };
+        initial.stream().parallel().forEach(init -> {
+            allDifferenceSets(v, k, new int[0][], blocksNeeded, filter, designConsumer, init);
+            destination.println(Arrays.toString(init));
+            destination.flush();
+            if (destination != System.out) {
+                System.out.println(Arrays.toString(init));
+            }
+        });
+        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     private static void logResults(PrintStream destination, int v, int k, Integer single) {
