@@ -29,7 +29,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class BibdFinder3Test {
     private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
@@ -87,7 +86,7 @@ public class BibdFinder3Test {
             int[] arr = new int[]{0, idx};
             if (sizeNeeded == 2) {
                 sink.accept(arr);
-                return;
+                continue;
             }
             FixBS newWhiteList = whiteList.copy();
             FixBS newFilter = filter.copy();
@@ -301,7 +300,9 @@ public class BibdFinder3Test {
     private static FixBS baseFilter(int v, int k) {
         FixBS filter = new FixBS(v);
         if (v % k == 0) {
-            IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
+            for (int i = 1; i < k; i++) {
+                filter.set(i * v / k);
+            }
         }
         return filter;
     }
