@@ -31,7 +31,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 public class BibdFinder3Test {
-    private static final int[] bounds = {0, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
+    private static final int[] bounds = {-1, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
     private static void calcCycles(int v, int k, int needed, FixBS filter, FixBS whiteList,
                                    int[] tuple, Consumer<int[]> sink) {
         int tl = tuple.length;
@@ -186,7 +186,7 @@ public class BibdFinder3Test {
     }
 
     private static void limitCores(Runnable exec) {
-        try (ForkJoinPool ex = new ForkJoinPool(20)) {
+        try (ForkJoinPool ex = new ForkJoinPool(22)) {
             ex.submit(exec);
         }
     }
