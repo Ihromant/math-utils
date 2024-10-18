@@ -82,7 +82,8 @@ public class BibdFinder3Test {
     private static void calcCycles(int v, int k, int sizeNeeded, int prev, FixBS filter, int blocksNeeded, Consumer<int[]> sink) {
         FixBS whiteList = filter.copy();
         whiteList.flip(1, v);
-        IntStream.range(prev, v - blocksNeeded * bounds[k - 1]).filter(whiteList::get).forEach(idx -> {
+        int cap = v - blocksNeeded * bounds[k - 1];
+        for (int idx = whiteList.nextSetBit(prev); idx >= 0 && idx < cap; idx = whiteList.nextSetBit(idx + 1)) {
             int[] arr = new int[]{0, idx};
             if (sizeNeeded == 2) {
                 sink.accept(arr);
@@ -101,7 +102,7 @@ public class BibdFinder3Test {
                 newWhiteList.clear((idx + diff) % v);
             }
             calcCycles(v, k, sizeNeeded - 2, newFilter, newWhiteList, arr, sink);
-        });
+        }
     }
 
     private static void calcCyclesWithInitial(int v, int k, FixBS filter, Consumer<int[]> sink, int... initial) {
@@ -208,6 +209,9 @@ public class BibdFinder3Test {
             counter.incrementAndGet();
             destination.println(Arrays.deepToString(design));
             destination.flush();
+            if (destination != System.out) {
+                System.out.println(Arrays.deepToString(design));
+            }
         };
         initial.stream().parallel().forEach(init -> {
             allDifferenceSets(v, k, new int[0][], blocksNeeded, filter, designConsumer, init);
