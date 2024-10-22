@@ -72,6 +72,7 @@ public class FanoMoufangTest {
     private static Liner generateNext(Liner base, int prevPts) {
         testCorrectness(base);
         System.out.println("Pts: " + base.pointCount() + ", lines: " + base.lineCount());
+        assertTrue(checkFano(quads(base, prevPts), base));
         List<Quad> quads = quads(base, base.pointCount());
         Pair[] notInt = notIntersecting(base);
         Map<Pair, Integer> idxes = IntStream.range(0, notInt.length).boxed().collect(Collectors.toMap(i -> notInt[i], Function.identity()));
@@ -89,7 +90,6 @@ public class FanoMoufangTest {
             }
             return cnt;
         }));
-        assertTrue(checkFano(quads(base, prevPts), base));
         System.out.println("QuadDist: " + grouped.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue().size()).collect(Collectors.joining(", ")));
         List<int[]> newLines = Arrays.stream(base.lines()).collect(Collectors.toList());
         grouped.getOrDefault(2, List.of()).forEach(q -> {
