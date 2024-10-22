@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FanoMoufangTest {
     @Test
     public void generateFanoNotMoulton() {
-        Liner base = new Liner(12, new int[][]{
+        Liner base = new Liner(13, new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
                 {0, 5, 6},
@@ -33,17 +33,17 @@ public class FanoMoufangTest {
                 {2, 6, 8},
                 {3, 5, 9},
                 {4, 6, 9},
-                {0, 9},
+                {0, 9, 12},
                 {1, 4, 10},
                 {1, 6, 11},
                 {1, 9},
                 {2, 3, 10},
                 {2, 5, 11},
                 {2, 9},
-                {3, 6},
+                {3, 6, 12},
                 {3, 8},
                 {3, 11},
-                {4, 5},
+                {4, 5, 12},
                 {4, 8},
                 {4, 11},
                 {5, 7},
@@ -53,7 +53,13 @@ public class FanoMoufangTest {
                 {7, 9},
                 {8, 9},
                 {9, 10},
-                {9, 11}
+                {9, 11},
+                {1, 12},
+                {2, 12},
+                {7, 12},
+                {8, 12},
+                {10, 12},
+                {11, 12}
         });
         int counter = 0;
         int prev = 0;
@@ -90,7 +96,7 @@ public class FanoMoufangTest {
         BitSet bs = new BitSet();
         bs.set(0, notInt.length);
         List<int[]> newLines = Arrays.stream(base.lines()).collect(Collectors.toList());
-        grouped.get(2).forEach(q -> {
+        grouped.getOrDefault(2, List.of()).forEach(q -> {
             int ab = base.line(q.a, q.b);
             int cd = base.line(q.c, q.d);
             int abcd = base.intersection(ab, cd);
