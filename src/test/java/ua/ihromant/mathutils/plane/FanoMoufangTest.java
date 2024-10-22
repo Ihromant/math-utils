@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FanoMoufangTest {
     @Test
     public void generateFanoNotMoulton() {
-        Liner base = new Liner(10, new int[][]{
+        Liner base = new Liner(12, new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
                 {0, 5, 6},
-                {0, 7, 8},
+                {0, 7, 8, 10, 11},
                 {1, 3, 7},
                 {1, 5, 8},
                 {2, 4, 7},
@@ -34,20 +34,26 @@ public class FanoMoufangTest {
                 {3, 5, 9},
                 {4, 6, 9},
                 {0, 9},
-                {1, 4},
-                {1, 6},
+                {1, 4, 10},
+                {1, 6, 11},
                 {1, 9},
-                {2, 3},
-                {2, 5},
+                {2, 3, 10},
+                {2, 5, 11},
                 {2, 9},
                 {3, 6},
                 {3, 8},
+                {3, 11},
                 {4, 5},
                 {4, 8},
+                {4, 11},
                 {5, 7},
+                {5, 10},
                 {6, 7},
+                {6, 10},
                 {7, 9},
-                {8, 9}
+                {8, 9},
+                {9, 10},
+                {9, 11}
         });
         int counter = 0;
         int prev = 0;
@@ -268,7 +274,7 @@ public class FanoMoufangTest {
     public static void testCorrectness(Liner plane) {
         for (int p1 = 0; p1 < plane.pointCount(); p1++) {
             for (int p2 = p1 + 1; p2 < plane.pointCount(); p2++) {
-                assertTrue(plane.line(p1, p2) >= 0);
+                assertTrue(plane.line(p1, p2) >= 0, p1 + " " + p2);
             }
         }
     }
