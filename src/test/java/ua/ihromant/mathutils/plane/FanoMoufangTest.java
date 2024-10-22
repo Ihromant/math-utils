@@ -10,6 +10,8 @@ import java.util.BitSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -162,6 +164,7 @@ public class FanoMoufangTest {
                 newLines.add(newLine);
             }
         });
+        BitSet[][] fanoLines = new BitSet[notInt.length + base.pointCount()][notInt.length + base.pointCount()];
         grouped.get(0).forEach(q -> {
             int ab = base.line(q.a, q.b);
             int cd = base.line(q.c, q.d);
@@ -178,10 +181,25 @@ public class FanoMoufangTest {
             appendToLine(newLines, bd, acbdIdx);
             appendToLine(newLines, ad, adbcIdx);
             appendToLine(newLines, bc, adbcIdx);
+            BitSet newLine = of(abcdIdx, acbdIdx, adbcIdx);
+            fanoLines[abcdIdx][acbdIdx] = newLine;
+            fanoLines[abcdIdx][adbcIdx] = newLine;
+            fanoLines[acbdIdx][abcdIdx] = newLine;
+            fanoLines[acbdIdx][adbcIdx] = newLine;
+            fanoLines[adbcIdx][abcdIdx] = newLine;
+            fanoLines[adbcIdx][acbdIdx] = newLine;
         });
-        Liner l = new Liner(base.pointCount() + notInt.length, newLines.toArray(int[][]::new));
+        Set<BitSet> unique = Arrays.stream(fanoLines).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toSet());
+        Liner l = new Liner(base.pointCount() + notInt.length, Stream.concat(newLines.stream(),
+                unique.stream().map(bs -> bs.stream().toArray())).toArray(int[][]::new));
         Pair[] notJoined = notJoined(l);
         return new Liner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.f, p.s})).toArray(int[][]::new));
+    }
+
+    private static BitSet of(int... values) {
+        BitSet bs = new BitSet(values[values.length - 1] + 1);
+        IntStream.of(values).forEach(bs::set);
+        return bs;
     }
 
     private static void join2Fano(int newPtIdx, int lastLineIdx, int ab, int cd, List<int[]> newLines) {
