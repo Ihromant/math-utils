@@ -89,10 +89,8 @@ public class FanoMoufangTest {
             }
             return cnt;
         }));
-        System.out.println("QuadDist: " + grouped.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue().size()).collect(Collectors.joining(", ")));
         assertTrue(checkFano(quads(base, prevPts), base));
-        BitSet bs = new BitSet();
-        bs.set(0, notInt.length);
+        System.out.println("QuadDist: " + grouped.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue().size()).collect(Collectors.joining(", ")));
         List<int[]> newLines = Arrays.stream(base.lines()).collect(Collectors.toList());
         grouped.getOrDefault(2, List.of()).forEach(q -> {
             int ab = base.line(q.a, q.b);
@@ -107,16 +105,13 @@ public class FanoMoufangTest {
             if (abcd < 0) {
                 int newIdx = idxes.get(new Pair(ab, cd));
                 join2Fano(newIdx  + base.pointCount(), base.line(acbd, adbc), ab, cd, newLines);
-                bs.clear(newIdx);
             } else {
                 if (acbd < 0) {
                     int newIdx = idxes.get(new Pair(ac, bd));
                     join2Fano(newIdx  + base.pointCount(), base.line(abcd, adbc), ac, bd, newLines);
-                    bs.clear(newIdx);
                 } else {
                     int newIdx = idxes.get(new Pair(ad, bc));
                     join2Fano(newIdx  + base.pointCount(), base.line(abcd, acbd), ad, bc, newLines);
-                    bs.clear(newIdx);
                 }
             }
         });
@@ -184,8 +179,6 @@ public class FanoMoufangTest {
             appendToLine(newLines, ad, adbcIdx);
             appendToLine(newLines, bc, adbcIdx);
         });
-        desiredOneFlags.forEach((k, v) -> v.forEach(newPt -> newPt.forEach(pt -> bs.clear(idxes.get(pt)))));
-        //newLines.add(bs.stream().map(i -> i + base.pointCount()).toArray());
         Liner l = new Liner(base.pointCount() + notInt.length, newLines.toArray(int[][]::new));
         Pair[] notJoined = notJoined(l);
         return new Liner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.f, p.s})).toArray(int[][]::new));
