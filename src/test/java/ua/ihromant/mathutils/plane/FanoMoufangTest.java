@@ -8,10 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -122,7 +120,7 @@ public class FanoMoufangTest {
                 }
             }
         });
-        Map<Integer, Set<Pair>> desiredOneFlags = new HashMap<>();
+        Map<Integer, List<List<Pair>>> desiredOneFlags = new HashMap<>();
         grouped.get(1).forEach(q -> {
             int ab = base.line(q.a, q.b);
             int cd = base.line(q.c, q.d);
@@ -140,7 +138,7 @@ public class FanoMoufangTest {
                 appendToLine(newLines, bd, acbdIdx);
                 appendToLine(newLines, ad, adbcIdx);
                 appendToLine(newLines, bc, adbcIdx);
-                desiredOneFlags.computeIfAbsent(abcd, k -> new HashSet<>()).addAll(List.of(new Pair(ac, bd), new Pair(ad, bc)));
+                desiredOneFlags.computeIfAbsent(abcd, k -> new ArrayList<>()).add(List.of(new Pair(ac, bd), new Pair(ad, bc)));
             } else {
                 int abcdIdx = idxes.get(new Pair(ab, cd)) + base.pointCount();
                 appendToLine(newLines, ab, abcdIdx);
@@ -149,24 +147,25 @@ public class FanoMoufangTest {
                     int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
                     appendToLine(newLines, ad, adbcIdx);
                     appendToLine(newLines, bc, adbcIdx);
-                    desiredOneFlags.computeIfAbsent(acbd, k -> new HashSet<>()).addAll(List.of(new Pair(ab, cd), new Pair(ad, bc)));
+                    desiredOneFlags.computeIfAbsent(acbd, k -> new ArrayList<>()).add(List.of(new Pair(ab, cd), new Pair(ad, bc)));
                 } else {
                     int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
                     appendToLine(newLines, ac, acbdIdx);
                     appendToLine(newLines, bd, acbdIdx);
-                    desiredOneFlags.computeIfAbsent(adbc, k -> new HashSet<>()).addAll(List.of(new Pair(ab, cd), new Pair(ac, bd)));
+                    desiredOneFlags.computeIfAbsent(adbc, k -> new ArrayList<>()).add(List.of(new Pair(ab, cd), new Pair(ac, bd)));
                 }
             }
         });
         desiredOneFlags.forEach((oldPt, newPts) -> {
-            int[] newLine = new int[newPts.size() + 1];
-            newLine[newPts.size()] = oldPt;
-            int cnt = 0;
-            for (Pair newPt : newPts) {
-                newLine[cnt++] = idxes.get(newPt) + base.pointCount();
+            for (List<Pair> newPt : newPts) {
+                int[] newLine = new int[newPt.size() + 1];
+                newLine[newPt.size()] = oldPt;
+                for (int i = 0; i < newPt.size(); i++) {
+                    newLine[i] = idxes.get(newPt.get(i)) + base.pointCount();
+                }
+                Arrays.sort(newLine);
+                newLines.add(newLine);
             }
-            Arrays.sort(newLine);
-            newLines.add(newLine);
         });
         grouped.get(0).forEach(q -> {
             int ab = base.line(q.a, q.b);
@@ -185,7 +184,7 @@ public class FanoMoufangTest {
             appendToLine(newLines, ad, adbcIdx);
             appendToLine(newLines, bc, adbcIdx);
         });
-        desiredOneFlags.forEach((k, v) -> v.forEach(pt -> bs.clear(idxes.get(pt))));
+        desiredOneFlags.forEach((k, v) -> v.forEach(newPt -> newPt.forEach(pt -> bs.clear(idxes.get(pt)))));
         //newLines.add(bs.stream().map(i -> i + base.pointCount()).toArray());
         Liner l = new Liner(base.pointCount() + notInt.length, newLines.toArray(int[][]::new));
         Pair[] notJoined = notJoined(l);
