@@ -166,6 +166,9 @@ public class Liner {
                 int p1 = line[i];
                 for (int j = i + 1; j < line.length; j++) {
                     int p2 = line[j];
+                    if (result[p1][p2] >= 0) {
+                        throw new IllegalStateException();
+                    }
                     result[p1][p2] = l;
                     result[p2][p1] = l;
                 }
