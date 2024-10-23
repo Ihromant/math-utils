@@ -7,6 +7,7 @@ import java.util.Arrays;
 public class SimpleLiner {
     private final int pointCount;
     private final FixBS[] lines;
+    private int[][] lookup;
 
     public SimpleLiner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
@@ -17,16 +18,21 @@ public class SimpleLiner {
             }
             return bs;
         }).toArray(FixBS[]::new);
-        consistencyCheck();
-    }
-
-    private void consistencyCheck() {
-        for (int i = 0; i < lines.length; i++) {
-            FixBS l1 = lines[i];
-            for (int j = i + 1; j < lines.length; j++) {
-                FixBS l2 = lines[j];
-                if (l1.intersects(l2) && !l1.singleIntersection(l2)) {
-                    throw new IllegalStateException(i + ":" + l1 + ", " + j + ":" + l2);
+        this.lookup = new int[pointCount][pointCount];
+        for (int[] p : lookup) {
+            Arrays.fill(p, -1);
+        }
+        for (int l = 0; l < lines.length; l++) {
+            int[] line = lines[l];
+            for (int i = 0; i < line.length; i++) {
+                int p1 = line[i];
+                for (int j = i + 1; j < line.length; j++) {
+                    int p2 = line[j];
+                    if (lookup[p1][p2] >= 0) {
+                        throw new IllegalStateException();
+                    }
+                    lookup[p1][p2] = l;
+                    lookup[p2][p1] = l;
                 }
             }
         }
@@ -45,13 +51,7 @@ public class SimpleLiner {
     }
 
     public int line(int p1, int p2) {
-        for (int i = 0; i < lines.length; i++) {
-            FixBS line = lines[i];
-            if (line.get(p1) && line.get(p2)) {
-                return i;
-            }
-        }
-        return -1;
+        return lookup[p1][p2];
     }
 
     public int intersection(int l1, int l2) {

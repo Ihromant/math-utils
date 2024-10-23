@@ -50,7 +50,7 @@ public class FanoMoufangTest {
                 Stream.concat(Arrays.stream(preBase.lines()).map(l -> l.stream().toArray()),
                         Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
         System.out.println("Checking liner " + counter + " prev pts " + prevPts);
-        //testCorrectness(base);
+        testCorrectness(base);
         System.out.println("Base pts: " + base.pointCount() + ", lines: " + base.lineCount());
         assertTrue(checkFano(quads(base, prevPts, null), base));
         List<int[]> twosLines = Arrays.stream(base.lines()).map(bs -> bs.stream().toArray()).collect(Collectors.toList());
@@ -91,7 +91,7 @@ public class FanoMoufangTest {
         SimpleLiner twosJoined = new SimpleLiner(twosBaseJoined.pointCount(),
                 Stream.concat(Arrays.stream(twosBaseJoined.lines()).map(l -> l.stream().toArray()),
                         Arrays.stream(twosNotJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
-        System.out.println("Twos joined pts: " + twosJoined.pointCount() + ", lines: " + base.lineCount());
+        System.out.println("Twos joined pts: " + twosJoined.pointCount() + ", lines: " + twosJoined.lineCount());
         Pair[] notInt = notIntersecting(twosJoined);
         Map<Pair, Integer> idxes = IntStream.range(0, notInt.length).boxed().collect(Collectors.toMap(i -> notInt[i], Function.identity()));
         System.out.println("Not inter: " + notInt.length);
