@@ -22,44 +22,32 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FanoMoufangTest {
     @Test
     public void generateFanoNotMoulton() {
-        Liner base = new Liner(13, new int[][]{
+        Liner base = new Liner(10, new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
                 {0, 5, 6},
-                {0, 7, 8, 10, 11},
+                {0, 7, 8},
                 {1, 3, 7},
                 {1, 5, 8},
                 {2, 4, 7},
                 {2, 6, 8},
                 {3, 5, 9},
                 {4, 6, 9},
-                {0, 9, 12},
-                {1, 4, 10},
-                {1, 6, 11},
+                {0, 9},
+                {1, 4},
+                {1, 6},
                 {1, 9},
-                {2, 3, 10},
-                {2, 5, 11},
+                {2, 3},
+                {2, 5},
                 {2, 9},
-                {3, 6, 12},
+                {3, 6},
                 {3, 8},
-                {3, 11},
-                {4, 5, 12},
+                {4, 5},
                 {4, 8},
-                {4, 11},
                 {5, 7},
-                {5, 10},
                 {6, 7},
-                {6, 10},
                 {7, 9},
-                {8, 9},
-                {9, 10},
-                {9, 11},
-                {1, 12},
-                {2, 12},
-                {7, 12},
-                {8, 12},
-                {10, 12},
-                {11, 12}
+                {8, 9}
         });
         int counter = 0;
         int prev = 0;
@@ -94,6 +82,7 @@ public class FanoMoufangTest {
         }));
         System.out.println("QuadDist: " + grouped.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue().size()).collect(Collectors.joining(", ")));
         List<int[]> newLines = Arrays.stream(base.lines()).collect(Collectors.toList());
+        Map<Pair, Set<Pair>> same = new HashMap<>();
         grouped.getOrDefault(2, List.of()).forEach(q -> {
             int ab = base.line(q.a, q.b);
             int cd = base.line(q.c, q.d);
