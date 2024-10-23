@@ -308,9 +308,9 @@ public class AffinePlane {
                 while (!currentLayer.isEmpty()) {
                     Set<Pair> nextLayer = new HashSet<>();
                     for (Pair pair : currentLayer) {
-                        int line = line(pair.a(), pair.b());
+                        int line = line(pair.f(), pair.s());
                         for (int beg : notLine(line)) {
-                            int end = parallelogram(pair.a(), pair.b(), beg);
+                            int end = parallelogram(pair.f(), pair.s(), beg);
                             Pair newPair = new Pair(beg, end);
                             if (!vectors.contains(newPair)) {
                                 nextLayer.add(newPair);
