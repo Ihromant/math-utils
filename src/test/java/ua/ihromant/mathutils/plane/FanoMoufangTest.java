@@ -1,8 +1,8 @@
 package ua.ihromant.mathutils.plane;
 
-import lombok.EqualsAndHashCode;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FanoMoufangTest {
     @Test
-    public void generateFanoNotMoulton() {
+    public void generateFanoNotMoufang() {
         Liner base = new Liner(10, new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
@@ -94,14 +94,14 @@ public class FanoMoufangTest {
             int bc = base.line(q.b, q.c);
             int adbc = base.intersection(ad, bc);
             if (abcd < 0) {
-                int newIdx = idxes.get(new Pair(ab, cd));
+                int newIdx = idxes.get(Pair.of(ab, cd));
                 join2Fano(newIdx  + base.pointCount(), base.line(acbd, adbc), ab, cd, newLines);
             } else {
                 if (acbd < 0) {
-                    int newIdx = idxes.get(new Pair(ac, bd));
+                    int newIdx = idxes.get(Pair.of(ac, bd));
                     join2Fano(newIdx  + base.pointCount(), base.line(abcd, adbc), ac, bd, newLines);
                 } else {
-                    int newIdx = idxes.get(new Pair(ad, bc));
+                    int newIdx = idxes.get(Pair.of(ad, bc));
                     join2Fano(newIdx  + base.pointCount(), base.line(abcd, acbd), ad, bc, newLines);
                 }
             }
@@ -118,27 +118,27 @@ public class FanoMoufangTest {
             int bc = base.line(q.b, q.c);
             int adbc = base.intersection(ad, bc);
             if (abcd >= 0) {
-                int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
-                int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
+                int acbdIdx = idxes.get(Pair.of(ac, bd)) + base.pointCount();
+                int adbcIdx = idxes.get(Pair.of(ad, bc)) + base.pointCount();
                 appendToLine(newLines, ac, acbdIdx);
                 appendToLine(newLines, bd, acbdIdx);
                 appendToLine(newLines, ad, adbcIdx);
                 appendToLine(newLines, bc, adbcIdx);
-                desiredOneFlags.computeIfAbsent(abcd, k -> new ArrayList<>()).add(List.of(new Pair(ac, bd), new Pair(ad, bc)));
+                desiredOneFlags.computeIfAbsent(abcd, k -> new ArrayList<>()).add(List.of(Pair.of(ac, bd), Pair.of(ad, bc)));
             } else {
-                int abcdIdx = idxes.get(new Pair(ab, cd)) + base.pointCount();
+                int abcdIdx = idxes.get(Pair.of(ab, cd)) + base.pointCount();
                 appendToLine(newLines, ab, abcdIdx);
                 appendToLine(newLines, cd, abcdIdx);
                 if (acbd >= 0) {
-                    int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
+                    int adbcIdx = idxes.get(Pair.of(ad, bc)) + base.pointCount();
                     appendToLine(newLines, ad, adbcIdx);
                     appendToLine(newLines, bc, adbcIdx);
-                    desiredOneFlags.computeIfAbsent(acbd, k -> new ArrayList<>()).add(List.of(new Pair(ab, cd), new Pair(ad, bc)));
+                    desiredOneFlags.computeIfAbsent(acbd, k -> new ArrayList<>()).add(List.of(Pair.of(ab, cd), Pair.of(ad, bc)));
                 } else {
-                    int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
+                    int acbdIdx = idxes.get(Pair.of(ac, bd)) + base.pointCount();
                     appendToLine(newLines, ac, acbdIdx);
                     appendToLine(newLines, bd, acbdIdx);
-                    desiredOneFlags.computeIfAbsent(adbc, k -> new ArrayList<>()).add(List.of(new Pair(ab, cd), new Pair(ac, bd)));
+                    desiredOneFlags.computeIfAbsent(adbc, k -> new ArrayList<>()).add(List.of(Pair.of(ab, cd), Pair.of(ac, bd)));
                 }
             }
         });
@@ -161,9 +161,9 @@ public class FanoMoufangTest {
             int bd = base.line(q.b, q.d);
             int ad = base.line(q.a, q.d);
             int bc = base.line(q.b, q.c);
-            int abcdIdx = idxes.get(new Pair(ab, cd)) + base.pointCount();
-            int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
-            int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
+            int abcdIdx = idxes.get(Pair.of(ab, cd)) + base.pointCount();
+            int acbdIdx = idxes.get(Pair.of(ac, bd)) + base.pointCount();
+            int adbcIdx = idxes.get(Pair.of(ad, bc)) + base.pointCount();
             appendToLine(newLines, ab, abcdIdx);
             appendToLine(newLines, cd, abcdIdx);
             appendToLine(newLines, ac, acbdIdx);
@@ -182,7 +182,7 @@ public class FanoMoufangTest {
         Liner l = new Liner(base.pointCount() + notInt.length, Stream.concat(newLines.stream(),
                 unique.stream().map(bs -> bs.stream().toArray())).toArray(int[][]::new));
         Pair[] notJoined = notJoined(l);
-        return new Liner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.f, p.s})).toArray(int[][]::new));
+        return new Liner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.a(), p.b()})).toArray(int[][]::new));
     }
 
     private static BitSet of(int... values) {
@@ -208,22 +208,6 @@ public class FanoMoufangTest {
         newLines.set(line, newLine);
     }
 
-
-    @EqualsAndHashCode
-    private static class Pair {
-        private final int f;
-        private final int s;
-        public Pair(int f, int s) {
-            this.f = Math.min(f, s);
-            this.s = Math.max(f, s);
-        }
-
-        @Override
-        public String toString() {
-            return "P(" + f + "," + s + ")";
-        }
-    }
-
     private record Quad(int a, int b, int c, int d) {}
 
     private static Pair[] notJoined(Liner liner) {
@@ -231,7 +215,7 @@ public class FanoMoufangTest {
         for (int a = 0; a < liner.pointCount(); a++) {
             for (int b = a + 1; b < liner.pointCount(); b++) {
                 if (liner.line(a, b) < 0) {
-                    notIntersecting.add(new Pair(a, b));
+                    notIntersecting.add(Pair.of(a, b));
                 }
             }
         }
@@ -243,7 +227,7 @@ public class FanoMoufangTest {
         for (int a = 0; a < liner.lineCount(); a++) {
             for (int b = a + 1; b < liner.lineCount(); b++) {
                 if (liner.intersection(a, b) < 0) {
-                    notIntersecting.add(new Pair(a, b));
+                    notIntersecting.add(Pair.of(a, b));
                 }
             }
         }
@@ -251,6 +235,26 @@ public class FanoMoufangTest {
     }
 
     private static List<Quad> quads(Liner liner, int cap) {
+        List<Quad> result = new ArrayList<>();
+        for (int a = 0; a < cap; a++) {
+            for (int b = a + 1; b < cap; b++) {
+                for (int c = b + 1; c < cap; c++) {
+                    if (liner.collinear(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < cap; d++) {
+                        if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
+                            continue;
+                        }
+                        result.add(new Quad(a, b, c, d));
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    private static List<Quad> quads(Liner liner, int cap, int desiredCount) {
         List<Quad> result = new ArrayList<>();
         for (int a = 0; a < cap; a++) {
             for (int b = a + 1; b < cap; b++) {
