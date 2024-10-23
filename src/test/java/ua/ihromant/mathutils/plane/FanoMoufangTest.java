@@ -1,8 +1,8 @@
 package ua.ihromant.mathutils.plane;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.Pair;
+import ua.ihromant.mathutils.SimpleLiner;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 public class FanoMoufangTest {
     @Test
     public void generateFanoNotMoufang() {
-        Liner base = new Liner(10, new int[][]{
+        SimpleLiner base = new SimpleLiner(10, new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
                 {0, 5, 6},
@@ -59,7 +59,7 @@ public class FanoMoufangTest {
         }
     }
 
-    private static Liner generateNext(Liner base, int prevPts) {
+    private static SimpleLiner generateNext(SimpleLiner base, int prevPts) {
         testCorrectness(base);
         System.out.println("Pts: " + base.pointCount() + ", lines: " + base.lineCount());
         assertTrue(checkFano(quads(base, prevPts, null), base));
@@ -81,7 +81,7 @@ public class FanoMoufangTest {
             return cnt;
         }));
         System.out.println("QuadDist: " + grouped.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue().size()).collect(Collectors.joining(", ")));
-        List<int[]> newLines = Arrays.stream(base.lines()).collect(Collectors.toList());
+        List<int[]> newLines = Arrays.stream(base.lines()).map(bs -> bs.stream().toArray()).collect(Collectors.toList());
         Map<Pair, Set<Pair>> same = new HashMap<>();
         grouped.getOrDefault(2, List.of()).forEach(q -> {
             int ab = base.line(q.a, q.b);
@@ -179,10 +179,10 @@ public class FanoMoufangTest {
             fanoLines[adbcIdx][acbdIdx] = newLine;
         });
         Set<BitSet> unique = Arrays.stream(fanoLines).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toSet());
-        Liner l = new Liner(base.pointCount() + notInt.length, Stream.concat(newLines.stream(),
+        SimpleLiner l = new SimpleLiner(base.pointCount() + notInt.length, Stream.concat(newLines.stream(),
                 unique.stream().map(bs -> bs.stream().toArray())).toArray(int[][]::new));
         Pair[] notJoined = notJoined(l);
-        return new Liner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
+        return new SimpleLiner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
     }
 
     private static BitSet of(int... values) {
@@ -210,7 +210,7 @@ public class FanoMoufangTest {
 
     private record Quad(int a, int b, int c, int d) {}
 
-    private static Pair[] notJoined(Liner liner) {
+    private static Pair[] notJoined(SimpleLiner liner) {
         List<Pair> notIntersecting = new ArrayList<>();
         for (int a = 0; a < liner.pointCount(); a++) {
             for (int b = a + 1; b < liner.pointCount(); b++) {
@@ -222,7 +222,7 @@ public class FanoMoufangTest {
         return notIntersecting.toArray(Pair[]::new);
     }
 
-    private static Pair[] notIntersecting(Liner liner) {
+    private static Pair[] notIntersecting(SimpleLiner liner) {
         List<Pair> notIntersecting = new ArrayList<>();
         for (int a = 0; a < liner.lineCount(); a++) {
             for (int b = a + 1; b < liner.lineCount(); b++) {
@@ -234,7 +234,7 @@ public class FanoMoufangTest {
         return notIntersecting.toArray(Pair[]::new);
     }
 
-    private static List<Quad> quads(Liner liner, int cap) {
+    private static List<Quad> quads(SimpleLiner liner, int cap) {
         List<Quad> result = new ArrayList<>();
         for (int a = 0; a < cap; a++) {
             for (int b = a + 1; b < cap; b++) {
@@ -254,7 +254,7 @@ public class FanoMoufangTest {
         return result;
     }
 
-    private static Stream<Quad> quads(Liner liner, int cap, Integer desiredCount) {
+    private static Stream<Quad> quads(SimpleLiner liner, int cap, Integer desiredCount) {
         return IntStream.range(0, cap).boxed().flatMap(a -> IntStream.range(a + 1, cap).boxed().flatMap(b -> IntStream.range(b + 1, cap)
                 .filter(c -> !liner.collinear(a, b, c)).boxed().mapMulti((c, sink) -> {
                     for (int d = c + 1; d < cap; d++) {
@@ -282,13 +282,13 @@ public class FanoMoufangTest {
                 })));
     }
 
-    private static boolean checkFano(Stream<Quad> quads, Liner liner) {
+    private static boolean checkFano(Stream<Quad> quads, SimpleLiner liner) {
         return quads.allMatch(q -> liner.collinear(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
                 liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
                 liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))));
     }
 
-    public static void testCorrectness(Liner plane) {
+    public static void testCorrectness(SimpleLiner plane) {
         for (int p1 = 0; p1 < plane.pointCount(); p1++) {
             for (int p2 = p1 + 1; p2 < plane.pointCount(); p2++) {
                 assertTrue(plane.line(p1, p2) >= 0, p1 + " " + p2);

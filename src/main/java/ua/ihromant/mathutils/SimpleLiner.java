@@ -26,7 +26,7 @@ public class SimpleLiner {
             for (int j = i + 1; j < lines.length; j++) {
                 FixBS l2 = lines[j];
                 if (l1.intersects(l2) && !l1.singleIntersection(l2)) {
-                    throw new IllegalStateException(l1 + " " + l2);
+                    throw new IllegalStateException(i + ":" + l1 + ", " + j + ":" + l2);
                 }
             }
         }
