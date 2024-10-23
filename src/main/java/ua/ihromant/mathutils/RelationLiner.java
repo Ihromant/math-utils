@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
 public class RelationLiner {
-    private boolean[][][] relation;
+    private final boolean[][][] relation;
 
     public RelationLiner(int pointCount, int[][] lines) {
         this.relation = new boolean[pointCount][pointCount][pointCount];
