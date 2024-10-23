@@ -3,11 +3,12 @@ package ua.ihromant.mathutils.plane;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Pair;
 import ua.ihromant.mathutils.SimpleLiner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,58 +33,31 @@ public class FanoMoufangTest {
                 {2, 4, 7},
                 {2, 6, 8},
                 {3, 5, 9},
-                {4, 6, 9},
-                {0, 9},
-                {1, 4},
-                {1, 6},
-                {1, 9},
-                {2, 3},
-                {2, 5},
-                {2, 9},
-                {3, 6},
-                {3, 8},
-                {4, 5},
-                {4, 8},
-                {5, 7},
-                {6, 7},
-                {7, 9},
-                {8, 9}
+                {4, 6, 9}
         });
         int counter = 0;
         int prev = 0;
         while (true) {
-            System.out.println("Checking liner " + counter++);
             int tmp = base.pointCount();
-            base = generateNext(base, prev);
+            base = generateNext(base, prev, counter++);
             prev = tmp;
         }
     }
 
-    private static SimpleLiner generateNext(SimpleLiner base, int prevPts) {
+    private static SimpleLiner generateNext(SimpleLiner preBase, int prevPts, int counter) {
+        Pair[] notJoined = notJoined(preBase);
+        SimpleLiner base = new SimpleLiner(preBase.pointCount(),
+                Stream.concat(Arrays.stream(preBase.lines()).map(l -> l.stream().toArray()),
+                        Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
+        System.out.println("Checking liner " + counter + " prev pts " + prevPts);
         testCorrectness(base);
-        System.out.println("Pts: " + base.pointCount() + ", lines: " + base.lineCount());
+        System.out.println("Base pts: " + base.pointCount() + ", lines: " + base.lineCount());
         assertTrue(checkFano(quads(base, prevPts, null), base));
-        List<Quad> quads = quads(base, base.pointCount());
-        Pair[] notInt = notIntersecting(base);
-        Map<Pair, Integer> idxes = IntStream.range(0, notInt.length).boxed().collect(Collectors.toMap(i -> notInt[i], Function.identity()));
-        System.out.println("Quads: " + quads.size() + ", not inter: " + notInt.length);
-        Map<Integer, List<Quad>> grouped = quads.stream().collect(Collectors.groupingBy(q -> {
-            int cnt = 0;
-            if (base.intersection(base.line(q.a, q.b), base.line(q.c, q.d)) >= 0) {
-                cnt++;
-            }
-            if (base.intersection(base.line(q.a, q.c), base.line(q.b, q.d)) >= 0) {
-                cnt++;
-            }
-            if (base.intersection(base.line(q.a, q.d), base.line(q.b, q.c)) >= 0) {
-                cnt++;
-            }
-            return cnt;
-        }));
-        System.out.println("QuadDist: " + grouped.entrySet().stream().map(e -> e.getKey() + "=" + e.getValue().size()).collect(Collectors.joining(", ")));
-        List<int[]> newLines = Arrays.stream(base.lines()).map(bs -> bs.stream().toArray()).collect(Collectors.toList());
-        Map<Pair, Set<Pair>> same = new HashMap<>();
-        grouped.getOrDefault(2, List.of()).forEach(q -> {
+        List<int[]> twosLines = Arrays.stream(base.lines()).map(bs -> bs.stream().toArray()).collect(Collectors.toList());
+        List<Quad> twos = quads(base, base.pointCount(), 2).toList();
+        System.out.println("Twos: " + twos.size());
+        Set<FixBS> processed = new HashSet<>();
+        twos.forEach(q -> {
             int ab = base.line(q.a, q.b);
             int cd = base.line(q.c, q.d);
             int abcd = base.intersection(ab, cd);
@@ -94,48 +68,63 @@ public class FanoMoufangTest {
             int bc = base.line(q.b, q.c);
             int adbc = base.intersection(ad, bc);
             if (abcd < 0) {
-                int newIdx = idxes.get(new Pair(ab, cd));
-                join2Fano(newIdx + base.pointCount(), base.line(acbd, adbc), ab, cd, newLines);
+                if (!processed.add(of(base.pointCount() + twos.size(), q.a, q.b, q.c, q.d, acbd, adbc))) {
+                    return;
+                }
+                join2Fano(processed.size() - 1 + base.pointCount(), base.line(acbd, adbc), ab, cd, twosLines);
             } else {
                 if (acbd < 0) {
-                    int newIdx = idxes.get(new Pair(ac, bd));
-                    join2Fano(newIdx + base.pointCount(), base.line(abcd, adbc), ac, bd, newLines);
+                    if (!processed.add(of(base.pointCount() + twos.size(), q.a, q.b, q.c, q.d, abcd, adbc))) {
+                        return;
+                    }
+                    join2Fano(processed.size() - 1 + base.pointCount(), base.line(abcd, adbc), ac, bd, twosLines);
                 } else {
-                    int newIdx = idxes.get(new Pair(ad, bc));
-                    join2Fano(newIdx + base.pointCount(), base.line(abcd, acbd), ad, bc, newLines);
+                    if (!processed.add(of(base.pointCount() + twos.size(), q.a, q.b, q.c, q.d, abcd, acbd))) {
+                        return;
+                    }
+                    join2Fano(processed.size() - 1 + base.pointCount(), base.line(abcd, acbd), ad, bc, twosLines);
                 }
             }
         });
+        SimpleLiner twosBaseJoined = new SimpleLiner(base.pointCount() + processed.size(), twosLines.toArray(int[][]::new));
+        Pair[] twosNotJoined = notJoined(twosBaseJoined);
+        SimpleLiner twosJoined = new SimpleLiner(twosBaseJoined.pointCount(),
+                Stream.concat(Arrays.stream(twosBaseJoined.lines()).map(l -> l.stream().toArray()),
+                        Arrays.stream(twosNotJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
+        Pair[] notInt = notIntersecting(twosJoined);
+        Map<Pair, Integer> idxes = IntStream.range(0, notInt.length).boxed().collect(Collectors.toMap(i -> notInt[i], Function.identity()));
+        System.out.println("Not inter: " + notInt.length);
+        List<int[]> newLines = Arrays.stream(twosJoined.lines()).map(bs -> bs.stream().toArray()).collect(Collectors.toList());
         Map<Integer, List<List<Pair>>> desiredOneFlags = new HashMap<>();
-        grouped.get(1).forEach(q -> {
-            int ab = base.line(q.a, q.b);
-            int cd = base.line(q.c, q.d);
-            int abcd = base.intersection(ab, cd);
-            int ac = base.line(q.a, q.c);
-            int bd = base.line(q.b, q.d);
-            int acbd = base.intersection(ac, bd);
-            int ad = base.line(q.a, q.d);
-            int bc = base.line(q.b, q.c);
-            int adbc = base.intersection(ad, bc);
+        quads(twosJoined, twosJoined.pointCount(), 1).forEach(q -> {
+            int ab = twosJoined.line(q.a, q.b);
+            int cd = twosJoined.line(q.c, q.d);
+            int abcd = twosJoined.intersection(ab, cd);
+            int ac = twosJoined.line(q.a, q.c);
+            int bd = twosJoined.line(q.b, q.d);
+            int acbd = twosJoined.intersection(ac, bd);
+            int ad = twosJoined.line(q.a, q.d);
+            int bc = twosJoined.line(q.b, q.c);
+            int adbc = twosJoined.intersection(ad, bc);
             if (abcd >= 0) {
-                int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
-                int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
+                int acbdIdx = idxes.get(new Pair(ac, bd)) + twosJoined.pointCount();
+                int adbcIdx = idxes.get(new Pair(ad, bc)) + twosJoined.pointCount();
                 appendToLine(newLines, ac, acbdIdx);
                 appendToLine(newLines, bd, acbdIdx);
                 appendToLine(newLines, ad, adbcIdx);
                 appendToLine(newLines, bc, adbcIdx);
                 desiredOneFlags.computeIfAbsent(abcd, k -> new ArrayList<>()).add(List.of(new Pair(ac, bd), new Pair(ad, bc)));
             } else {
-                int abcdIdx = idxes.get(new Pair(ab, cd)) + base.pointCount();
+                int abcdIdx = idxes.get(new Pair(ab, cd)) + twosJoined.pointCount();
                 appendToLine(newLines, ab, abcdIdx);
                 appendToLine(newLines, cd, abcdIdx);
                 if (acbd >= 0) {
-                    int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
+                    int adbcIdx = idxes.get(new Pair(ad, bc)) + twosJoined.pointCount();
                     appendToLine(newLines, ad, adbcIdx);
                     appendToLine(newLines, bc, adbcIdx);
                     desiredOneFlags.computeIfAbsent(acbd, k -> new ArrayList<>()).add(List.of(new Pair(ab, cd), new Pair(ad, bc)));
                 } else {
-                    int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
+                    int acbdIdx = idxes.get(new Pair(ac, bd)) + twosJoined.pointCount();
                     appendToLine(newLines, ac, acbdIdx);
                     appendToLine(newLines, bd, acbdIdx);
                     desiredOneFlags.computeIfAbsent(adbc, k -> new ArrayList<>()).add(List.of(new Pair(ab, cd), new Pair(ac, bd)));
@@ -147,30 +136,31 @@ public class FanoMoufangTest {
                 int[] newLine = new int[newPt.size() + 1];
                 newLine[newPt.size()] = oldPt;
                 for (int i = 0; i < newPt.size(); i++) {
-                    newLine[i] = idxes.get(newPt.get(i)) + base.pointCount();
+                    newLine[i] = idxes.get(newPt.get(i)) + twosJoined.pointCount();
                 }
                 Arrays.sort(newLine);
                 newLines.add(newLine);
             }
         });
-        BitSet[][] fanoLines = new BitSet[notInt.length + base.pointCount()][notInt.length + base.pointCount()];
-        grouped.get(0).forEach(q -> {
-            int ab = base.line(q.a, q.b);
-            int cd = base.line(q.c, q.d);
-            int ac = base.line(q.a, q.c);
-            int bd = base.line(q.b, q.d);
-            int ad = base.line(q.a, q.d);
-            int bc = base.line(q.b, q.c);
-            int abcdIdx = idxes.get(new Pair(ab, cd)) + base.pointCount();
-            int acbdIdx = idxes.get(new Pair(ac, bd)) + base.pointCount();
-            int adbcIdx = idxes.get(new Pair(ad, bc)) + base.pointCount();
+        int newPc = notInt.length + twosJoined.pointCount();
+        FixBS[][] fanoLines = new FixBS[newPc][newPc];
+        quads(twosJoined, twosJoined.pointCount(), 0).forEach(q -> {
+            int ab = twosJoined.line(q.a, q.b);
+            int cd = twosJoined.line(q.c, q.d);
+            int ac = twosJoined.line(q.a, q.c);
+            int bd = twosJoined.line(q.b, q.d);
+            int ad = twosJoined.line(q.a, q.d);
+            int bc = twosJoined.line(q.b, q.c);
+            int abcdIdx = idxes.get(new Pair(ab, cd)) + twosJoined.pointCount();
+            int acbdIdx = idxes.get(new Pair(ac, bd)) + twosJoined.pointCount();
+            int adbcIdx = idxes.get(new Pair(ad, bc)) + twosJoined.pointCount();
             appendToLine(newLines, ab, abcdIdx);
             appendToLine(newLines, cd, abcdIdx);
             appendToLine(newLines, ac, acbdIdx);
             appendToLine(newLines, bd, acbdIdx);
             appendToLine(newLines, ad, adbcIdx);
             appendToLine(newLines, bc, adbcIdx);
-            BitSet newLine = of(abcdIdx, acbdIdx, adbcIdx);
+            FixBS newLine = of(newPc, abcdIdx, acbdIdx, adbcIdx);
             fanoLines[abcdIdx][acbdIdx] = newLine;
             fanoLines[abcdIdx][adbcIdx] = newLine;
             fanoLines[acbdIdx][abcdIdx] = newLine;
@@ -178,15 +168,13 @@ public class FanoMoufangTest {
             fanoLines[adbcIdx][abcdIdx] = newLine;
             fanoLines[adbcIdx][acbdIdx] = newLine;
         });
-        Set<BitSet> unique = Arrays.stream(fanoLines).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toSet());
-        SimpleLiner l = new SimpleLiner(base.pointCount() + notInt.length, Stream.concat(newLines.stream(),
+        Set<FixBS> unique = Arrays.stream(fanoLines).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toSet());
+        return new SimpleLiner(twosJoined.pointCount() + notInt.length, Stream.concat(newLines.stream(),
                 unique.stream().map(bs -> bs.stream().toArray())).toArray(int[][]::new));
-        Pair[] notJoined = notJoined(l);
-        return new SimpleLiner(l.pointCount(), Stream.concat(Arrays.stream(l.lines()), Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
     }
 
-    private static BitSet of(int... values) {
-        BitSet bs = new BitSet(values[values.length - 1] + 1);
+    private static FixBS of(int v, int... values) {
+        FixBS bs = new FixBS(v);
         IntStream.of(values).forEach(bs::set);
         return bs;
     }
