@@ -62,7 +62,7 @@ public class FanoMoufangTest {
     private static Liner generateNext(Liner base, int prevPts) {
         testCorrectness(base);
         System.out.println("Pts: " + base.pointCount() + ", lines: " + base.lineCount());
-        assertTrue(checkFano(quads(base, prevPts), base));
+        assertTrue(checkFano(quads(base, prevPts, null), base));
         List<Quad> quads = quads(base, base.pointCount());
         Pair[] notInt = notIntersecting(base);
         Map<Pair, Integer> idxes = IntStream.range(0, notInt.length).boxed().collect(Collectors.toMap(i -> notInt[i], Function.identity()));
@@ -95,14 +95,14 @@ public class FanoMoufangTest {
             int adbc = base.intersection(ad, bc);
             if (abcd < 0) {
                 int newIdx = idxes.get(new Pair(ab, cd));
-                join2Fano(newIdx  + base.pointCount(), base.line(acbd, adbc), ab, cd, newLines);
+                join2Fano(newIdx + base.pointCount(), base.line(acbd, adbc), ab, cd, newLines);
             } else {
                 if (acbd < 0) {
                     int newIdx = idxes.get(new Pair(ac, bd));
-                    join2Fano(newIdx  + base.pointCount(), base.line(abcd, adbc), ac, bd, newLines);
+                    join2Fano(newIdx + base.pointCount(), base.line(abcd, adbc), ac, bd, newLines);
                 } else {
                     int newIdx = idxes.get(new Pair(ad, bc));
-                    join2Fano(newIdx  + base.pointCount(), base.line(abcd, acbd), ad, bc, newLines);
+                    join2Fano(newIdx + base.pointCount(), base.line(abcd, acbd), ad, bc, newLines);
                 }
             }
         });
@@ -254,28 +254,36 @@ public class FanoMoufangTest {
         return result;
     }
 
-    private static List<Quad> quads(Liner liner, int cap, int desiredCount) {
-        List<Quad> result = new ArrayList<>();
-        for (int a = 0; a < cap; a++) {
-            for (int b = a + 1; b < cap; b++) {
-                for (int c = b + 1; c < cap; c++) {
-                    if (liner.collinear(a, b, c)) {
-                        continue;
-                    }
+    private static Stream<Quad> quads(Liner liner, int cap, Integer desiredCount) {
+        return IntStream.range(0, cap).boxed().flatMap(a -> IntStream.range(a + 1, cap).boxed().flatMap(b -> IntStream.range(b + 1, cap)
+                .filter(c -> !liner.collinear(a, b, c)).boxed().mapMulti((c, sink) -> {
                     for (int d = c + 1; d < cap; d++) {
                         if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
                             continue;
                         }
-                        result.add(new Quad(a, b, c, d));
+                        if (desiredCount == null) {
+                            sink.accept(new Quad(a, b, c, d));
+                            return;
+                        }
+                        int cnt = 0;
+                        if (liner.intersection(liner.line(a, b), liner.line(c, d)) >= 0) {
+                            cnt++;
+                        }
+                        if (liner.intersection(liner.line(a, c), liner.line(b, d)) >= 0) {
+                            cnt++;
+                        }
+                        if (liner.intersection(liner.line(a, d), liner.line(b, c)) >= 0) {
+                            cnt++;
+                        }
+                        if (cnt == desiredCount) {
+                            sink.accept(new Quad(a, b, c, d));
+                        }
                     }
-                }
-            }
-        }
-        return result;
+                })));
     }
 
-    private static boolean checkFano(List<Quad> list, Liner liner) {
-        return list.stream().allMatch(q -> liner.collinear(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
+    private static boolean checkFano(Stream<Quad> quads, Liner liner) {
+        return quads.allMatch(q -> liner.collinear(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
                 liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
                 liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))));
     }
