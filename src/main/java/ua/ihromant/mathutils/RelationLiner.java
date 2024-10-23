@@ -22,7 +22,7 @@ public class RelationLiner {
     }
 
     public boolean collinear(int... pts) {
-        if (pts.length < 3) { // TODO add when po
+        if (pts.length < 3) {
             return true;
         }
         int fst = pts[0];
