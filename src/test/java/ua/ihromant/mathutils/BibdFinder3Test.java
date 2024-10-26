@@ -271,11 +271,11 @@ public class BibdFinder3Test {
 
     @Test // [[0, 68, 69, 105, 135, 156, 160], [0, 75, 86, 113, 159, 183, 203], [0, 80, 95, 98, 145, 158, 201], [0, 101, 134, 141, 143, 153, 182], [0, 110, 115, 132, 138, 164, 209]]
     public void byHint() {
-        findByHint(new int[]{0, 68, 69, 105, 135, 156, 160}, 217, 7);
+        findByHint(new int[]{0, 68, 69, 105, 135, 156, 160}, 217, 7, 4);
         //findByHint(new int[]{0, 34, 36, 42, 66, 71, 80}, 91, 7);
     }
 
-    private static void findByHint(int[] hint, int v, int k) {
+    private static void findByHint(int[] hint, int v, int k, int depth) {
         System.out.println(v + " " + k + " " + Arrays.toString(hint));
         FixBS filter = baseFilter(v, k);
         for (int i : hint) {
@@ -287,13 +287,20 @@ public class BibdFinder3Test {
                 filter.set(v - j + i);
             }
         }
+        int blocksNeeded = v / k / (k - 1) - 1;
+        List<int[]> initial = new ArrayList<>();
+        calcCycles(v, k, depth, hint[1], filter, blocksNeeded, initial::add);
+        System.out.println("Initial depth " + depth + " and size " + initial.size());
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
         Consumer<int[][]> designConsumer = design -> {
             counter.incrementAndGet();
             System.out.println(Arrays.deepToString(design));
         };
-        allDifferenceSets(v, k, new int[][]{hint}, v / k / (k - 1) - 1, filter, designConsumer);
+        initial.stream().parallel().forEach(init -> {
+            allDifferenceSets(v, k, new int[][]{hint}, blocksNeeded, filter, designConsumer, init);
+            System.out.println(Arrays.toString(init));
+        });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
