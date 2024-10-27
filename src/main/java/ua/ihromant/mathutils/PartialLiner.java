@@ -18,6 +18,7 @@ import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 public class PartialLiner {
     private final int pointCount;
@@ -1074,12 +1075,103 @@ public class PartialLiner {
         }
     }
 
+    private class TriangleBlocksIterator implements Iterator<int[]> {
+        private final int[] block;
+        private final BiPredicate<PartialLiner, int[]> pred;
+        private boolean hasNext;
+
+        public TriangleBlocksIterator(BiPredicate<PartialLiner, int[]> pred) {
+            this.pred = pred;
+            int ll = lines[0].length;
+            this.block = new int[ll];
+            ex: for (int a = 0; a < pointCount; a++) {
+                for (int b = a + 1; b < pointCount; b++) {
+                    int ab = line(a, b);
+                    if (ab < 0) {
+                        continue;
+                    }
+                    for (int c = b + 1; c < pointCount; c++) {
+                        int ac = line(a, c);
+                        int bc = line(b, c);
+                        if (ac < 0 || bc < 0 || flag(ab, c)) {
+                            continue;
+                        }
+                        FixBS bs = new FixBS(pointCount);
+                        IntStream.of(ab, ac, bc).mapToObj(PartialLiner.this::line).forEach(arr -> Arrays.stream(arr).forEach(bs::set));
+                        for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i + 1)) {
+                            for (int j = bs.nextSetBit(i + 1); j >= 0; j = bs.nextSetBit(j + 1)) {
+                                if (line(i, j) < 0) {
+                                    block[0] = i;
+                                    block[1] = j;
+                                    break ex;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if (block[0] == block[1]) {
+                return;
+            }
+            for (int i = 2; i < ll; i++) {
+                block[i] = i - 2;
+            }
+            this.hasNext = findNext(ll - 2);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return hasNext;
+        }
+
+        private boolean findNext(int moreNeeded) {
+            int len = block.length - moreNeeded;
+            ex: for (int p = Math.max(len == 2 ? 0 : block[len - 1] + 1, block[len]); p < pointCount - moreNeeded + 1; p++) {
+                if (p == block[0] || p == block[1]) {
+                    continue;
+                }
+                int[] look = lookup[p];
+                for (int i = 0; i < len; i++) {
+                    if (look[block[i]] >= 0) {
+                        continue ex;
+                    }
+                }
+                block[len] = p;
+                if (moreNeeded == 1) {
+                    if (pred.test(PartialLiner.this, block)) {
+                        return true;
+                    }
+                } else if (findNext(moreNeeded - 1)) {
+                    return true;
+                }
+            }
+            int base = ++block[len - 1] - len + 1;
+            for (int i = len; i < block.length; i++) {
+                block[i] = base + i;
+            }
+            return false;
+        }
+
+        @Override
+        public int[] next() {
+            int[] res = block.clone();
+            Arrays.sort(res);
+            block[block.length - 1]++;
+            this.hasNext = findNext(block.length - 2);
+            return res;
+        }
+    }
+
     public Iterable<int[]> altBlocks(BiPredicate<PartialLiner, int[]> pred, boolean minimal) {
         return () -> new AltBlocksIterator(pred, minimal);
     }
 
     public Iterable<int[]> altBlocks(BiPredicate<PartialLiner, int[]> pred) {
         return () -> new AltBlocksIterator(pred, false);
+    }
+
+    public Iterable<int[]> trBlocks(BiPredicate<PartialLiner, int[]> pred) {
+        return () -> new TriangleBlocksIterator(pred);
     }
 
     private static int min = Integer.MAX_VALUE;
