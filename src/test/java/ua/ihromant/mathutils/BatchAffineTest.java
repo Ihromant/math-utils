@@ -736,6 +736,69 @@ public class BatchAffineTest {
         }
     }
 
+    @Test
+    public void testBooleanNotFano() throws IOException {
+        String name = "dhall-80-16";
+        String[] tokens = name.split("-");
+        String plName = tokens[0];
+        int dl = Integer.parseInt(tokens[1]);
+        int k = Integer.parseInt(tokens[2]);
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
+            Liner liner = new AffinePlane(proj, dl).toLiner();
+            boolean notFanoFound = false;
+            boolean linearFound = false;
+            for (int a = 0; a < liner.pointCount(); a++) {
+                for (int b = a + 1; b < liner.pointCount(); b++) {
+                    int ab = liner.line(a, b);
+                    for (int c = b + 1; c < liner.pointCount(); c++) {
+                        if (liner.collinear(a, b, c)) {
+                            continue;
+                        }
+                        AffineTernaryRing ring = new AffineTernaryRing(liner, new Triangle(a, b, c));
+                        if (!linearFound && ring.isLinear()) {
+                            linearFound = true;
+                            printLinearTables("dhall-80-16", ring);
+                        }
+                        int ac = liner.line(a, c);
+                        int bc = liner.line(b, c);
+                        for (int d = c + 1; d < liner.pointCount(); d++) {
+                            if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
+                                continue;
+                            }
+                            int ad = liner.line(a, d);
+                            int bd = liner.line(b, d);
+                            int cd = liner.line(c, d);
+                            int cnt = 0;
+                            int abcd = liner.intersection(ab, cd);
+                            if (abcd >= 0) {
+                                cnt++;
+                            }
+                            int acbd = liner.intersection(ac, bd);
+                            if (acbd >= 0) {
+                                cnt++;
+                            }
+                            int adbc = liner.intersection(ad, bc);
+                            if (adbc >= 0) {
+                                cnt++;
+                            }
+                            if (cnt == 1) {
+                                System.out.println("Not Boolean");
+                            }
+                            if (!notFanoFound && cnt == 3 && !liner.collinear(abcd, acbd, adbc)) {
+                                notFanoFound = true;
+                                System.out.println("Not Fano");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private static void printBooleanProperties(String name, AffineTernaryRing ring) {
         System.out.println("triangle:" + String.format("%8d", ring.trIdx())
                 + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
