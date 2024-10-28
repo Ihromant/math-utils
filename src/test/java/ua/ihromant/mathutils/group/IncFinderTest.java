@@ -71,7 +71,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAltConc(liners, PartialLiner::checkAP, false, cnt);
+            liners = nextStageAltConc(liners, l -> l.trBlocks(PartialLiner::checkAP), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
@@ -530,10 +530,10 @@ public class IncFinderTest {
         return new ArrayList<>(nonIso.values());
     }
 
-    private static List<Inc> nextStageAltConc(List<Inc> partials, BiPredicate<PartialLiner, int[]> filter, boolean minimal, AtomicLong cnt) {
+    private static List<Inc> nextStageAltConc(List<Inc> partials, Function<PartialLiner, Iterable<int[]>> generator, AtomicLong cnt) {
         Map<FixBS, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
-            for (int[] block : partial.altBlocks(filter, minimal)) {
+            for (int[] block : generator.apply(partial)) {
                 Inc liner = inc.addLine(block);
                 cnt.incrementAndGet();
                 sink.accept(liner);
@@ -556,7 +556,7 @@ public class IncFinderTest {
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size() + ", cap " + cap + ", depth " + dp);
         while (left > 0 && !liners.isEmpty()) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStageAltConc(liners, (p, b) -> p.hullsUnderCap(b, cap), false, cnt);
+            liners = nextStageAltConc(liners, l -> l.altBlocks((p, b) -> p.hullsUnderCap(b, cap), false), cnt);
             left--;
             dump(prefix, v, k, left, liners);
             System.out.println(left + " " + liners.size() + " " + cnt.get());
