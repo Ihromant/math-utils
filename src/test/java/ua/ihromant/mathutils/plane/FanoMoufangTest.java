@@ -156,7 +156,8 @@ public class FanoMoufangTest {
                 if (present.equals(beam)) {
                     continue ex;
                 }
-                if (present.intersects(beam) && !present.singleIntersection(beam)) {
+                FixBS inter = present.intersection(beam);
+                if (inter.cardinality() >= 2) {
                     present.or(beam);
                     continue ex;
                 }

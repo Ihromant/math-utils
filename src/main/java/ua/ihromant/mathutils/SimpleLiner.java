@@ -7,7 +7,8 @@ import java.util.Arrays;
 public class SimpleLiner {
     private final int pointCount;
     private final FixBS[] lines;
-    private int[][] lookup;
+    private final int[][] lookup;
+    private final int[][] intersections;
 
     public SimpleLiner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
@@ -22,6 +23,7 @@ public class SimpleLiner {
         for (int[] p : lookup) {
             Arrays.fill(p, -1);
         }
+        this.intersections = new int[lines.length][lines.length];
         for (int l = 0; l < lines.length; l++) {
             int[] line = lines[l];
             for (int i = 0; i < line.length; i++) {
@@ -35,7 +37,23 @@ public class SimpleLiner {
                     lookup[p2][p1] = l;
                 }
             }
+            intersections[l][l] = -1;
+            for (int o = l + 1; o < lines.length; o++) {
+                int[] oLine = lines[o];
+                int inter = intersection(line, oLine);
+                intersections[l][o] = inter;
+                intersections[o][l] = inter;
+            }
         }
+    }
+
+    private int intersection(int[] fst, int[] snd) {
+        for (int i : fst) {
+            if (Arrays.binarySearch(snd, i) >= 0) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     public SimpleLiner(int pointCount, FixBS[] lines) {
@@ -45,6 +63,7 @@ public class SimpleLiner {
         for (int[] p : lookup) {
             Arrays.fill(p, -1);
         }
+        this.intersections = new int[lines.length][lines.length];
         for (int l = 0; l < lines.length; l++) {
             FixBS line = lines[l];
             for (int p1 = line.nextSetBit(0); p1 >= 0; p1 = line.nextSetBit(p1 + 1)) {
@@ -55,6 +74,12 @@ public class SimpleLiner {
                     lookup[p1][p2] = l;
                     lookup[p2][p1] = l;
                 }
+            }
+            intersections[l][l] = -1;
+            for (int o = l + 1; o < lines.length; o++) {
+                int inter = line.intersection(lines[o]).nextSetBit(0);
+                intersections[l][o] = inter;
+                intersections[o][l] = inter;
             }
         }
     }
@@ -76,14 +101,7 @@ public class SimpleLiner {
     }
 
     public int intersection(int l1, int l2) {
-        FixBS line1 = lines[l1];
-        FixBS line2 = lines[l2];
-        for (int i = line1.nextSetBit(0); i >= 0; i = line1.nextSetBit(i + 1)) {
-            if (line2.get(i)) {
-                return i;
-            }
-        }
-        return -1;
+        return intersections[l1][l2];
     }
 
     public int[] points(int line) {
