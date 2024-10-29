@@ -38,6 +38,27 @@ public class SimpleLiner {
         }
     }
 
+    public SimpleLiner(int pointCount, FixBS[] lines) {
+        this.pointCount = pointCount;
+        this.lines = lines;
+        this.lookup = new int[pointCount][pointCount];
+        for (int[] p : lookup) {
+            Arrays.fill(p, -1);
+        }
+        for (int l = 0; l < lines.length; l++) {
+            FixBS line = lines[l];
+            for (int p1 = line.nextSetBit(0); p1 >= 0; p1 = line.nextSetBit(p1 + 1)) {
+                for (int p2 = line.nextSetBit(p1 + 1); p2 >= 0; p2 = line.nextSetBit(p2 + 1)) {
+                    if (lookup[p1][p2] >= 0) {
+                        throw new IllegalStateException();
+                    }
+                    lookup[p1][p2] = l;
+                    lookup[p2][p1] = l;
+                }
+            }
+        }
+    }
+
     public int pointCount() {
         return pointCount;
     }

@@ -1083,35 +1083,24 @@ public class PartialLiner {
         public TriangleBlocksIterator(BiPredicate<PartialLiner, int[]> pred) {
             this.pred = pred;
             int ll = lines[0].length;
+            int r = (pointCount - 1) / (ll - 1);
             this.block = new int[ll];
-            ex: for (int a = 0; a < pointCount; a++) {
-                for (int b = a + 1; b < pointCount; b++) {
-                    int ab = line(a, b);
-                    if (ab < 0) {
-                        continue;
-                    }
-                    for (int c = b + 1; c < pointCount; c++) {
-                        int ac = line(a, c);
-                        int bc = line(b, c);
-                        if (ac < 0 || bc < 0 || flag(ab, c)) {
-                            continue;
-                        }
-                        FixBS bs = new FixBS(pointCount);
-                        IntStream.of(ab, ac, bc).mapToObj(PartialLiner.this::line).forEach(arr -> Arrays.stream(arr).forEach(bs::set));
-                        for (int i = bs.nextSetBit(0); i >= 0; i = bs.nextSetBit(i + 1)) {
-                            for (int j = bs.nextSetBit(i + 1); j >= 0; j = bs.nextSetBit(j + 1)) {
-                                if (line(i, j) < 0) {
-                                    block[0] = i;
-                                    block[1] = j;
-                                    break ex;
-                                }
+            ex: for (int i = 1; i < r; i++) {
+                int[] lineB = lines[i];
+                for (int j = 0; j < i; j++) {
+                    int[] lineA = lines[j];
+                    for (int a = 1; a < ll; a++) {
+                        int p1 = lineA[a];
+                        for (int b = 1; b < ll; b++) {
+                            int p2 = lineB[b];
+                            if (line(p1, p2) < 0) {
+                                block[0] = Math.min(p1, p2);
+                                block[1] = Math.max(p1, p2);
+                                break ex;
                             }
                         }
                     }
                 }
-            }
-            if (block[0] == block[1]) {
-                return;
             }
             for (int i = 2; i < ll; i++) {
                 block[i] = i - 2;

@@ -7,6 +7,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -22,26 +23,117 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FanoMoufangTest {
     @Test
-    public void generateFanoNotMoufang() {
-        SimpleLiner base = new SimpleLiner(10, new int[][]{
+    public void generateFanoMoufang() {
+        SimpleLiner base = joinByTwo(new SimpleLiner(10, new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
                 {0, 5, 6},
-                {0, 7, 8},
+                {0, 7, 8, 9},
                 {1, 3, 7},
                 {1, 5, 8},
                 {2, 4, 7},
                 {2, 6, 8},
                 {3, 5, 9},
                 {4, 6, 9}
-        });
+        }));
         int counter = 0;
-        int prev = 0;
         while (true) {
-            int tmp = base.pointCount();
-            base = generateNext(base, prev, counter++);
-            prev = tmp;
+            base = generateSimpleSteps(base, counter++);
         }
+    }
+
+    @Test
+    public void generateFanoNotMoufang() {
+        SimpleLiner base = joinByTwo(new SimpleLiner(12, new int[][]{
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8, 10, 11},
+                {1, 3, 7},
+                {1, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9, 10},
+                {4, 6, 9, 11}
+        }));
+        int counter = 0;
+        while (true) {
+            base = generateSimpleSteps(base, counter++);
+        }
+    }
+
+    private static SimpleLiner generateSimpleSteps(SimpleLiner base, int counter) {
+        System.out.println("Checking liner " + counter + " points " + base.pointCount() + " lines " + base.lineCount());
+        testCorrectness(base);
+        checkFano(quads(base, 3), base);
+        Map<Pair, FixBS> joins = new HashMap<>();
+        quads(base, 2).forEach(q -> {
+            int ab = base.line(q.a, q.b);
+            int cd = base.line(q.c, q.d);
+            int abcd = base.intersection(ab, cd);
+            int ac = base.line(q.a, q.c);
+            int bd = base.line(q.b, q.d);
+            int acbd = base.intersection(ac, bd);
+            int ad = base.line(q.a, q.d);
+            int bc = base.line(q.b, q.c);
+            int adbc = base.intersection(ad, bc);
+            if (abcd < 0) {
+                Pair p = new Pair(ab, cd);
+                FixBS bs = joins.computeIfAbsent(p, k -> new FixBS(base.lineCount()));
+                bs.set(ab);
+                bs.set(cd);
+                bs.set(base.line(acbd, adbc));
+            } else {
+                if (acbd < 0) {
+                    Pair p = new Pair(ac, bd);
+                    FixBS bs = joins.computeIfAbsent(p, k -> new FixBS(base.lineCount()));
+                    bs.set(ac);
+                    bs.set(bd);
+                    bs.set(base.line(abcd, adbc));
+                } else {
+                    Pair p = new Pair(ad, bc);
+                    FixBS bs = joins.computeIfAbsent(p, k -> new FixBS(base.lineCount()));
+                    bs.set(ad);
+                    bs.set(bc);
+                    bs.set(base.line(abcd, acbd));
+                }
+            }
+        });
+        List<FixBS> grouped = mergeBeams(joins.values());
+        int cnt = 0;
+        List<FixBS> newLines = Arrays.stream(base.lines()).map(FixBS::copy).toList();
+        for (FixBS beam : grouped) {
+            int newPt = base.pointCount() + cnt++;
+            for (int i = beam.nextSetBit(0); i >= 0; i = beam.nextSetBit(i + 1)) {
+                newLines.get(i).set(newPt);
+            }
+        }
+        SimpleLiner pre2Joined = new SimpleLiner(base.pointCount() + grouped.size(), newLines.toArray(FixBS[]::new));
+        return joinByTwo(pre2Joined);
+    }
+
+    private static List<FixBS> mergeBeams(Collection<FixBS> beams) {
+        List<FixBS> result = new ArrayList<>();
+        ex: for (FixBS beam : beams) {
+            for (FixBS present : result) {
+                if (present.equals(beam)) {
+                    continue ex;
+                }
+                if (present.intersects(beam) && !present.singleIntersection(beam)) {
+                    present.or(beam);
+                    continue ex;
+                }
+            }
+            result.add(beam);
+        }
+        return result;
+    }
+
+    private static SimpleLiner joinByTwo(SimpleLiner preBase) {
+        Pair[] notJoined = notJoined(preBase);
+        return new SimpleLiner(preBase.pointCount(),
+                Stream.concat(Arrays.stream(preBase.lines()).map(l -> l.stream().toArray()),
+                        Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
     }
 
     private static SimpleLiner generateNext(SimpleLiner preBase, int prevPts, int counter) {
@@ -52,7 +144,7 @@ public class FanoMoufangTest {
         System.out.println("Checking liner " + counter + " prev pts " + prevPts);
         testCorrectness(base);
         System.out.println("Base pts: " + base.pointCount() + ", lines: " + base.lineCount());
-        assertTrue(checkFano(quads(base, prevPts, null), base));
+        checkFano(quads(base, prevPts, null), base);
         List<int[]> twosLines = Arrays.stream(base.lines()).map(bs -> bs.stream().toArray()).collect(Collectors.toList());
         List<Quad> twos = quads(base, base.pointCount(), 2).toList();
         System.out.println("Twos: " + twos.size());
@@ -223,24 +315,8 @@ public class FanoMoufangTest {
         return notIntersecting.toArray(Pair[]::new);
     }
 
-    private static List<Quad> quads(SimpleLiner liner, int cap) {
-        List<Quad> result = new ArrayList<>();
-        for (int a = 0; a < cap; a++) {
-            for (int b = a + 1; b < cap; b++) {
-                for (int c = b + 1; c < cap; c++) {
-                    if (liner.collinear(a, b, c)) {
-                        continue;
-                    }
-                    for (int d = c + 1; d < cap; d++) {
-                        if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
-                            continue;
-                        }
-                        result.add(new Quad(a, b, c, d));
-                    }
-                }
-            }
-        }
-        return result;
+    private static Stream<Quad> quads(SimpleLiner liner, Integer desiredCount) {
+        return quads(liner, liner.pointCount(), desiredCount);
     }
 
     private static Stream<Quad> quads(SimpleLiner liner, int cap, Integer desiredCount) {
@@ -271,10 +347,13 @@ public class FanoMoufangTest {
                 })));
     }
 
-    private static boolean checkFano(Stream<Quad> quads, SimpleLiner liner) {
-        return quads.allMatch(q -> liner.collinear(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
-                liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
-                liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))));
+    private static void checkFano(Stream<Quad> quads, SimpleLiner liner) {
+        quads.forEach(q -> {
+            int[] pts = IntStream.of(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
+                    liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
+                    liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))).filter(i -> i >= 0).toArray();
+            assertTrue(liner.collinear(pts), q + " " + Arrays.toString(pts));
+        });
     }
 
     public static void testCorrectness(SimpleLiner plane) {
