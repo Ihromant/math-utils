@@ -62,9 +62,46 @@ public class FanoMoufangTest {
             int prev = base.pointCount();
             base = generateSimpleSteps(base, counter++);
             if (base.pointCount() == prev) {
-                base = addTriple(base, counter);
+                base = addTuple(base, counter);
             }
         }
+    }
+
+    private static SimpleLiner addTuple(SimpleLiner base, int counter) {
+        System.out.println("Before tuple liner " + counter + " points " + base.pointCount() + " lines " + base.lineCount());
+        testCorrectness(base);
+        Quad q = quads(base, 1).findAny().orElseThrow();
+        int newPc = base.pointCount() + 2;
+        List<FixBS> newLines = Arrays.stream(base.lines()).map(bs -> bs.copy(newPc)).collect(Collectors.toList());
+        int ab = base.line(q.a, q.b);
+        int cd = base.line(q.c, q.d);
+        int abcd = base.intersection(ab, cd);
+        int ac = base.line(q.a, q.c);
+        int bd = base.line(q.b, q.d);
+        int acbd = base.intersection(ac, bd);
+        int ad = base.line(q.a, q.d);
+        int bc = base.line(q.b, q.c);
+        int adbc = base.intersection(ad, bc);
+        if (abcd >= 0) {
+            newLines.get(ac).set(base.pointCount());
+            newLines.get(bd).set(base.pointCount());
+            newLines.get(ad).set(base.pointCount() + 1);
+            newLines.get(bc).set(base.pointCount() + 1);
+            newLines.add(of(newPc, abcd, base.pointCount(), base.pointCount() + 1));
+        } else {
+            newLines.get(ab).set(base.pointCount());
+            newLines.get(cd).set(base.pointCount());
+            if (acbd >= 0) {
+                newLines.get(ad).set(base.pointCount() + 1);
+                newLines.get(bc).set(base.pointCount() + 1);
+                newLines.add(of(newPc, acbd, base.pointCount(), base.pointCount() + 1));
+            } else {
+                newLines.get(ac).set(base.pointCount() + 1);
+                newLines.get(bd).set(base.pointCount() + 1);
+                newLines.add(of(newPc, adbc, base.pointCount(), base.pointCount() + 1));
+            }
+        }
+        return joinByTwo(new SimpleLiner(newPc, newLines.toArray(FixBS[]::new)));
     }
 
     private static SimpleLiner addTriple(SimpleLiner base, int counter) {
