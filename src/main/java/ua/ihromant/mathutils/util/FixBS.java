@@ -282,6 +282,10 @@ public class FixBS implements Comparable<FixBS> {
         return new FixBS(words.clone());
     }
 
+    public FixBS copy(int newSize) {
+        return new FixBS(Arrays.copyOf(words, len(newSize)));
+    }
+
     public IntStream stream() {
         return IntStream.iterate(nextSetBit(0), i -> i >= 0, i -> nextSetBit(i + 1));
     }
