@@ -44,6 +44,30 @@ public class FanoMoufangTest {
     }
 
     @Test
+    public void generateFanoNotNearMoufang() {
+        SimpleLiner base = adjustFano(joinByTwo(new SimpleLiner(12, new int[][]{
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8, 10, 11},
+                {1, 3, 7},
+                {1, 4, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9, 10},
+                {4, 6, 9, 11}
+        })));
+        int counter = 0;
+        while (true) {
+            int prev = base.pointCount();
+            base = generateSimpleSteps(base, counter++);
+            if (base.pointCount() == prev) {
+                base = addTuple(base, counter);
+            }
+        }
+    }
+
+    @Test
     public void generateFanoNotMoufang() {
         SimpleLiner base = joinByTwo(new SimpleLiner(12, new int[][]{
                 {0, 1, 2},
@@ -70,7 +94,8 @@ public class FanoMoufangTest {
     private static SimpleLiner addTuple(SimpleLiner base, int counter) {
         System.out.println("Before tuple liner " + counter + " points " + base.pointCount() + " lines " + base.lineCount());
         testCorrectness(base);
-        Quad q = quads(base, 1).findAny().orElseThrow();
+        int skip = 0;
+        Quad q = quads(base, 1).skip(skip).findAny().orElseThrow();
         int newPc = base.pointCount() + 2;
         List<FixBS> newLines = Arrays.stream(base.lines()).map(bs -> bs.copy(newPc)).collect(Collectors.toList());
         int ab = base.line(q.a, q.b);
