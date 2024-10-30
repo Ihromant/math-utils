@@ -156,6 +156,7 @@ public class FanoMoufangTest {
         System.out.println("Before twos liner " + counter + " points " + base.pointCount() + " lines " + base.lineCount());
         testCorrectness(base);
         checkFano(quads(base, 3), base);
+        logLiner(base);
         Set<FixBS> unique = new HashSet<>();
         quads(base, 2).forEach(q -> {
             int ab = base.line(q.a, q.b);
@@ -206,7 +207,9 @@ public class FanoMoufangTest {
             }
         }
         SimpleLiner pre2Joined = new SimpleLiner(newPc, newLines.toArray(FixBS[]::new));
-        return adjustFano(joinByTwo(pre2Joined));
+        SimpleLiner l = joinByTwo(pre2Joined);
+        logLiner(l);
+        return adjustFano(l);
     }
 
     private static void logTwoFano(FixBS intersectionTriple, int... pts) {
@@ -321,6 +324,13 @@ public class FanoMoufangTest {
             grouped.forEach(pts -> System.out.println(pts.stream().mapToObj(Integer::toString).collect(
                     Collectors.joining(", ", "newLines.add(of(newPc, ", "));"))));
             fail();
+        }
+    }
+
+    private static void logLiner(SimpleLiner liner) {
+        System.out.println("Current liner is");
+        for (int i = 0; i < liner.lineCount(); i++) {
+            System.out.println(i + ": " + liner.lines()[i]);
         }
     }
 
