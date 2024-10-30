@@ -1,51 +1,43 @@
 package ua.ihromant.mathutils;
 
+import java.util.Arrays;
+
 public class RelationLiner {
-    private final boolean[][][] relation;
+    private final int[][][] relation;
+    private final int[][] distinction;
 
     public RelationLiner(int pointCount, int[][] lines) {
-        this.relation = new boolean[pointCount][pointCount][pointCount];
+        this.relation = new int[pointCount][pointCount][pointCount];
+        this.distinction = new int[pointCount][pointCount];
+        for (int i = 0; i < pointCount; i++) {
+            Arrays.fill(distinction[i], -1);
+            distinction[i][i] = 1;
+        }
         for (int[] line : lines) {
             for (int i = 0; i < lines.length; i++) {
                 for (int j = i; j < lines.length; j++) {
                     for (int k = j; k < lines.length; k++) {
-                        relation[line[i]][line[j]][line[k]] = true;
-                        relation[line[i]][line[k]][line[j]] = true;
-                        relation[line[j]][line[i]][line[k]] = true;
-                        relation[line[j]][line[k]][line[i]] = true;
-                        relation[line[k]][line[i]][line[j]] = true;
-                        relation[line[k]][line[j]][line[i]] = true;
+                        relation[line[i]][line[j]][line[k]] = 1;
+                        relation[line[i]][line[k]][line[j]] = 1;
+                        relation[line[j]][line[i]][line[k]] = 1;
+                        relation[line[j]][line[k]][line[i]] = 1;
+                        relation[line[k]][line[i]][line[j]] = 1;
+                        relation[line[k]][line[j]][line[i]] = 1;
                     }
                 }
             }
         }
     }
 
-    public boolean collinear(int... pts) {
-        if (pts.length < 3) {
-            return true;
-        }
-        int fst = pts[0];
-        for (int i = 1; i < pts.length; i++) {
-            int snd = pts[i];
-            if (fst != snd) {
-                boolean[] line = relation[fst][snd];
-                for (int j = i + 1; j < pts.length; j++) {
-                    if (!line[pts[j]]) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-        }
-        return true;
+    public int collinear(int a, int b, int c) {
+        return relation[a][b][c];
     }
 
     public int intersection(Pair fst, Pair snd) {
-        boolean[] l1 = relation[fst.f()][fst.s()];
-        boolean[] l2 = relation[snd.f()][snd.s()];
+        int[] l1 = relation[fst.f()][fst.s()];
+        int[] l2 = relation[snd.f()][snd.s()];
         for (int i = 0; i < relation.length; i++) {
-            if (l1[i] && l2[i]) {
+            if (l1[i] == 1 && l2[i] == 1) {
                 return i;
             }
         }
