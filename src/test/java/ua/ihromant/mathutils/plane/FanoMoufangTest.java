@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -340,7 +341,8 @@ public class FanoMoufangTest {
                 }
             }
         });
-        List<FixBS> grouped = getGrouped(Stream.concat(Arrays.stream(liner.lines()).map(bs -> bs.copy(liner.pointCount())), unique.stream()).toList(), true);
+        List<FixBS> grouped = getGrouped(Stream.concat(Arrays.stream(liner.lines()).map(bs -> bs.copy(liner.pointCount())), unique.stream())
+                .sorted(Comparator.comparingInt(FixBS::cardinality).reversed()).toList(), true);
         if (grouped.size() != lc) {
             return adjustFano(new SimpleLiner(liner.pointCount(), grouped.toArray(FixBS[]::new)));
         }
