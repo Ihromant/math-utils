@@ -8,9 +8,9 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -155,7 +155,7 @@ public class FanoMoufangTest {
         System.out.println("Before twos liner " + counter + " points " + base.pointCount() + " lines " + base.lineCount());
         testCorrectness(base);
         checkFano(quads(base, 3), base);
-        Map<Pair, FixBS> joins = new HashMap<>();
+        Set<FixBS> unique = new HashSet<>();
         quads(base, 2).forEach(q -> {
             int ab = base.line(q.a, q.b);
             int cd = base.line(q.c, q.d);
@@ -167,28 +167,34 @@ public class FanoMoufangTest {
             int bc = base.line(q.b, q.c);
             int adbc = base.intersection(ad, bc);
             if (abcd < 0) {
-                Pair p = new Pair(ab, cd);
-                FixBS bs = joins.computeIfAbsent(p, k -> new FixBS(base.lineCount()));
+                FixBS bs = new FixBS(base.lineCount());
                 bs.set(ab);
                 bs.set(cd);
                 bs.set(base.line(acbd, adbc));
+                if (unique.add(bs)) {
+                    logTwoFano(bs, q.a, q.b, q.c, q.d, acbd, adbc);
+                }
             } else {
                 if (acbd < 0) {
-                    Pair p = new Pair(ac, bd);
-                    FixBS bs = joins.computeIfAbsent(p, k -> new FixBS(base.lineCount()));
+                    FixBS bs = new FixBS(base.lineCount());
                     bs.set(ac);
                     bs.set(bd);
                     bs.set(base.line(abcd, adbc));
+                    if (unique.add(bs)) {
+                        logTwoFano(bs, q.a, q.c, q.b, q.d, abcd, adbc);
+                    }
                 } else {
-                    Pair p = new Pair(ad, bc);
-                    FixBS bs = joins.computeIfAbsent(p, k -> new FixBS(base.lineCount()));
+                    FixBS bs = new FixBS(base.lineCount());
                     bs.set(ad);
                     bs.set(bc);
                     bs.set(base.line(abcd, acbd));
+                    if (unique.add(bs)) {
+                        logTwoFano(bs, q.a, q.d, q.b, q.c, abcd, acbd);
+                    }
                 }
             }
         });
-        List<FixBS> grouped = getGrouped(new ArrayList<>(joins.values()));
+        List<FixBS> grouped = getGrouped(new ArrayList<>(unique), false);
         int cnt = 0;
         int newPc = base.pointCount() + grouped.size();
         List<FixBS> newLines = Arrays.stream(base.lines()).map(bs -> bs.copy(newPc)).collect(Collectors.toList());
@@ -202,16 +208,22 @@ public class FanoMoufangTest {
         return adjustFano(joinByTwo(pre2Joined));
     }
 
-    private static List<FixBS> getGrouped(List<FixBS> grouped) {
+    private static void logTwoFano(FixBS intersectionTriple, int... pts) {
+        System.out.println("Consider points " + Arrays.toString(pts) + ". All lines are intersecting but ["
+                + pts[0] + ", " + pts[1] + "], [" + pts[2] + ", " + pts[3] + "], ["
+                + pts[4] + ", " + pts[5] + "]. Therefore lines " + intersectionTriple + " should belong to one beam");
+    }
+
+    private static List<FixBS> getGrouped(List<FixBS> grouped, boolean line) {
         int sz;
         do {
             sz = grouped.size();
-            grouped = mergeBeams(grouped);
+            grouped = mergeBeams(grouped, line);
         } while (sz != grouped.size());
         return grouped;
     }
 
-    private static List<FixBS> mergeBeams(Collection<FixBS> beams) {
+    private static List<FixBS> mergeBeams(Collection<FixBS> beams, boolean line) {
         List<FixBS> result = new ArrayList<>();
         ex: for (FixBS beam : beams) {
             for (FixBS present : result) {
@@ -219,7 +231,12 @@ public class FanoMoufangTest {
                     continue ex;
                 }
                 FixBS inter = present.intersection(beam);
+                if (inter.equals(beam)) {
+                    continue ex;
+                }
                 if (inter.cardinality() >= 2) {
+                    System.out.println("Consider " + (line ? "lines " : "beams ") + present + " and " + beam
+                            + ". They are intersecting with " + inter + ". Therefore we are uniting them to " + present.union(beam));
                     present.or(beam);
                     continue ex;
                 }
@@ -299,7 +316,7 @@ public class FanoMoufangTest {
             }
         });
         if (!failed.isEmpty()) {
-            List<FixBS> grouped = getGrouped(failed);
+            List<FixBS> grouped = getGrouped(failed, true);
             grouped.forEach(pts -> System.out.println(pts.stream().mapToObj(Integer::toString).collect(
                     Collectors.joining(", ", "newLines.add(of(newPc, ", "));"))));
             fail();
@@ -308,15 +325,22 @@ public class FanoMoufangTest {
 
     private static SimpleLiner adjustFano(SimpleLiner liner) {
         int lc = liner.lineCount();
-        List<FixBS> failed = quads(liner, 3).<FixBS>mapMulti((q, sink) -> {
+        Set<FixBS> unique = new HashSet<>();
+        quads(liner, 3).forEach(q -> {
             int[] pts = IntStream.of(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
                     liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
                     liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))).filter(i -> i >= 0).toArray();
             if (!liner.collinear(pts)) {
-                sink.accept(of(liner.pointCount(), pts));
+                FixBS bs = of(liner.pointCount(), pts);
+                if (unique.add(bs)) {
+                    System.out.println("Consider points " + q.a + ", " + q.b + ", " + q.c + ", " + q.d + ". They form full fano, but intersections "
+                    + liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)) + ", " + liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d))
+                    + ", " + liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c)) + " are not collinear. Therefore adding a line "
+                    + bs + " to the list");
+                }
             }
-        }).toList();
-        List<FixBS> grouped = getGrouped(Stream.concat(Arrays.stream(liner.lines()).map(bs -> bs.copy(liner.pointCount())), failed.stream()).toList());
+        });
+        List<FixBS> grouped = getGrouped(Stream.concat(Arrays.stream(liner.lines()).map(bs -> bs.copy(liner.pointCount())), unique.stream()).toList(), true);
         if (grouped.size() != lc) {
             return adjustFano(new SimpleLiner(liner.pointCount(), grouped.toArray(FixBS[]::new)));
         }
