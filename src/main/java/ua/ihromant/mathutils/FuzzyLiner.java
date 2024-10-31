@@ -21,11 +21,6 @@ public class FuzzyLiner {
 
     public FuzzyLiner(int pc, int[][] lines) {
         this(pc);
-        for (int i = 0; i < pc; i++) {
-            for (int j = i + 1; j < pc; j++) {
-                distinguish(new Pair(i, j));
-            }
-        }
         for (int[] line : lines) {
             for (int i = 0; i < l.length(); i++) {
                 int p1 = line[i];
@@ -35,11 +30,10 @@ public class FuzzyLiner {
                         if (k == p1 || k == p2) {
                             continue;
                         }
-                        Triple tr = new Triple(p1, p2, k);
                         if (Arrays.binarySearch(line, k) >= 0) {
-                            colline(tr);
+                            colline(p1, p2, k);
                         } else {
-                            triangle(tr);
+                            triangle(p1, p2, k);
                         }
                     }
                 }
@@ -47,51 +41,59 @@ public class FuzzyLiner {
         }
     }
 
-    public void distinguish(Pair p) {
-        int idx = idx(p);
+    public boolean distinguish(int i, int j) {
+        int idx = idx(i, j);
         if (s.get(idx)) {
-            throw new IllegalArgumentException(p.toString());
+            throw new IllegalArgumentException(i + " " + j);
         }
+        boolean res = !d.get(idx);
         d.set(idx);
+        return res;
     }
 
-    public void unite(Pair p) {
-        int idx = idx(p);
+    public boolean unite(int i, int j) {
+        int idx = idx(i, j);
         if (d.get(idx)) {
-            throw new IllegalArgumentException(p.toString());
+            throw new IllegalArgumentException(i + " " + j);
         }
+        boolean res = !s.get(idx);
         s.set(idx);
+        return res;
     }
 
-    public void colline(Triple tr) {
-        int idx = idx(tr);
+    public boolean colline(int a, int b, int c) {
+        int idx = idx(a, b, c);
         if (t.get(idx)) {
-            throw new IllegalArgumentException(tr.toString());
+            throw new IllegalArgumentException(a + " " + b + " " + c);
         }
+        boolean res = !l.get(idx);
         l.set(idx);
+        return res;
     }
 
-    public void triangle(Triple tr) {
-        int idx = idx(tr);
+    public boolean triangle(int a, int b, int c) {
+        int idx = idx(a, b, c);
         if (l.get(idx)) {
-            throw new IllegalArgumentException(tr.toString());
+            throw new IllegalArgumentException(a + " " + b + " " + c);
         }
+        boolean res = !t.get(idx);
         t.set(idx);
+        return res;
     }
 
-    private int idx(Pair p) {
-        return p.f() * pc + p.s();
+    private int idx(int i, int j) {
+        return i * pc + j;
     }
 
-    private int idx(Triple t) {
-        return (t.f() * pc + t.s()) * pc + t.t();
+    private int idx(int i, int j, int k) {
+        return (i * pc + j) * pc + k;
     }
 
     public boolean collinear(int a, int b, int c) {
         if (a == b || a == c || b == c) {
             return true;
         }
-        return l.get(idx(new Triple(a, b, c)));
+        return l.get(idx(a, b, c));
     }
 
     public int intersection(Pair fst, Pair snd) {
