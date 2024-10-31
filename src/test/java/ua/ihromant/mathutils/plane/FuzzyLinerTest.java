@@ -47,26 +47,12 @@ public class FuzzyLinerTest {
         }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
-        base = connectTwos(base);
+        singleByContradiction(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
-        base = connectOnes(base);
-        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
-        Quad q;
-        while ((q = base.quad(0)) != null) {
-            int newPt = base.getPc();
-            System.out.println("Adding three points " + newPt + " " + (newPt + 1) + " for quadruple " + q);
-            base = base.addPoint().addPoint().addPoint();
-            base.colline(q.a(), q.b(), newPt);
-            base.colline(q.c(), q.d(), newPt);
-            base.colline(q.a(), q.c(), newPt + 1);
-            base.colline(q.b(), q.d(), newPt + 1);
-            base.colline(q.a(), q.d(), newPt + 2);
-            base.colline(q.b(), q.c(), newPt + 2);
-            base.colline(newPt, newPt + 1, newPt + 2);
-            base = connectTwos(base);
-        }
+        System.out.println(base.undefinedTriples());
     }
 
     @Test
@@ -105,6 +91,51 @@ public class FuzzyLinerTest {
             base.colline(newPt, newPt + 1, newPt + 2);
             base = connectTwos(base);
         }
+    }
+
+    private static void singleByContradiction(FuzzyLiner base) {
+        List<Triple> undefined = base.undefinedTriples();
+        int size;
+        do {
+            size = undefined.size();
+            for (Triple t : undefined) {
+                Boolean needsToBeCollinear = identifyCollinearity(base, t);
+                if (needsToBeCollinear == null) {
+                    continue;
+                }
+                if (needsToBeCollinear) {
+                    base.colline(t.f(), t.s(), t.t());
+                } else {
+                    base.triangule(t.f(), t.s(), t.t());
+                }
+                base.update();
+            }
+            undefined = base.undefinedTriples();
+        } while (undefined.size() != size);
+    }
+
+    private static Boolean identifyCollinearity(FuzzyLiner l, Triple t) {
+        Boolean result = null;
+        try {
+            FuzzyLiner copy = l.copy();
+            copy.colline(t.f(), t.s(), t.t());
+            copy.update();
+            enhanceFullFano(copy);
+        } catch (IllegalArgumentException e) {
+            result = false;
+        }
+        try {
+            FuzzyLiner copy = l.copy();
+            copy.triangule(t.f(), t.s(), t.t());
+            copy.update();
+            enhanceFullFano(copy);
+        } catch (IllegalArgumentException e) {
+            if (result != null) {
+                throw new IllegalArgumentException("Total impossibility");
+            }
+            result = true;
+        }
+        return result;
     }
 
     private static FuzzyLiner connectOnes(FuzzyLiner base) {

@@ -93,9 +93,9 @@ public class FuzzyLiner {
     }
 
     public void update() {
-        int counter = 0;
+        //int counter = 0;
         while (updateStep()) {
-            System.out.println("Updating... " + counter++);
+            //System.out.println("Updating... " + counter++);
         }
     }
 
