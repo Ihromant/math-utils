@@ -19,5 +19,6 @@ public class FuzzyLinerTest {
                 {4, 6, 9, 11}
         });
         base.update();
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
     }
 }

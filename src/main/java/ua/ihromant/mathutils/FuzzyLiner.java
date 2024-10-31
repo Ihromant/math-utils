@@ -1,18 +1,23 @@
 package ua.ihromant.mathutils;
 
-import java.util.Arrays;
+import lombok.Getter;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+@Getter
 public class FuzzyLiner {
     private final int pc;
-    private final boolean[][] d;
-    private final boolean[][][] l;
-    private final boolean[][][] t;
+    private final Set<Pair> d;
+    private final Set<Triple> l;
+    private final Set<Triple> t;
 
     public FuzzyLiner(int pc) {
         this.pc = pc;
-        this.d = new boolean[pc][pc];
-        this.l = new boolean[pc][pc][pc];
-        this.t = new boolean[pc][pc][pc];
+        this.d = new HashSet<>();
+        this.l = new HashSet<>();
+        this.t = new HashSet<>();
     }
 
     public FuzzyLiner(int[][] lines) {
@@ -41,61 +46,38 @@ public class FuzzyLiner {
         if (i == j) {
             throw new IllegalArgumentException(i + " " + j);
         }
-        if (d[i][j]) {
-            return false;
-        }
-        d[i][j] = true;
-        d[j][i] = true;
-        return true;
+        return d.add(new Pair(i, j));
     }
 
     public boolean colline(int a, int b, int c) {
-        if (a == b || a == c || b == c || t[a][b][c]) {
+        if (a == b || a == c || b == c || triangle(a, b, c)) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        if (l[a][b][c]) {
-            return false;
-        }
-        l[a][b][c] = true;
-        l[a][c][b] = true;
-        l[b][a][c] = true;
-        l[b][c][a] = true;
-        l[c][a][b] = true;
-        l[c][b][a] = true;
-        return true;
+        return l.add(new Triple(a, b, c));
     }
 
     public boolean triangule(int a, int b, int c) {
-        if (a == b || a == c || b == c || l[a][b][c]) {
+        if (a == b || a == c || b == c || collinear(a, b, c)) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        if (t[a][b][c]) {
-            return false;
-        }
-        t[a][b][c] = true;
-        t[a][c][b] = true;
-        t[b][a][c] = true;
-        t[b][c][a] = true;
-        t[c][a][b] = true;
-        t[c][b][a] = true;
-        return true;
+        return t.add(new Triple(a, b, c));
     }
 
     public boolean distinct(int a, int b) {
-        return d[a][b];
+        return d.contains(new Pair(a, b));
     }
 
     public boolean collinear(int a, int b, int c) {
-        return l[a][b][c];
+        return l.contains(new Triple(a, b, c));
     }
 
     public boolean triangle(int a, int b, int c) {
-        return t[a][b][c];
+        return t.contains(new Triple(a, b, c));
     }
 
     public int intersection(Pair fst, Pair snd) {
         for (int i = 0; i < pc; i++) {
-            if (l[fst.f()][fst.s()][i] && l[snd.f()][snd.s()][i]) {
+            if (collinear(fst.f(), fst.s(), i) && collinear(snd.f(), snd.s(), i)) {
                 return i;
             }
         }
