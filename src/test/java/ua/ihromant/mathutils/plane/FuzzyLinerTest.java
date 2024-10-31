@@ -53,16 +53,19 @@ public class FuzzyLinerTest {
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         singleByContradiction(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
-        System.out.println(base.undefinedTriples());
         List<FuzzyLiner> variants = multipleByContradiction(base);
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.stream().flatMap(var -> joinTwo(var).stream()).toList();
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var)).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.stream().flatMap(var -> joinTwo(var).stream()).toList();
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var)).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.stream().flatMap(var -> joinTwo(var).stream()).toList();
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var)).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.subList(0, 1).stream().flatMap(var -> joinTwo(var).stream()).toList();
+        for (int i = 0; i < variants.size(); i++) {
+            FuzzyLiner l = variants.get(i);
+            System.out.println(i + " " + l.quads(2).size() + " " + l.quads(1).size());
+        }
+        variants = variants.stream().flatMap(var -> expand(joinOne(var)).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
     }
 
@@ -104,7 +107,48 @@ public class FuzzyLinerTest {
         }
     }
 
-    private static List<FuzzyLiner> joinTwo(FuzzyLiner base) {
+    private static FuzzyLiner joinOne(FuzzyLiner base) {
+        Quad q1 = base.quad(1);
+        int newPt = base.getPc();
+        FuzzyLiner result = base.addPoint().addPoint();
+        Pair ab = new Pair(q1.a(), q1.b());
+        Pair cd = new Pair(q1.c(), q1.d());
+        int abcd = result.intersection(ab, cd);
+        Pair ac = new Pair(q1.a(), q1.c());
+        Pair bd = new Pair(q1.b(), q1.d());
+        int acbd = result.intersection(ac, bd);
+        Pair ad = new Pair(q1.a(), q1.d());
+        Pair bc = new Pair(q1.b(), q1.c());
+        int adbc = result.intersection(ad, bc);
+        if (abcd >= 0) {
+            result.colline(q1.a(), q1.c(), newPt);
+            result.colline(q1.b(), q1.d(), newPt);
+            result.colline(q1.a(), q1.d(), newPt + 1);
+            result.colline(q1.b(), q1.c(), newPt + 1);
+            result.colline(abcd, newPt, newPt + 1);
+        } else {
+            result.colline(q1.a(), q1.b(), newPt);
+            result.colline(q1.c(), q1.d(), newPt);
+            if (acbd >= 0) {
+                result.colline(q1.a(), q1.d(), newPt + 1);
+                result.colline(q1.b(), q1.c(), newPt + 1);
+                result.colline(acbd, newPt, newPt + 1);
+            } else {
+                result.colline(q1.a(), q1.c(), newPt + 1);
+                result.colline(q1.b(), q1.d(), newPt + 1);
+                result.colline(adbc, newPt, newPt + 1);
+            }
+        }
+        try {
+            result.update();
+            enhanceFullFano(result);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+        return result;
+    }
+
+    private static FuzzyLiner joinTwo(FuzzyLiner base) {
         Quad q2 = base.quad(2);
         int newPt = base.getPc();
         FuzzyLiner result = base.addPoint();
@@ -136,6 +180,13 @@ public class FuzzyLinerTest {
             result.update();
             enhanceFullFano(result);
         } catch (IllegalArgumentException e) {
+            return null;
+        }
+        return result;
+    }
+
+    private static List<FuzzyLiner> expand(FuzzyLiner result) {
+        if (result == null) {
             return List.of();
         }
         if (result.isFull()) {
@@ -150,6 +201,7 @@ public class FuzzyLinerTest {
         if (undefined.size() > Long.SIZE - 1) {
             throw new IllegalStateException(Integer.toString(undefined.size()));
         }
+        System.out.println("Checking " + undefined.size());
         List<FuzzyLiner> result = new ArrayList<>();
         long max = (1L << undefined.size()) - 1;
         for (int i = 0; i < max; i++) {
