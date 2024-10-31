@@ -23,28 +23,31 @@ public class FuzzyLiner {
         this.t = new HashSet<>(t);
     }
 
-    public FuzzyLiner(int[][] lines) {
+    public FuzzyLiner(int[][] lines, Triple[] triangles) {
         this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, Set.of(), Set.of(), Set.of());
         for (int[] line : lines) {
             for (int i = 0; i < line.length; i++) {
                 int p1 = line[i];
                 for (int j = i + 1; j < line.length; j++) {
                     int p2 = line[j];
-                    for (int k = 0; k < pc; k++) {
-                        if (k == p1 || k == p2) {
-                            continue;
-                        }
-                        if (Arrays.binarySearch(line, k) >= 0) {
-                            colline(p1, p2, k);
-                        }
+                    for (int k = j + 1; k < line.length; k++) {
+                        colline(p1, p2, line[k]);
                     }
                 }
             }
         }
+        for (Triple t : triangles) {
+            triangule(t.f(), t.s(), t.t());
+        }
+        update();
     }
 
     public FuzzyLiner addPoint() {
         return new FuzzyLiner(pc + 1, d, l, t);
+    }
+
+    public FuzzyLiner copy() {
+        return new FuzzyLiner(pc, d, l, t);
     }
 
     public boolean distinguish(int i, int j) {
@@ -204,5 +207,9 @@ public class FuzzyLiner {
             }
         }
         return result;
+    }
+
+    public boolean isFull() {
+        return l.size() + t.size() == pc * (pc - 1) * (pc - 2) / 6;
     }
 }

@@ -3,6 +3,7 @@ package ua.ihromant.mathutils.plane;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.FuzzyLiner;
 import ua.ihromant.mathutils.Pair;
+import ua.ihromant.mathutils.Triple;
 
 import java.util.List;
 
@@ -20,8 +21,9 @@ public class FuzzyLinerTest {
                 {2, 6, 8},
                 {3, 5, 9, 10},
                 {4, 6, 9, 11}
-        });
-        base.update();
+        }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         base = connectTwos(base);
@@ -41,14 +43,9 @@ public class FuzzyLinerTest {
                 {2, 6, 8},
                 {3, 5, 9},
                 {4, 6, 9}
-        });
-        base.triangule(1, 3, 5);
-        base.triangule(2, 4, 6);
-        base.triangule(0, 1, 3);
-        base.triangule(0, 1, 5);
-        base.triangule(0, 3, 5);
-        base.triangule(0, 7, 9);
-        base.update();
+        }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         base = connectTwos(base);
@@ -84,14 +81,9 @@ public class FuzzyLinerTest {
                 {2, 6, 8},
                 {3, 5, 9, 10},
                 {4, 6, 9, 11}
-        });
-        base.triangule(1, 3, 5);
-        base.triangule(2, 4, 6);
-        base.triangule(0, 1, 3);
-        base.triangule(0, 1, 5);
-        base.triangule(0, 3, 5);
-        base.triangule(0, 7, 9);
-        base.update();
+        }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         base = connectTwos(base);
