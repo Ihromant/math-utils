@@ -145,6 +145,7 @@ public class FuzzyLinerTest {
         } catch (IllegalArgumentException e) {
             return null;
         }
+        singleByContradiction(result);
         return result;
     }
 
@@ -182,6 +183,7 @@ public class FuzzyLinerTest {
         } catch (IllegalArgumentException e) {
             return null;
         }
+        singleByContradiction(result);
         return result;
     }
 
@@ -192,7 +194,6 @@ public class FuzzyLinerTest {
         if (result.isFull()) {
             return List.of(result);
         }
-        singleByContradiction(result);
         return multipleByContradiction(result);
     }
 
