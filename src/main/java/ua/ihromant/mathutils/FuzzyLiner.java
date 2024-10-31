@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import lombok.Getter;
+import ua.ihromant.mathutils.plane.Quad;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -128,5 +129,39 @@ public class FuzzyLiner {
             }
         }
         return result;
+    }
+
+    public Quad quad(int desiredCount) {
+        for (int a = 0; a < pc; a++) {
+            for (int b = a + 1; b < pc; b++) {
+                if (!distinct(a, b)) {
+                    continue;
+                }
+                for (int c = b + 1; c < pc; c++) {
+                    if (!triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < pc; d++) {
+                        if (!triangle(a, c, d) || !triangle(a, b, d) || !triangle(b, c, d)) {
+                            continue;
+                        }
+                        int cnt = 0;
+                        if (intersection(new Pair(a, b), new Pair(c, d)) >= 0) {
+                            cnt++;
+                        }
+                        if (intersection(new Pair(a, c), new Pair(b, d)) >= 0) {
+                            cnt++;
+                        }
+                        if (intersection(new Pair(a, d), new Pair(b, c)) >= 0) {
+                            cnt++;
+                        }
+                        if (cnt == desiredCount) {
+                            return new Quad(a, b, c, d);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 }
