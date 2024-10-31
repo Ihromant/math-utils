@@ -29,6 +29,49 @@ public class FuzzyLinerTest {
     }
 
     @Test
+    public void testBaseFanoNotMoufang() {
+        FuzzyLiner base = new FuzzyLiner(new int[][]{
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8},
+                {1, 3, 7},
+                {1, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9},
+                {4, 6, 9}
+        });
+        base.triangule(1, 3, 5);
+        base.triangule(2, 4, 6);
+        base.triangule(0, 1, 3);
+        base.triangule(0, 1, 5);
+        base.triangule(0, 3, 5);
+        base.triangule(0, 7, 9);
+        base.update();
+        enhanceFullFano(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        base = connectTwos(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        base = connectOnes(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        Quad q;
+        while ((q = base.quad(0)) != null) {
+            int newPt = base.getPc();
+            System.out.println("Adding three points " + newPt + " " + (newPt + 1) + " for quadruple " + q);
+            base = base.addPoint().addPoint().addPoint();
+            base.colline(q.a(), q.b(), newPt);
+            base.colline(q.c(), q.d(), newPt);
+            base.colline(q.a(), q.c(), newPt + 1);
+            base.colline(q.b(), q.d(), newPt + 1);
+            base.colline(q.a(), q.d(), newPt + 2);
+            base.colline(q.b(), q.c(), newPt + 2);
+            base.colline(newPt, newPt + 1, newPt + 2);
+            base = connectTwos(base);
+        }
+    }
+
+    @Test
     public void testFanoNotMoufang() {
         FuzzyLiner base = new FuzzyLiner(new int[][]{
                 {0, 1, 2},
@@ -42,10 +85,12 @@ public class FuzzyLinerTest {
                 {3, 5, 9, 10},
                 {4, 6, 9, 11}
         });
-        base.triangule(1, 4, 10);
-        base.triangule(1, 6, 10);
-        base.triangule(2, 3, 11);
-        base.triangule(2, 5, 11);
+        base.triangule(1, 3, 5);
+        base.triangule(2, 4, 6);
+        base.triangule(0, 1, 3);
+        base.triangule(0, 1, 5);
+        base.triangule(0, 3, 5);
+        base.triangule(0, 7, 9);
         base.update();
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));

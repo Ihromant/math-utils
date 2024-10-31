@@ -36,8 +36,6 @@ public class FuzzyLiner {
                         }
                         if (Arrays.binarySearch(line, k) >= 0) {
                             colline(p1, p2, k);
-                        } else {
-                            triangule(p1, p2, k);
                         }
                     }
                 }
@@ -94,15 +92,15 @@ public class FuzzyLiner {
     public void update() {
         int counter = 0;
         while (updateStep()) {
-            System.out.println("Updating... " + counter);
+            System.out.println("Updating... " + counter++);
         }
     }
 
     private boolean updateStep() {
         boolean result = false;
         for (int x = 0; x < pc; x++) {
-            for (int y = x + 1; y < pc; y++) {
-                for (int z = y + 1; z < pc; z++) {
+            for (int y = 0; y < pc; y++) {
+                for (int z = 0; z < pc; z++) {
                     boolean cxyz = collinear(x, y, z);
                     if (triangle(x, y, z)) {
                         result = result | distinguish(x, y) | distinguish(y, z) | distinguish(x, z);
@@ -111,24 +109,12 @@ public class FuzzyLiner {
                         continue;
                     }
                     result = result | distinguish(x, y) | distinguish(y, z) | distinguish(x, z);
-                    for (int w = z + 1; w < pc; w++) {
+                    for (int w = 0; w < pc; w++) {
                         if (distinct(z, w) && collinear(x, y, w)) {
                             result = result | colline(z, w, x) | colline(z, w, y);
                         }
-                        if (distinct(y, w) && collinear(x, z, w)) {
-                            result = result | colline(y, w, x) | colline(y, w, z);
-                        }
-                        if (distinct(x, w) && collinear(z, y, w)) {
-                            result = result | colline(x, w, y) | colline(x, w, z);
-                        }
                         if (triangle(x, y, w)) {
                             result = result | triangule(x, z, w) | triangule(y, z, w);
-                        }
-                        if (triangle(x, z, w)) {
-                            result = result | triangule(x, y, w) | triangule(y, z, w);
-                        }
-                        if (triangle(y, z, w)) {
-                            result = result | triangule(x, z, w) | triangule(x, y, w);
                         }
                     }
                 }
