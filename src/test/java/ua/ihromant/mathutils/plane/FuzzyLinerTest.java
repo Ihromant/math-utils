@@ -42,6 +42,10 @@ public class FuzzyLinerTest {
                 {3, 5, 9, 10},
                 {4, 6, 9, 11}
         });
+        base.triangule(1, 4, 10);
+        base.triangule(1, 6, 10);
+        base.triangule(2, 3, 11);
+        base.triangule(2, 5, 11);
         base.update();
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
