@@ -51,14 +51,14 @@ public class BooleanThalesTest {
         Quad q = quads(base, 1).skip(skip).findAny().orElseThrow();
         int newPc = base.pointCount() + 2;
         List<FixBS> newLines = Arrays.stream(base.lines()).map(bs -> bs.copy(newPc)).collect(Collectors.toList());
-        int ab = base.line(q.a, q.b);
-        int cd = base.line(q.c, q.d);
+        int ab = base.line(q.a(), q.b());
+        int cd = base.line(q.c(), q.d());
         int abcd = base.intersection(ab, cd);
-        int ac = base.line(q.a, q.c);
-        int bd = base.line(q.b, q.d);
+        int ac = base.line(q.a(), q.c());
+        int bd = base.line(q.b(), q.d());
         int acbd = base.intersection(ac, bd);
-        int ad = base.line(q.a, q.d);
-        int bc = base.line(q.b, q.c);
+        int ad = base.line(q.a(), q.d());
+        int bc = base.line(q.b(), q.c());
         int adbc = base.intersection(ad, bc);
         if (abcd >= 0) {
             newLines.get(ac).set(base.pointCount());
@@ -88,12 +88,12 @@ public class BooleanThalesTest {
         Quad q = quads(base, 0).findAny().orElseThrow();
         int newPc = base.pointCount() + 3;
         List<FixBS> newLines = Arrays.stream(base.lines()).map(bs -> bs.copy(newPc)).collect(Collectors.toList());
-        int ab = base.line(q.a, q.b);
-        int cd = base.line(q.c, q.d);
-        int ac = base.line(q.a, q.c);
-        int bd = base.line(q.b, q.d);
-        int ad = base.line(q.a, q.d);
-        int bc = base.line(q.b, q.c);
+        int ab = base.line(q.a(), q.b());
+        int cd = base.line(q.c(), q.d());
+        int ac = base.line(q.a(), q.c());
+        int bd = base.line(q.b(), q.d());
+        int ad = base.line(q.a(), q.d());
+        int bc = base.line(q.b(), q.c());
         newLines.get(ab).set(base.pointCount());
         newLines.get(cd).set(base.pointCount());
         newLines.get(ac).set(base.pointCount() + 1);
@@ -111,14 +111,14 @@ public class BooleanThalesTest {
         logLiner(base);
         Set<FixBS> unique = new HashSet<>();
         quads(base, 2).forEach(q -> {
-            int ab = base.line(q.a, q.b);
-            int cd = base.line(q.c, q.d);
+            int ab = base.line(q.a(), q.b());
+            int cd = base.line(q.c(), q.d());
             int abcd = base.intersection(ab, cd);
-            int ac = base.line(q.a, q.c);
-            int bd = base.line(q.b, q.d);
+            int ac = base.line(q.a(), q.c());
+            int bd = base.line(q.b(), q.d());
             int acbd = base.intersection(ac, bd);
-            int ad = base.line(q.a, q.d);
-            int bc = base.line(q.b, q.c);
+            int ad = base.line(q.a(), q.d());
+            int bc = base.line(q.b(), q.c());
             int adbc = base.intersection(ad, bc);
             if (abcd < 0) {
                 FixBS bs = new FixBS(base.lineCount());
@@ -126,7 +126,7 @@ public class BooleanThalesTest {
                 bs.set(cd);
                 bs.set(base.line(acbd, adbc));
                 if (unique.add(bs)) {
-                    logTwoFano(bs, q.a, q.b, q.c, q.d, acbd, adbc);
+                    logTwoFano(bs, q.a(), q.b(), q.c(), q.d(), acbd, adbc);
                 }
             } else {
                 if (acbd < 0) {
@@ -135,7 +135,7 @@ public class BooleanThalesTest {
                     bs.set(bd);
                     bs.set(base.line(abcd, adbc));
                     if (unique.add(bs)) {
-                        logTwoFano(bs, q.a, q.c, q.b, q.d, abcd, adbc);
+                        logTwoFano(bs, q.a(), q.c(), q.b(), q.d(), abcd, adbc);
                     }
                 } else {
                     FixBS bs = new FixBS(base.lineCount());
@@ -143,7 +143,7 @@ public class BooleanThalesTest {
                     bs.set(bc);
                     bs.set(base.line(abcd, acbd));
                     if (unique.add(bs)) {
-                        logTwoFano(bs, q.a, q.d, q.b, q.c, abcd, acbd);
+                        logTwoFano(bs, q.a(), q.d(), q.b(), q.c(), abcd, acbd);
                     }
                 }
             }
@@ -215,8 +215,6 @@ public class BooleanThalesTest {
         return bs;
     }
 
-    private record Quad(int a, int b, int c, int d) {}
-
     private static Pair[] notJoined(SimpleLiner liner) {
         List<Pair> notIntersecting = new ArrayList<>();
         for (int a = 0; a < liner.pointCount(); a++) {
@@ -265,9 +263,9 @@ public class BooleanThalesTest {
     private static void checkFano(Stream<Quad> quads, SimpleLiner liner) {
         List<FixBS> failed = new ArrayList<>();
         quads.forEach(q -> {
-            int[] pts = IntStream.of(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
-                    liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
-                    liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))).filter(i -> i >= 0).toArray();
+            int[] pts = IntStream.of(liner.intersection(liner.line(q.a(), q.b()), liner.line(q.c(), q.d())),
+                    liner.intersection(liner.line(q.a(), q.c()), liner.line(q.b(), q.d())),
+                    liner.intersection(liner.line(q.a(), q.d()), liner.line(q.b(), q.c()))).filter(i -> i >= 0).toArray();
             if (!liner.collinear(pts)) {
                 failed.add(of(liner.pointCount(), pts));
             }
@@ -291,15 +289,15 @@ public class BooleanThalesTest {
         int lc = liner.lineCount();
         Set<FixBS> unique = new HashSet<>();
         quads(liner, 3).forEach(q -> {
-            int[] pts = IntStream.of(liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)),
-                    liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d)),
-                    liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c))).filter(i -> i >= 0).toArray();
+            int[] pts = IntStream.of(liner.intersection(liner.line(q.a(), q.b()), liner.line(q.c(), q.d())),
+                    liner.intersection(liner.line(q.a(), q.c()), liner.line(q.b(), q.d())),
+                    liner.intersection(liner.line(q.a(), q.d()), liner.line(q.b(), q.c()))).filter(i -> i >= 0).toArray();
             if (!liner.collinear(pts)) {
                 FixBS bs = of(liner.pointCount(), pts);
                 if (unique.add(bs)) {
-                    System.out.println("Consider points " + q.a + ", " + q.b + ", " + q.c + ", " + q.d + ". They form full fano, but intersections "
-                            + liner.intersection(liner.line(q.a, q.b), liner.line(q.c, q.d)) + ", " + liner.intersection(liner.line(q.a, q.c), liner.line(q.b, q.d))
-                            + ", " + liner.intersection(liner.line(q.a, q.d), liner.line(q.b, q.c)) + " are not collinear. Therefore adding a line "
+                    System.out.println("Consider points " + q.a() + ", " + q.b() + ", " + q.c() + ", " + q.d() + ". They form full fano, but intersections "
+                            + liner.intersection(liner.line(q.a(), q.b()), liner.line(q.c(), q.d())) + ", " + liner.intersection(liner.line(q.a(), q.c()), liner.line(q.b(), q.d()))
+                            + ", " + liner.intersection(liner.line(q.a(), q.d()), liner.line(q.b(), q.c())) + " are not collinear. Therefore adding a line "
                             + bs + " to the list");
                 }
             }
