@@ -4,9 +4,11 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.FuzzyLiner;
 import ua.ihromant.mathutils.Pair;
 import ua.ihromant.mathutils.Triple;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.IntStream;
 
 public class FuzzyLinerTest {
     @Test
@@ -33,7 +35,7 @@ public class FuzzyLinerTest {
     }
 
     @Test
-    public void testBaseFanoNotMoufang() {
+    public void testBaseFanoNotMoufang1() {
         FuzzyLiner base = new FuzzyLiner(new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
@@ -55,17 +57,49 @@ public class FuzzyLinerTest {
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         List<FuzzyLiner> variants = multipleByContradiction(base);
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.stream().flatMap(var -> expand(joinTwo(var)).stream()).toList();
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.stream().flatMap(var -> expand(joinTwo(var)).stream()).toList();
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = variants.stream().flatMap(var -> expand(joinTwo(var)).stream()).toList();
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        for (int i = 0; i < variants.size(); i++) {
+//        for (int i = 0; i < variants.size(); i++) {
+//            FuzzyLiner l = variants.get(i);
+//            List<Quad> quads = l.quads(1);
+//            for (int j = 0; j < quads.size(); j++) {
+//                FuzzyLiner l1 = joinOne(l, quads.get(j));
+//                List<Triple> undefined = l1.undefinedTriples();
+//                System.out.println(i + " " + j + " " + undefined.size());
+//            }
+//        }
+        List<FuzzyLiner> vs = new ArrayList<>(variants);
+        variants = IntStream.range(0, variants.size()).boxed().flatMap(i -> {
+            FuzzyLiner var = vs.get(i);
+            List<FuzzyLiner> expanded = expand(joinOne(var, var.quads(1).get(i == 0 ? 66 : 0)));
+            System.out.println("Variant " + i + " yields to " + expanded.size() + " " + var.quads(1).get(i == 0 ? 66 : 0));
+            return expanded.stream();
+        }).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        FixBS incorrect = new FixBS(variants.size());
+        int[][] values = new int[variants.size()][];
+        ex: for (int i = 0; i < variants.size(); i++) {
             FuzzyLiner l = variants.get(i);
-            System.out.println(i + " " + l.quads(2).size() + " " + l.quads(1).size());
+            List<Quad> quads = l.quads(2);
+            values[i] = new int[quads.size()];
+            for (int j = 0; j < quads.size(); j++) {
+                FuzzyLiner l1 = joinTwo(l, quads.get(j));
+                if (l1 == null) {
+                    incorrect.set(i);
+                    continue ex;
+                }
+                values[i][j] = l1.undefinedTriples().size();
+            }
         }
-        variants = variants.stream().flatMap(var -> expand(joinOne(var)).stream()).toList();
+        int[] minIdxes = new int[variants.size()];
+        for (int i = 0; i < variants.size(); i++) {
+
+        }
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
     }
 
@@ -107,8 +141,7 @@ public class FuzzyLinerTest {
         }
     }
 
-    private static FuzzyLiner joinOne(FuzzyLiner base) {
-        Quad q1 = base.quad(1);
+    private static FuzzyLiner joinOne(FuzzyLiner base, Quad q1) {
         int newPt = base.getPc();
         FuzzyLiner result = base.addPoint().addPoint();
         Pair ab = new Pair(q1.a(), q1.b());
@@ -149,8 +182,7 @@ public class FuzzyLinerTest {
         return result;
     }
 
-    private static FuzzyLiner joinTwo(FuzzyLiner base) {
-        Quad q2 = base.quad(2);
+    private static FuzzyLiner joinTwo(FuzzyLiner base, Quad q2) {
         int newPt = base.getPc();
         FuzzyLiner result = base.addPoint();
         Pair ab = new Pair(q2.a(), q2.b());
