@@ -1,30 +1,28 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.mathutils.util.FixBS;
-
 import java.util.Arrays;
 
 public class FuzzyLiner {
     private final int pc;
-    private final FixBS s;
-    private final FixBS d;
-    private final FixBS l;
-    private final FixBS t;
+    private final boolean[][] s;
+    private final boolean[][] d;
+    private final boolean[][][] l;
+    private final boolean[][][] t;
 
     public FuzzyLiner(int pc) {
         this.pc = pc;
-        this.s = new FixBS(pc * pc);
-        this.d = new FixBS(pc * pc);
-        this.l = new FixBS(pc * pc * pc);
-        this.t = new FixBS(pc * pc * pc);
+        this.s = new boolean[pc][pc];
+        this.d = new boolean[pc][pc];
+        this.l = new boolean[pc][pc][pc];
+        this.t = new boolean[pc][pc][pc];
     }
 
-    public FuzzyLiner(int pc, int[][] lines) {
-        this(pc);
+    public FuzzyLiner(int[][] lines) {
+        this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1);
         for (int[] line : lines) {
-            for (int i = 0; i < l.length(); i++) {
+            for (int i = 0; i < l.length; i++) {
                 int p1 = line[i];
-                for (int j = i + 1; j < l.length(); j++) {
+                for (int j = i + 1; j < l.length; j++) {
                     int p2 = line[j];
                     for (int k = 0; k < pc; k++) {
                         if (k == p1 || k == p2) {
@@ -42,58 +40,43 @@ public class FuzzyLiner {
     }
 
     public boolean distinguish(int i, int j) {
-        int idx = idx(i, j);
-        if (s.get(idx)) {
+        if (s[i][j]) {
             throw new IllegalArgumentException(i + " " + j);
         }
-        boolean res = !d.get(idx);
-        d.set(idx);
+        boolean res = !d[i][j];
+        d[i][j] = true;
         return res;
     }
 
     public boolean unite(int i, int j) {
-        int idx = idx(i, j);
-        if (d.get(idx)) {
+        if (d[i][j]) {
             throw new IllegalArgumentException(i + " " + j);
         }
-        boolean res = !s.get(idx);
-        s.set(idx);
+        boolean res = !s[i][j];
+        s[i][j] = true;
         return res;
     }
 
     public boolean colline(int a, int b, int c) {
-        int idx = idx(a, b, c);
-        if (t.get(idx)) {
+        if (t[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        boolean res = !l.get(idx);
-        l.set(idx);
+        boolean res = !l[a][b][c];
+        l[a][b][c] = true;
         return res;
     }
 
     public boolean triangle(int a, int b, int c) {
-        int idx = idx(a, b, c);
-        if (l.get(idx)) {
+        if (l[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        boolean res = !t.get(idx);
-        t.set(idx);
+        boolean res = !t[a][b][c];
+        t[a][b][c] = true;
         return res;
     }
 
-    private int idx(int i, int j) {
-        return i * pc + j;
-    }
-
-    private int idx(int i, int j, int k) {
-        return (i * pc + j) * pc + k;
-    }
-
     public boolean collinear(int a, int b, int c) {
-        if (a == b || a == c || b == c) {
-            return true;
-        }
-        return l.get(idx(a, b, c));
+        return l[a][b][c];
     }
 
     public int intersection(Pair fst, Pair snd) {
