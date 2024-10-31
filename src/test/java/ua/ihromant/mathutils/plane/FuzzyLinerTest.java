@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.FuzzyLiner;
 import ua.ihromant.mathutils.Pair;
 import ua.ihromant.mathutils.Triple;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class FuzzyLinerTest {
@@ -53,6 +54,8 @@ public class FuzzyLinerTest {
         singleByContradiction(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         System.out.println(base.undefinedTriples());
+        List<FuzzyLiner> variants = multipleByContradiction(base);
+        System.out.println(variants.size());
     }
 
     @Test
@@ -91,6 +94,35 @@ public class FuzzyLinerTest {
             base.colline(newPt, newPt + 1, newPt + 2);
             base = connectTwos(base);
         }
+    }
+
+    private static List<FuzzyLiner> multipleByContradiction(FuzzyLiner base) {
+        List<Triple> undefined = base.undefinedTriples();
+        if (undefined.size() > Long.SIZE - 1) {
+            throw new IllegalStateException(Integer.toString(undefined.size()));
+        }
+        List<FuzzyLiner> result = new ArrayList<>();
+        long max = (1L << undefined.size()) - 1;
+        for (int i = 0; i < max; i++) {
+            FuzzyLiner copy = base.copy();
+            for (int j = 0; j < undefined.size(); j++) {
+                Triple t = undefined.get(j);
+                boolean bit = (i & (1L << j)) != 0;
+                if (bit) {
+                    copy.colline(t.f(), t.s(), t.t());
+                } else {
+                    copy.triangule(t.f(), t.s(), t.t());
+                }
+            }
+            try {
+                copy.update();
+                enhanceFullFano(copy);
+                result.add(copy);
+            } catch (IllegalArgumentException e) {
+                // ok
+            }
+        }
+        return result;
     }
 
     private static void singleByContradiction(FuzzyLiner base) {
