@@ -10,6 +10,8 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+import java.util.Iterator;
+import java.util.List;
 
 public class DesargueTest {
     private static final int HALF = 12;
@@ -214,4 +216,32 @@ public class DesargueTest {
     private boolean checkSlope(Rational slope) {
         return !Rational.ZERO.equals(slope) && slope.max() <= 6;
     }
+
+    public class TriplesIterator<T> implements Iterable<Triple<T>> {
+        private final java.util.List<T> list;
+        private final int size;
+
+        public TriplesIterator(List<T> list) {
+            this.list = list;
+            this.size = list.size();
+        }
+
+        @Override
+        public Iterator<Triple<T>> iterator() {
+            return new Iterator<>() {
+                private int counter;
+                @Override
+                public boolean hasNext() {
+                    return counter < size * size * size;
+                }
+
+                @Override
+                public Triple<T> next() {
+                    return new Triple<>(list.get(counter / size / size), list.get((counter / size) % size), list.get(counter++ % size));
+                }
+            };
+        }
+    }
+
+    record Triple<T>(T f, T s, T t) { }
 }
