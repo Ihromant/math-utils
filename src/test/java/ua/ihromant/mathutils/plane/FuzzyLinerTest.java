@@ -55,7 +55,15 @@ public class FuzzyLinerTest {
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         System.out.println(base.undefinedTriples());
         List<FuzzyLiner> variants = multipleByContradiction(base);
-        System.out.println(variants.size());
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().flatMap(var -> joinTwo(var).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().flatMap(var -> joinTwo(var).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().flatMap(var -> joinTwo(var).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.subList(0, 1).stream().flatMap(var -> joinTwo(var).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
     }
 
     @Test
@@ -94,6 +102,47 @@ public class FuzzyLinerTest {
             base.colline(newPt, newPt + 1, newPt + 2);
             base = connectTwos(base);
         }
+    }
+
+    private static List<FuzzyLiner> joinTwo(FuzzyLiner base) {
+        Quad q2 = base.quad(2);
+        int newPt = base.getPc();
+        FuzzyLiner result = base.addPoint();
+        Pair ab = new Pair(q2.a(), q2.b());
+        Pair cd = new Pair(q2.c(), q2.d());
+        int abcd = result.intersection(ab, cd);
+        Pair ac = new Pair(q2.a(), q2.c());
+        Pair bd = new Pair(q2.b(), q2.d());
+        int acbd = result.intersection(ac, bd);
+        Pair ad = new Pair(q2.a(), q2.d());
+        Pair bc = new Pair(q2.b(), q2.c());
+        int adbc = result.intersection(ad, bc);
+        if (abcd < 0) {
+            result.colline(q2.a(), q2.b(), newPt);
+            result.colline(q2.c(), q2.d(), newPt);
+            result.colline(acbd, adbc, newPt);
+        } else {
+            if (acbd < 0) {
+                result.colline(q2.a(), q2.c(), newPt);
+                result.colline(q2.b(), q2.d(), newPt);
+                result.colline(abcd, adbc, newPt);
+            } else {
+                result.colline(q2.a(), q2.d(), newPt);
+                result.colline(q2.b(), q2.c(), newPt);
+                result.colline(abcd, acbd, newPt);
+            }
+        }
+        try {
+            result.update();
+            enhanceFullFano(result);
+        } catch (IllegalArgumentException e) {
+            return List.of();
+        }
+        if (result.isFull()) {
+            return List.of(result);
+        }
+        singleByContradiction(result);
+        return multipleByContradiction(result);
     }
 
     private static List<FuzzyLiner> multipleByContradiction(FuzzyLiner base) {
