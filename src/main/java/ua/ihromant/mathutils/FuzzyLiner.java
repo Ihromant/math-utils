@@ -4,14 +4,12 @@ import java.util.Arrays;
 
 public class FuzzyLiner {
     private final int pc;
-    private final boolean[][] s;
     private final boolean[][] d;
     private final boolean[][][] l;
     private final boolean[][][] t;
 
     public FuzzyLiner(int pc) {
         this.pc = pc;
-        this.s = new boolean[pc][pc];
         this.d = new boolean[pc][pc];
         this.l = new boolean[pc][pc][pc];
         this.t = new boolean[pc][pc][pc];
@@ -40,25 +38,17 @@ public class FuzzyLiner {
     }
 
     public boolean distinguish(int i, int j) {
-        if (s[i][j]) {
+        if (i == j) {
             throw new IllegalArgumentException(i + " " + j);
         }
         boolean res = !d[i][j];
         d[i][j] = true;
-        return res;
-    }
-
-    public boolean unite(int i, int j) {
-        if (d[i][j]) {
-            throw new IllegalArgumentException(i + " " + j);
-        }
-        boolean res = !s[i][j];
-        s[i][j] = true;
+        d[j][i] = true;
         return res;
     }
 
     public boolean colline(int a, int b, int c) {
-        if (t[a][b][c]) {
+        if (a == b || a == c || b == c || t[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
         boolean res = !l[a][b][c];
@@ -67,7 +57,7 @@ public class FuzzyLiner {
     }
 
     public boolean triangle(int a, int b, int c) {
-        if (l[a][b][c]) {
+        if (a == b || a == c || b == c || l[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
         boolean res = !t[a][b][c];
@@ -80,14 +70,8 @@ public class FuzzyLiner {
     }
 
     public int intersection(Pair fst, Pair snd) {
-        if (fst.f() == snd.f() || fst.s() == snd.f()) {
-            return snd.f();
-        }
-        if (fst.f() == snd.s() || fst.s() == snd.s()) {
-            return snd.s();
-        }
         for (int i = 0; i < pc; i++) {
-            if (collinear(fst.f(), fst.s(), i) && collinear(snd.f(), snd.s(), i)) {
+            if (l[fst.f()][fst.s()][i] && l[snd.f()][snd.s()][i]) {
                 return i;
             }
         }
