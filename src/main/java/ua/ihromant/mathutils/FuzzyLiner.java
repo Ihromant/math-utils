@@ -191,4 +191,18 @@ public class FuzzyLiner {
         }
         return result;
     }
+
+    public List<Triple> undefinedTriples() {
+        List<Triple> result = new ArrayList<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                for (int k = j + 1; k < pc; k++) {
+                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
+                        result.add(new Triple(i, j, k));
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }
