@@ -3,8 +3,10 @@ package ua.ihromant.mathutils;
 import lombok.Getter;
 import ua.ihromant.mathutils.plane.Quad;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Getter
@@ -14,15 +16,15 @@ public class FuzzyLiner {
     private final Set<Triple> l;
     private final Set<Triple> t;
 
-    public FuzzyLiner(int pc) {
+    public FuzzyLiner(int pc, Set<Pair> d, Set<Triple> s, Set<Triple> t) {
         this.pc = pc;
-        this.d = new HashSet<>();
-        this.l = new HashSet<>();
-        this.t = new HashSet<>();
+        this.d = new HashSet<>(d);
+        this.l = new HashSet<>(s);
+        this.t = new HashSet<>(t);
     }
 
     public FuzzyLiner(int[][] lines) {
-        this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1);
+        this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, Set.of(), Set.of(), Set.of());
         for (int[] line : lines) {
             for (int i = 0; i < line.length; i++) {
                 int p1 = line[i];
@@ -41,6 +43,10 @@ public class FuzzyLiner {
                 }
             }
         }
+    }
+
+    public FuzzyLiner addPoint() {
+        return new FuzzyLiner(pc + 1, d, l, t);
     }
 
     public boolean distinguish(int i, int j) {
@@ -163,5 +169,40 @@ public class FuzzyLiner {
             }
         }
         return null;
+    }
+
+    public List<Quad> quads(int desiredCount) {
+        List<Quad> result = new ArrayList<>();
+        for (int a = 0; a < pc; a++) {
+            for (int b = a + 1; b < pc; b++) {
+                if (!distinct(a, b)) {
+                    continue;
+                }
+                for (int c = b + 1; c < pc; c++) {
+                    if (!triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < pc; d++) {
+                        if (!triangle(a, c, d) || !triangle(a, b, d) || !triangle(b, c, d)) {
+                            continue;
+                        }
+                        int cnt = 0;
+                        if (intersection(new Pair(a, b), new Pair(c, d)) >= 0) {
+                            cnt++;
+                        }
+                        if (intersection(new Pair(a, c), new Pair(b, d)) >= 0) {
+                            cnt++;
+                        }
+                        if (intersection(new Pair(a, d), new Pair(b, c)) >= 0) {
+                            cnt++;
+                        }
+                        if (cnt == desiredCount) {
+                            result.add(new Quad(a, b, c, d));
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 }
