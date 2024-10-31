@@ -8,9 +8,4 @@ public record Pair(int f, int s) {
             f = min;
         }
     }
-
-    public static void main(String[] args) {
-        Pair p = new Pair(5, 4);
-        System.out.println(p);
-    }
 }
