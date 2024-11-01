@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class FuzzyLinerTest {
@@ -49,12 +50,20 @@ public class FuzzyLinerTest {
                 {4, 6, 9, 10, 17}
         }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(0, 7, 9), new Triple(0, 1, 9)});
+                new Triple(0, 7, 9)});
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         enhanceFullFano(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         singleByContradiction(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        List<FuzzyLiner> variants = multipleByContradiction(base);
+        System.out.println(variants.size());
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
     }
 
     @Test
@@ -99,32 +108,22 @@ public class FuzzyLinerTest {
         variants = IntStream.range(0, variants.size()).boxed().flatMap(i -> {
             FuzzyLiner var = vs.get(i);
             System.out.println(var.lines());
-            List<FuzzyLiner> expanded = expand(joinOne(var, var.quads(1).get(i == 0 ? 66 : 0)));
-            System.out.println("Variant " + i + " yields to " + expanded.size() + " " + var.quads(1).get(i == 0 ? 66 : 0));
+            List<FuzzyLiner> expanded = expand(joinOne(var, new Quad(3, 5, 7, 8)));
+            System.out.println("Variant " + i + " yields to " + expanded.size() + " " + new Quad(3, 5, 7, 8));
             return expanded.stream();
         }).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        FixBS incorrect = new FixBS(variants.size());
-        int[][] values = new int[variants.size()][];
-        ex: for (int i = 0; i < variants.size(); i++) {
-            FuzzyLiner l = variants.get(i);
-            List<Quad> quads = l.quads(2);
-            values[i] = new int[quads.size()];
-            for (int j = 0; j < quads.size(); j++) {
-                FuzzyLiner l1 = joinTwo(l, quads.get(j));
-                if (l1 == null) {
-                    incorrect.set(i);
-                    continue ex;
-                }
-                values[i][j] = l1.undefinedTriples().size();
-            }
-        }
-        int[] minIdxes = new int[variants.size()];
-        for (int i = 0; i < variants.size(); i++) {
-
-        }
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        System.out.println(variants.stream().collect(Collectors.partitioningBy(v -> v.quad(2) != null, Collectors.counting())));
+        variants = variants.stream().collect(Collectors.partitioningBy(v -> v.quad(2) != null)).get(true)
+                .stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
         variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
         System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+
     }
 
     @Test
@@ -253,7 +252,7 @@ public class FuzzyLinerTest {
         return multipleByContradiction(result);
     }
 
-    private static List<FuzzyLiner> multipleByContradiction(FuzzyLiner base) {
+    private static List<FuzzyLiner> multipleByContradictionAlt(FuzzyLiner base) {
         List<Triple> undefined = base.undefinedTriples();
         if (undefined.size() > Long.SIZE - 1) {
             throw new IllegalStateException(Integer.toString(undefined.size()));
@@ -280,6 +279,24 @@ public class FuzzyLinerTest {
                 // ok
             }
         }
+        return result;
+    }
+
+    private static List<FuzzyLiner> multipleByContradiction(FuzzyLiner base) {
+        List<Triple> undefined = base.undefinedTriples();
+        if (undefined.isEmpty()) {
+            return List.of(base);
+        }
+        List<FuzzyLiner> result = new ArrayList<>();
+        Triple first = undefined.getFirst();
+        FuzzyLiner colCopy = base.copy();
+        colCopy.colline(first.f(), first.s(), first.t());
+        FuzzyLiner trCopy = base.copy();
+        trCopy.triangule(first.f(), first.s(), first.t());
+        singleByContradiction(colCopy);
+        singleByContradiction(trCopy);
+        result.addAll(multipleByContradiction(colCopy));
+        result.addAll(multipleByContradiction(trCopy));
         return result;
     }
 
