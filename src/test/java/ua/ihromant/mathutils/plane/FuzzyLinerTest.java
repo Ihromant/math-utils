@@ -35,7 +35,30 @@ public class FuzzyLinerTest {
     }
 
     @Test
-    public void testBaseFanoNotMoufang1() {
+    public void testBaseFanoNotMoufangVariant1() {
+        FuzzyLiner base = new FuzzyLiner(new int[][]{
+                {0, 1, 2, 16, 17},
+                {0, 3, 4, 12, 13},
+                {0, 5, 6, 15, 14},
+                {0, 7, 8, 10, 11},
+                {1, 3, 7, 14},
+                {1, 5, 8, 12},
+                {2, 4, 7, 15},
+                {2, 6, 8, 13},
+                {3, 5, 9, 11, 16},
+                {4, 6, 9, 10, 17}
+        }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9), new Triple(0, 1, 9)});
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        enhanceFullFano(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        singleByContradiction(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+    }
+
+    @Test
+    public void testBaseFanoNotMoufang() {
         FuzzyLiner base = new FuzzyLiner(new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
@@ -75,6 +98,7 @@ public class FuzzyLinerTest {
         List<FuzzyLiner> vs = new ArrayList<>(variants);
         variants = IntStream.range(0, variants.size()).boxed().flatMap(i -> {
             FuzzyLiner var = vs.get(i);
+            System.out.println(var.lines());
             List<FuzzyLiner> expanded = expand(joinOne(var, var.quads(1).get(i == 0 ? 66 : 0)));
             System.out.println("Variant " + i + " yields to " + expanded.size() + " " + var.quads(1).get(i == 0 ? 66 : 0));
             return expanded.stream();
@@ -236,8 +260,8 @@ public class FuzzyLinerTest {
         }
         System.out.println("Checking " + undefined.size());
         List<FuzzyLiner> result = new ArrayList<>();
-        long max = (1L << undefined.size()) - 1;
-        for (int i = 0; i < max; i++) {
+        long max = 1L << undefined.size();
+        for (long i = 0; i < max; i++) {
             FuzzyLiner copy = base.copy();
             for (int j = 0; j < undefined.size(); j++) {
                 Triple t = undefined.get(j);

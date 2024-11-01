@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import lombok.Getter;
 import ua.ihromant.mathutils.plane.Quad;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -211,5 +212,25 @@ public class FuzzyLiner {
 
     public boolean isFull() {
         return l.size() + t.size() == pc * (pc - 1) * (pc - 2) / 6;
+    }
+
+    public Set<FixBS> lines() {
+        Set<FixBS> lines = new HashSet<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                FixBS res = new FixBS(pc);
+                res.set(i);
+                res.set(j);
+                for (int k = 0; k < pc; k++) {
+                    if (collinear(i, j, k)) {
+                        res.set(k);
+                    }
+                }
+                if (res.cardinality() > 2) {
+                    lines.add(res);
+                }
+            }
+        }
+        return lines;
     }
 }
