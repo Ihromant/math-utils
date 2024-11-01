@@ -127,6 +127,36 @@ public class FuzzyLinerTest {
     }
 
     @Test
+    public void test9Case() {
+        int[][] lines = new int[][]{{1, 5, 8, 14}, {2, 5, 11}, {3, 5, 9}, {0, 5, 6, 15, 19}, {4, 5, 12}, {4, 11, 21},
+                {6, 14, 20}, {0, 1, 2, 9, 12, 13, 17, 18, 20, 21, 22, 23, 24, 25}, {9, 16, 19}, {8, 19, 23}, {11, 19, 25},
+                {12, 14, 19}, {7, 16, 18}, {7, 14, 17}, {12, 15, 16}, {6, 7, 24}, {6, 10, 25}, {8, 15, 22}, {9, 14, 15},
+                {10, 13, 14}, {11, 15, 24}, {0, 7, 8, 10, 11}, {1, 6, 11, 16}, {2, 6, 8}, {3, 11, 18}, {3, 8, 17}, {3, 6, 12},
+                {1, 3, 7, 15}, {2, 3, 10}, {5, 16, 20}, {4, 6, 9}, {4, 8, 13}, {2, 4, 7}, {0, 3, 4, 14, 16}, {1, 4, 10, 19},
+                {10, 16, 21}, {3, 19, 20}, {4, 15, 20}, {5, 7, 22}, {5, 10, 23}};
+        FuzzyLiner base = new FuzzyLiner(lines, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
+        base.update();
+        enhanceFullFano(base);
+        singleByContradiction(base);
+        List<FuzzyLiner> variants = List.of(base);
+        List<Quad> quads = base.quads(2);
+        System.out.println(quads);
+        for (int i = 0; i < quads.size(); i++) {
+            System.out.println(i + " " + expand(joinTwo(base, quads.get(i))).size());
+        }
+        variants = variants.stream().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        variants = variants.stream().parallel().flatMap(var -> expand(joinTwo(var, var.quad(2))).stream()).toList();
+        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+    }
+
+    @Test
     public void testFanoNotMoufang() {
         FuzzyLiner base = new FuzzyLiner(new int[][]{
                 {0, 1, 2},
