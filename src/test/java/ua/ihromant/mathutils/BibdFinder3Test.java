@@ -177,9 +177,13 @@ public class BibdFinder3Test {
              FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
-            Set<FixBS> set = br.lines().filter(l -> l.length() < 20).map(l -> {
-                return of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
-                        .mapToInt(Integer::parseInt).toArray());
+            Set<FixBS> set = br.lines().<FixBS>mapMulti((l, sink) -> {
+                if (l.length() > 20) {
+                    System.out.println(l);
+                } else {
+                    sink.accept(of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
+                            .mapToInt(Integer::parseInt).toArray()));
+                }
             }).collect(Collectors.toSet());
             limitCores(() -> logResultsDepth(ps, v, k, depth, set));
         }
