@@ -233,4 +233,16 @@ public class FuzzyLiner {
         }
         return lines;
     }
+
+    public FixBS line(int a, int b) {
+        FixBS res = new FixBS(pc);
+        res.set(a);
+        res.set(b);
+        for (int i = 0; i < pc; i++) {
+            if (collinear(a, b, i)) {
+                res.set(i);
+            }
+        }
+        return res;
+    }
 }
