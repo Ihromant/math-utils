@@ -211,7 +211,29 @@ public class FuzzyLiner {
     }
 
     public boolean isFull() {
-        return l.size() + t.size() == pc * (pc - 1) * (pc - 2) / 6;
+        return d.size() == pc * (pc - 1) / 2 && l.size() + t.size() == pc * (pc - 1) * (pc - 2) / 6;
+    }
+
+    public Liner toLiner() {
+        if (!isFull()) {
+            throw new IllegalStateException();
+        }
+        Set<FixBS> lines = new HashSet<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                FixBS res = new FixBS(pc);
+                res.set(i);
+                res.set(j);
+                for (int k = 0; k < pc; k++) {
+                    if (collinear(i, j, k)) {
+                        res.set(k);
+                    }
+                }
+                lines.add(res);
+            }
+        }
+        int[][] lns = lines.stream().map(l -> l.stream().toArray()).toArray(int[][]::new);
+        return new Liner(Arrays.stream(lns).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, lns);
     }
 
     public Set<FixBS> lines() {
