@@ -216,19 +216,17 @@ public class FuzzyLinerTest {
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         while (true) {
             System.out.println(base.getPc() + " " + base.lines().size() + " " + base.lines());
-            FuzzyLiner variant = depthByContradiction(base, base.undefinedTriples(), 0);
-            List<Quad> twos = variant.quads(2);
+            base = depthByContradiction(base, base.undefinedTriples(), 0);
+            List<Quad> twos = base.quads(2);
             Optional<Quad> min2 = twos.stream().min(Comparator.comparingInt(Quad::d));
             if (min2.isPresent()) {
                 System.out.println("Joining two " + min2.get());
-                base = joinTwo(base, min2.get());
-                base = depthByContradiction(base, base.undefinedTriples(), 0);
+                base = joinTwoSimple(base, min2.get());
             } else {
-                List<Quad> ones = variant.quads(1);
+                List<Quad> ones = base.quads(1);
                 Quad min1 = ones.stream().min(Comparator.comparingInt(Quad::d)).orElseThrow();
                 System.out.println("Joining one " + min1);
-                base = joinOne(base, min1);
-                base = depthByContradiction(base, base.undefinedTriples(), 0);
+                base = joinOneSimple(base, min1);
             }
         }
     }
