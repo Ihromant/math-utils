@@ -7,7 +7,9 @@ import ua.ihromant.mathutils.Triple;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
@@ -191,7 +193,57 @@ public class FuzzyLinerTest {
         }
     }
 
+    @Test
+    public void depthFirstSearch() {
+        FuzzyLiner base = new FuzzyLiner(new int[][]{
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8},
+                {1, 3, 7},
+                {1, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9},
+                {4, 6, 9}
+        }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        enhanceFullFano(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        singleByContradiction(base);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        while (true) {
+            System.out.println(base.getPc() + " " + base.lines().size() + " " + base.lines());
+            FuzzyLiner variant = depthByContradiction(base, base.undefinedTriples(), 0);
+            List<Quad> twos = variant.quads(2);
+            Optional<Quad> min2 = twos.stream().min(Comparator.comparingInt(Quad::d));
+            if (min2.isPresent()) {
+                System.out.println("Joining two " + min2.get());
+                base = joinTwo(base, min2.get());
+                base = depthByContradiction(base, base.undefinedTriples(), 0);
+            } else {
+                List<Quad> ones = variant.quads(1);
+                Quad min1 = ones.stream().min(Comparator.comparingInt(Quad::d)).orElseThrow();
+                System.out.println("Joining one " + min1);
+                base = joinOne(base, min1);
+                base = depthByContradiction(base, base.undefinedTriples(), 0);
+            }
+        }
+    }
+
     private static FuzzyLiner joinOne(FuzzyLiner base, Quad q1) {
+        try {
+            FuzzyLiner result = joinOneSimple(base, q1);
+            singleByContradiction(result);
+            return result;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static FuzzyLiner joinOneSimple(FuzzyLiner base, Quad q1) {
         int newPt = base.getPc();
         FuzzyLiner result = base.addPoint().addPoint();
         Pair ab = new Pair(q1.a(), q1.b());
@@ -222,17 +274,22 @@ public class FuzzyLinerTest {
                 result.colline(adbc, newPt, newPt + 1);
             }
         }
-        try {
-            result.update();
-            enhanceFullFano(result);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-        singleByContradiction(result);
+        result.update();
+        enhanceFullFano(result);
         return result;
     }
 
     private static FuzzyLiner joinTwo(FuzzyLiner base, Quad q2) {
+        try {
+            FuzzyLiner result = joinTwoSimple(base, q2);
+            singleByContradiction(result);
+            return result;
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
+    }
+
+    private static FuzzyLiner joinTwoSimple(FuzzyLiner base, Quad q2) {
         int newPt = base.getPc();
         FuzzyLiner result = base.addPoint();
         Pair ab = new Pair(q2.a(), q2.b());
@@ -259,13 +316,8 @@ public class FuzzyLinerTest {
                 result.colline(abcd, acbd, newPt);
             }
         }
-        try {
-            result.update();
-            enhanceFullFano(result);
-        } catch (IllegalArgumentException e) {
-            return null;
-        }
-        singleByContradiction(result);
+        result.update();
+        enhanceFullFano(result);
         return result;
     }
 
@@ -344,6 +396,28 @@ public class FuzzyLinerTest {
         result.addAll(multipleByContradiction(colCopy));
         result.addAll(multipleByContradiction(trCopy));
         return result;
+    }
+
+    private static FuzzyLiner depthByContradiction(FuzzyLiner base, List<Triple> triples, int idx) {
+        if (idx == triples.size()) {
+            try {
+                base.update();
+                enhanceFullFano(base);
+                return base;
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+        Triple first = triples.get(idx);
+        FuzzyLiner trCopy = base.copy();
+        trCopy.triangule(first.f(), first.s(), first.t());
+        FuzzyLiner res = depthByContradiction(trCopy, triples, idx + 1);
+        if (res != null) {
+            return res;
+        }
+        FuzzyLiner colCopy = base.copy();
+        colCopy.colline(first.f(), first.s(), first.t());
+        return depthByContradiction(colCopy, triples, idx + 1);
     }
 
     private static void singleByContradiction(FuzzyLiner base) {
