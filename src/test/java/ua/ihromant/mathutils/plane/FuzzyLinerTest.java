@@ -11,7 +11,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.IntStream;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class FuzzyLinerTest {
     @Test
@@ -90,39 +92,21 @@ public class FuzzyLinerTest {
         singleByContradiction(base);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
         List<FuzzyLiner> variants = multipleByContradiction(base);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-//        for (int i = 0; i < variants.size(); i++) {
-//            FuzzyLiner l = variants.get(i);
-//            List<Quad> quads = l.quads(1);
-//            for (int j = 0; j < quads.size(); j++) {
-//                FuzzyLiner l1 = joinOne(l, quads.get(j));
-//                List<Triple> undefined = l1.undefinedTriples();
-//                System.out.println(i + " " + j + " " + undefined.size());
-//            }
-//        }
-        List<FuzzyLiner> vs = new ArrayList<>(variants);
-        variants = IntStream.range(0, variants.size()).boxed().flatMap(i -> {
-            FuzzyLiner var = vs.get(i);
-            System.out.println(var.lines());
-            List<FuzzyLiner> expanded = expand(joinOne(var, new Quad(3, 5, 7, 8)));
-            System.out.println("Variant " + i + " yields to " + expanded.size() + " " + new Quad(3, 5, 7, 8));
-            return expanded.stream();
-        }).toList();
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
-        variants = expand(variants, 2);
-        System.out.println(variants.getFirst().getPc() + " " + variants.size());
+        while (true) {
+            variants = new ArrayList<>(variants.stream().parallel().flatMap(l -> closeTwos(l).stream())
+                    .collect(Collectors.toMap(l -> l.toLiner().getCanonical(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new)).values());
+            System.out.println(variants.size());
+            variants = variants.stream().parallel().flatMap(var -> {
+                Quad min = var.quads(1).stream().min(Comparator.comparingInt(q -> q.d() == 9 ? - 1 : q.d())).orElseThrow();
+                return expand(joinOne(var, min)).stream();
+            }).collect(Collectors.toList());
+            System.out.println(variants.size());
+            List<FuzzyLiner> liners = new ArrayList<>();
+            for (int i = 0; i < 10; i++) {
+                liners.add(variants.remove(ThreadLocalRandom.current().nextInt(variants.size())));
+            }
+            variants = liners;
+        }
     }
 
     @Test
@@ -228,6 +212,27 @@ public class FuzzyLinerTest {
                 System.out.println("Joining one " + min1);
                 base = joinOneSimple(base, min1);
             }
+        }
+    }
+
+    private static List<FuzzyLiner> closeTwos(FuzzyLiner l) {
+        return closeTwos(new ArrayList<>(), List.of(l));
+    }
+
+    private static List<FuzzyLiner> closeTwos(List<FuzzyLiner> closed, List<FuzzyLiner> curr) {
+        List<FuzzyLiner> next = new ArrayList<>();
+        for (FuzzyLiner l : curr) {
+            Quad quad = l.quad(2);
+            if (quad == null) {
+                closed.add(l);
+            } else {
+                next.addAll(expand(joinTwo(l, quad)));
+            }
+        }
+        if (closed.size() > 4 || next.isEmpty()) {
+            return closed;
+        } else {
+            return closeTwos(closed, next);
         }
     }
 
