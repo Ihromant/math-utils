@@ -31,6 +31,8 @@ public class FuzzySepLinerTest {
         System.out.println(next.getD().size() + " " + next.getL().size() + " " + next.getT().size() + " " + (next.getL().size() + next.getT().size()));
         base = next.subLiner(10);
         System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        System.out.println(base.lines().stream().filter(l -> l.cardinality() > 2).toList());
+        System.out.println(next.lines().stream().filter(l -> l.cardinality() > 2).toList());
     }
 
     public FuzzySepLiner enhanceFullFano(FuzzySepLiner liner) {

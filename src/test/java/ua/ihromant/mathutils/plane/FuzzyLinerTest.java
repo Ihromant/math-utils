@@ -560,4 +560,54 @@ public class FuzzyLinerTest {
             fl.update();
         }
     }
+
+    public FuzzyLiner enhanceFullFano1(FuzzyLiner liner) {
+        boolean incorrect = true;
+        while (incorrect) {
+            incorrect = false;
+            List<Quad> full = liner.quads(3);
+            System.out.println("Quads " + full.size());
+            for (Quad q : full) {
+                int abcd = liner.intersection(new Pair(q.a(), q.b()), new Pair(q.c(), q.d()));
+                int acbd = liner.intersection(new Pair(q.a(), q.c()), new Pair(q.b(), q.d()));
+                int adbc = liner.intersection(new Pair(q.a(), q.d()), new Pair(q.b(), q.c()));
+                if (!liner.collinear(abcd, acbd, adbc)) {
+                    incorrect = true;
+                    liner.colline(abcd, acbd, adbc);
+                }
+            }
+            liner.update();
+            System.out.println(liner.getPc());
+        }
+        return liner;
+    }
+
+    @Test
+    public void testMoufang() {
+        FuzzyLiner base = new FuzzyLiner(new int[][]{
+                {0, 1, 2, 16, 17},
+                {0, 3, 4, 12, 13},
+                {0, 5, 6, 14, 15},
+                {0, 7, 8, 10, 11},
+                {1, 3, 7, 14},
+                {1, 5, 8, 12},
+                {2, 4, 7, 15},
+                {2, 6, 8, 13},
+                {3, 5, 9, 11, 16},
+                {4, 6, 9, 10, 17}
+        }, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
+        int pc = base.getPc();
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        FuzzyLiner next = base.intersectLines();
+        System.out.println(next.getPc());
+        System.out.println(next.getD().size() + " " + next.getL().size() + " " + next.getT().size() + " " + (next.getL().size() + next.getT().size()));
+        next = enhanceFullFano1(next);
+        System.out.println(next.getD().size() + " " + next.getL().size() + " " + next.getT().size() + " " + (next.getL().size() + next.getT().size()));
+        base = next.subLiner(pc);
+        System.out.println(base.getD().size() + " " + base.getL().size() + " " + base.getT().size() + " " + (base.getL().size() + base.getT().size()));
+        System.out.println(base.lines().stream().filter(l -> l.cardinality() > 2).toList());
+        //System.out.println(next.lines().stream().filter(l -> l.cardinality() > 2).toList());
+    }
 }

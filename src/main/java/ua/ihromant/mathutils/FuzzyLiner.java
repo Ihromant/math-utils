@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter
 public class FuzzyLiner {
@@ -248,9 +249,9 @@ public class FuzzyLiner {
                         res.set(k);
                     }
                 }
-                if (res.cardinality() > 2) {
+                //if (res.cardinality() > 2) {
                     lines.add(res);
-                }
+                //}
             }
         }
         return lines;
@@ -266,5 +267,36 @@ public class FuzzyLiner {
             }
         }
         return res;
+    }
+
+    public FuzzyLiner intersectLines() {
+        FuzzyLiner base = copy();
+        List<FixBS> lines = new ArrayList<>(base.lines());
+        for (int i = 0; i < lines.size(); i++) {
+            FixBS l1 = lines.get(i);
+            int a = l1.nextSetBit(0);
+            int b = l1.nextSetBit(a + 1);
+            for (int j = i + 1; j < lines.size(); j++) {
+                FixBS l2 = lines.get(j);
+                if (l1.intersects(l2)) {
+                    continue;
+                }
+                int c = l2.nextSetBit(0);
+                int d = l2.nextSetBit(c + 1);
+                int pt = base.pc;
+                base = base.addPoint();
+                base.colline(a, b, pt);
+                base.colline(c, d, pt);
+            }
+        }
+        base.update();
+        System.out.println(base.pc);
+        return base;
+    }
+
+    public FuzzyLiner subLiner(int cap) {
+        return new FuzzyLiner(cap, d.stream().filter(p -> p.s() < cap).collect(Collectors.toSet()),
+                l.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()),
+                t.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()));
     }
 }
