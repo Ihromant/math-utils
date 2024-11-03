@@ -684,4 +684,102 @@ public class BatchLinerTest {
                 })
                 .forEach(mt -> System.out.println(mt + "\n"));
     }
+
+    private Liner[] getLiners15() throws IOException {
+        Liner[] designs = new Liner[80];
+        try (InputStream is = getClass().getResourceAsStream("/S(2,3,15).txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int counter = 0;
+            while ((line = br.readLine()) != null) {
+                String[] design = new String[3];
+                design[0] = line;
+                design[1] = br.readLine();
+                design[2] = br.readLine();
+                designs[counter++] = Liner.byStrings(design);
+            }
+        }
+        return designs;
+    }
+
+    @Test
+    public void testBooleanThalesian() throws IOException {
+        Liner[] liners = getLiners15();
+        for (int i = 0; i < liners.length; i++) {
+            Liner l = liners[i];
+            System.out.println(l.cardSubPlanes(true));
+            ex:
+            for (int a = 0; a < l.pointCount(); a++) {
+                for (int b = a + 1; b < l.pointCount(); b++) {
+                    for (int c = a + 1; c < l.pointCount(); c++) {
+                        if (l.collinear(a, b, c)) {
+                            continue;
+                        }
+                        for (int d = c + 1; d < l.pointCount(); d++) {
+                            if (l.collinear(a, b, d) || l.collinear(a, c, d) || l.collinear(b, c, d)) {
+                                continue;
+                            }
+                            if (IntStream.of(l.intersection(l.line(a, b), l.line(c, d)),
+                                    l.intersection(l.line(a, c), l.line(b, d)),
+                                    l.intersection(l.line(a, d), l.line(b, c))).filter(j -> j >= 0).count() == 1) {
+                                System.out.println(i + " Not boolean");
+                                break ex;
+                            }
+                        }
+                    }
+                }
+            }
+            ex1:
+            for (int l1 = 0; l1 < l.lineCount(); l1++) {
+                for (int l2 = 0; l2 < l.lineCount(); l2++) {
+                    if (l2 == l1 || l.intersection(l1, l2) >= 0) {
+                        continue;
+                    }
+                    for (int l3 = 0; l3 < l.lineCount(); l3++) {
+                        if (l3 == l2 || l3 == l1 || l.intersection(l3, l2) >= 0 || l.intersection(l3, l1) >= 0) {
+                            continue;
+                        }
+                        for (int a : l.line(l1)) {
+                            for (int a1 : l.line(l1)) {
+                                if (a == a1) {
+                                    continue;
+                                }
+                                for (int b : l.line(l2)) {
+                                    for (int b1 : l.line(l2)) {
+                                        if (b == b1) {
+                                            continue;
+                                        }
+                                        for (int c : l.line(l3)) {
+                                            for (int c1 : l.line(l3)) {
+                                                if (c == c1) {
+                                                    continue;
+                                                }
+                                                if (!l.flag(l.line(a, c), b1)) {
+                                                    continue;
+                                                }
+                                                if (l.intersection(l.line(a, b), l.line(a1, b1)) >= 0) {
+                                                    continue;
+                                                }
+                                                if (l.intersection(l.line(b, c), l.line(b1, c1)) >= 0) {
+                                                    continue;
+                                                }
+                                                int inter = l.intersection(l.line(a, c), l.line(a1, c1));
+                                                if (inter >= 0) {
+                                                    System.out.println(i + " Not near-Thalesian");
+                                                    System.out.println(Arrays.toString(l.line(l1)) + " " + Arrays.toString(l.line(l2)) + " " + Arrays.toString(l.line(l3)));
+                                                    System.out.println(a + " " + a1 + " " + b + " " + b1 + " " + c + " " + c1 + " " + inter);
+                                                    break ex1;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
