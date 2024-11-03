@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Getter
 public class FuzzySepLiner {
@@ -318,5 +319,31 @@ public class FuzzySepLiner {
             }
         }
         return res;
+    }
+
+    public FuzzySepLiner quotient() {
+        int[] newMap = new int[pc];
+        int counter = 0;
+        ex: for (int i = 0; i < pc; i++) {
+            for (int j = 0; j < i; j++) {
+                if (same(i, j)) {
+                    newMap[i] = newMap[j];
+                    continue ex;
+                }
+            }
+            newMap[i] = counter++;
+        }
+        int newPc = Arrays.stream(newMap).max().orElseThrow() + 1;
+        return new FuzzySepLiner(newPc, s.stream().map(p -> new Pair(newMap[p.f()], newMap[p.s()])).collect(Collectors.toSet()),
+                d.stream().map(p -> new Pair(newMap[p.f()], newMap[p.s()])).collect(Collectors.toSet()),
+                l.stream().map(p -> new Triple(newMap[p.f()], newMap[p.s()], newMap[p.t()])).collect(Collectors.toSet()),
+                t.stream().map(p -> new Triple(newMap[p.f()], newMap[p.s()], newMap[p.t()])).collect(Collectors.toSet()));
+    }
+
+    public FuzzySepLiner subLiner(int cap) {
+        return new FuzzySepLiner(cap, s.stream().filter(p -> p.s() < cap).collect(Collectors.toSet()),
+                d.stream().filter(p -> p.s() < cap).collect(Collectors.toSet()),
+                l.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()),
+                t.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()));
     }
 }
