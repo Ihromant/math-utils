@@ -153,14 +153,14 @@ public class FuzzySepLiner {
                             }
                             continue;
                         }
-                        if (distinct(z, w) && collinear(x, y, w)) {
+                        if (cxyz && distinct(z, w) && collinear(x, y, w)) {
                             result = result | colline(z, w, x) | colline(z, w, y);
                         }
                         if (triangle(x, y, w)) {
-                            result = result | triangule(x, z, w) | triangule(y, z, w);
                             if (!cxyz) {
                                 continue;
                             }
+                            result = result | triangule(x, z, w) | triangule(y, z, w);
                             // a -> x, b -> y, x -> w, a' -> z, x' -> u, b' -> v
                             for (int u = 0; u < pc; u++) {
                                 if (!collinear(x, z, u)) {
@@ -301,9 +301,7 @@ public class FuzzySepLiner {
                         res.set(k);
                     }
                 }
-                if (res.cardinality() > 2) {
-                    lines.add(res);
-                }
+                lines.add(res);
             }
         }
         return lines;
@@ -334,6 +332,9 @@ public class FuzzySepLiner {
             newMap[i] = counter++;
         }
         int newPc = Arrays.stream(newMap).max().orElseThrow() + 1;
+        if (newPc == pc) {
+            return this;
+        }
         return new FuzzySepLiner(newPc, s.stream().map(p -> new Pair(newMap[p.f()], newMap[p.s()])).collect(Collectors.toSet()),
                 d.stream().map(p -> new Pair(newMap[p.f()], newMap[p.s()])).collect(Collectors.toSet()),
                 l.stream().map(p -> new Triple(newMap[p.f()], newMap[p.s()], newMap[p.t()])).collect(Collectors.toSet()),
@@ -345,5 +346,52 @@ public class FuzzySepLiner {
                 d.stream().filter(p -> p.s() < cap).collect(Collectors.toSet()),
                 l.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()),
                 t.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()));
+    }
+
+    public boolean enhanceFullFano() {
+        boolean incorrect = true;
+        boolean updated = false;
+        while (incorrect) {
+            incorrect = false;
+            List<Quad> full = quads(3);
+            for (Quad q : full) {
+                int abcd = intersection(new Pair(q.a(), q.b()), new Pair(q.c(), q.d()));
+                int acbd = intersection(new Pair(q.a(), q.c()), new Pair(q.b(), q.d()));
+                int adbc = intersection(new Pair(q.a(), q.d()), new Pair(q.b(), q.c()));
+                if (!collinear(abcd, acbd, adbc)) {
+                    incorrect = true;
+                    updated = updated | colline(abcd, acbd, adbc);
+                }
+            }
+            update();
+        }
+        return updated;
+    }
+
+    public FuzzySepLiner intersectLines() {
+        FuzzySepLiner base = copy();
+        List<FixBS> lines = new ArrayList<>(base.lines());
+        for (int i = 0; i < lines.size(); i++) {
+            FixBS l1 = lines.get(i);
+            int a = l1.nextSetBit(0);
+            int b = l1.nextSetBit(a + 1);
+            for (int j = i + 1; j < lines.size(); j++) {
+                FixBS l2 = lines.get(j);
+                if (l1.intersects(l2)) {
+                    continue;
+                }
+                int c = l2.nextSetBit(0);
+                int d = l2.nextSetBit(c + 1);
+                int pt = base.pc;
+                base = base.addPoint();
+                base.colline(a, b, pt);
+                base.colline(c, d, pt);
+            }
+        }
+        System.out.println(base.pc);
+        base.update();
+        base = base.quotient();
+        System.out.println(base.pc);
+        return base;
     }
 }
