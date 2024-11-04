@@ -397,4 +397,10 @@ public class FixBS implements Comparable<FixBS> {
     public long[] words() {
         return words;
     }
+
+    public static FixBS of(int v, int... values) {
+        FixBS bs = new FixBS(v);
+        IntStream.of(values).forEach(bs::set);
+        return bs;
+    }
 }

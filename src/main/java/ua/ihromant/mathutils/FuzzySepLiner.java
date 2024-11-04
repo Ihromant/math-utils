@@ -6,8 +6,10 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -102,13 +104,14 @@ public class FuzzySepLiner {
         return t.contains(new Triple(a, b, c));
     }
 
-    public int intersection(Pair fst, Pair snd) {
+    public FixBS intersection(Pair fst, Pair snd) {
+        FixBS result = new FixBS(pc);
         for (int i = 0; i < pc; i++) {
             if (collinear(fst.f(), fst.s(), i) && collinear(snd.f(), snd.s(), i)) {
-                return i;
+                result.set(i);
             }
         }
-        return -1;
+        return result;
     }
 
     public void update() {
@@ -195,13 +198,13 @@ public class FuzzySepLiner {
                             continue;
                         }
                         int cnt = 0;
-                        if (intersection(new Pair(a, b), new Pair(c, d)) >= 0) {
+                        if (intersection(new Pair(a, b), new Pair(c, d)).cardinality() > 0) {
                             cnt++;
                         }
-                        if (intersection(new Pair(a, c), new Pair(b, d)) >= 0) {
+                        if (intersection(new Pair(a, c), new Pair(b, d)).cardinality() > 0) {
                             cnt++;
                         }
-                        if (intersection(new Pair(a, d), new Pair(b, c)) >= 0) {
+                        if (intersection(new Pair(a, d), new Pair(b, c)).cardinality() > 0) {
                             cnt++;
                         }
                         if (cnt == desiredCount) {
@@ -230,13 +233,13 @@ public class FuzzySepLiner {
                             continue;
                         }
                         int cnt = 0;
-                        if (intersection(new Pair(a, b), new Pair(c, d)) >= 0) {
+                        if (intersection(new Pair(a, b), new Pair(c, d)).cardinality() > 0) {
                             cnt++;
                         }
-                        if (intersection(new Pair(a, c), new Pair(b, d)) >= 0) {
+                        if (intersection(new Pair(a, c), new Pair(b, d)).cardinality() > 0) {
                             cnt++;
                         }
-                        if (intersection(new Pair(a, d), new Pair(b, c)) >= 0) {
+                        if (intersection(new Pair(a, d), new Pair(b, c)).cardinality() > 0) {
                             cnt++;
                         }
                         if (cnt == desiredCount) {
@@ -257,6 +260,18 @@ public class FuzzySepLiner {
                     if (!collinear(i, j, k) && !triangle(i, j, k)) {
                         result.add(new Triple(i, j, k));
                     }
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<Pair> undefinedPairs() {
+        List<Pair> result = new ArrayList<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j) && !same(i, j)) {
+                    result.add(new Pair(i, j));
                 }
             }
         }
@@ -293,6 +308,9 @@ public class FuzzySepLiner {
         Set<FixBS> lines = new HashSet<>();
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j)) {
+                    continue;
+                }
                 FixBS res = new FixBS(pc);
                 res.set(i);
                 res.set(j);
@@ -300,6 +318,32 @@ public class FuzzySepLiner {
                     if (collinear(i, j, k)) {
                         res.set(k);
                     }
+                }
+                lines.add(res);
+            }
+        }
+        return lines;
+    }
+
+    public Set<FixBS> logLines() {
+        Set<FixBS> lines = new HashSet<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j) || i < 10 && j >= 10) {
+                    continue;
+                }
+                FixBS res = new FixBS(pc);
+                res.set(i);
+                res.set(j);
+                for (int k = 0; k < pc; k++) {
+                    if (collinear(i, j, k)) {
+                        res.set(k);
+                    }
+                }
+                FixBS clone = res.copy();
+                clone.clear(10, 153);
+                if (i >= 10 && clone.cardinality() > 1) {
+                    continue;
                 }
                 lines.add(res);
             }
@@ -348,24 +392,19 @@ public class FuzzySepLiner {
                 t.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()));
     }
 
-    public boolean enhanceFullFano() {
-        boolean incorrect = true;
-        boolean updated = false;
-        while (incorrect) {
-            incorrect = false;
-            List<Quad> full = quads(3);
-            for (Quad q : full) {
-                int abcd = intersection(new Pair(q.a(), q.b()), new Pair(q.c(), q.d()));
-                int acbd = intersection(new Pair(q.a(), q.c()), new Pair(q.b(), q.d()));
-                int adbc = intersection(new Pair(q.a(), q.d()), new Pair(q.b(), q.c()));
-                if (!collinear(abcd, acbd, adbc)) {
-                    incorrect = true;
-                    updated = updated | colline(abcd, acbd, adbc);
-                }
-            }
-            update();
+    public FuzzySepLiner subLiner(FixBS pts) {
+        Map<Integer, Integer> idxes = new HashMap<>();
+        int counter = 0;
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i+1)) {
+            idxes.put(i, counter++);
         }
-        return updated;
+        return new FuzzySepLiner(pts.cardinality(),
+                s.stream().filter(p -> idxes.containsKey(p.f()) && idxes.containsKey(p.s())).map(p -> new Pair(idxes.get(p.f()), idxes.get(p.s()))).collect(Collectors.toSet()),
+                d.stream().filter(p -> idxes.containsKey(p.f()) && idxes.containsKey(p.s())).map(p -> new Pair(idxes.get(p.f()), idxes.get(p.s()))).collect(Collectors.toSet()),
+                l.stream().filter(tr -> idxes.containsKey(tr.f()) && idxes.containsKey(tr.s()) && idxes.containsKey(tr.t()))
+                        .map(tr -> new Triple(idxes.get(tr.f()), idxes.get(tr.s()), idxes.get(tr.t()))).collect(Collectors.toSet()),
+                t.stream().filter(tr -> idxes.containsKey(tr.f()) && idxes.containsKey(tr.s()) && idxes.containsKey(tr.t()))
+                        .map(tr -> new Triple(idxes.get(tr.f()), idxes.get(tr.s()), idxes.get(tr.t()))).collect(Collectors.toSet()));
     }
 
     public FuzzySepLiner intersectLines() {
@@ -386,6 +425,11 @@ public class FuzzySepLiner {
                 base = base.addPoint();
                 base.colline(a, b, pt);
                 base.colline(c, d, pt);
+//                base.distinguish(a, pt);
+//                base.distinguish(b, pt);
+//                base.distinguish(c, pt);
+//                base.distinguish(d, pt);
+                //System.out.println("Point " + pt + " appeared as intersection " + a + " " + b + " and " + c + " " + d);
             }
         }
         System.out.println(base.pc);
