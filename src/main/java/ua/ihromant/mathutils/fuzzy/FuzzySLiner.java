@@ -362,6 +362,30 @@ public class FuzzySLiner {
         return result;
     }
 
+    public Triple undefinedTriple() {
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                for (int k = j + 1; k < pc; k++) {
+                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
+                        return new Triple(i, j, k);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public Pair undefinedPair() {
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j) && !same(i, j)) {
+                    return new Pair(i, j);
+                }
+            }
+        }
+        return null;
+    }
+
 
     public Set<FixBS> lines() {
         Set<FixBS> lines = new HashSet<>();

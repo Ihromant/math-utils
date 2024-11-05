@@ -33,6 +33,9 @@ public class FuzzySLinerTest {
         int pc = firstBase.getPc();
         Set<FixBS> lines = Arrays.stream(antiMoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
         firstBase.printChars();
+        //firstBase = distByContradiction(firstBase);
+        //System.out.println(multipleByContradiction(firstBase).size());
+        firstBase.printChars();
         FuzzySLiner firstClosed = firstBase.intersectLines();
         firstClosed.printChars();
         firstClosed = enhanceFullFano(firstClosed);
@@ -45,6 +48,7 @@ public class FuzzySLinerTest {
         firstClosed.printChars();
         System.out.println("Antimoufang " + findAntiMoufangQuick(firstClosed, firstClosed.determinedSet()).size());
         FixBS det = firstClosed.determinedSet();
+        //distByContradiction(firstClosed.subLiner(det));
         det.clear(26);
         det.clear(27);
         det.clear(45);
@@ -88,6 +92,47 @@ public class FuzzySLinerTest {
         List<int[]> am = findAntiMoufangQuick(finished, finished.determinedSet());
         am.forEach(l -> System.out.println(Arrays.toString(l)));
         //System.out.println("Antimoufang " + findAntiMoufangQuick(thirdClosed, det).size());
+    }
+
+    private FuzzySLiner distByContradiction(FuzzySLiner ln) {
+        ln.printChars();
+        List<Pair> pairs = ln.undefinedPairs();
+        Queue<Rel> q = new ArrayDeque<>();
+        for (Pair p : pairs) {
+            Boolean dist = identifyDistinction(ln, p);
+            if (dist == null) {
+                continue;
+            }
+            if (dist) {
+                q.add(new Dist(p.f(), p.s()));
+            } else {
+                q.add(new Same(p.f(), p.s()));
+            }
+        }
+        ln.update(q);
+        ln.printChars();
+        ln = enhanceFullFano(ln);
+        ln.printChars();
+        FuzzySLiner lnr = ln;
+        List<Triple> triples = ln.undefinedTriples().stream()
+                .filter(t -> lnr.distinct(t.f(), t.s()) && lnr.distinct(t.f(), t.t()) && lnr.distinct(t.s(), t.t())).toList();
+        q = new ArrayDeque<>();
+        for (Triple tr : triples) {
+            Boolean coll = identifyCollinearity(ln, tr);
+            if (coll == null) {
+                continue;
+            }
+            if (coll) {
+                q.add(new Col(tr.f(), tr.s(), tr.t()));
+            } else {
+                q.add(new Trg(tr.f(), tr.s(), tr.t()));
+            }
+        }
+        ln.update(q);
+        ln.printChars();
+        ln = enhanceFullFano(ln);
+        ln.printChars();
+        return ln;
     }
 
     private static Queue<Rel> moufangQueue(FuzzySLiner closed, int pc, Set<FixBS> lines) {
@@ -267,6 +312,58 @@ public class FuzzySLinerTest {
         return liner;
     }
 
+    private Boolean identifyCollinearity(FuzzySLiner l, Triple t) {
+        Boolean result = null;
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Col(t.f(), t.s(), t.t()));
+            copy.update(rels);
+            enhanceFullFano(copy);
+        } catch (IllegalArgumentException e) {
+            result = false;
+        }
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Trg(t.f(), t.s(), t.t()));
+            copy.update(rels);
+            enhanceFullFano(copy);
+        } catch (IllegalArgumentException e) {
+            if (result != null) {
+                throw new IllegalArgumentException("Total impossibility");
+            }
+            result = true;
+        }
+        return result;
+    }
+
+    private Boolean identifyDistinction(FuzzySLiner l, Pair p) {
+        Boolean result = null;
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Same(p.f(), p.s()));
+            copy.update(rels);
+            enhanceFullFano(copy);
+        } catch (IllegalArgumentException e) {
+            result = true;
+        }
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Dist(p.f(), p.s()));
+            copy.update(rels);
+            enhanceFullFano(copy);
+        } catch (IllegalArgumentException e) {
+            if (result != null) {
+                throw new IllegalArgumentException("Total impossibility");
+            }
+            result = false;
+        }
+        return result;
+    }
+
     @Test
     public void testMoufang1() {
         int[][] antiMoufang = {
@@ -291,15 +388,16 @@ public class FuzzySLinerTest {
         second.printChars();
         second = enhanceFullFano(second);
         second.printChars();
+        second = distByContradiction(second);
+        second.printChars();
         List<FuzzySLiner> proven = multipleByContradiction(second);
         System.out.println(proven.size());
     }
 
     private List<FuzzySLiner> multipleByContradiction(FuzzySLiner base) {
         List<FuzzySLiner> result = new ArrayList<>();
-        List<Pair> undPairs = base.undefinedPairs();
-        if (!undPairs.isEmpty()) {
-            Pair p = undPairs.getFirst();
+        Pair p = base.undefinedPair();
+        if (p != null) {
             try {
                 Queue<Rel> rels = new ArrayDeque<>();
                 rels.add(new Same(p.f(), p.s()));
@@ -322,11 +420,10 @@ public class FuzzySLinerTest {
             }
             return result;
         }
-        List<Triple> undefined = base.undefinedTriples();
-        if (undefined.isEmpty()) {
+        Triple tr = base.undefinedTriple();
+        if (tr == null) {
             return List.of(base);
         }
-        Triple tr = undefined.getFirst();
         try {
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Col(tr.f(), tr.s(), tr.t()));
