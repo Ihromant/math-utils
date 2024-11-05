@@ -7,8 +7,10 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
@@ -427,6 +429,26 @@ public class FuzzySLiner {
             for (int j = 0; j < cap; j++) {
                 System.arraycopy(l[i][j], 0, res.l[i][j], 0, cap);
                 System.arraycopy(t[i][j], 0, res.t[i][j], 0, cap);
+            }
+        }
+        return res;
+    }
+
+    public FuzzySLiner subLiner(FixBS pts) {
+        Map<Integer, Integer> idxes = new HashMap<>();
+        int counter = 0;
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
+            idxes.put(i, counter++);
+        }
+        FuzzySLiner res = new FuzzySLiner(idxes.size());
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
+            for (int j = pts.nextSetBit(0); j >= 0; j = pts.nextSetBit(j + 1)) {
+                res.s[idxes.get(i)][idxes.get(j)] = s[i][j];
+                res.d[idxes.get(i)][idxes.get(j)] = d[i][j];
+                for (int k = pts.nextSetBit(0); k >= 0; k = pts.nextSetBit(k + 1)) {
+                    res.l[idxes.get(i)][idxes.get(j)][idxes.get(k)] = l[i][j][k];
+                    res.t[idxes.get(i)][idxes.get(j)][idxes.get(k)] = t[i][j][k];
+                }
             }
         }
         return res;
