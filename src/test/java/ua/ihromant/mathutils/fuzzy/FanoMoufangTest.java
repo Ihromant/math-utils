@@ -1,8 +1,8 @@
-package ua.ihromant.mathutils.plane;
+package ua.ihromant.mathutils.fuzzy;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.Pair;
 import ua.ihromant.mathutils.SimpleLiner;
+import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;

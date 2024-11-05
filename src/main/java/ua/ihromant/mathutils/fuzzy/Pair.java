@@ -1,4 +1,4 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.fuzzy;
 
 public record Pair(int f, int s) {
     public Pair {

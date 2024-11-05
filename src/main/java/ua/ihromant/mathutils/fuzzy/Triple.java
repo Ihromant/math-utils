@@ -1,4 +1,4 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.fuzzy;
 
 public record Triple(int f, int s, int t) {
     public Triple {

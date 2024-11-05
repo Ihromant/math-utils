@@ -1,6 +1,7 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.fuzzy;
 
 import lombok.Getter;
+import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.util.FixBS;
 
