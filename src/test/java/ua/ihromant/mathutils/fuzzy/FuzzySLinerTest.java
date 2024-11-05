@@ -171,12 +171,183 @@ public class FuzzySLinerTest {
             if (queue.isEmpty()) {
                 return liner;
             }
-            System.out.println("Enhancing fano " + cnt++ + " iteration, changes " + queue.size());
+            //System.out.println("Enhancing fano " + cnt++ + " iteration, changes " + queue.size());
             liner.update(queue);
-            System.out.println("Before " + liner.getPc());
+            //System.out.println("Before " + liner.getPc());
             liner = liner.quotient();
-            System.out.println("After " + liner.getPc());
+            //System.out.println("After " + liner.getPc());
         }
+    }
+
+    private FuzzySLiner intersect56(FuzzySLiner liner, boolean only6) {
+        int pt = liner.getPc();
+        Queue<Rel> queue = new ArrayDeque<>(liner.getPc());
+        for (int a = 0; a < liner.getPc(); a++) {
+            for (int b = a + 1; b < liner.getPc(); b++) {
+                if (!liner.distinct(a, b)) {
+                    continue;
+                }
+                for (int c = b + 1; c < liner.getPc(); c++) {
+                    if (!liner.triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < liner.getPc(); d++) {
+                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
+                            continue;
+                        }
+                        int abcd = -1;
+                        int acbd = -1;
+                        int adbc = -1;
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
+                                abcd = i;
+                            }
+                            if (liner.collinear(a, c, i) && liner.collinear(b, d, i)) {
+                                acbd = i;
+                            }
+                            if (liner.collinear(a, d, i) && liner.collinear(b, c, i)) {
+                                adbc = i;
+                            }
+                        }
+                        if (abcd >= 0 && acbd >= 0 && adbc < 0) {
+                            queue.add(new Col(a, d, pt));
+                            queue.add(new Col(b, c, pt));
+                            queue.add(new Col(abcd, acbd, pt));
+                            pt++;
+                        }
+                        if (abcd >= 0 && acbd < 0 && adbc >= 0) {
+                            queue.add(new Col(a, c, pt));
+                            queue.add(new Col(b, d, pt));
+                            queue.add(new Col(abcd, adbc, pt));
+                            pt++;
+                        }
+                        if (abcd < 0 && acbd >= 0 && adbc >= 0) {
+                            queue.add(new Col(a, b, pt));
+                            queue.add(new Col(c, d, pt));
+                            queue.add(new Col(acbd, adbc, pt));
+                            pt++;
+                        }
+                        if (only6) {
+                            continue;
+                        }
+                        if (abcd >= 0 && acbd < 0 && adbc < 0) {
+                            queue.add(new Col(a, c, pt));
+                            queue.add(new Col(b, d, pt));
+                            queue.add(new Col(abcd, pt, pt + 1));
+                            pt++;
+                            queue.add(new Col(a, d, pt));
+                            queue.add(new Col(b, c, pt));
+                            pt++;
+                        }
+                        if (abcd < 0 && acbd >= 0 && adbc < 0) {
+                            queue.add(new Col(a, b, pt));
+                            queue.add(new Col(c, d, pt));
+                            queue.add(new Col(acbd, pt, pt + 1));
+                            pt++;
+                            queue.add(new Col(a, d, pt));
+                            queue.add(new Col(b, c, pt));
+                            pt++;
+                        }
+                        if (abcd < 0 && acbd < 0 && adbc >= 0) {
+                            queue.add(new Col(a, c, pt));
+                            queue.add(new Col(b, d, pt));
+                            queue.add(new Col(adbc, pt, pt + 1));
+                            pt++;
+                            queue.add(new Col(a, b, pt));
+                            queue.add(new Col(c, d, pt));
+                            pt++;
+                        }
+                    }
+                }
+            }
+        }
+        liner = liner.addPoints(pt - liner.getPc());
+        liner.update(queue);
+        System.out.println("After closure " + liner.getPc());
+        return liner;
+    }
+
+    @Test
+    public void testMoufang1() {
+        int[][] antiMoufang = {
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8},
+                {1, 3, 7},
+                {1, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9},
+                {4, 6, 9}
+        };
+        FuzzySLiner first = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
+        int pc = first.getPc();
+        Set<FixBS> lines = Arrays.stream(antiMoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
+        first.printChars();
+        FuzzySLiner second = intersect56(first, false);
+        second.printChars();
+        second = enhanceFullFano(second);
+        second.printChars();
+        List<FuzzySLiner> proven = multipleByContradiction(second);
+        System.out.println(proven.size());
+    }
+
+    private List<FuzzySLiner> multipleByContradiction(FuzzySLiner base) {
+        List<FuzzySLiner> result = new ArrayList<>();
+        List<Pair> undPairs = base.undefinedPairs();
+        if (!undPairs.isEmpty()) {
+            Pair p = undPairs.getFirst();
+            try {
+                Queue<Rel> rels = new ArrayDeque<>();
+                rels.add(new Same(p.f(), p.s()));
+                FuzzySLiner copy = base.copy();
+                copy.update(rels);
+                copy = enhanceFullFano(copy);
+                result.addAll(multipleByContradiction(copy));
+            } catch (IllegalArgumentException e) {
+                // ok
+            }
+            try {
+                Queue<Rel> rels = new ArrayDeque<>();
+                rels.add(new Dist(p.f(), p.s()));
+                FuzzySLiner copy = base.copy();
+                copy.update(rels);
+                copy = enhanceFullFano(copy);
+                result.addAll(multipleByContradiction(copy));
+            } catch (IllegalArgumentException e) {
+                // ok
+            }
+            return result;
+        }
+        List<Triple> undefined = base.undefinedTriples();
+        if (undefined.isEmpty()) {
+            return List.of(base);
+        }
+        Triple tr = undefined.getFirst();
+        try {
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Col(tr.f(), tr.s(), tr.t()));
+            FuzzySLiner copy = base.copy();
+            copy.update(rels);
+            copy = enhanceFullFano(copy);
+            result.addAll(multipleByContradiction(copy));
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+        try {
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
+            FuzzySLiner copy = base.copy();
+            copy.update(rels);
+            copy = enhanceFullFano(copy);
+            result.addAll(multipleByContradiction(copy));
+        } catch (IllegalArgumentException e) {
+            // ok
+        }
+        return result;
     }
 
     public List<int[]> findAntiMoufang(FuzzySLiner liner) {
