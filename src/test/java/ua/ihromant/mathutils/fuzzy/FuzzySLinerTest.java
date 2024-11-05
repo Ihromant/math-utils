@@ -39,7 +39,7 @@ public class FuzzySLinerTest {
         next.printChars();
         base = next.subLiner(base.getPc());
         base.printChars();
-        List<int[]> configs = findAntiMoufang(next, base.getPc());
+        List<int[]> configs = findAntiMoufang(next);
         System.out.println("Antimoufang " + configs.size());
         Queue<Rel> queue = new ArrayDeque<>(next.getPc());
         for (int i = 0; i < pc; i++) {
@@ -61,7 +61,7 @@ public class FuzzySLinerTest {
         System.out.println("Enhanced Antimoufang");
         next = enhanceFullFano(next);
         FixBS determined = next.determinedSet();
-        configs = findAntiMoufang(next, pc);
+        configs = findAntiMoufang(next);
         next.printChars();
         System.out.println("Antimoufang " + configs.size());
     }
@@ -133,7 +133,61 @@ public class FuzzySLinerTest {
         }
     }
 
-    public List<int[]> findAntiMoufang(FuzzySLiner liner, int cap) {
+    public List<int[]> findAntiMoufang(FuzzySLiner liner) {
+        int pc = liner.getPc();
+        List<int[]> result = new ArrayList<>();
+        for (int o = 0; o < pc; o++) {
+            for (int a = 0; a < pc; a++) {
+                if (!liner.distinct(o, a)) {
+                    continue;
+                }
+                for (int a1 = 0; a1 < pc; a1++) {
+                    if (!liner.collinear(0, a, a1)) {
+                        continue;
+                    }
+                    for (int b = 0; b < pc; b++) {
+                        if (!liner.triangle(0, a, b)) {
+                            continue;
+                        }
+                        for (int b1 = 0; b1 < pc; b1++) {
+                            if (!liner.collinear(o, b, b1)) {
+                                continue;
+                            }
+                            for (int c = 0; c < pc; c++) {
+                                if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c)) {
+                                    continue;
+                                }
+                                for (int c1 = 0; c1 < pc; c1++) {
+                                    if (!liner.collinear(o, c, c1)) {
+                                        continue;
+                                    }
+                                    for (int x = 0; x < pc; x++) {
+                                        if (!liner.collinear(x, a, b) || !liner.collinear(x, a1, b1) || !liner.triangle(x, o, c)) {
+                                            continue;
+                                        }
+                                        for (int y = 0; y < pc; y++) {
+                                            if (!liner.collinear(y, a, c) || !liner.collinear(y, a1, c1) || !liner.collinear(o, x, y)) {
+                                                continue;
+                                            }
+                                            for (int z = 0; z < pc; z++) {
+                                                if (!liner.collinear(z, b, c) || !liner.collinear(z, b1, c1) || !liner.triangle(z, x, y)) {
+                                                    continue;
+                                                }
+                                                result.add(new int[]{o, a, a1, b, b1, c, c1, x, y, z});
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<int[]> findAntiMoufangQuick(FuzzySLiner liner, int cap) {
         List<int[]> result = new ArrayList<>();
         Liner l = new Liner(liner.getPc(), liner.capLines(cap).stream().filter(ln -> ln.cardinality() > 2).map(ln -> ln.stream().toArray()).toArray(int[][]::new));
         for (int o = 0; o < l.pointCount(); o++) {
