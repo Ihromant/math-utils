@@ -49,7 +49,7 @@ public class FuzzySLinerTest {
         det.clear(27);
         det.clear(45);
         det.clear(49);
-        det.clear(54);
+        det.clear(54); // comment and clear(43) and clear(95) to have 13-point config
         det.clear(120);
         det.clear(144);
         System.out.println("Second step......................................");
