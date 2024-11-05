@@ -484,11 +484,11 @@ public class FuzzySLiner {
                 + " " + (pc * (pc - 1) * (pc - 2) / 6 - c - t));
     }
 
-    public Set<FixBS> capLines(int cap) {
+    public Set<FixBS> determinedLines(FixBS determined) {
         Set<FixBS> lines = new HashSet<>();
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
-                if (!distinct(i, j) || i < cap && j >= cap) {
+                if (!distinct(i, j)) {
                     continue;
                 }
                 FixBS res = new FixBS(pc);
@@ -499,9 +499,7 @@ public class FuzzySLiner {
                         res.set(k);
                     }
                 }
-                FixBS clone = res.copy();
-                clone.clear(cap, pc);
-                if (i >= cap && clone.cardinality() > 1) {
+                if ((!determined.get(i) || !determined.get(j)) && res.intersection(determined).cardinality() > 1) {
                     continue;
                 }
                 lines.add(res);

@@ -39,7 +39,7 @@ public class FuzzySLinerTest {
         next.printChars();
         base = next.subLiner(base.getPc());
         base.printChars();
-        List<int[]> configs = findAntiMoufang(next);
+        List<int[]> configs = findAntiMoufangQuick(next, next.determinedSet());
         System.out.println("Antimoufang " + configs.size());
         Queue<Rel> queue = new ArrayDeque<>(next.getPc());
         for (int i = 0; i < pc; i++) {
@@ -60,8 +60,7 @@ public class FuzzySLinerTest {
         next.update(queue);
         System.out.println("Enhanced Antimoufang");
         next = enhanceFullFano(next);
-        FixBS determined = next.determinedSet();
-        configs = findAntiMoufang(next);
+        configs = findAntiMoufangQuick(next, next.determinedSet());
         next.printChars();
         System.out.println("Antimoufang " + configs.size());
     }
@@ -188,9 +187,10 @@ public class FuzzySLinerTest {
         return result;
     }
 
-    public List<int[]> findAntiMoufangQuick(FuzzySLiner liner, int cap) {
+    public List<int[]> findAntiMoufangQuick(FuzzySLiner liner, FixBS determined) {
+        System.out.println("Looking Antimoufang for determined " + determined);
         List<int[]> result = new ArrayList<>();
-        Liner l = new Liner(liner.getPc(), liner.capLines(cap).stream().filter(ln -> ln.cardinality() > 2).map(ln -> ln.stream().toArray()).toArray(int[][]::new));
+        Liner l = new Liner(liner.getPc(), liner.determinedLines(determined).stream().filter(ln -> ln.cardinality() > 2).map(ln -> ln.stream().toArray()).toArray(int[][]::new));
         for (int o = 0; o < l.pointCount(); o++) {
             int[] lines = l.lines(o);
             if (lines.length < 4) {
