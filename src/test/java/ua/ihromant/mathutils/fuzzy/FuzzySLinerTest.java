@@ -45,8 +45,7 @@ public class FuzzySLinerTest {
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
                 for (int k = j + 1; k < pc; k++) {
-                    int[] triple = new int[]{i, j, k};
-                    FixBS bs = FixBS.of(pc, triple);
+                    FixBS bs = FixBS.of(pc, i, j, k);
                     boolean line = lines.contains(bs);
                     for (int[] config : configs) {
                         if (line) {
@@ -61,6 +60,7 @@ public class FuzzySLinerTest {
         next.update(queue);
         System.out.println("Enhanced Antimoufang");
         next = enhanceFullFano(next);
+        FixBS determined = next.determinedSet();
         configs = findAntiMoufang(next, pc);
         next.printChars();
         System.out.println("Antimoufang " + configs.size());
@@ -166,7 +166,7 @@ public class FuzzySLinerTest {
                                         continue;
                                     }
                                     for (int b : line2) {
-                                        if (b == o || l.line(a, b) < 0) {
+                                        if (b == o || l.line(a, b) < 0 || !liner.triangle(o, a, b)) {
                                             continue;
                                         }
                                         for (int b1 : line2) {
@@ -174,7 +174,7 @@ public class FuzzySLinerTest {
                                                 continue;
                                             }
                                             for (int c : line3) {
-                                                if (c == o || l.line(a, c) < 0 || l.line(b, c) < 0) {
+                                                if (c == o || l.line(a, c) < 0 || l.line(b, c) < 0 || !liner.triangle(o, a, c) || !liner.triangle(o, b, c)) {
                                                     continue;
                                                 }
                                                 for (int c1 : line3) {

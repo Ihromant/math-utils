@@ -509,4 +509,18 @@ public class FuzzySLiner {
         }
         return lines;
     }
+
+    public FixBS determinedSet() {
+        FixBS res = new FixBS(pc);
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!same(i, j) && !distinct(i, j)) {
+                    res.set(i);
+                    res.set(j);
+                }
+            }
+        }
+        res.flip(0, pc);
+        return res;
+    }
 }
