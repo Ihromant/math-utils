@@ -27,21 +27,73 @@ public class FuzzySLinerTest {
                 {3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzySLiner firstBase = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
-        int pc = base.getPc();
+        int pc = firstBase.getPc();
         Set<FixBS> lines = Arrays.stream(antiMoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
-        base.printChars();
-        FuzzySLiner next = base.intersectLines();
-        next.printChars();
-        next = enhanceFullFano(next);
-        next.printChars();
-        base = next.subLiner(base.getPc());
-        base.printChars();
-        List<int[]> configs = findAntiMoufangQuick(next, next.determinedSet());
+        firstBase.printChars();
+        FuzzySLiner firstClosed = firstBase.intersectLines();
+        firstClosed.printChars();
+        firstClosed = enhanceFullFano(firstClosed);
+        firstClosed.printChars();
+        firstBase = firstClosed.subLiner(firstBase.getPc());
+        firstBase.printChars();
+        firstClosed.update(moufangQueue(firstClosed, pc, lines));
+        System.out.println("Enhanced Antimoufang");
+        firstClosed = enhanceFullFano(firstClosed);
+        firstClosed.printChars();
+        System.out.println("Antimoufang " + findAntiMoufangQuick(firstClosed, firstClosed.determinedSet()).size());
+        FixBS det = firstClosed.determinedSet();
+        det.clear(26);
+        det.clear(27);
+        det.clear(45);
+        det.clear(49);
+        det.clear(54);
+        det.clear(120);
+        det.clear(144);
+        System.out.println("Second step......................................");
+        System.out.println(det);
+        FuzzySLiner secondBase = firstClosed.subLiner(det);
+        secondBase.printChars();
+        System.out.println("Antimoufang " + findAntiMoufangQuick(secondBase, secondBase.determinedSet()).size());
+        FuzzySLiner secondClosed = secondBase.intersectLines();
+        secondClosed.printChars();
+        secondClosed = enhanceFullFano(secondClosed);
+        secondClosed.printChars();
+        secondClosed.update(moufangQueue(secondClosed, pc, lines));
+        System.out.println("Enhanced Antimoufang");
+        // secondClosed = enhanceFullFano(secondClosed);
+        // configs = findAntiMoufangQuick(secondClosed, secondClosed.determinedSet());
+        secondClosed.printChars();
+        // System.out.println("Antimoufang " + configs.size());
+        det = secondClosed.determinedSet();
+        System.out.println("Third step......................................");
+        System.out.println(det);
+        FuzzySLiner thirdBase = secondClosed.subLiner(det);
+        thirdBase.printChars();
+        System.out.println("Antimoufang " + findAntiMoufangQuick(thirdBase, thirdBase.determinedSet()).size());
+        FuzzySLiner thirdClosed = thirdBase.intersectLines();
+        thirdClosed.printChars();
+        thirdClosed = enhanceFullFano(thirdClosed);
+        thirdClosed.printChars();
+        thirdClosed.update(moufangQueue(thirdClosed, pc, lines));
+        System.out.println("Enhanced Antimoufang");
+        thirdClosed = enhanceFullFano(thirdClosed);
+        thirdClosed.printChars();
+        det = thirdClosed.determinedSet();
+        FuzzySLiner finished = thirdClosed.subLiner(det);
+        System.out.println("Closed " + det + " " + finished.undefinedPairs() + " " + finished.undefinedTriples());
+        System.out.println(finished.lines());
+        List<int[]> am = findAntiMoufangQuick(finished, finished.determinedSet());
+        am.forEach(l -> System.out.println(Arrays.toString(l)));
+        //System.out.println("Antimoufang " + findAntiMoufangQuick(thirdClosed, det).size());
+    }
+
+    private static Queue<Rel> moufangQueue(FuzzySLiner closed, int pc, Set<FixBS> lines) {
+        List<int[]> configs = findAntiMoufangQuick(closed, closed.determinedSet());
         System.out.println("Antimoufang " + configs.size());
-        Queue<Rel> queue = new ArrayDeque<>(next.getPc());
+        Queue<Rel> queue = new ArrayDeque<>(closed.getPc());
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
                 for (int k = j + 1; k < pc; k++) {
@@ -57,12 +109,7 @@ public class FuzzySLinerTest {
                 }
             }
         }
-        next.update(queue);
-        System.out.println("Enhanced Antimoufang");
-        next = enhanceFullFano(next);
-        configs = findAntiMoufangQuick(next, next.determinedSet());
-        next.printChars();
-        System.out.println("Antimoufang " + configs.size());
+        return queue;
     }
 
     public FuzzySLiner enhanceFullFano(FuzzySLiner liner) {
@@ -187,7 +234,7 @@ public class FuzzySLinerTest {
         return result;
     }
 
-    public List<int[]> findAntiMoufangQuick(FuzzySLiner liner, FixBS determined) {
+    public static List<int[]> findAntiMoufangQuick(FuzzySLiner liner, FixBS determined) {
         System.out.println("Looking Antimoufang for determined " + determined);
         List<int[]> result = new ArrayList<>();
         Liner l = new Liner(liner.getPc(), liner.determinedLines(determined).stream().filter(ln -> ln.cardinality() > 2).map(ln -> ln.stream().toArray()).toArray(int[][]::new));
