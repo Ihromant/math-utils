@@ -137,16 +137,17 @@ public class FuzzySLinerTest {
         int pc = liner.getPc();
         List<int[]> result = new ArrayList<>();
         for (int o = 0; o < pc; o++) {
+            System.out.println(o);
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
                     continue;
                 }
                 for (int a1 = 0; a1 < pc; a1++) {
-                    if (!liner.collinear(0, a, a1)) {
+                    if (!liner.collinear(o, a, a1)) {
                         continue;
                     }
                     for (int b = 0; b < pc; b++) {
-                        if (!liner.triangle(0, a, b)) {
+                        if (!liner.triangle(o, a, b)) {
                             continue;
                         }
                         for (int b1 = 0; b1 < pc; b1++) {
