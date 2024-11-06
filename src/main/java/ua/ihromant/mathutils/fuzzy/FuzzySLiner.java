@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils.fuzzy;
 
 import lombok.Getter;
-import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayDeque;
@@ -290,50 +289,6 @@ public class FuzzySLiner {
                 queue.add(new Trg(x, y, w));
             }
         }
-    }
-
-    private boolean intersects(int a, int b, int c, int d) {
-        for (int i = 0; i < pc; i++) {
-            if (collinear(a, b, i) && collinear(c, d, i)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public List<Quad> quads(int desiredCount) {
-        List<Quad> result = new ArrayList<>();
-        for (int a = 0; a < pc; a++) {
-            for (int b = a + 1; b < pc; b++) {
-                if (!distinct(a, b)) {
-                    continue;
-                }
-                for (int c = b + 1; c < pc; c++) {
-                    if (!triangle(a, b, c)) {
-                        continue;
-                    }
-                    for (int d = c + 1; d < pc; d++) {
-                        if (!triangle(a, c, d) || !triangle(a, b, d) || !triangle(b, c, d)) {
-                            continue;
-                        }
-                        int cnt = 0;
-                        if (intersects(a, b, c, d)) {
-                            cnt++;
-                        }
-                        if (intersects(a, c, b, d)) {
-                            cnt++;
-                        }
-                        if (intersects(a, d, b, c)) {
-                            cnt++;
-                        }
-                        if (cnt == desiredCount) {
-                            result.add(new Quad(a, b, c, d));
-                        }
-                    }
-                }
-            }
-        }
-        return result;
     }
 
     public List<Triple> undefinedTriples() {

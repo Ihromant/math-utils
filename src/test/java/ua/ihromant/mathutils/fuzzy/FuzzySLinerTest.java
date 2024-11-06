@@ -48,7 +48,7 @@ public class FuzzySLinerTest {
         firstClosed.printChars();
         System.out.println("Antimoufang " + findAntiMoufangQuick(firstClosed, firstClosed.determinedSet()).size());
         FixBS det = firstClosed.determinedSet();
-        //distByContradiction(firstClosed.subLiner(det));
+        //System.out.println(multipleByContradiction(firstClosed.subLiner(det)).size());
         det.clear(26);
         det.clear(27);
         det.clear(45);
@@ -94,7 +94,7 @@ public class FuzzySLinerTest {
         //System.out.println("Antimoufang " + findAntiMoufangQuick(thirdClosed, det).size());
     }
 
-    private FuzzySLiner distByContradiction(FuzzySLiner ln) {
+    private FuzzySLiner singleByContradiction(FuzzySLiner ln) {
         ln.printChars();
         List<Pair> pairs = ln.undefinedPairs();
         Queue<Rel> q = new ArrayDeque<>();
@@ -224,7 +224,63 @@ public class FuzzySLinerTest {
         }
     }
 
-    private FuzzySLiner intersect56(FuzzySLiner liner, boolean only6) {
+    private FuzzySLiner intersect6(FuzzySLiner liner) {
+        for (int a = 0; a < liner.getPc(); a++) {
+            for (int b = a + 1; b < liner.getPc(); b++) {
+                if (!liner.distinct(a, b)) {
+                    continue;
+                }
+                for (int c = b + 1; c < liner.getPc(); c++) {
+                    if (!liner.triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < liner.getPc(); d++) {
+                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
+                            continue;
+                        }
+                        int abcd = -1;
+                        int acbd = -1;
+                        int adbc = -1;
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
+                                abcd = i;
+                            }
+                            if (liner.collinear(a, c, i) && liner.collinear(b, d, i)) {
+                                acbd = i;
+                            }
+                            if (liner.collinear(a, d, i) && liner.collinear(b, c, i)) {
+                                adbc = i;
+                            }
+                        }
+                        Queue<Rel> queue = new ArrayDeque<>(liner.getPc());
+                        if (abcd >= 0 && acbd >= 0 && adbc < 0) {
+                            queue.add(new Col(a, d, liner.getPc()));
+                            queue.add(new Col(b, c, liner.getPc()));
+                            queue.add(new Col(abcd, acbd, liner.getPc()));
+                        }
+                        if (abcd >= 0 && acbd < 0 && adbc >= 0) {
+                            queue.add(new Col(a, c, liner.getPc()));
+                            queue.add(new Col(b, d, liner.getPc()));
+                            queue.add(new Col(abcd, adbc, liner.getPc()));
+                        }
+                        if (abcd < 0 && acbd >= 0 && adbc >= 0) {
+                            queue.add(new Col(a, b, liner.getPc()));
+                            queue.add(new Col(c, d, liner.getPc()));
+                            queue.add(new Col(acbd, adbc, liner.getPc()));
+                        }
+                        if (!queue.isEmpty()) {
+                            FuzzySLiner res = liner.addPoints(1);
+                            res.update(queue);
+                            return res;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private FuzzySLiner intersect56(FuzzySLiner liner) {
         int pt = liner.getPc();
         Queue<Rel> queue = new ArrayDeque<>(liner.getPc());
         for (int a = 0; a < liner.getPc(); a++) {
@@ -271,9 +327,6 @@ public class FuzzySLinerTest {
                             queue.add(new Col(c, d, pt));
                             queue.add(new Col(acbd, adbc, pt));
                             pt++;
-                        }
-                        if (only6) {
-                            continue;
                         }
                         if (abcd >= 0 && acbd < 0 && adbc < 0) {
                             queue.add(new Col(a, c, pt));
@@ -384,17 +437,28 @@ public class FuzzySLinerTest {
         int pc = first.getPc();
         Set<FixBS> lines = Arrays.stream(antiMoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
         first.printChars();
-        FuzzySLiner second = intersect56(first, false);
+        FuzzySLiner second = intersect56(first);
         second.printChars();
         second = enhanceFullFano(second);
         second.printChars();
-        second = distByContradiction(second);
-        second.printChars();
-        List<FuzzySLiner> proven = multipleByContradiction(second);
-        System.out.println(proven.size());
+        FuzzySLiner next;
+        while ((next = intersect6(second)) != null) {
+            second = enhanceFullFano(next);
+            second.printChars();
+        }
     }
 
     private List<FuzzySLiner> multipleByContradiction(FuzzySLiner base) {
+        return recur(base).stream().<FuzzySLiner>mapMulti((l, sink) -> {
+            try {
+                sink.accept(enhanceFullFano(l));
+            } catch (IllegalArgumentException e) {
+                // ok
+            }
+        }).collect(Collectors.toList());
+    }
+
+    private List<FuzzySLiner> recur(FuzzySLiner base) {
         List<FuzzySLiner> result = new ArrayList<>();
         Pair p = base.undefinedPair();
         if (p != null) {
@@ -403,8 +467,7 @@ public class FuzzySLinerTest {
                 rels.add(new Same(p.f(), p.s()));
                 FuzzySLiner copy = base.copy();
                 copy.update(rels);
-                copy = enhanceFullFano(copy);
-                result.addAll(multipleByContradiction(copy));
+                result.addAll(recur(copy));
             } catch (IllegalArgumentException e) {
                 // ok
             }
@@ -413,8 +476,7 @@ public class FuzzySLinerTest {
                 rels.add(new Dist(p.f(), p.s()));
                 FuzzySLiner copy = base.copy();
                 copy.update(rels);
-                copy = enhanceFullFano(copy);
-                result.addAll(multipleByContradiction(copy));
+                result.addAll(recur(copy));
             } catch (IllegalArgumentException e) {
                 // ok
             }
@@ -429,8 +491,7 @@ public class FuzzySLinerTest {
             rels.add(new Col(tr.f(), tr.s(), tr.t()));
             FuzzySLiner copy = base.copy();
             copy.update(rels);
-            copy = enhanceFullFano(copy);
-            result.addAll(multipleByContradiction(copy));
+            result.addAll(recur(copy));
         } catch (IllegalArgumentException e) {
             // ok
         }
@@ -439,8 +500,7 @@ public class FuzzySLinerTest {
             rels.add(new Trg(tr.f(), tr.s(), tr.t()));
             FuzzySLiner copy = base.copy();
             copy.update(rels);
-            copy = enhanceFullFano(copy);
-            result.addAll(multipleByContradiction(copy));
+            result.addAll(recur(copy));
         } catch (IllegalArgumentException e) {
             // ok
         }
