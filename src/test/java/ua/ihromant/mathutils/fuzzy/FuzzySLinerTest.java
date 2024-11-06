@@ -13,6 +13,19 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class FuzzySLinerTest {
+    int[][] globalAntimoufang = {
+            {0, 1, 2},
+            {0, 3, 4},
+            {0, 5, 6},
+            {0, 7, 8},
+            {1, 3, 7},
+            {1, 5, 8},
+            {2, 4, 7},
+            {2, 6, 8},
+            {3, 5, 9},
+            {4, 6, 9}
+    };
+
     @Test
     public void testMoufang() {
         int[][] antiMoufang = {
@@ -95,7 +108,6 @@ public class FuzzySLinerTest {
     }
 
     private FuzzySLiner singleByContradiction(FuzzySLiner ln, boolean onlyDist) {
-        ln.printChars();
         List<Pair> pairs = ln.undefinedPairs();
         Queue<Rel> q = new ArrayDeque<>();
         for (Pair p : pairs) {
@@ -138,8 +150,8 @@ public class FuzzySLinerTest {
         return ln;
     }
 
-    private static Queue<Rel> moufangQueue(FuzzySLiner closed, int pc, Set<FixBS> lines) {
-        List<int[]> configs = findAntiMoufangQuick(closed, closed.determinedSet());
+    private Queue<Rel> moufangQueue(FuzzySLiner closed, int pc, Set<FixBS> lines) {
+        List<int[]> configs = findAntiMoufang(closed);
         System.out.println("Antimoufang " + configs.size());
         Queue<Rel> queue = new ArrayDeque<>(closed.getPc());
         for (int i = 0; i < pc; i++) {
@@ -228,17 +240,17 @@ public class FuzzySLinerTest {
     }
 
     private FuzzySLiner intersect6(FuzzySLiner liner) {
-        for (int a = 0; a < liner.getPc(); a++) {
-            for (int b = a + 1; b < liner.getPc(); b++) {
-                if (!liner.distinct(a, b)) {
+        for (int d = 0; d < liner.getPc(); d++) {
+            for (int c = 0; c < d; c++) {
+                if (!liner.distinct(d, c)) {
                     continue;
                 }
-                for (int c = b + 1; c < liner.getPc(); c++) {
-                    if (!liner.triangle(a, b, c)) {
+                for (int b = 0; b < c; b++) {
+                    if (!liner.triangle(b, c, d)) {
                         continue;
                     }
-                    for (int d = c + 1; d < liner.getPc(); d++) {
-                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
+                    for (int a = 0; a < b; a++) {
+                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(a, b, c)) {
                             continue;
                         }
                         int abcd = -1;
@@ -272,6 +284,7 @@ public class FuzzySLinerTest {
                             queue.add(new Col(acbd, adbc, liner.getPc()));
                         }
                         if (!queue.isEmpty()) {
+                            System.out.println(a + " " + b + " " + c + " " + d);
                             FuzzySLiner res = liner.addPoints(1);
                             res.update(queue);
                             return res;
@@ -364,7 +377,7 @@ public class FuzzySLinerTest {
         }
         liner = liner.addPoints(pt - liner.getPc());
         liner.update(queue);
-        System.out.println("After closure " + liner.getPc());
+        //System.out.println("After closure " + liner.getPc());
         return liner;
     }
 
@@ -423,6 +436,46 @@ public class FuzzySLinerTest {
     @Test
     public void testMoufang3() {
         int[][] antiMoufang = {
+                {0, 1, 3},
+                {0, 5, 7},
+                {1, 2, 9},
+                {3, 4, 9},
+                {5, 6, 9},
+                {7, 8, 9},
+                {1, 4, 10},
+                {2, 3, 10},
+                {5, 8, 10},
+                {6, 7, 10},
+                {1, 5, 11},
+                {2, 6, 11},
+                {4, 8, 11},
+                {3, 7, 11},
+                {9, 10, 11}
+        };
+        FuzzySLiner first = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 9), new Triple(1, 5, 9),
+                new Triple(1, 7, 9), new Triple(3, 5, 9), new Triple(3, 7, 9), new Triple(5, 7, 9),
+                new Triple(1, 2, 10), new Triple(1, 5, 10), new Triple(1, 6, 10),
+                new Triple(2, 5, 10), new Triple(2, 6, 10), new Triple(5, 6, 10),
+                new Triple(1, 2, 11), new Triple(1, 3, 11), new Triple(1, 4, 11),
+                new Triple(2, 3, 11), new Triple(2, 4, 11), new Triple(3, 4, 11),
+                new Triple(0, 3, 7), new Triple(0, 9, 10)});
+        first.printChars();
+        List<Triple> trp = first.undefinedTriples();
+        Queue<Rel> q = new ArrayDeque<>();
+        for (Triple t : trp) {
+            q.add(new Trg(t.f(), t.s(), t.t()));
+        }
+        first.update(q);
+        first.printChars();
+        FuzzySLiner firstClosed = intersect56(first);
+        firstClosed.printChars();
+        firstClosed = singleByContradiction(firstClosed, true);
+        firstClosed.printChars();
+    }
+
+    @Test
+    public void testMoufang1() {
+        int[][] antiMoufang = {
                 {0, 1, 2},
                 {0, 3, 4},
                 {0, 5, 6},
@@ -444,11 +497,12 @@ public class FuzzySLinerTest {
         second.printChars();
         second = enhanceFullFano(second);
         second.printChars();
-        second = singleByContradiction(second, false);
-        second.printChars();
+        //second = singleByContradiction(second, false);
+        //second.printChars();
         FuzzySLiner next;
         while ((next = intersect6(second)) != null) {
-//            if (next.getPc() % 5 == 0) {
+//            if (next.getPc() % 15 == 0) {
+//                next.update(moufangQueue(next, pc, lines));
 //                next = singleByContradiction(next, false);
 //                next = enhanceFullFano(next);
 //                FixBS dt = next.determinedSet();
@@ -456,6 +510,10 @@ public class FuzzySLinerTest {
 //                am.forEach(l -> System.out.println(Arrays.toString(l)));
 //                System.out.println(next.determinedLines(dt).stream().filter(l -> l.cardinality() > 2).toList());
 //            }
+            if (next.getPc() % 15 == 0) {
+                next = singleByContradiction(next, false);
+                next.update(moufangQueue(next, pc, lines));
+            }
             second = enhanceFullFano(next);
             second.printChars();
         }
@@ -524,7 +582,6 @@ public class FuzzySLinerTest {
         int pc = liner.getPc();
         List<int[]> result = new ArrayList<>();
         for (int o = 0; o < pc; o++) {
-            System.out.println(o);
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
                     continue;
