@@ -94,7 +94,7 @@ public class FuzzySLinerTest {
         //System.out.println("Antimoufang " + findAntiMoufangQuick(thirdClosed, det).size());
     }
 
-    private FuzzySLiner singleByContradiction(FuzzySLiner ln) {
+    private FuzzySLiner singleByContradiction(FuzzySLiner ln, boolean onlyDist) {
         ln.printChars();
         List<Pair> pairs = ln.undefinedPairs();
         Queue<Rel> q = new ArrayDeque<>();
@@ -110,9 +110,12 @@ public class FuzzySLinerTest {
             }
         }
         ln.update(q);
-        ln.printChars();
+        //ln.printChars();
         ln = enhanceFullFano(ln);
-        ln.printChars();
+        //ln.printChars();
+        if (onlyDist) {
+            return ln;
+        }
         FuzzySLiner lnr = ln;
         List<Triple> triples = ln.undefinedTriples().stream()
                 .filter(t -> lnr.distinct(t.f(), t.s()) && lnr.distinct(t.f(), t.t()) && lnr.distinct(t.s(), t.t())).toList();
@@ -129,9 +132,9 @@ public class FuzzySLinerTest {
             }
         }
         ln.update(q);
-        ln.printChars();
+        //ln.printChars();
         ln = enhanceFullFano(ln);
-        ln.printChars();
+        //ln.printChars();
         return ln;
     }
 
@@ -158,7 +161,7 @@ public class FuzzySLinerTest {
     }
 
     public FuzzySLiner enhanceFullFano(FuzzySLiner liner) {
-        int cnt = 0;
+        //int cnt = 0;
         while (true) {
             Queue<Rel> queue = new ArrayDeque<>(liner.getPc());
             for (int a = 0; a < liner.getPc(); a++) {
@@ -441,8 +444,13 @@ public class FuzzySLinerTest {
         second.printChars();
         second = enhanceFullFano(second);
         second.printChars();
+        second = singleByContradiction(second, true);
+        second.printChars();
         FuzzySLiner next;
         while ((next = intersect6(second)) != null) {
+//            if (next.getPc() % 50 == 0) {
+//                next = singleByContradiction(next, false);
+//            }
             second = enhanceFullFano(next);
             second.printChars();
         }
