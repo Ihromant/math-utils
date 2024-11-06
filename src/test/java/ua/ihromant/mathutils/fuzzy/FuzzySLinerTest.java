@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.stream.Collectors;
 
 public class FuzzySLinerTest {
@@ -131,19 +132,19 @@ public class FuzzySLinerTest {
         FuzzySLiner lnr = ln;
         List<Triple> triples = ln.undefinedTriples().stream()
                 .filter(t -> lnr.distinct(t.f(), t.s()) && lnr.distinct(t.f(), t.t()) && lnr.distinct(t.s(), t.t())).toList();
-        q = new ArrayDeque<>();
-        for (Triple tr : triples) {
-            Boolean coll = identifyCollinearity(ln, tr);
+        Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
+        triples.stream().parallel().forEach(tr -> {
+            Boolean coll = identifyCollinearity(lnr, tr);
             if (coll == null) {
-                continue;
+                return;
             }
             if (coll) {
-                q.add(new Col(tr.f(), tr.s(), tr.t()));
+                q1.add(new Col(tr.f(), tr.s(), tr.t()));
             } else {
-                q.add(new Trg(tr.f(), tr.s(), tr.t()));
+                q1.add(new Trg(tr.f(), tr.s(), tr.t()));
             }
-        }
-        ln.update(q);
+        });
+        ln.update(q1);
         //ln.printChars();
         ln = enhanceFullFano(ln);
         //ln.printChars();
@@ -375,10 +376,12 @@ public class FuzzySLinerTest {
                 }
             }
         }
+        //System.out.println("Moving from " + liner.getPc() + " to " + pt);
         liner = liner.addPoints(pt - liner.getPc());
         liner.update(queue);
+        liner = enhanceFullFano(liner);
         //System.out.println("After closure " + liner.getPc());
-        return liner;
+        return liner.quotient();
     }
 
     private Boolean identifyCollinearity(FuzzySLiner l, Triple t) {
@@ -434,6 +437,116 @@ public class FuzzySLinerTest {
     }
 
     @Test
+    public void testCube1() {
+        int[][] cube = {
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8},
+                {0, 9, 10},
+                {1, 3, 6},
+                {1, 4, 5},
+                {1, 7, 10},
+                {1, 8, 9},
+                {2, 3, 7},
+                {2, 4, 8},
+                {2, 5, 9},
+                {2, 6, 10},
+                {3, 8, 11},
+                {4, 7, 11},
+                {4, 9, 12},
+                {5, 8, 12},
+                {5, 10, 13},
+                {6, 9, 13},
+                {6, 7, 14},
+                {3, 10, 14},
+                {7, 9, 15},
+                {8, 10, 15},
+                {3, 5, 16},
+                {4, 6, 16}
+        };
+        FuzzySLiner first = FuzzySLiner.of(cube, new Triple[]{new Triple(0, 3, 5), new Triple(0, 3, 7),
+        new Triple(0, 3, 9), new Triple(0, 5, 7), new Triple(0, 5, 9), new Triple(0, 7, 9),
+        new Triple(1, 3, 4), new Triple(1, 3, 7), new Triple(1, 3, 8),
+        new Triple(1, 4, 7), new Triple(1, 4, 8), new Triple(1, 7, 8),
+        new Triple(2, 3, 4), new Triple(2, 3, 5), new Triple(2, 3, 6),
+        new Triple(2, 4, 5), new Triple(2, 4, 6), new Triple(2, 5, 6),
+        new Triple(0, 1, 3), new Triple(0, 1, 4), new Triple(0, 1, 5), new Triple(0, 1, 6),
+        new Triple(0, 1, 7), new Triple(0, 1, 8), new Triple(0, 1, 9), new Triple(0, 1, 10)});
+        first.printChars();
+        first = enhanceFullFano(first);
+        first.printChars();
+        Queue<Rel> q = new ArrayDeque<>();
+        q.add(new Dist(11, 13));
+        q.add(new Dist(12, 14));
+        first.update(q);
+        first = singleByContradiction(first, false);
+        first.printChars();
+        System.out.println(first.undefinedPairs());
+        q.clear();
+        q.add(new Same(15, 16));
+        first.update(q);
+        first = singleByContradiction(first, false);
+        first.printChars();
+        List<int[]> am = findAntiMoufang(first);
+        am.forEach(l -> System.out.println(Arrays.toString(l)));
+        System.out.println(first.lines());
+        first = intersect56(first);
+        first.printChars();
+    }
+
+    @Test
+    public void testMoufang5() {
+        int[][] antiMoufang = {
+                {1, 2, 9},
+                {3, 4, 9},
+                {5, 6, 9},
+                {7, 8, 9},
+                {1, 4, 10},
+                {2, 3, 10},
+                {5, 8, 10},
+                {6, 7, 10},
+                {1, 5, 0},
+                {2, 6, 0},
+                {4, 8, 0},
+                {3, 7, 0},
+                {9, 10, 0},
+                //{1, 6, 12},
+                //{4, 7, 12}
+        };
+        FuzzySLiner first = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 9), new Triple(1, 5, 9),
+                new Triple(1, 7, 9), new Triple(3, 5, 9), new Triple(3, 7, 9), new Triple(5, 7, 9),
+                new Triple(1, 2, 10), new Triple(1, 5, 10), new Triple(1, 6, 10),
+                new Triple(2, 5, 10), new Triple(2, 6, 10), new Triple(5, 6, 10),
+                new Triple(1, 2, 0), new Triple(1, 3, 0), new Triple(1, 4, 0),
+                new Triple(2, 3, 0), new Triple(2, 4, 0), new Triple(3, 4, 0)
+                //, new Triple(12, 9, 10)
+        });
+        first.printChars();
+        Queue<Rel> q = new ArrayDeque<>();
+        for (Triple tr : first.undefinedTriples()) {
+            q.add(new Trg(tr.f(), tr.s(), tr.t()));
+        }
+        first.update(q);
+        first.printChars();
+        FuzzySLiner firstClosed = intersect56(first);
+        firstClosed.printChars();
+        q.clear();
+        int a = firstClosed.intersection(1, 3, 5, 7);
+        q.add(new Trg(a, 9, 10));
+        int b = firstClosed.intersection(1, 6, 4, 7);
+        q.add(new Trg(b, 9, 10));
+        int c = firstClosed.intersection(4, 5, 3, 6);
+        q.add(new Trg(c, 9, 10));
+        firstClosed.update(q);
+        firstClosed.printChars();
+        firstClosed = singleByContradiction(firstClosed, false);
+        firstClosed.printChars();
+        List<int[]> am = findAntiMoufang(firstClosed);
+        am.forEach(l -> System.out.println(Arrays.toString(l)));
+    }
+
+    @Test
     public void testMoufang3() {
         int[][] antiMoufang = {
                 {0, 1, 3},
@@ -450,7 +563,9 @@ public class FuzzySLinerTest {
                 {2, 6, 11},
                 {4, 8, 11},
                 {3, 7, 11},
-                {9, 10, 11}
+                {9, 10, 11},
+                //{1, 6, 12},
+                //{4, 7, 12}
         };
         FuzzySLiner first = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 9), new Triple(1, 5, 9),
                 new Triple(1, 7, 9), new Triple(3, 5, 9), new Triple(3, 7, 9), new Triple(5, 7, 9),
@@ -458,18 +573,28 @@ public class FuzzySLinerTest {
                 new Triple(2, 5, 10), new Triple(2, 6, 10), new Triple(5, 6, 10),
                 new Triple(1, 2, 11), new Triple(1, 3, 11), new Triple(1, 4, 11),
                 new Triple(2, 3, 11), new Triple(2, 4, 11), new Triple(3, 4, 11),
-                new Triple(0, 3, 7), new Triple(0, 9, 10)});
+                new Triple(0, 3, 7), new Triple(0, 9, 10)
+                //, new Triple(12, 9, 10)
+        });
         first.printChars();
-        List<Triple> trp = first.undefinedTriples();
-        Queue<Rel> q = new ArrayDeque<>();
-        for (Triple t : trp) {
-            q.add(new Trg(t.f(), t.s(), t.t()));
+        Queue<Rel> rels = new ArrayDeque<>();
+        //rels.add(new Dist(0, 12));
+        for (Triple tr : first.undefinedTriples()) {
+            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
         }
-        first.update(q);
+        first.update(rels);
         first.printChars();
         FuzzySLiner firstClosed = intersect56(first);
         firstClosed.printChars();
         firstClosed = singleByContradiction(firstClosed, true);
+        firstClosed.printChars();
+        Queue<Rel> q = new ArrayDeque<>();
+        q.add(new Col(9, 10, firstClosed.intersection(1, 6, 4, 7)));
+        firstClosed.update(q);
+        firstClosed.printChars();
+        firstClosed = enhanceFullFano(firstClosed);
+        firstClosed.printChars();
+        firstClosed = singleByContradiction(firstClosed, false);
         firstClosed.printChars();
     }
 

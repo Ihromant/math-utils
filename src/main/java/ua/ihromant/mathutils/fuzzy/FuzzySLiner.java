@@ -485,6 +485,15 @@ public class FuzzySLiner {
                 + " " + (pc * (pc - 1) * (pc - 2) / 6 - c - t));
     }
 
+    public int intersection(int a, int b, int c, int d) {
+        for (int i = 0; i < pc; i++) {
+            if (collinear(a, b, i) && collinear(c, d, i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
     public Set<FixBS> determinedLines(FixBS determined) {
         Set<FixBS> lines = new HashSet<>();
         for (int i = 0; i < pc; i++) {
