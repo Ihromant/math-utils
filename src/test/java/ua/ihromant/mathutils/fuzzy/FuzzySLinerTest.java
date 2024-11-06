@@ -421,7 +421,7 @@ public class FuzzySLinerTest {
     }
 
     @Test
-    public void testMoufang1() {
+    public void testMoufang3() {
         int[][] antiMoufang = {
                 {0, 1, 2},
                 {0, 3, 4},
@@ -444,12 +444,17 @@ public class FuzzySLinerTest {
         second.printChars();
         second = enhanceFullFano(second);
         second.printChars();
-        second = singleByContradiction(second, true);
+        second = singleByContradiction(second, false);
         second.printChars();
         FuzzySLiner next;
         while ((next = intersect6(second)) != null) {
-//            if (next.getPc() % 50 == 0) {
+//            if (next.getPc() % 5 == 0) {
 //                next = singleByContradiction(next, false);
+//                next = enhanceFullFano(next);
+//                FixBS dt = next.determinedSet();
+//                List<int[]> am = findAntiMoufangQuick(next, dt);
+//                am.forEach(l -> System.out.println(Arrays.toString(l)));
+//                System.out.println(next.determinedLines(dt).stream().filter(l -> l.cardinality() > 2).toList());
 //            }
             second = enhanceFullFano(next);
             second.printChars();
