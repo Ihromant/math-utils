@@ -4,8 +4,14 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
@@ -13,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class FuzzyBalLinerTest {
@@ -23,9 +30,9 @@ public class FuzzyBalLinerTest {
         System.out.println("com " + v + " " + k);
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
-        int[][] lines = beamBlocks(v, k);
-        List<FuzzyBalLiner> liners = List.of(FuzzyBalLiner.of(v, k, lines));
-        int needed = (b - lines.length) * (k - 2);
+        int[][][] lines = readLast("com", v, k, () -> new int[][][]{beamBlocks(v, k)});
+        List<FuzzyBalLiner> liners = Arrays.stream(lines).map(lns -> FuzzyBalLiner.of(v, k, lns)).toList();
+        int needed = (b - lines[0].length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
             liners = nextStage(v, k, liners, l -> {}, cnt);
@@ -41,9 +48,9 @@ public class FuzzyBalLinerTest {
         System.out.println("ap " + v + " " + k);
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
-        int[][] lines = beamBlocks(v, k);
-        List<FuzzyBalLiner> liners = List.of(FuzzyBalLiner.of(v, k, lines));
-        int needed = (b - lines.length) * (k - 2);
+        int[][][] lines = readLast("ap", v, k, () -> new int[][][]{beamBlocks(v, k)});
+        List<FuzzyBalLiner> liners = Arrays.stream(lines).map(lns -> FuzzyBalLiner.of(v, k, lns)).toList();
+        int needed = (b - lines[0].length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
             liners = nextStage(v, k, liners, FuzzyBalLinerTest::updateAP, cnt);
@@ -88,6 +95,9 @@ public class FuzzyBalLinerTest {
                     return;
                 }
                 int variety = variants * needed;
+//                if (chars[i][0] % (k - 1) == 0) {
+//                    variety = 2 * variety / 3;
+//                }
                 if (variety < min) {
                     min = variety;
                     pt = i;
@@ -218,6 +228,39 @@ public class FuzzyBalLinerTest {
                     }
                 }
             }
+        }
+    }
+
+    private static int[][][] readLast(String prefix, int v, int k, Supplier<int[][][]> fallback) {
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/bases/" + prefix + "-" + v + "-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            int left;
+            int lineCount = v * (v - 1) / k / (k - 1);
+            int[][][] partials = null;
+            while ((line = br.readLine()) != null) {
+                left = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                line = br.readLine();
+                int partialsCount = Integer.parseInt(line.substring(0, line.indexOf(' ')));
+                int partialSize = lineCount - left;
+                partials = new int[partialsCount][partialSize][k];
+                for (int i = 0; i < partialsCount; i++) {
+                    int[][] partial = partials[i];
+                    for (int j = 0; j < partialSize; j++) {
+                        String[] pts = br.readLine().split(" ");
+                        for (int l = 0; l < k; l++) {
+                            partial[j][l] = Integer.parseInt(pts[l]);
+                        }
+                    }
+                    br.readLine();
+                }
+            }
+            return partials;
+        } catch (FileNotFoundException e) {
+            return fallback.get();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }
