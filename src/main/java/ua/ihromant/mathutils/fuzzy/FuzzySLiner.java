@@ -68,7 +68,7 @@ public class FuzzySLiner {
         return addPoints(0);
     }
 
-    public boolean merge(int i, int j) {
+    private boolean merge(int i, int j) {
         if (d[i][j]) {
             throw new IllegalArgumentException(i + " " + j);
         }
@@ -80,7 +80,7 @@ public class FuzzySLiner {
         return true;
     }
 
-    public boolean distinguish(int i, int j) {
+    private boolean distinguish(int i, int j) {
         if (i == j || s[i][j]) {
             throw new IllegalArgumentException(i + " " + j);
         }
@@ -92,7 +92,7 @@ public class FuzzySLiner {
         return true;
     }
 
-    public boolean colline(int a, int b, int c) {
+    private boolean colline(int a, int b, int c) {
         if (a == b || a == c || b == c || t[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
@@ -108,7 +108,7 @@ public class FuzzySLiner {
         return true;
     }
 
-    public boolean triangule(int a, int b, int c) {
+    private boolean triangule(int a, int b, int c) {
         if (a == b || a == c || b == c || l[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
@@ -124,7 +124,7 @@ public class FuzzySLiner {
         return true;
     }
 
-    public boolean same(int a, int b) {
+    private boolean same(int a, int b) {
         return s[a][b];
     }
 
