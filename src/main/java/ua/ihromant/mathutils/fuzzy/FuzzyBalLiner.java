@@ -1,123 +1,170 @@
 package ua.ihromant.mathutils.fuzzy;
 
 import lombok.Getter;
-import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Queue;
 import java.util.Set;
 
 @Getter
 public class FuzzyBalLiner {
     private final int v;
     private final int k;
-    private final Set<Triple> l;
-    private final Set<Triple> t;
+    private final boolean[][][] l;
+    private final boolean[][][] t;
 
-    public FuzzyBalLiner(int v, int k, Set<Triple> s, Set<Triple> t) {
+    public FuzzyBalLiner(int v, int k) {
         this.v = v;
         this.k = k;
-        this.l = new HashSet<>(s);
-        this.t = new HashSet<>(t);
+        this.l = new boolean[v][v][v];
+        this.t = new boolean[v][v][v];
     }
 
-    public FuzzyBalLiner(int[][] lines, Triple[] triangles) {
-        this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, lines[0].length, Set.of(), Set.of());
+    public static FuzzyBalLiner of(int v, int k, int[][] lines) {
+        FuzzyBalLiner res = new FuzzyBalLiner(v, k);
+        ArrayDeque<Rel> queue = new ArrayDeque<>(2 * v * k);
         for (int[] line : lines) {
-            for (int i = 0; i < line.length; i++) {
-                int p1 = line[i];
-                for (int j = i + 1; j < line.length; j++) {
-                    int p2 = line[j];
-                    for (int k = j + 1; k < line.length; k++) {
-                        colline(p1, p2, line[k]);
+            for (int a = 0; a < line.length; a++) {
+                int p1 = line[a];
+                for (int b = a + 1; b < line.length; b++) {
+                    int p2 = line[b];
+                    for (int c = b + 1; c < line.length; c++) {
+                        queue.add(new Col(p1, p2, line[c]));
                     }
                 }
             }
         }
-        for (Triple t : triangles) {
-            triangule(t.f(), t.s(), t.t());
-        }
-        update();
+        res.update(queue);
+        return res;
     }
 
     public FuzzyBalLiner copy() {
-        return new FuzzyBalLiner(v, k, l, t);
-    }
-
-    public boolean colline(int a, int b, int c) {
-        if (a == b || a == c || b == c || triangle(a, b, c)) {
-            throw new IllegalArgumentException(a + " " + b + " " + c);
-        }
-        boolean added = l.add(new Triple(a, b, c));
-        FixBS bc;
-        if (added && (bc = line(b, c)).cardinality() == k) {
-            for (int i = bc.nextSetBit(0); i >= 0; i = bc.nextSetBit(i + 1)) {
-                for (int j = bc.nextSetBit(i + 1); j >= 0; j = bc.nextSetBit(j + 1)) {
-                    for (int l = 0; l < v; l++) {
-                        if (!bc.get(l)) {
-                            triangule(i, j, l);
-                        }
-                    }
-                }
+        FuzzyBalLiner res = new FuzzyBalLiner(v, k);
+        for (int i = 0; i < v; i++) {
+            for (int j = 0; j < v; j++) {
+                System.arraycopy(this.l[i][j], 0, res.l[i][j], 0, v);
+                System.arraycopy(this.t[i][j], 0, res.t[i][j], 0, v);
             }
         }
-        return added;
+        return res;
     }
 
-    public boolean triangule(int a, int b, int c) {
-        if (a == b || a == c || b == c || collinear(a, b, c)) {
+    private boolean colline(int a, int b, int c) {
+        if (a == b || a == c || b == c || t[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        return t.add(new Triple(a, b, c));
+        if (l[a][b][c]) {
+            return false;
+        }
+        l[a][b][c] = true;
+        l[a][c][b] = true;
+        l[b][a][c] = true;
+        l[b][c][a] = true;
+        l[c][a][b] = true;
+        l[c][b][a] = true;
+        return true;
+    }
+
+    private boolean triangule(int a, int b, int c) {
+        if (a == b || a == c || b == c || l[a][b][c]) {
+            throw new IllegalArgumentException(a + " " + b + " " + c);
+        }
+        if (t[a][b][c]) {
+            return false;
+        }
+        t[a][b][c] = true;
+        t[a][c][b] = true;
+        t[b][a][c] = true;
+        t[b][c][a] = true;
+        t[c][a][b] = true;
+        t[c][b][a] = true;
+        return true;
     }
 
     public boolean collinear(int a, int b, int c) {
-        return l.contains(new Triple(a, b, c));
+        return l[a][b][c];
     }
 
     public boolean triangle(int a, int b, int c) {
-        return t.contains(new Triple(a, b, c));
+        return t[a][b][c];
     }
 
-    public int intersection(Pair fst, Pair snd) {
-        for (int i = 0; i < v; i++) {
-            if (collinear(fst.f(), fst.s(), i) && collinear(snd.f(), snd.s(), i)) {
-                return i;
+    public void update(Queue<Rel> queue) {
+        while (!queue.isEmpty()) {
+            switch (queue.poll()) {
+                case Col cl -> checkCol(queue, cl);
+                case Trg tr -> checkTrg(queue, tr);
+                default -> throw new IllegalArgumentException();
             }
         }
-        return -1;
     }
 
-    public void update() {
-        //int counter = 0;
-        while (updateStep()) {
-            //System.out.println("Updating... " + counter++);
+    private void checkCol(Queue<Rel> queue, Col c) {
+        int x = c.f();
+        int y = c.s();
+        int z = c.t();
+        if (!colline(x, y, z)) {
+            return;
         }
-    }
-
-    private boolean updateStep() {
-        boolean result = false;
-        for (int x = 0; x < v; x++) {
-            for (int y = x + 1; y < v; y++) {
-                for (int z = y + 1; z < v; z++) {
-                    if (!collinear(x, y, z)) {
-                        continue;
-                    }
-                    for (int w = 0; w < v; w++) {
-                        if (collinear(x, y, w)) {
-                            result = result | colline(z, w, x) | colline(z, w, y);
-                        }
-                        if (triangle(x, y, w)) {
-                            result = result | triangule(x, z, w) | triangule(y, z, w);
-                        }
-                    }
-                }
+        queue.add(new Dist(x, y));
+        queue.add(new Dist(y, z));
+        queue.add(new Dist(x, z));
+        for (int w = 0; w < v; w++) {
+            if (w != x && collinear(w, y, z)) {
+                queue.add(new Col(w, x, y));
+                queue.add(new Col(w, x, z));
+            }
+            if (w != y && collinear(w, x, z)) {
+                queue.add(new Col(w, y, x));
+                queue.add(new Col(w, y, z));
+            }
+            if (w != z && collinear(w, x, y)) {
+                queue.add(new Col(w, z, x));
+                queue.add(new Col(w, z, y));
+            }
+            if (triangle(x, y, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(y, z, w));
+            }
+            if (triangle(x, z, w)) {
+                queue.add(new Trg(x, y, w));
+                queue.add(new Trg(y, z, w));
+            }
+            if (triangle(y, z, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(x, y, w));
             }
         }
-        return result;
+    }
+
+    private void checkTrg(Queue<Rel> queue, Trg t) {
+        int x = t.f();
+        int y = t.s();
+        int z = t.t();
+        if (!triangule(x, y, z)) {
+            return;
+        }
+        queue.add(new Dist(x, y));
+        queue.add(new Dist(y, z));
+        queue.add(new Dist(x, z));
+        for (int w = 0; w < v; w++) {
+            if (collinear(x, y, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(y, z, w));
+            }
+            if (collinear(x, z, w)) {
+                queue.add(new Trg(x, y, w));
+                queue.add(new Trg(y, z, w));
+            }
+            if (collinear(y, z, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(x, y, w));
+            }
+        }
     }
 
     public List<Triple> undefinedTriples() {
@@ -134,18 +181,19 @@ public class FuzzyBalLiner {
         return result;
     }
 
-    public boolean isFull() {
-        return l.size() + t.size() == v * (v - 1) * (v - 2) / 6;
+    public Triple undefinedTriple() {
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                for (int k = j + 1; k < v; k++) {
+                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
+                        return new Triple(i, j, k);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
-    public Liner toLiner() {
-        if (!isFull()) {
-            throw new IllegalStateException();
-        }
-        Set<FixBS> lines = lines();
-        int[][] lns = lines.stream().map(l -> l.stream().toArray()).toArray(int[][]::new);
-        return new Liner(Arrays.stream(lns).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, lns);
-    }
 
     public Set<FixBS> lines() {
         Set<FixBS> lines = new HashSet<>();
@@ -159,23 +207,36 @@ public class FuzzyBalLiner {
                         res.set(k);
                     }
                 }
-                if (res.cardinality() > 2) {
-                    lines.add(res);
-                }
+                lines.add(res);
             }
         }
         return lines;
     }
 
-    public FixBS line(int a, int b) {
-        FixBS res = new FixBS(v);
-        res.set(a);
-        res.set(b);
+    public void printChars() {
+        int c = 0;
+        int t = 0;
         for (int i = 0; i < v; i++) {
-            if (collinear(a, b, i)) {
-                res.set(i);
+            for (int j = i + 1; j < v; j++) {
+                for (int k = j + 1; k < v; k++) {
+                    if (collinear(i, j, k)) {
+                        c++;
+                    }
+                    if (triangle(i, j, k)) {
+                        t++;
+                    }
+                }
             }
         }
-        return res;
+        System.out.println(v + c + " " + t + " " + (v * (v - 1) * (v - 2) / 6 - c - t));
+    }
+
+    public int intersection(int a, int b, int c, int d) {
+        for (int i = 0; i < v; i++) {
+            if (collinear(a, b, i) && collinear(c, d, i)) {
+                return i;
+            }
+        }
+        return -1;
     }
 }
