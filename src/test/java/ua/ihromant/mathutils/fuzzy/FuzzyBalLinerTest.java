@@ -85,7 +85,7 @@ public class FuzzyBalLinerTest {
                 if (variants < needed) {
                     return;
                 }
-                int variety = variants - needed;
+                int variety = variants + needed * needed;
                 if (variety < min) {
                     min = variety;
                     pt = i;
