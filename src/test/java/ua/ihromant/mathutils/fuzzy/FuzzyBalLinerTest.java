@@ -64,10 +64,10 @@ public class FuzzyBalLinerTest {
                 }
                 int needed = allC - chars[i][0];
                 int variants = all - chars[i][0] - chars[i][1];
-                int variety = variants - needed;
-                if (variety < 0) {
+                if (variants < needed) {
                     return;
                 }
+                int variety = variants - needed;
                 if (variety < min) {
                     min = variety;
                     pt = i;
