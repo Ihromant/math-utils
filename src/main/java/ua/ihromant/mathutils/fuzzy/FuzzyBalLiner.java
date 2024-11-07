@@ -262,17 +262,16 @@ public class FuzzyBalLiner {
                 }
             }
         } else {
-            for (int i = smaller.nextSetBit(0); i >= 0; i = smaller.nextSetBit(i + 1)) {
-                if (i == pt) {
+            int o = smaller.nextSetBit(pt + 1);
+            if (o < 0) {
+                o = smaller.previousSetBit(pt - 1);
+            }
+            for (int i = 0; i < v; i++) {
+                if (i == pt || i == o) {
                     continue;
                 }
-                for (int j = 0; j < v; j++) {
-                    if (j == pt || j == i) {
-                        continue;
-                    }
-                    if (!collinear(i, j, pt) && !triangle(i, j, pt)) {
-                        result.add(new Col(i, j, pt));
-                    }
+                if (!collinear(i, o, pt) && !triangle(i, o, pt)) {
+                    result.add(new Col(i, o, pt));
                 }
             }
         }
