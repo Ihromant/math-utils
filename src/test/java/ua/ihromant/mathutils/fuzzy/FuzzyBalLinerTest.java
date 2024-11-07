@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.fuzzy;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -17,8 +18,8 @@ import java.util.stream.Collectors;
 public class FuzzyBalLinerTest {
     @Test
     public void generate() {
-        int v = 15;
-        int k = 3;
+        int v = 25;
+        int k = 4;
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
         int[][] lines = beamBlocks(v, k);
@@ -26,22 +27,20 @@ public class FuzzyBalLinerTest {
         int needed = (b - lines.length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(liners, cnt);
+            liners = nextStage(v, k, liners, cnt);
             needed--;
             System.out.println(needed + " " + liners.size() + " " + cnt.get());
         }
     }
 
-    private static List<FuzzyBalLiner> nextStage(List<FuzzyBalLiner> partials, AtomicLong cnt) {
+    private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, AtomicLong cnt) {
+        int r = (v - 1) / (k - 1);
+        int allC = r * (int) GaloisField.combinations(k - 1, k - 3);
+        int all = (v - 1) * (v - 2) / 2;
         Map<FixBS, FuzzyBalLiner> nonIso = partials.stream().parallel().<FuzzyBalLiner>mapMulti((lnr, sink) -> {
             int[][] chars = lnr.pointChars();
             int min = Integer.MAX_VALUE;
             int pt = -1;
-            int v = lnr.getV();
-            int k = lnr.getK();
-            int r = (v - 1) / (k - 1);
-            int allC = r * (k - 2);
-            int all = (v - 1) * (v - 2) / 2;
             for (int i = 0; i < v; i++) {
                 if (allC == chars[i][0]) {
                     continue;
@@ -58,12 +57,16 @@ public class FuzzyBalLinerTest {
                 }
             }
             for (Col c : lnr.undefinedTriples(pt)) {
-                FuzzyBalLiner copy = lnr.copy();
-                Queue<Rel> q = new ArrayDeque<>();
-                q.add(c);
-                copy.update(q);
-                cnt.incrementAndGet();
-                sink.accept(copy);
+                try {
+                    FuzzyBalLiner copy = lnr.copy();
+                    Queue<Rel> q = new ArrayDeque<>();
+                    q.add(c);
+                    copy.update(q);
+                    cnt.incrementAndGet();
+                    sink.accept(copy);
+                } catch (IllegalArgumentException e) {
+                    // ok
+                }
             }
         }).collect(Collectors.toMap(l -> toLiner(l).getCanonical(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         return new ArrayList<>(nonIso.values());
