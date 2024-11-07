@@ -54,7 +54,7 @@ public class FuzzyBalLinerTest {
         int r = (v - 1) / (k - 1);
         int allC = r * (k - 1) * (k - 2) / 2;
         int all = (v - 1) * (v - 2) / 2;
-        Map<FixBS, FuzzyBalLiner> nonIso = partials.stream()/*.parallel()*/.<FuzzyBalLiner>mapMulti((lnr, sink) -> {
+        Map<FixBS, FuzzyBalLiner> nonIso = partials.stream().parallel().<FuzzyBalLiner>mapMulti((lnr, sink) -> {
             int[][] chars = lnr.pointChars();
             int min = Integer.MAX_VALUE;
             int pt = -1;
