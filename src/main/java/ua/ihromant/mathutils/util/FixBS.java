@@ -251,6 +251,15 @@ public class FixBS implements Comparable<FixBS> {
         return sum;
     }
 
+    public boolean isEmpty() {
+        for (long word : words) {
+            if (word != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     @Override
     public String toString() {
         final int MAX_INITIAL_CAPACITY = Integer.MAX_VALUE - 8;

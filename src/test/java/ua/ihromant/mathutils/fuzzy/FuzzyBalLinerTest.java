@@ -50,6 +50,24 @@ public class FuzzyBalLinerTest {
         }
     }
 
+    @Test
+    public void generateUnderCap() {
+        int v = 15;
+        int k = 3;
+        int cap = 7;
+        int r = (v - 1) / (k - 1);
+        int b = v * r / k;
+        int[][] lines = beamBlocks(v, k);
+        List<FuzzyBalLiner> liners = List.of(FuzzyBalLiner.of(v, k, lines));
+        int needed = (b - lines.length) * (k - 2);
+        while (needed > 0) {
+            AtomicLong cnt = new AtomicLong();
+            liners = nextStage(v, k, liners, l -> checkUnderCap(l, cap), cnt);
+            needed--;
+            System.out.println(needed + " " + liners.size() + " " + cnt.get());
+        }
+    }
+
     private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, Consumer<FuzzyBalLiner> checker, AtomicLong cnt) {
         int r = (v - 1) / (k - 1);
         int allC = r * (k - 1) * (k - 2) / 2;
@@ -164,6 +182,38 @@ public class FuzzyBalLinerTest {
             if (liner.collinear(b, d, j)) {
                 if (!liner.triangle(a, c, j)) {
                     queue.add(new Trg(a, c, j));
+                }
+            }
+        }
+    }
+
+    private static void checkUnderCap(FuzzyBalLiner liner, int cap) {
+        int v = liner.getV();
+        for (int a = 0; a < v; a++) {
+            for (int b = a + 1; b < v; b++) {
+                for (int c = b + 1; c < v; c++) {
+                    if (liner.collinear(a, b, c)) {
+                        continue;
+                    }
+                    FixBS newPts = FixBS.of(v, a, b, c);
+                    FixBS base = FixBS.of(v);
+                    while (!newPts.isEmpty()) {
+                        base.or(newPts);
+                        if (base.cardinality() > cap) {
+                            throw new IllegalArgumentException();
+                        }
+                        FixBS nextNew = new FixBS(v);
+                        for (int x = newPts.nextSetBit(0); x >= 0; x = newPts.nextSetBit(x+1)) {
+                            for (int y = newPts.nextSetBit(x + 1); y >= 0; y = newPts.nextSetBit(y+1)) {
+                                for (int z = 0; z < v; z++) {
+                                    if (!base.get(z) && liner.collinear(x, y, z)) {
+                                        nextNew.set(z);
+                                    }
+                                }
+                            }
+                        }
+                        newPts = nextNew;
+                    }
                 }
             }
         }
