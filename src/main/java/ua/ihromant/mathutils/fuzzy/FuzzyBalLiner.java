@@ -110,9 +110,6 @@ public class FuzzyBalLiner {
         if (!colline(x, y, z)) {
             return;
         }
-        queue.add(new Dist(x, y));
-        queue.add(new Dist(y, z));
-        queue.add(new Dist(x, z));
         FixBS line = new FixBS(v);
         for (int w = 0; w < v; w++) {
             boolean wxy = collinear(w, x, y);
@@ -166,9 +163,6 @@ public class FuzzyBalLiner {
         if (!triangule(x, y, z)) {
             return;
         }
-        queue.add(new Dist(x, y));
-        queue.add(new Dist(y, z));
-        queue.add(new Dist(x, z));
         for (int w = 0; w < v; w++) {
             if (collinear(x, y, w)) {
                 queue.add(new Trg(x, z, w));
@@ -212,7 +206,6 @@ public class FuzzyBalLiner {
         return null;
     }
 
-
     public Set<FixBS> lines() {
         Set<FixBS> lines = new HashSet<>();
         for (int i = 0; i < v; i++) {
@@ -225,7 +218,9 @@ public class FuzzyBalLiner {
                         res.set(k);
                     }
                 }
-                lines.add(res);
+                if (res.cardinality() > 2) {
+                    lines.add(res);
+                }
             }
         }
         return lines;
@@ -256,5 +251,40 @@ public class FuzzyBalLiner {
             }
         }
         return -1;
+    }
+
+    public int[][] pointChars() {
+        int[][] result = new int[v][2];
+        for (int a = 0; a < v; a++) {
+            for (int b = 0; b < v; b++) {
+                for (int c = b + 1; c < v; c++) {
+                    if (collinear(a, b, c)) {
+                        result[a][0]++;
+                    }
+                    if (triangle(a, b, c)) {
+                        result[a][1]++;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<Col> undefinedTriples(int pt) {
+        List<Col> result = new ArrayList<>();
+        for (int i = 0; i < v; i++) {
+            if (i == pt) {
+                continue;
+            }
+            for (int j = i + 1; j < v; j++) {
+                if (j == pt) {
+                    continue;
+                }
+                if (!collinear(i, j, pt) && !triangle(i, j, pt)) {
+                    result.add(new Col(i, j, pt));
+                }
+            }
+        }
+        return result;
     }
 }
