@@ -204,6 +204,16 @@ public class FuzzyBalLiner {
         return lines;
     }
 
+    public FixBS line(int a, int b) {
+        FixBS res = FixBS.of(v, a, b);
+        for (int i = 0; i < v; i++) {
+            if (collinear(i, a, b)) {
+                res.set(i);
+            }
+        }
+        return res;
+    }
+
     public int intersection(int a, int b, int c, int d) {
         for (int i = 0; i < v; i++) {
             if (collinear(a, b, i) && collinear(c, d, i)) {

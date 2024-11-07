@@ -109,6 +109,7 @@ public class FuzzyBalLinerTest {
                     Queue<Rel> q = new ArrayDeque<>();
                     q.add(c);
                     copy.update(q);
+                    //additionalCheck(k, c, copy);
                     checker.accept(copy);
                     cnt.incrementAndGet();
                     sink.accept(copy);
@@ -118,6 +119,28 @@ public class FuzzyBalLinerTest {
             }
         }).collect(Collectors.toMap(l -> toLiner(l.removeTwins()).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         return new ArrayList<>(nonIso.values());
+    }
+
+    private static void additionalCheck(int k, Col c, FuzzyBalLiner copy) {
+        FixBS nl = copy.line(c.f(), c.s());
+        int crd = nl.cardinality();
+        if (crd != k) {
+            Queue<Rel> q1 = new ArrayDeque<>();
+            List<FixBS> lines = copy.lines().stream().filter(l -> l.cardinality() != k && !l.equals(nl) && l.cardinality() > k - crd + 1).toList();
+            for (FixBS bs : lines) {
+                for (int x = bs.nextSetBit(0); x >= 0; x = bs.nextSetBit(x + 1)) {
+                    for (int y = nl.nextSetBit(0); y >= 0; y = nl.nextSetBit(y + 1)) {
+                        for (int z = bs.nextSetBit(x + 1); z >= 0; z = bs.nextSetBit(z + 1)) {
+                            q1.add(new Trg(x, y, z));
+                        }
+                        for (int z = nl.nextSetBit(y + 1); z >= 0; z = nl.nextSetBit(z + 1)) {
+                            q1.add(new Trg(x, y, z));
+                        }
+                    }
+                }
+            }
+            copy.update(q1);
+        }
     }
 
     private static int[][] beamBlocks(int v, int k) {
