@@ -35,7 +35,7 @@ public class FuzzyBalLinerTest {
 
     private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, AtomicLong cnt) {
         int r = (v - 1) / (k - 1);
-        int allC = r * (int) GaloisField.combinations(k - 1, k - 3);
+        int allC = r * (k - 1) * (k - 2) / 2;
         int all = (v - 1) * (v - 2) / 2;
         Map<FixBS, FuzzyBalLiner> nonIso = partials.stream().parallel().<FuzzyBalLiner>mapMulti((lnr, sink) -> {
             int[][] chars = lnr.pointChars();
