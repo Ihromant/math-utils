@@ -12,14 +12,15 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class FuzzyBalLinerTest {
     @Test
     public void generate() {
-        int v = 25;
-        int k = 4;
+        int v = 15;
+        int k = 3;
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
         int[][] lines = beamBlocks(v, k);
@@ -27,13 +28,13 @@ public class FuzzyBalLinerTest {
         int needed = (b - lines.length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(v, k, liners, cnt);
+            liners = nextStage(v, k, liners, l -> {}, cnt);
             needed--;
             System.out.println(needed + " " + liners.size() + " " + cnt.get());
         }
     }
 
-    private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, AtomicLong cnt) {
+    private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, Consumer<FuzzyBalLiner> checker, AtomicLong cnt) {
         int r = (v - 1) / (k - 1);
         int allC = r * (k - 1) * (k - 2) / 2;
         int all = (v - 1) * (v - 2) / 2;
@@ -62,6 +63,7 @@ public class FuzzyBalLinerTest {
                     Queue<Rel> q = new ArrayDeque<>();
                     q.add(c);
                     copy.update(q);
+                    checker.accept(copy);
                     cnt.incrementAndGet();
                     sink.accept(copy);
                 } catch (IllegalArgumentException e) {
