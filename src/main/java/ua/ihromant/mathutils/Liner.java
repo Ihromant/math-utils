@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
+import ua.ihromant.mathutils.nauty.CanonicalConsumer;
 import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
@@ -814,6 +815,13 @@ public class Liner {
         GraphWrapper graph = GraphWrapper.forFull(this);
         CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
         NautyAlgoNew.search(graph, cons);
+        return cons.canonicalForm();
+    }
+
+    public FixBS getCanonicalOld() {
+        GraphWrapper graph = GraphWrapper.forFull(this);
+        CanonicalConsumer cons = new CanonicalConsumer(graph);
+        NautyAlgo.search(graph, cons);
         return cons.canonicalForm();
     }
 
