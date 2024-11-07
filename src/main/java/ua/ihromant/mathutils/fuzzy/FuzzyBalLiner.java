@@ -16,14 +16,18 @@ import java.util.stream.IntStream;
 public class FuzzyBalLiner {
     private final int v;
     private final int k;
-    private final boolean[][][] l;
-    private final boolean[][][] t;
+    private final FixBS l;
+    private final FixBS t;
 
-    public FuzzyBalLiner(int v, int k) {
+    private FuzzyBalLiner(int v, int k) {
+        this(v, k, new FixBS(v * v * v), new FixBS(v * v * v));
+    }
+
+    private FuzzyBalLiner(int v, int k, FixBS l, FixBS t) {
         this.v = v;
         this.k = k;
-        this.l = new boolean[v][v][v];
-        this.t = new boolean[v][v][v];
+        this.l = l;
+        this.t = t;
     }
 
     public static FuzzyBalLiner of(int v, int k, int[][] lines) {
@@ -45,54 +49,53 @@ public class FuzzyBalLiner {
     }
 
     public FuzzyBalLiner copy() {
-        FuzzyBalLiner res = new FuzzyBalLiner(v, k);
-        for (int i = 0; i < v; i++) {
-            for (int j = 0; j < v; j++) {
-                System.arraycopy(this.l[i][j], 0, res.l[i][j], 0, v);
-                System.arraycopy(this.t[i][j], 0, res.t[i][j], 0, v);
-            }
-        }
-        return res;
+        return new FuzzyBalLiner(v, k, l.copy(), t.copy());
+    }
+
+    private int idx(int a, int b, int c) {
+        return (v * a + b) * v + c;
     }
 
     private boolean colline(int a, int b, int c) {
-        if (a == b || a == c || b == c || t[a][b][c]) {
+        int idx = idx(a, b, c);
+        if (a == b || a == c || b == c || t.get(idx)) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        if (l[a][b][c]) {
+        if (l.get(idx)) {
             return false;
         }
-        l[a][b][c] = true;
-        l[a][c][b] = true;
-        l[b][a][c] = true;
-        l[b][c][a] = true;
-        l[c][a][b] = true;
-        l[c][b][a] = true;
+        l.set(idx);
+        l.set(idx(a, c, b));
+        l.set(idx(b, a, c));
+        l.set(idx(b, c, a));
+        l.set(idx(c, a, b));
+        l.set(idx(c, b, a));
         return true;
     }
 
     private boolean triangule(int a, int b, int c) {
-        if (a == b || a == c || b == c || l[a][b][c]) {
+        int idx = idx(a, b, c);
+        if (a == b || a == c || b == c || l.get(idx)) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        if (t[a][b][c]) {
+        if (t.get(idx)) {
             return false;
         }
-        t[a][b][c] = true;
-        t[a][c][b] = true;
-        t[b][a][c] = true;
-        t[b][c][a] = true;
-        t[c][a][b] = true;
-        t[c][b][a] = true;
+        t.set(idx);
+        t.set(idx(a, c, b));
+        t.set(idx(b, a, c));
+        t.set(idx(b, c, a));
+        t.set(idx(c, a, b));
+        t.set(idx(c, b, a));
         return true;
     }
 
     public boolean collinear(int a, int b, int c) {
-        return l[a][b][c];
+        return l.get(idx(a, b, c));
     }
 
     public boolean triangle(int a, int b, int c) {
-        return t[a][b][c];
+        return t.get(idx(a, b, c));
     }
 
     public void update(Queue<Rel> queue) {
@@ -181,33 +184,6 @@ public class FuzzyBalLiner {
         }
     }
 
-    public List<Triple> undefinedTriples() {
-        List<Triple> result = new ArrayList<>();
-        for (int i = 0; i < v; i++) {
-            for (int j = i + 1; j < v; j++) {
-                for (int k = j + 1; k < v; k++) {
-                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
-                        result.add(new Triple(i, j, k));
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    public Triple undefinedTriple() {
-        for (int i = 0; i < v; i++) {
-            for (int j = i + 1; j < v; j++) {
-                for (int k = j + 1; k < v; k++) {
-                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
-                        return new Triple(i, j, k);
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     public Set<FixBS> lines() {
         Set<FixBS> lines = new HashSet<>();
         for (int i = 0; i < v; i++) {
@@ -226,24 +202,6 @@ public class FuzzyBalLiner {
             }
         }
         return lines;
-    }
-
-    public void printChars() {
-        int c = 0;
-        int t = 0;
-        for (int i = 0; i < v; i++) {
-            for (int j = i + 1; j < v; j++) {
-                for (int k = j + 1; k < v; k++) {
-                    if (collinear(i, j, k)) {
-                        c++;
-                    }
-                    if (triangle(i, j, k)) {
-                        t++;
-                    }
-                }
-            }
-        }
-        System.out.println(v + c + " " + t + " " + (v * (v - 1) * (v - 2) / 6 - c - t));
     }
 
     public int intersection(int a, int b, int c, int d) {
