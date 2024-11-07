@@ -35,8 +35,8 @@ public class FuzzyBalLinerTest {
 
     @Test
     public void generateAP() {
-        int v = 15;
-        int k = 3;
+        int v = 28;
+        int k = 4;
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
         int[][] lines = beamBlocks(v, k);
@@ -85,7 +85,7 @@ public class FuzzyBalLinerTest {
                 if (variants < needed) {
                     return;
                 }
-                int variety = variants + needed * needed;
+                int variety = variants * needed;
                 if (variety < min) {
                     min = variety;
                     pt = i;

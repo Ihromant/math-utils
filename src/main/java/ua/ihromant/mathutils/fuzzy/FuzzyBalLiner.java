@@ -231,17 +231,48 @@ public class FuzzyBalLiner {
     }
 
     public List<Col> undefinedTriples(int pt) {
-        List<Col> result = new ArrayList<>();
-        for (int i = 0; i < v; i++) {
-            if (i == pt) {
-                continue;
+        Set<FixBS> lines = new HashSet<>();
+        for (int j = 0; j < v; j++) {
+            FixBS res = new FixBS(v);
+            res.set(pt);
+            res.set(j);
+            for (int k = 0; k < v; k++) {
+                if (collinear(pt, j, k)) {
+                    res.set(k);
+                }
             }
-            for (int j = i + 1; j < v; j++) {
-                if (j == pt) {
+            if (res.cardinality() > 2) {
+                lines.add(res);
+            }
+        }
+        FixBS smaller = lines.stream().filter(l -> l.cardinality() < k).findAny().orElse(null);
+        List<Col> result = new ArrayList<>();
+        if (smaller == null) {
+            for (int i = 0; i < v; i++) {
+                if (i == pt) {
                     continue;
                 }
-                if (!collinear(i, j, pt) && !triangle(i, j, pt)) {
-                    result.add(new Col(i, j, pt));
+                for (int j = i + 1; j < v; j++) {
+                    if (j == pt) {
+                        continue;
+                    }
+                    if (!collinear(i, j, pt) && !triangle(i, j, pt)) {
+                        result.add(new Col(i, j, pt));
+                    }
+                }
+            }
+        } else {
+            for (int i = smaller.nextSetBit(0); i >= 0; i = smaller.nextSetBit(i + 1)) {
+                if (i == pt) {
+                    continue;
+                }
+                for (int j = 0; j < v; j++) {
+                    if (j == pt || j == i) {
+                        continue;
+                    }
+                    if (!collinear(i, j, pt) && !triangle(i, j, pt)) {
+                        result.add(new Col(i, j, pt));
+                    }
                 }
             }
         }
