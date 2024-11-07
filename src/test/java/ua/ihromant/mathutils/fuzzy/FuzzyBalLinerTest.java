@@ -68,7 +68,7 @@ public class FuzzyBalLinerTest {
                     // ok
                 }
             }
-        }).collect(Collectors.toMap(l -> toLiner(l).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+        }).collect(Collectors.toMap(l -> toLiner(l.removeTwins()).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         return new ArrayList<>(nonIso.values());
     }
 

@@ -5,10 +5,12 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Queue;
 import java.util.Set;
+import java.util.stream.IntStream;
 
 @Getter
 public class FuzzyBalLiner {
@@ -286,5 +288,49 @@ public class FuzzyBalLiner {
             }
         }
         return result;
+    }
+
+    public FuzzyBalLiner removeTwins() {
+        int[] beamCounts = new int[v];
+        List<FixBS> lines = new ArrayList<>(lines());
+        for (FixBS line : lines) {
+            for (int pt = line.nextSetBit(0); pt >= 0; pt = line.nextSetBit(pt + 1)) {
+                beamCounts[pt]++;
+            }
+        }
+        FixBS filtered = new FixBS(v);
+        IntStream.range(0, v).filter(i -> beamCounts[i] > 1).forEach(filtered::set);
+        int pCard = filtered.cardinality();
+        if (v == pCard) {
+            return this;
+        } else {
+            FixBS[] newLines = IntStream.range(0, lines.size()).mapToObj(i -> new FixBS(pCard)).toArray(FixBS[]::new);
+            int idx = 0;
+            for (int pt = filtered.nextSetBit(0); pt >= 0; pt = filtered.nextSetBit(pt + 1)) {
+                for (int l = 0; l < lines.size(); l++) {
+                    if (lines.get(l).get(pt)) {
+                        newLines[l].set(idx);
+                    }
+                }
+                idx++;
+            }
+            FixBS filteredLines = new FixBS(lines.size());
+            for (int l = 0; l < newLines.length; l++) {
+                if (newLines[l].cardinality() > 1) {
+                    filteredLines.set(l);
+                }
+            }
+            int fCard = filteredLines.cardinality();
+            if (fCard == lines.size()) {
+                return FuzzyBalLiner.of(pCard, k, Arrays.stream(newLines).map(l -> l.stream().toArray()).toArray(int[][]::new));
+            } else {
+                FixBS[] res = new FixBS[fCard];
+                int lIdx = 0;
+                for (int ln = filteredLines.nextSetBit(0); ln >= 0; ln = filteredLines.nextSetBit(ln + 1)) {
+                    res[lIdx++] = newLines[ln];
+                }
+                return FuzzyBalLiner.of(pCard, k, Arrays.stream(res).map(l -> l.stream().toArray()).toArray(int[][]::new));
+            }
+        }
     }
 }
