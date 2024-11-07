@@ -109,7 +109,7 @@ public class FuzzyBalLinerTest {
                     Queue<Rel> q = new ArrayDeque<>();
                     q.add(c);
                     copy.update(q);
-                    //additionalCheck(k, c, copy);
+                    //additionalCheck(copy, c);
                     checker.accept(copy);
                     cnt.incrementAndGet();
                     sink.accept(copy);
@@ -121,9 +121,10 @@ public class FuzzyBalLinerTest {
         return new ArrayList<>(nonIso.values());
     }
 
-    private static void additionalCheck(int k, Col c, FuzzyBalLiner copy) {
+    private static void additionalCheck(FuzzyBalLiner copy, Col c) {
         FixBS nl = copy.line(c.f(), c.s());
         int crd = nl.cardinality();
+        int k = copy.getK();
         if (crd != k) {
             Queue<Rel> q1 = new ArrayDeque<>();
             List<FixBS> lines = copy.lines().stream().filter(l -> l.cardinality() != k && !l.equals(nl) && l.cardinality() > k - crd + 1).toList();
