@@ -113,16 +113,23 @@ public class FuzzyBalLiner {
         queue.add(new Dist(x, y));
         queue.add(new Dist(y, z));
         queue.add(new Dist(x, z));
+        FixBS line = new FixBS(v);
         for (int w = 0; w < v; w++) {
-            if (w != x && collinear(w, y, z)) {
+            boolean wxy = collinear(w, x, y);
+            boolean wxz = collinear(w, x, z);
+            boolean wyz = collinear(w, y, z);
+            if (wxy || wxz || wyz) {
+                line.set(w);
+            }
+            if (w != x && wyz) {
                 queue.add(new Col(w, x, y));
                 queue.add(new Col(w, x, z));
             }
-            if (w != y && collinear(w, x, z)) {
+            if (w != y && wxz) {
                 queue.add(new Col(w, y, x));
                 queue.add(new Col(w, y, z));
             }
-            if (w != z && collinear(w, x, y)) {
+            if (w != z && wxy) {
                 queue.add(new Col(w, z, x));
                 queue.add(new Col(w, z, y));
             }
@@ -137,6 +144,17 @@ public class FuzzyBalLiner {
             if (triangle(y, z, w)) {
                 queue.add(new Trg(x, z, w));
                 queue.add(new Trg(x, y, w));
+            }
+        }
+        if (line.cardinality() == k) {
+            for (int i = line.nextSetBit(0); i >= 0; i = line.nextSetBit(i + 1)) {
+                for (int j = line.nextSetBit(i + 1); j >= 0; j = line.nextSetBit(j + 1)) {
+                    for (int p = 0; p < v; p++) {
+                        if (!line.get(p)) {
+                            queue.add(new Trg(i, j, p));
+                        }
+                    }
+                }
             }
         }
     }
