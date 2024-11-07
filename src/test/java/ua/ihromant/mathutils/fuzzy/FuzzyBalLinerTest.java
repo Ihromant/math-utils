@@ -18,8 +18,9 @@ import java.util.stream.Collectors;
 public class FuzzyBalLinerTest {
     @Test
     public void generate() {
-        int v = 15;
-        int k = 3;
+        int v = 57;
+        int k = 8;
+        System.out.println("com " + v + " " + k);
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
         int[][] lines = beamBlocks(v, k);
@@ -37,6 +38,7 @@ public class FuzzyBalLinerTest {
     public void generateAP() {
         int v = 28;
         int k = 4;
+        System.out.println("ap " + v + " " + k);
         int r = (v - 1) / (k - 1);
         int b = v * r / k;
         int[][] lines = beamBlocks(v, k);
