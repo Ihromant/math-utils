@@ -103,7 +103,7 @@ public class FuzzyBalLinerTest {
                     pt = i;
                 }
             }
-            for (Col c : lnr.undefinedTriples(pt)) {
+            for (Col c : lnr.calcSmallest()) {
                 try {
                     FuzzyBalLiner copy = lnr.copy();
                     Queue<Rel> q = new ArrayDeque<>();
@@ -127,7 +127,7 @@ public class FuzzyBalLinerTest {
         int k = copy.getK();
         if (crd != k) {
             Queue<Rel> q1 = new ArrayDeque<>();
-            List<FixBS> lines = copy.lines().stream().filter(l -> l.cardinality() != k && !l.equals(nl) && l.cardinality() > k - crd + 1).toList();
+            List<FixBS> lines = copy.lines().stream().filter(l -> l.cardinality() < k && !l.equals(nl) && l.cardinality() > k - crd + 1).toList();
             for (FixBS bs : lines) {
                 for (int x = bs.nextSetBit(0); x >= 0; x = bs.nextSetBit(x + 1)) {
                     for (int y = nl.nextSetBit(0); y >= 0; y = nl.nextSetBit(y + 1)) {

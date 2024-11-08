@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -286,6 +287,32 @@ public class FuzzyBalLiner {
             }
         }
         return result;
+    }
+
+    public List<Col> calcSmallest() {
+        List<Col> possible = null;
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                int cnt = 0;
+                List<Col> cols = new ArrayList<>();
+                for (int k = 0; k < v; k++) {
+                    if (k == i || k == j) {
+                        continue;
+                    }
+                    if (collinear(i, j, k)) {
+                        cnt++;
+                    } else {
+                        if (!triangle(i, j, k)) {
+                            cols.add(new Col(i, j, k));
+                        }
+                    }
+                }
+                if (cnt < k - 2 && (possible == null || cols.size() < possible.size())) {
+                    possible = cols;
+                }
+            }
+        }
+        return Objects.requireNonNull(possible);
     }
 
     public FuzzyBalLiner removeTwins() {
