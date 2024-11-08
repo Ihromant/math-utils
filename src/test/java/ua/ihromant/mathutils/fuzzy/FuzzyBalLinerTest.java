@@ -109,7 +109,7 @@ public class FuzzyBalLinerTest {
                     Queue<Rel> q = new ArrayDeque<>();
                     q.add(c);
                     copy.update(q);
-                    //additionalCheck(copy, c);
+                    additionalCheck(copy, c);
                     checker.accept(copy, c);
                     cnt.incrementAndGet();
                     sink.accept(copy);
@@ -125,23 +125,40 @@ public class FuzzyBalLinerTest {
         FixBS nl = copy.line(c.f(), c.s());
         int crd = nl.cardinality();
         int k = copy.getK();
-        if (crd != k) {
-            Queue<Rel> q1 = new ArrayDeque<>();
-            List<FixBS> lines = copy.lines().stream().filter(l -> l.cardinality() < k && !l.equals(nl) && l.cardinality() > k - crd + 1).toList();
-            for (FixBS bs : lines) {
-                for (int x = bs.nextSetBit(0); x >= 0; x = bs.nextSetBit(x + 1)) {
-                    for (int y = nl.nextSetBit(0); y >= 0; y = nl.nextSetBit(y + 1)) {
-                        for (int z = bs.nextSetBit(x + 1); z >= 0; z = bs.nextSetBit(z + 1)) {
-                            q1.add(new Trg(x, y, z));
+        if (crd == k) {
+            return;
+        }
+        Queue<Rel> q1 = new ArrayDeque<>();
+        for (FixBS ol : copy.lines()) {
+            int oc = ol.cardinality();
+            if (ol.equals(nl) || oc == k) {
+                continue;
+            }
+            boolean intersects = ol.intersects(nl);
+            if (intersects && oc + crd - 1 <= k) {
+                continue;
+            }
+            if (!intersects && oc + crd <= k) {
+                continue;
+            }
+            for (int x = ol.nextSetBit(0); x >= 0; x = ol.nextSetBit(x + 1)) {
+                for (int y = nl.nextSetBit(0); y >= 0; y = nl.nextSetBit(y + 1)) {
+                    for (int z = ol.nextSetBit(x + 1); z >= 0; z = ol.nextSetBit(z + 1)) {
+                        if (z == y) {
+                            continue;
                         }
-                        for (int z = nl.nextSetBit(y + 1); z >= 0; z = nl.nextSetBit(z + 1)) {
-                            q1.add(new Trg(x, y, z));
+                        q1.add(new Trg(x, y, z));
+                    }
+                    for (int z = nl.nextSetBit(y + 1); z >= 0; z = nl.nextSetBit(z + 1)) {
+                        if (z == x) {
+                            continue;
                         }
+                        q1.add(new Trg(x, y, z));
                     }
                 }
             }
-            copy.update(q1);
         }
+        copy.update(q1);
     }
 
     private static int[][] beamBlocks(int v, int k) {
