@@ -149,7 +149,11 @@ public class FuzzyBalLiner {
                 queue.add(new Trg(x, y, w));
             }
         }
-        if (line.cardinality() == k) {
+        int crd = line.cardinality();
+        if (crd > k) {
+            throw new IllegalArgumentException();
+        }
+        if (crd == k) {
             for (int i = line.nextSetBit(0); i >= 0; i = line.nextSetBit(i + 1)) {
                 for (int j = line.nextSetBit(i + 1); j >= 0; j = line.nextSetBit(j + 1)) {
                     for (int p = 0; p < v; p++) {
