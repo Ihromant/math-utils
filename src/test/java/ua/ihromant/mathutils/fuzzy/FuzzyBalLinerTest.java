@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
@@ -35,7 +35,7 @@ public class FuzzyBalLinerTest {
         int needed = (b - lines[0].length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(v, k, liners, l -> {}, cnt);
+            liners = nextStage(v, k, liners, (l, c) -> {}, cnt);
             needed--;
             System.out.println(needed + " " + liners.size() + " " + cnt.get());
         }
@@ -71,13 +71,13 @@ public class FuzzyBalLinerTest {
         int needed = (b - lines.length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(v, k, liners, l -> checkUnderCap(l, cap), cnt);
+            liners = nextStage(v, k, liners, (l, c) -> checkUnderCap(l, cap), cnt);
             needed--;
             System.out.println(needed + " " + liners.size() + " " + cnt.get());
         }
     }
 
-    private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, Consumer<FuzzyBalLiner> checker, AtomicLong cnt) {
+    private static List<FuzzyBalLiner> nextStage(int v, int k, List<FuzzyBalLiner> partials, BiConsumer<FuzzyBalLiner, Col> checker, AtomicLong cnt) {
         int r = (v - 1) / (k - 1);
         int allC = r * (k - 1) * (k - 2) / 2;
         int all = (v - 1) * (v - 2) / 2;
@@ -110,7 +110,7 @@ public class FuzzyBalLinerTest {
                     q.add(c);
                     copy.update(q);
                     //additionalCheck(copy, c);
-                    checker.accept(copy);
+                    checker.accept(copy, c);
                     cnt.incrementAndGet();
                     sink.accept(copy);
                 } catch (IllegalArgumentException e) {
@@ -162,7 +162,7 @@ public class FuzzyBalLinerTest {
         return new Liner(liner.getV(), liner.lines().stream().map(l -> l.stream().toArray()).toArray(int[][]::new));
     }
 
-    private static void updateAP(FuzzyBalLiner liner) {
+    private static void updateAP(FuzzyBalLiner liner, Col col) {
         int v = liner.getV();
         while (true) {
             Queue<Rel> queue = new ArrayDeque<>(v);
