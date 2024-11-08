@@ -29,6 +29,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BibdFinder3Test {
     private static final int[] bounds = {-1, 0, 2, 5, 10, 16, 24, 33, 43, 54, 71, 84, 105, 126};
@@ -195,13 +196,13 @@ public class BibdFinder3Test {
         }
     }
 
-    private static void logResultsDepth(PrintStream destination, int v, int k, int depth, Set<FixBS> processed) {
+    private static void logResultsDepth(PrintStream destination, int v, int k, int depth, Set<FixBS> processed, int... start) {
         System.out.println(v + " " + k);
         int blocksNeeded = v / k / (k - 1);
         FixBS filter = baseFilter(v, k);
         List<int[]> initial = new ArrayList<>();
         calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, arr -> {
-            if (!processed.contains(of(v, arr))) {
+            if (!processed.contains(of(v, arr)) && IntStream.range(0, start.length).allMatch(i -> arr[i + 1] == start[i])) {
                 initial.add(arr);
             }
         });
