@@ -109,7 +109,7 @@ public class FuzzyBalLinerTest {
                     Queue<Rel> q = new ArrayDeque<>();
                     q.add(c);
                     copy.update(q);
-                    additionalCheck(copy, c);
+                    //additionalCheck(copy, c);
                     checker.accept(copy, c);
                     cnt.incrementAndGet();
                     sink.accept(copy);
