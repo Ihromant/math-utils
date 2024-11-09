@@ -365,12 +365,14 @@ public class FuzzySLinerTest {
                 }
             }
         }
-        //System.out.println("Moving from " + liner.getPc() + " to " + pt);
+        System.out.println("Expanding 5-6 from " + liner.getPc() + " to " + pt);
         liner = liner.addPoints(pt - liner.getPc());
         liner.update(queue);
         liner = enhanceFullFano(liner);
-        //System.out.println("After closure " + liner.getPc());
-        return liner.quotient();
+        liner.printChars();
+        liner = liner.quotient();
+        liner.printChars();
+        return liner;
     }
 
     private Boolean identifyCollinearity(FuzzySLiner l, Triple t) {
@@ -466,9 +468,9 @@ public class FuzzySLinerTest {
         first = enhanceFullFano(first);
         first.printChars();
         Queue<Rel> q = new ArrayDeque<>();
-        q.add(new Same(11, 13));
-        q.add(new Same(12, 14));
-        q.add(new Same(15, 16));
+        q.add(new Dist(11, 13));
+        q.add(new Dist(12, 14));
+        q.add(new Dist(15, 16));
         first.update(q);
         first = singleByContradiction(first, false);
         first.printChars();
@@ -477,8 +479,11 @@ public class FuzzySLinerTest {
         System.out.println(first.lines());
         first = intersect56(first);
         first.printChars();
-        first = singleByContradiction(first, true);
-        first.printChars();
+        FuzzySLiner next;
+        while ((next = intersect6(first)) != null) {
+            first = enhanceFullFano(next);
+            first.printChars();
+        }
     }
 
     @Test
