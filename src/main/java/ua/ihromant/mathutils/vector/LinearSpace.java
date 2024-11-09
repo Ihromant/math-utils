@@ -24,6 +24,10 @@ public class LinearSpace {
         return powList[n];
     }
 
+    public int half() {
+        return powList[n / 2];
+    }
+
     public static int pow(int a, int b) {
         if (b == 0) {
             return 1;
