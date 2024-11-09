@@ -132,14 +132,11 @@ public class TranslationPlaneTest {
                                 }
                                 int y = liner.intersection(liner.line(a, c), l0);
                                 int z = liner.intersection(liner.line(b, c), l0);
-                                for (int a1 : liner.point(la)) {
+                                for (int a1 : liner.points(la)) {
                                     if (a1 == a || a1 == o) {
                                         continue;
                                     }
                                     int b1 = liner.intersection(liner.line(a1, x), lb);
-                                    if (b1 == o) {
-                                        continue;
-                                    }
                                     int c1 = liner.intersection(liner.line(a1, y), lc);
                                     if (!liner.collinear(b1, c1, z)) {
                                         return false;
