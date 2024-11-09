@@ -44,8 +44,6 @@ public class FuzzySLinerTest {
         FuzzySLiner firstBase = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
-        int pc = firstBase.getPc();
-        Set<FixBS> lines = Arrays.stream(antiMoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
         firstBase.printChars();
         //firstBase = distByContradiction(firstBase);
         //System.out.println(multipleByContradiction(firstBase).size());
@@ -56,7 +54,7 @@ public class FuzzySLinerTest {
         firstClosed.printChars();
         firstBase = firstClosed.subLiner(firstBase.getPc());
         firstBase.printChars();
-        firstClosed.update(moufangQueue(firstClosed, pc, lines));
+        firstClosed.update(moufangQueue(firstClosed));
         System.out.println("Enhanced Antimoufang");
         firstClosed = enhanceFullFano(firstClosed);
         firstClosed.printChars();
@@ -79,7 +77,7 @@ public class FuzzySLinerTest {
         secondClosed.printChars();
         secondClosed = enhanceFullFano(secondClosed);
         secondClosed.printChars();
-        secondClosed.update(moufangQueue(secondClosed, pc, lines));
+        secondClosed.update(moufangQueue(secondClosed));
         System.out.println("Enhanced Antimoufang");
         // secondClosed = enhanceFullFano(secondClosed);
         // configs = findAntiMoufangQuick(secondClosed, secondClosed.determinedSet());
@@ -95,7 +93,7 @@ public class FuzzySLinerTest {
         thirdClosed.printChars();
         thirdClosed = enhanceFullFano(thirdClosed);
         thirdClosed.printChars();
-        thirdClosed.update(moufangQueue(thirdClosed, pc, lines));
+        thirdClosed.update(moufangQueue(thirdClosed));
         System.out.println("Enhanced Antimoufang");
         thirdClosed = enhanceFullFano(thirdClosed);
         thirdClosed.printChars();
@@ -151,7 +149,9 @@ public class FuzzySLinerTest {
         return ln;
     }
 
-    private Queue<Rel> moufangQueue(FuzzySLiner closed, int pc, Set<FixBS> lines) {
+    private Queue<Rel> moufangQueue(FuzzySLiner closed) {
+        int pc = 10;
+        Set<FixBS> lines = Arrays.stream(globalAntimoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
         List<int[]> configs = findAntiMoufang(closed);
         System.out.println("Antimoufang " + configs.size());
         Queue<Rel> queue = new ArrayDeque<>(closed.getPc());
@@ -477,13 +477,8 @@ public class FuzzySLinerTest {
         first = enhanceFullFano(first);
         first.printChars();
         Queue<Rel> q = new ArrayDeque<>();
-        q.add(new Dist(11, 13));
-        q.add(new Dist(12, 14));
-        first.update(q);
-        first = singleByContradiction(first, false);
-        first.printChars();
-        System.out.println(first.undefinedPairs());
-        q.clear();
+        q.add(new Same(11, 13));
+        q.add(new Same(12, 14));
         q.add(new Same(15, 16));
         first.update(q);
         first = singleByContradiction(first, false);
@@ -492,6 +487,8 @@ public class FuzzySLinerTest {
         am.forEach(l -> System.out.println(Arrays.toString(l)));
         System.out.println(first.lines());
         first = intersect56(first);
+        first.printChars();
+        first = singleByContradiction(first, true);
         first.printChars();
     }
 
@@ -596,6 +593,11 @@ public class FuzzySLinerTest {
         firstClosed.printChars();
         firstClosed = singleByContradiction(firstClosed, false);
         firstClosed.printChars();
+        FuzzySLiner next;
+        while ((next = intersect6(firstClosed)) != null) {
+            firstClosed = enhanceFullFano(next);
+            firstClosed.printChars();
+        }
     }
 
     @Test
@@ -637,7 +639,7 @@ public class FuzzySLinerTest {
 //            }
             if (next.getPc() % 15 == 0) {
                 next = singleByContradiction(next, false);
-                next.update(moufangQueue(next, pc, lines));
+                next.update(moufangQueue(next));
             }
             second = enhanceFullFano(next);
             second.printChars();
