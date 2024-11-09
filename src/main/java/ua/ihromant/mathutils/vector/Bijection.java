@@ -1,4 +1,4 @@
-package ua.ihromant.mathutils.field;
+package ua.ihromant.mathutils.vector;
 
 import java.util.Arrays;
 

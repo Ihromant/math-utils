@@ -1,10 +1,14 @@
-package ua.ihromant.mathutils.field;
+package ua.ihromant.mathutils.vector;
+
+import lombok.Getter;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
 import java.util.List;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+@Getter
 public class LinearSpace {
     private final int p;
     private final int n;
@@ -14,6 +18,10 @@ public class LinearSpace {
         this.p = p;
         this.n = n;
         this.powList = IntStream.range(0, n + 1).map(i -> pow(p, i)).toArray();
+    }
+
+    public int cardinality() {
+        return powList[n];
     }
 
     public static int pow(int a, int b) {
@@ -69,8 +77,8 @@ public class LinearSpace {
         return mul(a, p - 1);
     }
 
-    public BitSet hull(int... arr) {
-        BitSet bs = new BitSet();
+    public FixBS hull(int... arr) {
+        FixBS bs = new FixBS(cardinality());
         for (int i = 0; i < powList[arr.length]; i++) {
             int[] mul = new int[arr.length];
             for (int j = 0; j < arr.length; j++) {
@@ -82,8 +90,8 @@ public class LinearSpace {
         return bs;
     }
 
-    public BitSet hull(BitSet fst, BitSet snd) {
-        BitSet bs = new BitSet();
+    public FixBS hull(FixBS fst, FixBS snd) {
+        FixBS bs = new FixBS(cardinality());
         for (int a = fst.nextSetBit(0); a >= 0; a = fst.nextSetBit(a + 1)) {
             for (int b = snd.nextSetBit(0); b >= 0; b = snd.nextSetBit(b + 1)) {
                 for (int i = 0; i < p; i++) {
@@ -97,10 +105,10 @@ public class LinearSpace {
         return bs;
     }
 
-    public BitSet orthogonal(BitSet bs) {
+    public FixBS orthogonal(FixBS bs) {
         int a = bs.nextSetBit(0);
         int b = bs.stream().filter(c -> c != a && c != neg(a)).findFirst().orElseThrow();
-        BitSet res = new BitSet();
+        FixBS res = new FixBS(cardinality());
         int pow = pow(p, n);
         for (int i = 1; i < pow; i++) {
             if (scalar(a, i) != 0 || scalar(b, i) != 0) {
