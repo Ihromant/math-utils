@@ -135,7 +135,7 @@ public class FuzzySLinerTest {
             }
         });
         afterDist.update(q1);
-        return enhanceFullFano(ln);
+        return enhanceFullFano(afterDist);
     }
 
     private Queue<Rel> moufangQueue(FuzzySLiner closed) {
@@ -368,11 +368,7 @@ public class FuzzySLinerTest {
         System.out.println("Expanding 5-6 from " + liner.getPc() + " to " + pt);
         liner = liner.addPoints(pt - liner.getPc());
         liner.update(queue);
-        liner = enhanceFullFano(liner);
-        liner.printChars();
-        liner = liner.quotient();
-        liner.printChars();
-        return liner;
+        return enhanceFullFano(liner);
     }
 
     private Boolean identifyCollinearity(FuzzySLiner l, Triple t) {
