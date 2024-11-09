@@ -45,8 +45,6 @@ public class FuzzySLinerTest {
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
         firstBase.printChars();
-        //firstBase = distByContradiction(firstBase);
-        //System.out.println(multipleByContradiction(firstBase).size());
         firstBase.printChars();
         FuzzySLiner firstClosed = firstBase.intersectLines();
         firstClosed.printChars();
@@ -79,10 +77,7 @@ public class FuzzySLinerTest {
         secondClosed.printChars();
         secondClosed.update(moufangQueue(secondClosed));
         System.out.println("Enhanced Antimoufang");
-        // secondClosed = enhanceFullFano(secondClosed);
-        // configs = findAntiMoufangQuick(secondClosed, secondClosed.determinedSet());
         secondClosed.printChars();
-        // System.out.println("Antimoufang " + configs.size());
         det = secondClosed.determinedSet();
         System.out.println("Third step......................................");
         System.out.println(det);
@@ -108,31 +103,28 @@ public class FuzzySLinerTest {
 
     private FuzzySLiner singleByContradiction(FuzzySLiner ln, boolean onlyDist) {
         List<Pair> pairs = ln.undefinedPairs();
-        Queue<Rel> q = new ArrayDeque<>();
-        for (Pair p : pairs) {
+        Queue<Rel> q = new ConcurrentLinkedDeque<>();
+        pairs.stream().parallel().forEach(p -> {
             Boolean dist = identifyDistinction(ln, p);
             if (dist == null) {
-                continue;
+                return;
             }
             if (dist) {
                 q.add(new Dist(p.f(), p.s()));
             } else {
                 q.add(new Same(p.f(), p.s()));
             }
-        }
+        });
         ln.update(q);
-        //ln.printChars();
-        ln = enhanceFullFano(ln);
-        //ln.printChars();
+        FuzzySLiner afterDist = enhanceFullFano(ln);
         if (onlyDist) {
-            return ln;
+            return afterDist;
         }
-        FuzzySLiner lnr = ln;
-        List<Triple> triples = ln.undefinedTriples().stream()
-                .filter(t -> lnr.distinct(t.f(), t.s()) && lnr.distinct(t.f(), t.t()) && lnr.distinct(t.s(), t.t())).toList();
+        List<Triple> triples = afterDist.undefinedTriples().stream()
+                .filter(t -> afterDist.distinct(t.f(), t.s()) && afterDist.distinct(t.f(), t.t()) && afterDist.distinct(t.s(), t.t())).toList();
         Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
         triples.stream().parallel().forEach(tr -> {
-            Boolean coll = identifyCollinearity(lnr, tr);
+            Boolean coll = identifyCollinearity(afterDist, tr);
             if (coll == null) {
                 return;
             }
@@ -142,11 +134,8 @@ public class FuzzySLinerTest {
                 q1.add(new Trg(tr.f(), tr.s(), tr.t()));
             }
         });
-        ln.update(q1);
-        //ln.printChars();
-        ln = enhanceFullFano(ln);
-        //ln.printChars();
-        return ln;
+        afterDist.update(q1);
+        return enhanceFullFano(ln);
     }
 
     private Queue<Rel> moufangQueue(FuzzySLiner closed) {
@@ -437,7 +426,7 @@ public class FuzzySLinerTest {
     }
 
     @Test
-    public void testCube1() {
+    public void testCube() {
         int[][] cube = {
                 {0, 1, 2},
                 {0, 3, 4},
@@ -617,15 +606,11 @@ public class FuzzySLinerTest {
         FuzzySLiner first = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
-        int pc = first.getPc();
-        Set<FixBS> lines = Arrays.stream(antiMoufang).map(l -> FixBS.of(pc, l)).collect(Collectors.toSet());
         first.printChars();
         FuzzySLiner second = intersect56(first);
         second.printChars();
         second = enhanceFullFano(second);
         second.printChars();
-        //second = singleByContradiction(second, false);
-        //second.printChars();
         FuzzySLiner next;
         while ((next = intersect6(second)) != null) {
 //            if (next.getPc() % 15 == 0) {
