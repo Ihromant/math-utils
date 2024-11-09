@@ -31,10 +31,13 @@ public class TranslationPlaneTest {
             if (!unique.add(set)) {
                 return;
             }
-            counter.incrementAndGet();
             int[][] lines = toProjective(sp, arr);
             Liner l = new Liner(lines.length, lines);
-            System.out.println(isDesargues(l) + " " + set);
+            if (isDesargues(l)) {
+                return;
+            }
+            counter.incrementAndGet();
+            //System.out.println(isDesargues(l) + " " + set);
         };
         generate(sp, curr, union, cnt, cons);
         System.out.println(counter);
