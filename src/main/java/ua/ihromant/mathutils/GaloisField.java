@@ -458,6 +458,10 @@ public class GaloisField {
         return next;
     }
 
+    public static boolean isPrime(int p) {
+        return IntStream.range(2, p).allMatch(q -> p % q != 0);
+    }
+
     public static int parity(int[] perm) {
         int result = 0;
         for (int i = 0; i < perm.length; i++) {

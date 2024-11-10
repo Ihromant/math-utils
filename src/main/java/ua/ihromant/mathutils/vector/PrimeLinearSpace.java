@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 import lombok.Getter;
+import lombok.experimental.Accessors;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
@@ -9,6 +10,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 @Getter
+@Accessors(fluent = true)
 public class PrimeLinearSpace implements LinearSpace {
     private final int p;
     private final int n;
@@ -80,7 +82,7 @@ public class PrimeLinearSpace implements LinearSpace {
             }
             bs.set(add(mul));
         }
-        bs.set(0, false);
+        bs.clear(0);
         return bs;
     }
 
@@ -95,7 +97,7 @@ public class PrimeLinearSpace implements LinearSpace {
                 }
             }
         }
-        bs.set(0, false);
+        bs.clear(0);
         return bs;
     }
 

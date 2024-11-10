@@ -1,9 +1,10 @@
 package ua.ihromant.mathutils.vector;
 
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.util.FixBS;
 
 public interface LinearSpace {
-    int getN();
+    int n();
 
     int cardinality();
 
@@ -25,5 +26,15 @@ public interface LinearSpace {
         } else {
             return a * pow(a * a, b / 2);
         }
+    }
+
+    static LinearSpace of(int p, int n) {
+        if (p == 2) {
+            return new TwoLinearSpace(n);
+        }
+        if (GaloisField.isPrime(p)) {
+            return new PrimeLinearSpace(p, n);
+        }
+        throw new IllegalArgumentException();
     }
 }

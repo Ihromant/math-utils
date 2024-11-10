@@ -17,7 +17,7 @@ public class TranslationPlaneTest {
     public void test() {
         int p = 3;
         int n = 4;
-        LinearSpace sp = new PrimeLinearSpace(p, n);
+        LinearSpace sp = LinearSpace.of(p, n);
         int crd = sp.cardinality();
         int half = sp.half();
         FixBS[] curr = new FixBS[half + 1];
@@ -61,7 +61,7 @@ public class TranslationPlaneTest {
             FixBS newUnion = union.union(bs);
             generate(space, newCurr, newUnion, needed - 1, cons);
         };
-        int half = space.getN() / 2;
+        int half = space.n() / 2;
         int[] arr = new int[half];
         arr[0] = union.nextClearBit(1);
         generateOne(space, arr, half - 1, consumer);
