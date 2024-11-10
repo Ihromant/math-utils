@@ -313,6 +313,15 @@ public class HyperbolicPlaneTest {
         assertEquals(of(36), p3.playfairIndex());
         assertEquals(of(0, 1, 2), p3.hyperbolicIndex());
 
+        GaloisField fd2 = new GaloisField(169);
+        int x1 = fd2.solve(new int[]{1, 9, 6}).findAny().orElseThrow();
+        Liner p5 = Liner.byGaloisPower(fd2.cardinality(), new int[]{0, 1, x1, fd2.power(x1, 3), fd2.power(x1, 8), fd2.power(x1, 51), fd2.power(x1, 58)});
+        assertEquals(169, p5.pointCount());
+        assertEquals(676, p5.lineCount());
+        testCorrectness(p5, of(7));
+        assertEquals(of(21), p5.playfairIndex());
+        assertEquals(of(1, 2, 3, 4, 5), p5.hyperbolicIndex());
+
         GaloisField fd = new GaloisField(421);
         int c1 = 1;
         int c2 = 4;
