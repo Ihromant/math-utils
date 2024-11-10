@@ -531,6 +531,19 @@ public class FuzzySLinerTest {
         firstClosed.printChars();
         List<int[]> am = findAntiMoufang(firstClosed);
         am.forEach(l -> System.out.println(Arrays.toString(l)));
+        FuzzySLiner secondClosed = firstClosed;
+        //secondClosed.printChars();
+        FuzzySLiner next;
+        while ((next = intersect6(secondClosed)) != null) {
+            if (next.getPc() % 15 == 0) {
+                next = singleByContradiction(next, false);
+                next.update(moufangQueue(next));
+            }
+            secondClosed = enhanceFullFano(next);
+            secondClosed.printChars();
+        }
+        am = findAntiMoufang(firstClosed);
+        am.forEach(l -> System.out.println(Arrays.toString(l)));
     }
 
     @Test
