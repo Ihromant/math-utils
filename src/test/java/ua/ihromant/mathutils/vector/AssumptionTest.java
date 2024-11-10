@@ -18,7 +18,7 @@ public class AssumptionTest {
     public void test() {
         int p = 3;
         int n = 6;
-        LinearSpace sp = new LinearSpace(p, n);
+        PrimeLinearSpace sp = new PrimeLinearSpace(p, n);
         int pow = LinearSpace.pow(p, n);
         Map<FixBS, Integer> planes = new HashMap<>();
         for (int i = 1; i < pow; i++) {
@@ -144,7 +144,7 @@ public class AssumptionTest {
         return true;
     }
 
-    private static Map<Integer, FixBS> checkPlaneStruct(Map<Integer, FixBS> structure, Set<FixBS> newPoints, Set<FixBS> usedPoints, Map<FixBS, Integer> planes, Map<FixBS, Integer> hyperCubes, LinearSpace sp) {
+    private static Map<Integer, FixBS> checkPlaneStruct(Map<Integer, FixBS> structure, Set<FixBS> newPoints, Set<FixBS> usedPoints, Map<FixBS, Integer> planes, Map<FixBS, Integer> hyperCubes, PrimeLinearSpace sp) {
         while (!newPoints.isEmpty()) {
             usedPoints.addAll(newPoints);
             Set<FixBS> nextPoints = new HashSet<>();
@@ -233,7 +233,7 @@ public class AssumptionTest {
 
     @Test
     public void testBijections() {
-        List<Bijection> bijections = new LinearSpace(2, 4).bijections();
+        List<Bijection> bijections = new PrimeLinearSpace(2, 4).bijections();
         System.out.println(bijections.size());
     }
 

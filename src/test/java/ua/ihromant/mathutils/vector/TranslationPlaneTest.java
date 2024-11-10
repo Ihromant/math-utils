@@ -17,10 +17,9 @@ public class TranslationPlaneTest {
     public void test() {
         int p = 3;
         int n = 4;
-        int h = n / 2;
-        int crd = LinearSpace.pow(p, n);
-        int half = LinearSpace.pow(p, h);
-        LinearSpace sp = new LinearSpace(p, n);
+        LinearSpace sp = new PrimeLinearSpace(p, n);
+        int crd = sp.cardinality();
+        int half = sp.half();
         FixBS[] curr = new FixBS[half + 1];
         FixBS base = new FixBS(crd);
         base.set(1, half);
@@ -39,7 +38,7 @@ public class TranslationPlaneTest {
 //                return;
 //            }
             counter.incrementAndGet();
-            System.out.println(isDesargues(l) + " " + set);
+            //System.out.println(isDesargues(l) + " " + set);
         };
         generate(sp, curr, union, half, cons);
         System.out.println(counter);
