@@ -19,11 +19,13 @@ public class TranslationPlaneTest {
         int n = 4;
         int h = n / 2;
         int crd = LinearSpace.pow(p, n);
-        int halfCrd = LinearSpace.pow(p, h) - 1;
-        int cnt = (crd - 1) / halfCrd;
+        int half = LinearSpace.pow(p, h);
         LinearSpace sp = new LinearSpace(p, n);
-        FixBS[] curr = new FixBS[cnt];
-        FixBS union = new FixBS(crd);
+        FixBS[] curr = new FixBS[half + 1];
+        FixBS base = new FixBS(crd);
+        base.set(1, half);
+        curr[0] = base;
+        FixBS union = base.copy();
         Set<Set<FixBS>> unique = new HashSet<>();
         AtomicInteger counter = new AtomicInteger();
         Consumer<FixBS[]> cons = arr -> {
@@ -33,13 +35,13 @@ public class TranslationPlaneTest {
             }
             int[][] lines = toProjective(sp, arr);
             Liner l = new Liner(lines.length, lines);
-            if (isDesargues(l)) {
-                return;
-            }
+//            if (isDesargues(l)) {
+//                return;
+//            }
             counter.incrementAndGet();
-            //System.out.println(isDesargues(l) + " " + set);
+            System.out.println(isDesargues(l) + " " + set);
         };
-        generate(sp, curr, union, cnt, cons);
+        generate(sp, curr, union, half, cons);
         System.out.println(counter);
     }
 
