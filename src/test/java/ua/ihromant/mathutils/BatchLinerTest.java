@@ -704,9 +704,24 @@ public class BatchLinerTest {
         return designs;
     }
 
+    private static Liner[] readUnique(int v, int k) throws IOException {
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr)) {
+            return br.lines().skip(1).map(line -> {
+                String cut = line.replace("[[", "").replace("]]", "")
+                        .replace("{{", "").replace("}}", "")
+                        .replace("[{", "").replace("}]", "");
+                String[] arrays = cut.split("\\], \\[|\\}, \\{");
+                int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                return Liner.byDiffFamily(v, diffSet);
+            }).toArray(Liner[]::new);
+        }
+    }
+
     @Test
     public void testBooleanThalesian() throws IOException {
-        Liner[] liners = getLiners15();
+        Liner[] liners = readUnique(15, 3);
         for (int i = 0; i < liners.length; i++) {
             Liner l = liners[i];
             System.out.println(l.cardSubPlanes(true));
