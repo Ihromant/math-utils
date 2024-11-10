@@ -768,9 +768,9 @@ public class BatchLinerTest {
                                             if (c1 == b1 || c1 == a1) {
                                                 continue;
                                             }
-                                            if (l.intersection(l.line(a, b), l.line(a1, b1)) < 0
-                                                    && l.intersection(l.line(a, c), l.line(a1, c1)) < 0
-                                                    && l.intersection(l.line(b, c), l.line(b1, c1)) >= 0) {
+                                            if (l.intersection(l.line(a, b1), l.line(a1, b)) < 0
+                                                    && l.intersection(l.line(b, c1), l.line(b1, c)) < 0
+                                                    && l.intersection(l.line(a, c1), l.line(a1, c)) >= 0) {
                                                 System.out.println(i + " Not para-Pappus " + a + " " + b + " " + c + " " + a1 + " " + b1 + " " + c1);
                                                 break ex2;
                                             }
