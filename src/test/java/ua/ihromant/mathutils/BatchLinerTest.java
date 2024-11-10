@@ -710,8 +710,7 @@ public class BatchLinerTest {
         for (int i = 0; i < liners.length; i++) {
             Liner l = liners[i];
             System.out.println(l.cardSubPlanes(true));
-            ex:
-            for (int a = 0; a < l.pointCount(); a++) {
+            ex: for (int a = 0; a < l.pointCount(); a++) {
                 for (int b = a + 1; b < l.pointCount(); b++) {
                     for (int c = a + 1; c < l.pointCount(); c++) {
                         if (l.collinear(a, b, c)) {
@@ -731,8 +730,44 @@ public class BatchLinerTest {
                     }
                 }
             }
-            ex1:
-            for (int l1 = 0; l1 < l.lineCount(); l1++) {
+            ex2: for (int l1 = 0; l1 < l.lineCount(); l1++) {
+                for (int l2 = 0; l2 < l.lineCount(); l2++) {
+                    if (l1 == l2 || l.intersection(l1, l2) >= 0) {
+                        continue;
+                    }
+                    for (int a : l.line(l1)) {
+                        for (int b : l.line(l1)) {
+                            if (a == b) {
+                                continue;
+                            }
+                            for (int c : l.line(l1)) {
+                                if (c == b || c == a) {
+                                    continue;
+                                }
+                                for (int a1 : l.line(l2)) {
+                                    for (int b1 : l.line(l2)) {
+                                        if (a1 == b1) {
+                                            continue;
+                                        }
+                                        for (int c1 : l.line(l2)) {
+                                            if (c1 == b1 || c1 == a1) {
+                                                continue;
+                                            }
+                                            if (l.intersection(l.line(a, b), l.line(a1, b1)) < 0
+                                                    && l.intersection(l.line(a, c), l.line(a1, c1)) < 0
+                                                    && l.intersection(l.line(b, c), l.line(b1, c1)) >= 0) {
+                                                System.out.println(i + " Not para-Pappus " + a + " " + b + " " + c + " " + a1 + " " + b1 + " " + c1);
+                                                break ex2;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            ex1: for (int l1 = 0; l1 < l.lineCount(); l1++) {
                 for (int l2 = 0; l2 < l.lineCount(); l2++) {
                     if (l2 == l1 || l.intersection(l1, l2) >= 0) {
                         continue;
