@@ -60,23 +60,27 @@ public class TranslationPlaneTest {
         }
         FixBS union = first.union(second);
         FixBS[] hulls = generateSpaces(sp, union).toArray(FixBS[]::new);
-        System.out.println(hulls.length);
         Arrays.sort(hulls, Comparator.reverseOrder());
+        FixBS third = hulls[0];
+        union.or(third);
+        hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
+        System.out.println(hulls.length);
         int[] idxes = calcIdxes(sp, hulls);
         AtomicInteger counter = new AtomicInteger();
         Consumer<FixBS[]> cons = arr -> {
-            int[][] lines = toProjective(sp, arr);
-            Liner l = new Liner(lines.length, lines);
+//            int[][] lines = toProjective(sp, arr);
+//            Liner l = new Liner(lines.length, lines);
 //            if (isDesargues(l)) {
 //                return;
 //            }
             counter.incrementAndGet();
-            System.out.println(isDesargues(l) + " " + Arrays.deepToString(arr));
+//            System.out.println(isDesargues(l) + " " + Arrays.deepToString(arr));
         };
         FixBS[] curr = new FixBS[half + 1];
         curr[0] = first;
         curr[1] = second;
-        generateAlt(sp, curr, union, half - 1, hulls, idxes, cons);
+        curr[2] = third;
+        generateAlt(sp, curr, union, half - 2, hulls, idxes, cons);
         System.out.println(counter);
     }
 
