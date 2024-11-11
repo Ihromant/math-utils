@@ -51,32 +51,32 @@ public class TranslationPlaneTest {
         int p = 5;
         int n = 4;
         LinearSpace sp = LinearSpace.of(p, n);
-        FixBS[] hulls = generateSpaces(sp).toArray(FixBS[]::new);
+        int half = sp.half();
+        FixBS first = new FixBS(sp.cardinality());
+        first.set(1, half);
+        FixBS second = new FixBS(sp.cardinality());
+        for (int i = 1; i < half; i++) {
+            second.set(i * half);
+        }
+        FixBS union = first.union(second);
+        FixBS[] hulls = generateSpaces(sp, union).toArray(FixBS[]::new);
         System.out.println(hulls.length);
         Arrays.sort(hulls, Comparator.reverseOrder());
         int[] idxes = calcIdxes(sp, hulls);
-        Set<Set<FixBS>> unique = new HashSet<>();
         AtomicInteger counter = new AtomicInteger();
         Consumer<FixBS[]> cons = arr -> {
-            Set<FixBS> set = Arrays.stream(arr).collect(Collectors.toSet());
-            if (!unique.add(set)) {
-                return;
-            }
-            //int[][] lines = toProjective(sp, arr);
-            //Liner l = new Liner(lines.length, lines);
+            int[][] lines = toProjective(sp, arr);
+            Liner l = new Liner(lines.length, lines);
 //            if (isDesargues(l)) {
 //                return;
 //            }
             counter.incrementAndGet();
-            //System.out.println(isDesargues(l) + " " + set);
+            System.out.println(isDesargues(l) + " " + Arrays.deepToString(arr));
         };
-        int half = sp.half();
         FixBS[] curr = new FixBS[half + 1];
-        FixBS base = new FixBS(sp.cardinality());
-        base.set(1, half);
-        curr[0] = base;
-        FixBS union = base.copy();
-        generateAlt(sp, curr, union, half, hulls, idxes, cons);
+        curr[0] = first;
+        curr[1] = second;
+        generateAlt(sp, curr, union, half - 1, hulls, idxes, cons);
         System.out.println(counter);
     }
 
@@ -143,13 +143,13 @@ public class TranslationPlaneTest {
         }
     }
 
-    private static Set<FixBS> generateSpaces(LinearSpace sp) {
+    private static Set<FixBS> generateSpaces(LinearSpace sp, FixBS filter) {
         int half = sp.half() - 1;
-        return IntStream.range(0, sp.cardinality()).boxed().flatMap(i -> {
+        return IntStream.range(half + 1, sp.cardinality()).boxed().flatMap(i -> {
             int[] curr = new int[sp.n() / 2];
             curr[0] = i;
             return generateSpaces(sp, curr, curr.length - 1);
-        }).filter(ssp -> ssp.cardinality() == half && ssp.nextSetBit(1) > half).collect(Collectors.toSet());
+        }).filter(ssp -> ssp.cardinality() == half && !ssp.intersects(filter)).collect(Collectors.toSet());
     }
 
     private static Stream<FixBS> generateSpaces(LinearSpace sp, int[] curr, int needed) {
