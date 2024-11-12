@@ -6,8 +6,10 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
@@ -293,6 +295,19 @@ public class FuzzyBalLiner {
         return result;
     }
 
+    public List<Col> undefinedTriples(int x, int y) {
+        List<Col> result = new ArrayList<>();
+        for (int z = 0; z < v; z++) {
+            if (z == x || z == y) {
+                continue;
+            }
+            if (!collinear(x, y, z) && !triangle(x, y, z)) {
+                result.add(new Col(x, y, z));
+            }
+        }
+        return result;
+    }
+
     public List<Col> calcSmallest() {
         List<Col> possible = null;
         for (int i = 0; i < v; i++) {
@@ -334,6 +349,45 @@ public class FuzzyBalLiner {
             }
         }
         return copy;
+    }
+
+    public FuzzyBalLiner subLiner(FixBS pts) {
+        Map<Integer, Integer> idxes = new HashMap<>();
+        int counter = 0;
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
+            idxes.put(i, counter++);
+        }
+        FuzzyBalLiner res = new FuzzyBalLiner(idxes.size(), k);
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
+            for (int j = pts.nextSetBit(0); j >= 0; j = pts.nextSetBit(j + 1)) {
+                for (int k = pts.nextSetBit(0); k >= 0; k = pts.nextSetBit(k + 1)) {
+                    if (collinear(i, j, k)) {
+                        res.colline(idxes.get(i), idxes.get(j), idxes.get(k));
+                    }
+                    if (triangle(i, j, k)) {
+                        res.triangule(idxes.get(i), idxes.get(j), idxes.get(k));
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    public FuzzyBalLiner removeEmpty() {
+        int[] beamCounts = new int[v];
+        List<FixBS> lines = new ArrayList<>(lines());
+        for (FixBS line : lines) {
+            for (int pt = line.nextSetBit(0); pt >= 0; pt = line.nextSetBit(pt + 1)) {
+                beamCounts[pt]++;
+            }
+        }
+        FixBS filtered = new FixBS(v);
+        IntStream.range(0, v).filter(i -> beamCounts[i] > 0).forEach(filtered::set);
+        if (v == filtered.cardinality()) {
+            return this;
+        } else {
+            return subLiner(filtered);
+        }
     }
 
     public FuzzyBalLiner removeTwins() {

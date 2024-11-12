@@ -15,14 +15,31 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class FuzzyBalLinerTest {
+    @Test
+    public void generateAlt() {
+        int v = 15;
+        int k = 3;
+        System.out.println("com " + v + " " + k);
+        FuzzyBalLiner lb = FuzzyBalLiner.of(v, k, new int[][]{{0, 1, 3}, {0, 2, 4}, {1, 2, 5}});
+        List<FuzzyBalLiner> liners = List.of(lb);
+        int currPoint = 3;
+        while (currPoint < v - 1) {
+            liners = nextStageAlt(liners, currPoint, (l, c) -> {});
+            System.out.println(currPoint++ + " " + liners.size());
+        }
+    }
+
     @Test
     public void generate() {
         int v = 57;
@@ -119,6 +136,67 @@ public class FuzzyBalLinerTest {
             }
         }).collect(Collectors.toMap(l -> toLiner(l.removeTwins()).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         return new ArrayList<>(nonIso.values());
+    }
+
+    private static List<FuzzyBalLiner> nextStageAlt(List<FuzzyBalLiner> partials, int currPoint, BiConsumer<FuzzyBalLiner, Col> checker) {
+        Map<FixBS, FuzzyBalLiner> nonIso = partials.stream().parallel().<FuzzyBalLiner>mapMulti((lnr, sink) -> {
+            int v = lnr.getV();
+            int k = lnr.getK();
+            int r = (v - 1) / (k - 1);
+            for (int i = currPoint + 1; i < lnr.getV(); i++) {
+                int[] permutation = IntStream.range(0, lnr.getV()).toArray();
+                permutation[i] = currPoint;
+                permutation[currPoint] = i;
+                FuzzyBalLiner liner = lnr.permute(permutation);
+                Consumer<FuzzyBalLiner> cons = next -> {
+                    Set<FixBS> lines = next.lines();
+                    int[] lc = new int[v]; // TODO this is wrong for k >= 5
+                    for (FixBS l : lines) {
+                        for (int pt = l.nextSetBit(0); pt >= 0; pt = l.nextSetBit(pt+1)) {
+                            if (++lc[pt] > r) {
+                                return;
+                            }
+                        }
+                    }
+                    sink.accept(next);
+                };
+                fillMissing(liner, currPoint, checker, cons);
+            }
+        }).collect(Collectors.toMap(l -> toLiner(l.removeEmpty()).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+        return new ArrayList<>(nonIso.values());
+    }
+
+    private static Integer findNotJoined(FuzzyBalLiner liner, int currPoint) {
+        ex: for (int i = 0; i < currPoint; i++) {
+            for (int j = 0; j < liner.getV(); j++) {
+                if (liner.collinear(currPoint, i, j)) {
+                    continue ex;
+                }
+            }
+            return i;
+        }
+        return null;
+    }
+
+    private static void fillMissing(FuzzyBalLiner liner, int currPoint, BiConsumer<FuzzyBalLiner, Col> checker, Consumer<FuzzyBalLiner> cons) {
+        Integer nj = findNotJoined(liner, currPoint);
+        if (nj == null) {
+            cons.accept(liner);
+            return;
+        }
+        List<Col> undefined = liner.undefinedTriples(currPoint, nj);
+        for (Col c : undefined) {
+            try {
+                FuzzyBalLiner copy = liner.copy();
+                Queue<Rel> q = new ArrayDeque<>();
+                q.add(c);
+                copy.update(q);
+                checker.accept(copy, c);
+                fillMissing(copy, currPoint, checker, cons);
+            } catch (IllegalArgumentException e) {
+                // ok
+            }
+        }
     }
 
     private static void additionalCheck(FuzzyBalLiner copy, Col c) {
