@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.fuzzy;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedReader;
@@ -25,20 +26,6 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 public class FuzzyBalLinerTest {
-    @Test
-    public void generateAlt() {
-        int v = 15;
-        int k = 3;
-        System.out.println("com " + v + " " + k);
-        FuzzyBalLiner lb = FuzzyBalLiner.of(v, k, beamBlocks(v, k));
-        List<FuzzyBalLiner> liners = List.of(lb);
-        int currPoint = 3;
-        while (currPoint < (k == 3 ? v - 1 : v)) {
-            liners = nextStageAlt(liners, currPoint, (l, c) -> {});
-            System.out.println(currPoint++ + " " + liners.size());
-        }
-    }
-
     @Test
     public void generate() {
         int v = 57;
@@ -87,7 +74,7 @@ public class FuzzyBalLinerTest {
         int needed = (b - lines.length) * (k - 2);
         while (needed > 0) {
             AtomicLong cnt = new AtomicLong();
-            liners = nextStage(v, k, liners, (l, c) -> checkUnderCap(l, cap), cnt);
+            liners = nextStage(v, k, liners, (l, c) -> checkUnderCap(l, c, cap), cnt);
             needed--;
             System.out.println(needed + " " + liners.size() + " " + cnt.get());
         }
@@ -137,13 +124,41 @@ public class FuzzyBalLinerTest {
         return new ArrayList<>(nonIso.values());
     }
 
+    @Test
+    public void generateAlt() {
+        int v = 27;
+        int k = 3;
+        int cap = 9;
+        System.out.println("com " + v + " " + k);
+        //FuzzyBalLiner lb = FuzzyBalLiner.of(v, k, beamBlocks(v, k));
+        List<FuzzyBalLiner> liners = Arrays.stream(defaultHullsConfig(v, k, cap)).map(arr -> FuzzyBalLiner.of(v, k, arr)).toList();
+        int currPoint = 3;
+        while (currPoint < (k == 3 ? v - 1 : v)) {
+            liners = nextStageAlt(liners, currPoint, (l, c) -> checkUnderCap(l, c, cap));
+            System.out.println(currPoint++ + " " + liners.size());
+        }
+    }
+
     private static List<FuzzyBalLiner> nextStageAlt(List<FuzzyBalLiner> partials, int currPoint, BiConsumer<FuzzyBalLiner, Col> checker) {
         Map<FixBS, FuzzyBalLiner> nonIso = partials.stream().parallel().<FuzzyBalLiner>mapMulti((lnr, sink) -> {
             int v = lnr.getV();
             int k = lnr.getK();
             int r = (v - 1) / (k - 1);
+            int allC = r * (k - 1) * (k - 2) / 2;
+            int all = (v - 1) * (v - 2) / 2;
             Consumer<FuzzyBalLiner> cons = next -> {
+                int[][] chars = lnr.pointChars();
                 Set<FixBS> lines = next.lines();
+                for (int i = 0; i < v; i++) {
+                    if (allC == chars[i][0]) {
+                        continue;
+                    }
+                    int needed = allC - chars[i][0];
+                    int variants = all - chars[i][0] - chars[i][1];
+                    if (variants < needed) {
+                        return;
+                    }
+                }
                 int[] lc = new int[v]; // TODO this is wrong for k >= 5
                 for (FixBS l : lines) {
                     for (int pt = l.nextSetBit(0); pt >= 0; pt = l.nextSetBit(pt + 1)) {
@@ -311,40 +326,39 @@ public class FuzzyBalLinerTest {
         }
     }
 
-    private static void checkUnderCap(FuzzyBalLiner liner, int cap) {
+    private static void checkUnderCap(FuzzyBalLiner liner, Col col, int cap) {
         int v = liner.getV();
         for (int a = 0; a < v; a++) {
-            for (int b = a + 1; b < v; b++) {
-                for (int c = b + 1; c < v; c++) {
-                    if (liner.collinear(a, b, c)) {
-                        continue;
-                    }
-                    FixBS newPts = FixBS.of(v, a, b, c);
-                    FixBS base = FixBS.of(v);
-                    while (!newPts.isEmpty()) {
-                        base.or(newPts);
-                        if (base.cardinality() > cap) {
-                            throw new IllegalArgumentException();
+            checkUnderCap(liner, cap, v, a, col.f(), col.s());
+            checkUnderCap(liner, cap, v, a, col.f(), col.t());
+            checkUnderCap(liner, cap, v, a, col.s(), col.t());
+        }
+    }
+
+    private static void checkUnderCap(FuzzyBalLiner liner, int cap, int v, int a, int b, int c) {
+        FixBS newPts = FixBS.of(v, a, b, c);
+        FixBS base = FixBS.of(v);
+        while (!newPts.isEmpty()) {
+            base.or(newPts);
+            if (base.cardinality() > cap) {
+                throw new IllegalArgumentException();
+            }
+            FixBS nextNew = new FixBS(v);
+            for (int x = newPts.nextSetBit(0); x >= 0; x = newPts.nextSetBit(x+1)) {
+                for (int y = newPts.nextSetBit(x + 1); y >= 0; y = newPts.nextSetBit(y+1)) {
+                    for (int z = 0; z < v; z++) {
+                        if (!base.get(z) && liner.collinear(x, y, z)) {
+                            nextNew.set(z);
                         }
-                        FixBS nextNew = new FixBS(v);
-                        for (int x = newPts.nextSetBit(0); x >= 0; x = newPts.nextSetBit(x+1)) {
-                            for (int y = newPts.nextSetBit(x + 1); y >= 0; y = newPts.nextSetBit(y+1)) {
-                                for (int z = 0; z < v; z++) {
-                                    if (!base.get(z) && liner.collinear(x, y, z)) {
-                                        nextNew.set(z);
-                                    }
-                                }
-                            }
-                        }
-                        newPts = nextNew;
                     }
                 }
             }
+            newPts = nextNew;
         }
     }
 
     private static int[][][] readLast(String prefix, int v, int k, Supplier<int[][][]> fallback) {
-        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/bases/" + prefix + "-" + v + "-" + k + ".txt");
+        try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
             String line;
@@ -374,5 +388,32 @@ public class FuzzyBalLinerTest {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    private static int[][][] defaultHullsConfig(int v, int k, int cap) {
+        int[][][] common = readLast("com", cap, k, () -> {throw new IllegalArgumentException();});
+        int bc = (cap - 1) / (k - 1);
+        int lc = cap * (cap - 1) / k / (k - 1);
+        int[][][] liners = Arrays.stream(common).filter(inc -> {
+            PartialLiner part = new PartialLiner(inc);
+            Liner l = new Liner(cap, part.lines());
+            return l.cardSubPlanes(true).nextSetBit(0) == cap;
+        }).map(inc -> {
+            PartialLiner partial = new PartialLiner(inc);
+            int[][] part = partial.lines();
+            int[][] lines = new int[(v - 1) / (k - 1) + lc - bc][k];
+            System.arraycopy(part, 0, lines, 0, part.length);
+            for (int o = part.length; o < lines.length; o++) {
+                int i = o - lc + bc;
+                for (int j = 0; j < k - 1; j++) {
+                    lines[o][j + 1] = 1 + i * (k - 1) + j;
+                }
+            }
+            int[] tmp = lines[bc];
+            lines[bc] = lines[lines.length - 1];
+            lines[lines.length - 1] = tmp;
+            return lines;
+        }).toArray(int[][][]::new);
+        return liners;
     }
 }
