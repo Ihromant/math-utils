@@ -23,7 +23,6 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class FuzzyBalLinerTest {
     @Test
@@ -31,10 +30,10 @@ public class FuzzyBalLinerTest {
         int v = 15;
         int k = 3;
         System.out.println("com " + v + " " + k);
-        FuzzyBalLiner lb = FuzzyBalLiner.of(v, k, new int[][]{{0, 1, 3}, {0, 2, 4}, {1, 2, 5}});
+        FuzzyBalLiner lb = FuzzyBalLiner.of(v, k, beamBlocks(v, k));
         List<FuzzyBalLiner> liners = List.of(lb);
         int currPoint = 3;
-        while (currPoint < v - 1) {
+        while (currPoint < (k == 3 ? v - 1 : v)) {
             liners = nextStageAlt(liners, currPoint, (l, c) -> {});
             System.out.println(currPoint++ + " " + liners.size());
         }
@@ -143,26 +142,20 @@ public class FuzzyBalLinerTest {
             int v = lnr.getV();
             int k = lnr.getK();
             int r = (v - 1) / (k - 1);
-            for (int i = currPoint + 1; i < lnr.getV(); i++) {
-                int[] permutation = IntStream.range(0, lnr.getV()).toArray();
-                permutation[i] = currPoint;
-                permutation[currPoint] = i;
-                FuzzyBalLiner liner = lnr.permute(permutation);
-                Consumer<FuzzyBalLiner> cons = next -> {
-                    Set<FixBS> lines = next.lines();
-                    int[] lc = new int[v]; // TODO this is wrong for k >= 5
-                    for (FixBS l : lines) {
-                        for (int pt = l.nextSetBit(0); pt >= 0; pt = l.nextSetBit(pt+1)) {
-                            if (++lc[pt] > r) {
-                                return;
-                            }
+            Consumer<FuzzyBalLiner> cons = next -> {
+                Set<FixBS> lines = next.lines();
+                int[] lc = new int[v]; // TODO this is wrong for k >= 5
+                for (FixBS l : lines) {
+                    for (int pt = l.nextSetBit(0); pt >= 0; pt = l.nextSetBit(pt + 1)) {
+                        if (++lc[pt] > r) {
+                            return;
                         }
                     }
-                    sink.accept(next);
-                };
-                fillMissing(liner, currPoint, checker, cons);
-            }
-        }).collect(Collectors.toMap(l -> toLiner(l.removeEmpty()).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+                }
+                sink.accept(next);
+            };
+            fillMissing(lnr, currPoint, checker, cons);
+        }).collect(Collectors.toMap(l -> toLiner(l.removeTwins()).getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
         return new ArrayList<>(nonIso.values());
     }
 

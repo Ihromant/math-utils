@@ -334,23 +334,6 @@ public class FuzzyBalLiner {
         return Objects.requireNonNull(possible);
     }
 
-    public FuzzyBalLiner permute(int[] permutation) {
-        FuzzyBalLiner copy = new FuzzyBalLiner(v, k);
-        for (int x = 0; x < v; x++) {
-            for (int y = 0; y < v; y++) {
-                for (int z = 0; z < v; z++) {
-                    if (collinear(x, y, z)) {
-                        copy.colline(permutation[x], permutation[y], permutation[z]);
-                    }
-                    if (triangle(x, y, z)) {
-                        copy.triangule(permutation[x], permutation[y], permutation[z]);
-                    }
-                }
-            }
-        }
-        return copy;
-    }
-
     public FuzzyBalLiner subLiner(FixBS pts) {
         Map<Integer, Integer> idxes = new HashMap<>();
         int counter = 0;
