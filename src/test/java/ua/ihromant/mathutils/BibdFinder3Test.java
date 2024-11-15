@@ -168,9 +168,9 @@ public class BibdFinder3Test {
 
     @Test
     public void withDepth() throws IOException {
-        int v = 76;
-        int k = 4;
-        int depth = 3;
+        int v = 169;
+        int k = 8;
+        int depth = 4;
         File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "-" + depth + "t.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);

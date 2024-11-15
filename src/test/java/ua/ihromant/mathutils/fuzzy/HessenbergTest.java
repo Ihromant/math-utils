@@ -37,59 +37,64 @@ public class HessenbergTest {
         while (true) {
             int pc = liner.getPc();
             Queue<Rel> queue = new ArrayDeque<>(liner.getPc());
-            for (int a = 0; a < pc; a++) {
-                for (int b = a + 1; b < pc; b++) {
-                    if (!liner.distinct(a, b)) {
+            for (int o = 0; o < pc; o++) {
+                for (int a = 0; a < pc; a++) {
+                    if (!liner.distinct(o, a)) {
                         continue;
                     }
-                    for (int c = b + 1; c < pc; c++) {
-                        if (!liner.collinear(a, b, c)) {
+                    for (int b = a + 1; b < pc; b++) {
+                        if (!liner.collinear(o, a, b)) {
                             continue;
                         }
-                        for (int a1 = 0; a1 < pc; a1++) {
-                            if (!liner.distinct(a1, a) || !liner.distinct(a1, b) || !liner.distinct(a1, c)) {
+                        for (int c = b + 1; c < pc; c++) {
+                            if (!liner.collinear(o, a, c) || !liner.collinear(a, b, c)) {
                                 continue;
                             }
-                            for (int b1 = 0; b1 < pc; b1++) {
-                                if (!liner.distinct(b1, a) || !liner.distinct(b1, b) || !liner.distinct(b1, c) || !liner.distinct(b1, a1)) {
+                            for (int a1 = 0; a1 < pc; a1++) {
+                                if (!liner.triangle(o, a, a1)) {
                                     continue;
                                 }
-                                for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(a1, b1, c1) || !liner.distinct(c1, a) || !liner.distinct(c1, b) || !liner.distinct(c1, c)) {
+                                for (int b1 = 0; b1 < pc; b1++) {
+                                    if (!liner.collinear(o, a1, b1)) {
                                         continue;
                                     }
-                                    int ab1a1b = -1;
-                                    int ac1a1c = -1;
-                                    int bc1b1c = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
-                                        if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
-                                            if (ab1a1b < 0) {
-                                                ab1a1b = i;
-                                            } else {
-                                                queue.add(new Same(ab1a1b, i));
-                                            }
-                                            if (bc1b1c >= 0 && ac1a1c >= 0 && !liner.collinear(bc1b1c, ac1a1c, i)) {
-                                                queue.add(new Col(bc1b1c, ac1a1c, i));
-                                            }
+                                    for (int c1 = 0; c1 < pc; c1++) {
+                                        if (!liner.collinear(o, a1, c1) || !liner.collinear(a1, b1, c1)) {
+                                            continue;
                                         }
-                                        if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
-                                            if (bc1b1c < 0) {
-                                                bc1b1c = i;
-                                            } else {
-                                                queue.add(new Same(bc1b1c, i));
+                                        int ab1a1b = -1;
+                                        int ac1a1c = -1;
+                                        int bc1b1c = -1;
+                                        for (int i = 0; i < liner.getPc(); i++) {
+                                            if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
+                                                if (ab1a1b < 0) {
+                                                    ab1a1b = i;
+                                                } else {
+                                                    queue.add(new Same(ab1a1b, i));
+                                                }
+                                                if (bc1b1c >= 0 && ac1a1c >= 0 && !liner.collinear(bc1b1c, ac1a1c, i)) {
+                                                    queue.add(new Col(bc1b1c, ac1a1c, i));
+                                                }
                                             }
-                                            if (ab1a1b >= 0 && ac1a1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, i)) {
-                                                queue.add(new Col(ac1a1c, ab1a1b, i));
+                                            if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
+                                                if (bc1b1c < 0) {
+                                                    bc1b1c = i;
+                                                } else {
+                                                    queue.add(new Same(bc1b1c, i));
+                                                }
+                                                if (ab1a1b >= 0 && ac1a1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, i)) {
+                                                    queue.add(new Col(ac1a1c, ab1a1b, i));
+                                                }
                                             }
-                                        }
-                                        if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
-                                            if (ac1a1c < 0) {
-                                                ac1a1c = i;
-                                            } else {
-                                                queue.add(new Same(ac1a1c, i));
-                                            }
-                                            if (ab1a1b >= 0 && bc1b1c >= 0 && !liner.collinear(ab1a1b, bc1b1c, i)) {
-                                                queue.add(new Col(ab1a1b, bc1b1c, i));
+                                            if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
+                                                if (ac1a1c < 0) {
+                                                    ac1a1c = i;
+                                                } else {
+                                                    queue.add(new Same(ac1a1c, i));
+                                                }
+                                                if (ab1a1b >= 0 && bc1b1c >= 0 && !liner.collinear(ab1a1b, bc1b1c, i)) {
+                                                    queue.add(new Col(ab1a1b, bc1b1c, i));
+                                                }
                                             }
                                         }
                                     }
