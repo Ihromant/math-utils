@@ -45,7 +45,6 @@ public class FuzzySLinerTest {
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
         firstBase.printChars();
-        firstBase.printChars();
         FuzzySLiner firstClosed = firstBase.intersectLines();
         firstClosed.printChars();
         firstClosed = enhanceFullFano(firstClosed);
