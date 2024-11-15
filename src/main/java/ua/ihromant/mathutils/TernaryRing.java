@@ -433,6 +433,56 @@ public interface TernaryRing {
         return false;
     }
 
+    default boolean pulsEquals(TernaryRing that) {
+        if (this.order() != that.order()) {
+            return false;
+        }
+        int[][] pulsMatrix = this.pulsMatrix();
+        int[][] tPulsMatrix = that.pulsMatrix();
+        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        for (int[] perm : permutations) {
+            int[][] permPulsMatrix = new int[order()][order()];
+            for (int i = 0; i < order(); i++) {
+                for (int j = 0; j < order(); j++) {
+                    permPulsMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tPulsMatrix[i][j]);
+                }
+            }
+            if (Arrays.deepEquals(permPulsMatrix, pulsMatrix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    default boolean triLoopEquals(TernaryRing that) {
+        if (this.order() != that.order()) {
+            return false;
+        }
+        int[][] addMatrix = this.addMatrix();
+        int[][] mulMatrix = this.mulMatrix();
+        int[][] tAddMatrix = that.addMatrix();
+        int[][] tMulMatrix = that.mulMatrix();
+        int[][] pulsMatrix = this.pulsMatrix();
+        int[][] tPulsMatrix = that.pulsMatrix();
+        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        for (int[] perm : permutations) {
+            int[][] permAddMatrix = new int[order()][order()];
+            int[][] permMulMatrix = new int[order()][order()];
+            int[][] permPulsMatrix = new int[order()][order()];
+            for (int i = 0; i < order(); i++) {
+                for (int j = 0; j < order(); j++) {
+                    permAddMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tAddMatrix[i][j]);
+                    permMulMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tMulMatrix[i][j]);
+                    permPulsMatrix[permute(perm, i)][permute(perm, j)] = permute(perm, tPulsMatrix[i][j]);
+                }
+            }
+            if (Arrays.deepEquals(permAddMatrix, addMatrix) && Arrays.deepEquals(permMulMatrix, mulMatrix) && Arrays.deepEquals(permPulsMatrix, pulsMatrix)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static int permute(int[] perm, int idx) {
         if (idx == 0 || idx == 1) {
             return idx;

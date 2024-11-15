@@ -563,7 +563,7 @@ public class Liner {
         bs.set(0, pointCount);
         int[] line = lines[line(o, u)];
         for (int p : line) {
-            bs.set(p, false);
+            bs.clear(p);
         }
         for (int w = bs.nextSetBit(0); w >= 0; w = bs.nextSetBit(w + 1)) {
             if (--wIdx < 0) {
