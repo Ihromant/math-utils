@@ -27,15 +27,13 @@ public class HessenbergTest {
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
         base.printChars();
-        base = intersect56(base);
+        base = base.intersectLines();
         base.printChars();
-        base = singleByContradiction(base, false);
+        base = enhancePappus(base);
         base.printChars();
-        List<FuzzySLiner> liners = multipleByContradiction(base);
-        System.out.println(liners.size());
     }
 
-    public FuzzySLiner enhancePappus(FuzzySLiner liner) {
+    private FuzzySLiner enhancePappus(FuzzySLiner liner) {
         while (true) {
             int pc = liner.getPc();
             Queue<Rel> queue = new ArrayDeque<>(liner.getPc());
