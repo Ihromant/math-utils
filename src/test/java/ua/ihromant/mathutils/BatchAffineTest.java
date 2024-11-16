@@ -919,13 +919,18 @@ public class BatchAffineTest {
 
     @Test
     public void testD31() throws IOException {
-        String name = "twisted";
-        int k = 27;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
-            System.out.println(name + " " + checkD31(proj));
+        int k = 32;
+        for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
+            String name = f.getName();
+            if ("c.txt".equals(name)) {
+                continue;
+            }
+            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = readTxt(br);
+                System.out.println(name + " " + checkD31(proj));
+            }
         }
     }
 
