@@ -917,6 +917,63 @@ public class BatchAffineTest {
         return new Liner(list.toArray(BitSet[]::new));
     }
 
+    @Test
+    public void testD31() throws IOException {
+        String name = "twisted";
+        int k = 27;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readTxt(br);
+            System.out.println(name + " " + checkD31(proj));
+        }
+    }
+
+    private static boolean checkD31(Liner liner) {
+        for (int o = 0; o < liner.pointCount(); o++) {
+            for (int la : liner.lines(o)) {
+                for (int lb : liner.lines(o)) {
+                    if (lb == la) {
+                        continue;
+                    }
+                    for (int lc : liner.lines(o)) {
+                        if (lc == lb || lc == la) {
+                            continue;
+                        }
+                        for (int a : liner.line(la)) {
+                            if (a == o) {
+                                continue;
+                            }
+                            for (int b : liner.line(lb)) {
+                                if (b == o) {
+                                    continue;
+                                }
+                                for (int c : liner.line(lc)) {
+                                    if (c == o || liner.collinear(a, b, c)) {
+                                        continue;
+                                    }
+                                    int ab = liner.line(a, b);
+                                    int bc = liner.line(b, c);
+                                    int ac = liner.line(a, c);
+                                    int a1 = liner.intersection(la, bc);
+                                    int b1 = liner.intersection(lb, ac);
+                                    int c1 = liner.intersection(lc, ab);
+                                    int x = liner.intersection(ab, liner.line(a1, b1));
+                                    int y = liner.intersection(bc, liner.line(b1, c1));
+                                    int z = liner.intersection(ac, liner.line(a1, c1));
+                                    if (liner.collinear(o, x, y) && !liner.collinear(x, y, z)) {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     private static BitSet of(int... values) {
         BitSet bs = new BitSet();
         IntStream.of(values).forEach(bs::set);
