@@ -478,7 +478,7 @@ public class D3P2Test {
         }
         try {
             Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Col(tr.f(), tr.s(), tr.t()));
+            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
             FuzzySLiner copy = base.copy();
             copy.update(rels);
             recur(copy, onlyDist, sink);
@@ -487,7 +487,7 @@ public class D3P2Test {
         }
         try {
             Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
+            rels.add(new Col(tr.f(), tr.s(), tr.t()));
             FuzzySLiner copy = base.copy();
             copy.update(rels);
             recur(copy, onlyDist, sink);
