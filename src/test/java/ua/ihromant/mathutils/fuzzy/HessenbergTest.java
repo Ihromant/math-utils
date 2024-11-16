@@ -188,8 +188,7 @@ public class HessenbergTest {
         if (onlyDist) {
             return afterDist;
         }
-        List<Triple> triples = afterDist.undefinedTriples().stream()
-                .filter(t -> afterDist.distinct(t.f(), t.s()) && afterDist.distinct(t.f(), t.t()) && afterDist.distinct(t.s(), t.t())).toList();
+        List<Triple> triples = afterDist.undefinedTriples();
         Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
         triples.stream().parallel().forEach(tr -> {
             Boolean coll = identifyCollinearity(afterDist, tr);

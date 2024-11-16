@@ -6,6 +6,8 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class D3P2Test {
@@ -30,10 +32,60 @@ public class D3P2Test {
         base.printChars();
         base = enhanceD31(base);
         base.printChars();
-        System.out.println(base.undefinedPairs());
-        List<FuzzySLiner> liners = multipleByContradiction(base);
-        System.out.println(liners.size());
-        //System.out.println(base.undefinedTriples());
+        List<FuzzySLiner> liners = multipleByContradiction(base, false, this::enhanceD31);
+        if (liners.size() == 1) {
+            base = liners.getFirst();
+        } else {
+            throw new IllegalStateException();
+        }
+        base.printChars();
+    }
+
+    @Test
+    public void testNearMoufang() {
+        int[][] nearMoufang = new int[][]{
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {0, 7, 8},
+                {1, 3, 7},
+                {1, 4, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9},
+                {4, 6, 9}
+        };
+        FuzzySLiner base = FuzzySLiner.of(nearMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(0, 7, 9)});
+        base.printChars();
+        List<FuzzySLiner> liners = multipleByContradiction(base, false, this::enhanceD31);
+        List<FuzzySLiner> lnrs = new ArrayList<>();
+        for (FuzzySLiner l : liners) {
+            try {
+                l = l.intersectLines();
+                l.printChars();
+                l = enhanceD31(l);
+                l.printChars();
+                List<FuzzySLiner> list = multipleByContradiction(l, true, this::enhanceD31);
+                System.out.println("List " + list.size());
+                List<FuzzySLiner> after = new ArrayList<>();
+                for (FuzzySLiner l1 : list) {
+                    l1.printChars();
+                    list.addAll(multipleByContradiction(l1, false, this::enhanceD31));
+                    System.out.println(after.size());
+                }
+                System.out.println("After " + after.size());
+                l = singleByContradiction(l, false, this::enhanceD31);
+                l.printChars();
+                System.out.println("Added");
+                lnrs.add(l);
+            } catch (IllegalArgumentException e) {
+                System.out.println("Exception");
+                // ok
+            }
+        }
+        System.out.println(lnrs.size());
     }
 
     @Test
@@ -325,17 +377,17 @@ public class D3P2Test {
         }
     }
 
-    private List<FuzzySLiner> multipleByContradiction(FuzzySLiner base) {
-        return recur(base).stream().<FuzzySLiner>mapMulti((l, sink) -> {
+    private List<FuzzySLiner> multipleByContradiction(FuzzySLiner base, boolean onlyDist, UnaryOperator<FuzzySLiner> op) {
+        return recur(base, onlyDist).stream().<FuzzySLiner>mapMulti((l, sink) -> {
             try {
-                sink.accept(enhanceD31(l));
+                sink.accept(op.apply(l));
             } catch (IllegalArgumentException e) {
                 // ok
             }
         }).collect(Collectors.toList());
     }
 
-    private List<FuzzySLiner> recur(FuzzySLiner base) {
+    private List<FuzzySLiner> recur(FuzzySLiner base, boolean onlyDist) {
         List<FuzzySLiner> result = new ArrayList<>();
         Pair p = base.undefinedPair();
         if (p != null) {
@@ -344,7 +396,7 @@ public class D3P2Test {
                 rels.add(new Same(p.f(), p.s()));
                 FuzzySLiner copy = base.copy();
                 copy.update(rels);
-                result.addAll(recur(copy));
+                result.addAll(recur(copy, onlyDist));
             } catch (IllegalArgumentException e) {
                 // ok
             }
@@ -353,11 +405,14 @@ public class D3P2Test {
                 rels.add(new Dist(p.f(), p.s()));
                 FuzzySLiner copy = base.copy();
                 copy.update(rels);
-                result.addAll(recur(copy));
+                result.addAll(recur(copy, onlyDist));
             } catch (IllegalArgumentException e) {
                 // ok
             }
             return result;
+        }
+        if (onlyDist) {
+            return List.of(base);
         }
         Triple tr = base.undefinedTriple();
         if (tr == null) {
@@ -368,7 +423,7 @@ public class D3P2Test {
             rels.add(new Col(tr.f(), tr.s(), tr.t()));
             FuzzySLiner copy = base.copy();
             copy.update(rels);
-            result.addAll(recur(copy));
+            result.addAll(recur(copy, onlyDist));
         } catch (IllegalArgumentException e) {
             // ok
         }
@@ -377,9 +432,97 @@ public class D3P2Test {
             rels.add(new Trg(tr.f(), tr.s(), tr.t()));
             FuzzySLiner copy = base.copy();
             copy.update(rels);
-            result.addAll(recur(copy));
+            result.addAll(recur(copy, onlyDist));
         } catch (IllegalArgumentException e) {
             // ok
+        }
+        return result;
+    }
+
+    private FuzzySLiner singleByContradiction(FuzzySLiner ln, boolean onlyDist, UnaryOperator<FuzzySLiner> op) {
+        List<Pair> pairs = ln.undefinedPairs();
+        Queue<Rel> q = new ConcurrentLinkedDeque<>();
+        pairs.stream().parallel().forEach(p -> {
+            Boolean dist = identifyDistinction(ln, p, op);
+            if (dist == null) {
+                return;
+            }
+            if (dist) {
+                q.add(new Dist(p.f(), p.s()));
+            } else {
+                q.add(new Same(p.f(), p.s()));
+            }
+        });
+        ln.update(q);
+        FuzzySLiner afterDist = op.apply(ln);
+        if (onlyDist) {
+            return afterDist;
+        }
+        List<Triple> triples = afterDist.undefinedTriples();
+        Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
+        triples.stream().parallel().forEach(tr -> {
+            Boolean coll = identifyCollinearity(afterDist, tr, op);
+            if (coll == null) {
+                return;
+            }
+            if (coll) {
+                q1.add(new Col(tr.f(), tr.s(), tr.t()));
+            } else {
+                q1.add(new Trg(tr.f(), tr.s(), tr.t()));
+            }
+        });
+        afterDist.update(q1);
+        return op.apply(afterDist);
+    }
+
+    private Boolean identifyDistinction(FuzzySLiner l, Pair p, UnaryOperator<FuzzySLiner> op) {
+        Boolean result = null;
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Same(p.f(), p.s()));
+            copy.update(rels);
+            op.apply(copy);
+        } catch (IllegalArgumentException e) {
+            result = true;
+        }
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Dist(p.f(), p.s()));
+            copy.update(rels);
+            op.apply(copy);
+        } catch (IllegalArgumentException e) {
+            if (result != null) {
+                throw new IllegalArgumentException("Total impossibility");
+            }
+            result = false;
+        }
+        return result;
+    }
+
+    private Boolean identifyCollinearity(FuzzySLiner l, Triple t, UnaryOperator<FuzzySLiner> op) {
+        Boolean result = null;
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Col(t.f(), t.s(), t.t()));
+            copy.update(rels);
+            op.apply(copy);
+        } catch (IllegalArgumentException e) {
+            result = false;
+        }
+        try {
+            FuzzySLiner copy = l.copy();
+            Queue<Rel> rels = new ArrayDeque<>();
+            rels.add(new Trg(t.f(), t.s(), t.t()));
+            copy.update(rels);
+            op.apply(copy);
+        } catch (IllegalArgumentException e) {
+            if (result != null) {
+                throw new IllegalArgumentException("Total impossibility");
+            }
+            result = true;
         }
         return result;
     }
