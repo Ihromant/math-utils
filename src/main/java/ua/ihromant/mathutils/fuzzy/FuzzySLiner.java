@@ -296,7 +296,7 @@ public class FuzzySLiner {
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
                 for (int k = j + 1; k < pc; k++) {
-                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
+                    if (distinct(i, j) && distinct(j, k) && distinct(i, k) && !collinear(i, j, k) && !triangle(i, j, k)) {
                         result.add(new Triple(i, j, k));
                     }
                 }
@@ -321,7 +321,7 @@ public class FuzzySLiner {
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
                 for (int k = j + 1; k < pc; k++) {
-                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
+                    if (distinct(i, j) && distinct(j, k) && distinct(i, k) && !collinear(i, j, k) && !triangle(i, j, k)) {
                         return new Triple(i, j, k);
                     }
                 }
