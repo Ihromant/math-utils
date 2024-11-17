@@ -27,6 +27,15 @@ public class PSP1Test {
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
+        base = base.addPoints(4);
+        ArrayDeque<Rel> q = new ArrayDeque<>();
+        q.addAll(List.of(new Col(7, 9, 10), new Col(8, 9, 11), new Col(7, 9, 12), new Col(8, 9, 13)));
+        q.addAll(List.of(new Col(0, 1, 10), new Col(0, 3, 11), new Col(0, 4, 12), new Col(0, 6, 13)));
+        base.update(q);
+        base.printChars();
+        base = op.apply(base);
+        base = ContradictionUtil.singleByContradiction(base, false, op);
+        base.printChars();
         base = base.intersectLines();
         base.printChars();
         base = op.apply(base);
