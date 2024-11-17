@@ -28,12 +28,19 @@ public class PSP1Test {
         base = ContradictionUtil.singleByContradiction(base, true, this::enhanceP1);
         base.printChars();
         ContradictionUtil.multipleByContradiction(base, true, this::enhanceP1, l -> {
-            l.printChars();
-            System.out.println("Found partial");
-            ContradictionUtil.multipleByContradiction(l, false, this::enhanceP1, l1 -> {
-                l1.printChars();
-                System.out.println("Found example");
-            });
+            try {
+                l.printChars();
+                System.out.println("Found partial");
+                l = ContradictionUtil.singleByContradiction(l, false, this::enhanceP1);
+                l.printChars();
+                ContradictionUtil.multipleByContradiction(l, false, this::enhanceP1, l1 -> {
+                    l1.printChars();
+                    System.out.println("Found example");
+                });
+            } catch (IllegalArgumentException e) {
+                System.out.println("Exception partial");
+                // ok
+            }
         });
     }
 
@@ -59,12 +66,19 @@ public class PSP1Test {
         base = ContradictionUtil.singleByContradiction(base, true, this::enhancePS);
         base.printChars();
         ContradictionUtil.multipleByContradiction(base, true, this::enhancePS, l -> {
-            l.printChars();
-            System.out.println("Found partial");
-            ContradictionUtil.multipleByContradiction(l, false, this::enhancePS, l1 -> {
-                l1.printChars();
-                System.out.println("Found example");
-            });
+            try {
+                l.printChars();
+                System.out.println("Found partial");
+                l = ContradictionUtil.singleByContradiction(l, false, this::enhancePS);
+                l.printChars();
+                ContradictionUtil.multipleByContradiction(l, false, this::enhancePS, l1 -> {
+                    l1.printChars();
+                    System.out.println("Found example");
+                });
+            } catch (IllegalArgumentException e) {
+                System.out.println("Exception partial");
+                // ok
+            }
         });
     }
 
