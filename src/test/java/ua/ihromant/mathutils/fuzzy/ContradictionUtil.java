@@ -478,6 +478,80 @@ public class ContradictionUtil {
         return res;
     }
 
+    public static List<Rel> processD2(FuzzySLiner liner) {
+        int pc = liner.getPc();
+        List<Rel> res = new ArrayList<>(liner.getPc());
+        for (int o = 0; o < pc; o++) {
+            for (int a = 0; a < pc; a++) {
+                if (!liner.distinct(o, a)) {
+                    continue;
+                }
+                for (int a1 = 0; a1 < pc; a1++) {
+                    if (!liner.collinear(o, a, a1)) {
+                        continue;
+                    }
+                    for (int b = 0; b < pc; b++) {
+                        if (!liner.triangle(o, a, b)) {
+                            continue;
+                        }
+                        for (int b1 = 0; b < pc; b++) {
+                            if (!liner.collinear(o, b, b1)) {
+                                continue;
+                            }
+                            for (int c = 0; c < pc; c++) {
+                                if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)
+                                        || !liner.collinear(a, c, b1) || !liner.collinear(b, c, a1)) {
+                                    continue;
+                                }
+                                for (int c1 = 0; c1 < pc; c1++) {
+                                    if (!liner.collinear(o, c, c1)) {
+                                        continue;
+                                    }
+                                    int aba1b1 = -1;
+                                    int bcb1c1 = -1;
+                                    int aca1c1 = -1;
+                                    for (int i = 0; i < liner.getPc(); i++) {
+                                        if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
+                                            if (aba1b1 < 0) {
+                                                aba1b1 = i;
+                                            } else {
+                                                res.add(new Same(aba1b1, i));
+                                            }
+                                            if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, i)) {
+                                                res.add(new Col(bcb1c1, aca1c1, i));
+                                            }
+                                        }
+                                        if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
+                                            if (aca1c1 < 0) {
+                                                aca1c1 = i;
+                                            } else {
+                                                res.add(new Same(aca1c1, i));
+                                            }
+                                            if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, i)) {
+                                                res.add(new Col(aba1b1, bcb1c1, i));
+                                            }
+                                        }
+                                        if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
+                                            if (bcb1c1 < 0) {
+                                                bcb1c1 = i;
+                                            } else {
+                                                res.add(new Same(bcb1c1, i));
+                                            }
+                                            if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, i)) {
+                                                res.add(new Col(aba1b1, aca1c1, i));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
     public static List<Rel> processD2S(FuzzySLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
@@ -501,6 +575,80 @@ public class ContradictionUtil {
                             for (int c = 0; c < pc; c++) {
                                 if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)
                                         || !liner.collinear(a, c, b1) || !liner.collinear(b, c, a1)) {
+                                    continue;
+                                }
+                                for (int c1 = 0; c1 < pc; c1++) {
+                                    if (!liner.collinear(o, c, c1)) {
+                                        continue;
+                                    }
+                                    int aba1b1 = -1;
+                                    int bcb1c1 = -1;
+                                    int aca1c1 = -1;
+                                    for (int i = 0; i < liner.getPc(); i++) {
+                                        if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
+                                            if (aba1b1 < 0) {
+                                                aba1b1 = i;
+                                            } else {
+                                                res.add(new Same(aba1b1, i));
+                                            }
+                                            if (bcb1c1 >= 0 && aca1c1 >= 0 && liner.collinear(o, bcb1c1, aca1c1) && !liner.collinear(bcb1c1, aca1c1, i)) {
+                                                res.add(new Col(bcb1c1, aca1c1, i));
+                                            }
+                                        }
+                                        if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
+                                            if (aca1c1 < 0) {
+                                                aca1c1 = i;
+                                            } else {
+                                                res.add(new Same(aca1c1, i));
+                                            }
+                                            if (aba1b1 >= 0 && bcb1c1 >= 0 && liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, bcb1c1, i)) {
+                                                res.add(new Col(aba1b1, bcb1c1, i));
+                                            }
+                                        }
+                                        if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
+                                            if (bcb1c1 < 0) {
+                                                bcb1c1 = i;
+                                            } else {
+                                                res.add(new Same(bcb1c1, i));
+                                            }
+                                            if (aba1b1 >= 0 && aca1c1 >= 0 && liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, i)) {
+                                                res.add(new Col(aba1b1, aca1c1, i));
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    public static List<Rel> processD1S(FuzzySLiner liner) {
+        int pc = liner.getPc();
+        List<Rel> res = new ArrayList<>(liner.getPc());
+        for (int o = 0; o < pc; o++) {
+            for (int a = 0; a < pc; a++) {
+                if (!liner.distinct(o, a)) {
+                    continue;
+                }
+                for (int a1 = 0; a1 < pc; a1++) {
+                    if (!liner.collinear(o, a, a1)) {
+                        continue;
+                    }
+                    for (int b = 0; b < pc; b++) {
+                        if (!liner.triangle(o, a, b)) {
+                            continue;
+                        }
+                        for (int b1 = 0; b < pc; b++) {
+                            if (!liner.collinear(o, b, b1)) {
+                                continue;
+                            }
+                            for (int c = 0; c < pc; c++) {
+                                if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)
+                                        || !liner.collinear(a, c, b1)) {
                                     continue;
                                 }
                                 for (int c1 = 0; c1 < pc; c1++) {
