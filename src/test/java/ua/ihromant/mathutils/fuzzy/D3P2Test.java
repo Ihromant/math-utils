@@ -6,9 +6,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.function.Consumer;
-import java.util.function.UnaryOperator;
 
 public class D3P2Test {
     @Test
@@ -33,7 +30,7 @@ public class D3P2Test {
         base = enhanceD31(base);
         base.printChars();
         List<FuzzySLiner> liners = new ArrayList<>();
-        multipleByContradiction(base, false, this::enhanceD31, liners::add);
+        ContradictionUtil.multipleByContradiction(base, false, this::enhanceD31, liners::add);
         if (liners.size() == 1) {
             base = liners.getFirst();
         } else {
@@ -61,7 +58,7 @@ public class D3P2Test {
                 new Triple(0, 7, 9)});
         base.printChars();
         List<FuzzySLiner> liners = new ArrayList<>();
-        multipleByContradiction(base, false, this::enhanceD31, liners::add);
+        ContradictionUtil.multipleByContradiction(base, false, this::enhanceD31, liners::add);
         List<FuzzySLiner> lnrs = new ArrayList<>();
         for (FuzzySLiner l : liners) {
             try {
@@ -70,16 +67,16 @@ public class D3P2Test {
                 l = enhanceD31(l);
                 l.printChars();
                 List<FuzzySLiner> list = new ArrayList<>();
-                multipleByContradiction(l, true, this::enhanceD31, list::add);
+                ContradictionUtil.multipleByContradiction(l, true, this::enhanceD31, list::add);
                 System.out.println("List " + list.size());
                 List<FuzzySLiner> after = new ArrayList<>();
                 for (FuzzySLiner l1 : list) {
                     l1.printChars();
-                    multipleByContradiction(l1, false, this::enhanceD31, after::add);
+                    ContradictionUtil.multipleByContradiction(l1, false, this::enhanceD31, after::add);
                     System.out.println(after.size());
                 }
                 System.out.println("After " + after.size());
-                l = singleByContradiction(l, false, this::enhanceD31);
+                l = ContradictionUtil.singleByContradiction(l, false, this::enhanceD31);
                 l.printChars();
                 System.out.println("Added");
                 lnrs.add(l);
@@ -109,7 +106,7 @@ public class D3P2Test {
                 new Triple(7, 8, 9)});
         base.printChars();
         List<FuzzySLiner> lnrs = new ArrayList<>();
-        multipleByContradiction(base, false, this::enhanceD31, lnrs::add);
+        ContradictionUtil.multipleByContradiction(base, false, this::enhanceD31, lnrs::add);
         System.out.println(lnrs.size());
         for (FuzzySLiner test : lnrs) {
             try {
@@ -117,12 +114,12 @@ public class D3P2Test {
                 test.printChars();
                 test = enhanceD31(test);
                 test.printChars();
-                test = singleByContradiction(test, true, this::enhanceD31);
+                test = ContradictionUtil.singleByContradiction(test, true, this::enhanceD31);
                 test.printChars();
-                multipleByContradiction(test, true, this::enhanceD31, l -> {
+                ContradictionUtil.multipleByContradiction(test, true, this::enhanceD31, l -> {
                     l.printChars();
                     System.out.println("Found partial");
-                    multipleByContradiction(l, false, this::enhanceD31, l1 -> {
+                    ContradictionUtil.multipleByContradiction(l, false, this::enhanceD31, l1 -> {
                         l1.printChars();
                         System.out.println("Found example");
                     });
@@ -177,15 +174,15 @@ public class D3P2Test {
         base.printChars();
         base = enhanceD3(base);
         base.printChars();
-        base = singleByContradiction(base, true, this::enhanceD3);
+        base = ContradictionUtil.singleByContradiction(base, true, this::enhanceD3);
         base.printChars();
-        multipleByContradiction(base, true, this::enhanceD3, l -> {
+        ContradictionUtil.multipleByContradiction(base, true, this::enhanceD3, l -> {
             try {
                 l.printChars();
                 System.out.println("Found partial");
-                l = singleByContradiction(l, false, this::enhanceD3);
+                l = ContradictionUtil.singleByContradiction(l, false, this::enhanceD3);
                 l.printChars();
-                multipleByContradiction(l, false, this::enhanceD3, l1 -> {
+                ContradictionUtil.multipleByContradiction(l, false, this::enhanceD3, l1 -> {
                     l1.printChars();
                     System.out.println("Found example");
                 });
@@ -438,156 +435,5 @@ public class D3P2Test {
             liner.update(queue);
             liner = liner.quotient();
         }
-    }
-
-    private void multipleByContradiction(FuzzySLiner base, boolean onlyDist, UnaryOperator<FuzzySLiner> op, Consumer<FuzzySLiner> sink) {
-        recur(base, onlyDist, l -> {
-            try {
-                FuzzySLiner next = op.apply(l);
-                sink.accept(next);
-            } catch (IllegalArgumentException e) {
-                // ok
-            }
-        });
-    }
-
-    private void recur(FuzzySLiner base, boolean onlyDist, Consumer<FuzzySLiner> sink) {
-        Pair p = base.undefinedPair();
-        if (p != null) {
-            try {
-                Queue<Rel> rels = new ArrayDeque<>();
-                rels.add(new Same(p.f(), p.s()));
-                FuzzySLiner copy = base.copy();
-                copy.update(rels);
-                recur(copy, onlyDist, sink);
-            } catch (IllegalArgumentException e) {
-                // ok
-            }
-            try {
-                Queue<Rel> rels = new ArrayDeque<>();
-                rels.add(new Dist(p.f(), p.s()));
-                FuzzySLiner copy = base.copy();
-                copy.update(rels);
-                recur(copy, onlyDist, sink);
-            } catch (IllegalArgumentException e) {
-                // ok
-            }
-            return;
-        }
-        if (onlyDist) {
-            sink.accept(base);
-            return;
-        }
-        Triple tr = base.undefinedTriple();
-        if (tr == null) {
-            sink.accept(base);
-            return;
-        }
-        try {
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
-            FuzzySLiner copy = base.copy();
-            copy.update(rels);
-            recur(copy, onlyDist, sink);
-        } catch (IllegalArgumentException e) {
-            // ok
-        }
-        try {
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Col(tr.f(), tr.s(), tr.t()));
-            FuzzySLiner copy = base.copy();
-            copy.update(rels);
-            recur(copy, onlyDist, sink);
-        } catch (IllegalArgumentException e) {
-            // ok
-        }
-    }
-
-    private FuzzySLiner singleByContradiction(FuzzySLiner ln, boolean onlyDist, UnaryOperator<FuzzySLiner> op) {
-        List<Pair> pairs = ln.undefinedPairs();
-        Queue<Rel> q = new ConcurrentLinkedDeque<>();
-        pairs.stream().parallel().forEach(p -> {
-            Boolean dist = identifyDistinction(ln, p, op);
-            if (dist == null) {
-                return;
-            }
-            if (dist) {
-                q.add(new Dist(p.f(), p.s()));
-            } else {
-                q.add(new Same(p.f(), p.s()));
-            }
-        });
-        ln.update(q);
-        FuzzySLiner afterDist = op.apply(ln);
-        if (onlyDist) {
-            return afterDist;
-        }
-        List<Triple> triples = afterDist.undefinedTriples();
-        Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
-        triples.stream().parallel().forEach(tr -> {
-            Boolean coll = identifyCollinearity(afterDist, tr, op);
-            if (coll == null) {
-                return;
-            }
-            if (coll) {
-                q1.add(new Col(tr.f(), tr.s(), tr.t()));
-            } else {
-                q1.add(new Trg(tr.f(), tr.s(), tr.t()));
-            }
-        });
-        afterDist.update(q1);
-        return op.apply(afterDist);
-    }
-
-    private Boolean identifyDistinction(FuzzySLiner l, Pair p, UnaryOperator<FuzzySLiner> op) {
-        Boolean result = null;
-        try {
-            FuzzySLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Same(p.f(), p.s()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            result = true;
-        }
-        try {
-            FuzzySLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Dist(p.f(), p.s()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            if (result != null) {
-                throw new IllegalArgumentException("Total impossibility");
-            }
-            result = false;
-        }
-        return result;
-    }
-
-    private Boolean identifyCollinearity(FuzzySLiner l, Triple t, UnaryOperator<FuzzySLiner> op) {
-        Boolean result = null;
-        try {
-            FuzzySLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Col(t.f(), t.s(), t.t()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            result = false;
-        }
-        try {
-            FuzzySLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Trg(t.f(), t.s(), t.t()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            if (result != null) {
-                throw new IllegalArgumentException("Total impossibility");
-            }
-            result = true;
-        }
-        return result;
     }
 }
