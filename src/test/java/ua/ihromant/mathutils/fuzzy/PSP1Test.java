@@ -20,7 +20,8 @@ public class PSP1Test {
                 {0, 7, 8}
         };
         FuzzySLiner base = FuzzySLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1));
+        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
+                ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -59,7 +60,8 @@ public class PSP1Test {
                 {2, 5, 9}
         };
         FuzzySLiner base = FuzzySLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS));
+        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
+                ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
