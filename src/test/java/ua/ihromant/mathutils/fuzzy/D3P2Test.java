@@ -134,7 +134,7 @@ public class D3P2Test {
     }
 
     @Test
-    public void testD3() {
+    public void testD3P1S() {
         int[][] d3 = {
                 {0, 1, 2},
                 {0, 3, 4},
@@ -158,8 +158,32 @@ public class D3P2Test {
     }
 
     @Test
-    public void testP2() {
-        int[][] p2 = new int[][]{
+    public void testD3D2S() {
+        int[][] d3 = {
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {1, 3, 6, 7},
+                {1, 4, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {2, 3, 5, 9},
+                {4, 6, 9}
+        };
+        FuzzySLiner base = FuzzySLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(7, 8, 9)});
+        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
+        base.printChars();
+        base = base.intersectLines();
+        base.printChars();
+        base = op.apply(base);
+        base.printChars();
+    }
+
+    @Test
+    public void testP1SD3() {
+        int[][] p1s = new int[][]{
                 {0, 1, 2, 3},
                 {0, 4, 5, 6},
                 {1, 5, 7},
@@ -171,7 +195,7 @@ public class D3P2Test {
                 {3, 5, 9},
                 {0, 7, 8}
         };
-        FuzzySLiner base = FuzzySLiner.of(p2, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
+        FuzzySLiner base = FuzzySLiner.of(p1s, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
         UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
         base.printChars();
         base = base.intersectLines();

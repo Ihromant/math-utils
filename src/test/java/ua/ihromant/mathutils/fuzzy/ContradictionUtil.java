@@ -774,4 +774,61 @@ public class ContradictionUtil {
         }
         return res;
     }
+
+    public static List<Rel> processFullFano(FuzzySLiner liner) {
+        List<Rel> res = new ArrayList<>(liner.getPc());
+        for (int a = 0; a < liner.getPc(); a++) {
+            for (int b = a + 1; b < liner.getPc(); b++) {
+                if (!liner.distinct(a, b)) {
+                    continue;
+                }
+                for (int c = b + 1; c < liner.getPc(); c++) {
+                    if (!liner.triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < liner.getPc(); d++) {
+                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
+                            continue;
+                        }
+                        int abcd = -1;
+                        int acbd = -1;
+                        int adbc = -1;
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
+                                if (abcd < 0) {
+                                    abcd = i;
+                                } else {
+                                    res.add(new Same(abcd, i));
+                                }
+                                if (acbd >= 0 && adbc >= 0 && !liner.collinear(acbd, adbc, i)) {
+                                    res.add(new Col(acbd, adbc, i));
+                                }
+                            }
+                            if (liner.collinear(a, c, i) && liner.collinear(b, d, i)) {
+                                if (acbd < 0) {
+                                    acbd = i;
+                                } else {
+                                    res.add(new Same(acbd, i));
+                                }
+                                if (abcd >= 0 && adbc >= 0 && !liner.collinear(abcd, adbc, i)) {
+                                    res.add(new Col(abcd, adbc, i));
+                                }
+                            }
+                            if (liner.collinear(a, d, i) && liner.collinear(b, c, i)) {
+                                if (adbc < 0) {
+                                    adbc = i;
+                                } else {
+                                    res.add(new Same(adbc, i));
+                                }
+                                if (abcd >= 0 && acbd >= 0 && !liner.collinear(abcd, acbd, i)) {
+                                    res.add(new Col(abcd, acbd, i));
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
 }
