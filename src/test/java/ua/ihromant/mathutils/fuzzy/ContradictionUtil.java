@@ -411,63 +411,75 @@ public class ContradictionUtil {
                 if (!liner.distinct(o, a)) {
                     continue;
                 }
-                for (int a1 = 0; a1 < pc; a1++) {
-                    if (!liner.collinear(o, a, a1)) {
+                for (int b = 0; b < pc; b++) {
+                    if (!liner.triangle(o, a, b)) {
                         continue;
                     }
-                    for (int b = 0; b < pc; b++) {
-                        if (!liner.triangle(o, a, b)) {
+                    for (int c = 0; c < pc; c++) {
+                        if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)) {
                             continue;
                         }
-                        for (int b1 = 0; b < pc; b++) {
-                            if (!liner.collinear(o, b, b1)) {
-                                continue;
-                            }
-                            for (int c = 0; c < pc; c++) {
-                                if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)
-                                        || !liner.collinear(a, c, b1) || !liner.collinear(b, c, a1)) {
-                                    continue;
+                        int aba1b1 = -1;
+                        int bcb1c1 = -1;
+                        int aca1c1 = -1;
+                        int a1 = -1;
+                        int b1 = -1;
+                        int c1 = -1;
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(o, a, i) && liner.collinear(b, c, i)) {
+                                if (a1 < 0) {
+                                    a1 = i;
+                                } else {
+                                    res.add(new Same(a1, i));
                                 }
-                                for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(o, c, c1)
-                                            || !liner.collinear(a, b, c1)) {
-                                        continue;
-                                    }
-                                    int aba1b1 = -1;
-                                    int bcb1c1 = -1;
-                                    int aca1c1 = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
-                                        if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
-                                            if (aba1b1 < 0) {
-                                                aba1b1 = i;
-                                            } else {
-                                                res.add(new Same(aba1b1, i));
-                                            }
-                                            if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, i)) {
-                                                res.add(new Col(bcb1c1, aca1c1, i));
-                                            }
-                                        }
-                                        if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
-                                            if (aca1c1 < 0) {
-                                                aca1c1 = i;
-                                            } else {
-                                                res.add(new Same(aca1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, i)) {
-                                                res.add(new Col(aba1b1, bcb1c1, i));
-                                            }
-                                        }
-                                        if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
-                                            if (bcb1c1 < 0) {
-                                                bcb1c1 = i;
-                                            } else {
-                                                res.add(new Same(bcb1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, i)) {
-                                                res.add(new Col(aba1b1, aca1c1, i));
-                                            }
-                                        }
-                                    }
+                            }
+                            if (liner.collinear(o, b, i) && liner.collinear(a, c, i)) {
+                                if (b1 < 0) {
+                                    b1 = i;
+                                } else {
+                                    res.add(new Same(b1, i));
+                                }
+                            }
+                            if (liner.collinear(o, c, i) && liner.collinear(a, b, i)) {
+                                if (c1 < 0) {
+                                    c1 = i;
+                                } else {
+                                    res.add(new Same(c1, i));
+                                }
+                            }
+                        }
+                        if (a1 < 0 || b1 < 0 || c1 < 0 || !liner.triangle(a1, b1, c1)) {
+                            continue;
+                        }
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
+                                if (aba1b1 < 0) {
+                                    aba1b1 = i;
+                                } else {
+                                    res.add(new Same(aba1b1, i));
+                                }
+                                if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, i)) {
+                                    res.add(new Col(bcb1c1, aca1c1, i));
+                                }
+                            }
+                            if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
+                                if (aca1c1 < 0) {
+                                    aca1c1 = i;
+                                } else {
+                                    res.add(new Same(aca1c1, i));
+                                }
+                                if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, i)) {
+                                    res.add(new Col(aba1b1, bcb1c1, i));
+                                }
+                            }
+                            if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
+                                if (bcb1c1 < 0) {
+                                    bcb1c1 = i;
+                                } else {
+                                    res.add(new Same(bcb1c1, i));
+                                }
+                                if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, i)) {
+                                    res.add(new Col(aba1b1, aca1c1, i));
                                 }
                             }
                         }
@@ -560,62 +572,83 @@ public class ContradictionUtil {
                 if (!liner.distinct(o, a)) {
                     continue;
                 }
-                for (int a1 = 0; a1 < pc; a1++) {
-                    if (!liner.collinear(o, a, a1)) {
+                for (int b = 0; b < pc; b++) {
+                    if (!liner.triangle(o, a, b)) {
                         continue;
                     }
-                    for (int b = 0; b < pc; b++) {
-                        if (!liner.triangle(o, a, b)) {
+                    for (int c = 0; c < pc; c++) {
+                        if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)) {
                             continue;
                         }
-                        for (int b1 = 0; b < pc; b++) {
-                            if (!liner.collinear(o, b, b1)) {
-                                continue;
-                            }
-                            for (int c = 0; c < pc; c++) {
-                                if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)
-                                        || !liner.collinear(a, c, b1) || !liner.collinear(b, c, a1)) {
-                                    continue;
+                        int aba1b1 = -1;
+                        int bcb1c1 = -1;
+                        int aca1c1 = -1;
+                        int a1 = -1;
+                        int b1 = -1;
+                        int c1 = -1;
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(o, a, i) && liner.collinear(b, c, i)) {
+                                if (a1 < 0) {
+                                    a1 = i;
+                                } else {
+                                    res.add(new Same(a1, i));
                                 }
-                                for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(o, c, c1)) {
-                                        continue;
-                                    }
-                                    int aba1b1 = -1;
-                                    int bcb1c1 = -1;
-                                    int aca1c1 = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
-                                        if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
-                                            if (aba1b1 < 0) {
-                                                aba1b1 = i;
-                                            } else {
-                                                res.add(new Same(aba1b1, i));
-                                            }
-                                            if (bcb1c1 >= 0 && aca1c1 >= 0 && liner.collinear(o, bcb1c1, aca1c1) && !liner.collinear(bcb1c1, aca1c1, i)) {
-                                                res.add(new Col(bcb1c1, aca1c1, i));
-                                            }
-                                        }
-                                        if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
-                                            if (aca1c1 < 0) {
-                                                aca1c1 = i;
-                                            } else {
-                                                res.add(new Same(aca1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && bcb1c1 >= 0 && liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, bcb1c1, i)) {
-                                                res.add(new Col(aba1b1, bcb1c1, i));
-                                            }
-                                        }
-                                        if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
-                                            if (bcb1c1 < 0) {
-                                                bcb1c1 = i;
-                                            } else {
-                                                res.add(new Same(bcb1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && aca1c1 >= 0 && liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, i)) {
-                                                res.add(new Col(aba1b1, aca1c1, i));
-                                            }
-                                        }
-                                    }
+                            }
+                            if (liner.collinear(o, c, i) && liner.collinear(a, b, i)) {
+                                if (c1 < 0) {
+                                    c1 = i;
+                                } else {
+                                    res.add(new Same(c1, i));
+                                }
+                            }
+                        }
+                        if (a1 < 0 || c1 < 0) {
+                            continue;
+                        }
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
+                                if (aca1c1 < 0) {
+                                    aca1c1 = i;
+                                } else {
+                                    res.add(new Same(aca1c1, i));
+                                }
+                            }
+                        }
+                        if (aca1c1 < 0) {
+                            continue;
+                        }
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(o, aca1c1, i) && liner.collinear(a, b, i)) {
+                                if (aba1b1 < 0) {
+                                    aba1b1 = i;
+                                } else {
+                                    res.add(new Same(aba1b1, i));
+                                }
+                            }
+                            if (liner.collinear(o, aca1c1, i) && liner.collinear(b, c, i)) {
+                                if (bcb1c1 < 0) {
+                                    bcb1c1 = i;
+                                } else {
+                                    res.add(new Same(bcb1c1, i));
+                                }
+                            }
+                        }
+                        if (aba1b1 < 0 || bcb1c1 < 0) {
+                            continue;
+                        }
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(a, aba1b1, i) && liner.collinear(o, b, i)) {
+                                if (b1 < 0) {
+                                    b1 = i;
+                                } else {
+                                    res.add(new Same(aba1b1, i));
+                                }
+                            }
+                            if (liner.collinear(c, bcb1c1, i) && liner.collinear(o, b, i)) {
+                                if (b1 < 0) {
+                                    b1 = i;
+                                } else {
+                                    res.add(new Same(aba1b1, i));
                                 }
                             }
                         }
