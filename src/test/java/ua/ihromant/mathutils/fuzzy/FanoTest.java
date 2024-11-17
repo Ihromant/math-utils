@@ -7,7 +7,7 @@ import java.util.function.UnaryOperator;
 
 public class FanoTest {
     @Test
-    public void testFano1() {
+    public void testFano() {
         int[][] antiMoufang = {
                 {0, 1, 2},
                 {0, 3, 4},
@@ -26,7 +26,7 @@ public class FanoTest {
         UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
                 ContradictionUtil::processP1, ContradictionUtil::processPS, ContradictionUtil::processD2, ContradictionUtil::processD1S));
         base.printChars();
-        base = ContradictionUtil.singleByContradiction(base, true, op);
+        base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
         base = base.intersectLines();
         base.printChars();
