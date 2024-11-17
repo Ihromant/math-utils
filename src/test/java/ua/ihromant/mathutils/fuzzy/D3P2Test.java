@@ -180,12 +180,19 @@ public class D3P2Test {
         base = singleByContradiction(base, true, this::enhanceD3);
         base.printChars();
         multipleByContradiction(base, true, this::enhanceD3, l -> {
-            l.printChars();
-            System.out.println("Found partial");
-            multipleByContradiction(l, false, this::enhanceD3, l1 -> {
-                l1.printChars();
-                System.out.println("Found example");
-            });
+            try {
+                l.printChars();
+                System.out.println("Found partial");
+                l = singleByContradiction(l, false, this::enhanceD3);
+                l.printChars();
+                multipleByContradiction(l, false, this::enhanceD3, l1 -> {
+                    l1.printChars();
+                    System.out.println("Found example");
+                });
+            } catch (IllegalArgumentException e) {
+                System.out.println("Exception partial");
+                // ok
+            }
         });
     }
 
