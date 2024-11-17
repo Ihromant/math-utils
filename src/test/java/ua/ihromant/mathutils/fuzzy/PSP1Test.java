@@ -23,6 +23,8 @@ public class PSP1Test {
         UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
+        base = ContradictionUtil.singleByContradiction(base, false, op);
+        base.printChars();
         base = base.intersectLines();
         base.printChars();
         base = op.apply(base);
@@ -62,6 +64,8 @@ public class PSP1Test {
         FuzzySLiner base = FuzzySLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
         UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
+        base.printChars();
+        base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
         base = base.intersectLines();
         base.printChars();
