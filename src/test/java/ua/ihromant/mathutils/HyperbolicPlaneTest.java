@@ -26,6 +26,68 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class HyperbolicPlaneTest {
     @Test
+    public void test151_156() {
+        int v = 156;
+        int k = 6;
+        int[][][] diffSets = new int[][][]{
+                {
+                        {0, 31, 49, 74, 102, 132},
+                        {0, 60, 87, 100, 110, 122},
+                        {0, 75, 76, 95, 140, 142},
+                        {0, 79, 86, 115, 118, 123},
+                        {0, 84, 88, 99, 105, 147},
+                        {0, 26, 52, 78, 104, 130}
+                },
+                {
+                        {0, 31, 58, 72, 97, 127},
+                        {0, 51, 54, 99, 121, 122},
+                        {0, 63, 95, 106, 110, 116},
+                        {0, 74, 76, 118, 138, 151},
+                        {0, 83, 91, 100, 107, 119},
+                        {0, 26, 52, 78, 104, 130}
+                }
+        };
+        Map<Map<Integer, Integer>, Liner> lnrz = new HashMap<>();
+        for (int[][] diffSet : diffSets) {
+            IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+                int[][] ds = IntStream.range(0, diffSet.length)
+                        .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i]
+                                : IntStream.concat(IntStream.of(0), IntStream.range(1, k).map(idx -> k - idx).map(idx -> v - diffSet[i][idx])).toArray())
+                        .toArray(int[][]::new);
+                Liner p = Liner.byDiffFamily(v, ds);
+                testCorrectness(p, of(k));
+                lnrz.putIfAbsent(p.hyperbolicFreq(), p);
+                //System.out.println(p.hyperbolicFreq() + " " + p.cardSubPlanes(false) + " " + Arrays.deepToString(ds));
+            });
+        }
+        System.out.println(lnrz.size() + " " + lnrz);
+        int v1 = 151;
+        int[][][] diffSets1 = new int[][][]{
+                {
+                        {0, 30, 41, 67, 94, 122},
+                        {0, 60, 66, 100, 108, 112},
+                        {0, 61, 62, 71, 78, 136},
+                        {0, 68, 82, 113, 118, 131},
+                        {0, 72, 95, 97, 116, 119}
+                }
+        };
+        Map<Map<Integer, Integer>, Liner> lnrz1 = new HashMap<>();
+        for (int[][] diffSet : diffSets1) {
+            IntStream.range(0, 1 << (diffSet.length - (v1 % k == 0 ? 2 : 1))).forEach(comb -> {
+                int[][] ds = IntStream.range(0, diffSet.length)
+                        .mapToObj(i -> ((1 << i) & comb) == 0 ? diffSet[i]
+                                : IntStream.concat(IntStream.of(0), IntStream.range(1, k).map(idx -> k - idx).map(idx -> v1 - diffSet[i][idx])).toArray())
+                        .toArray(int[][]::new);
+                Liner p = Liner.byDiffFamily(v1, ds);
+                testCorrectness(p, of(k));
+                lnrz1.putIfAbsent(p.hyperbolicFreq(), p);
+                //System.out.println(p.hyperbolicFreq() + " " + p.cardSubPlanes(false) + " " + Arrays.deepToString(ds));
+            });
+        }
+        System.out.println(lnrz1.size() + " " + lnrz1);
+    }
+
+    @Test
     public void test126() {
         int v = 126;
         int k = 6;
