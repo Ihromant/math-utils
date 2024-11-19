@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -20,6 +21,33 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class TernaryRingTest {
+    @Test
+    public void splitByPlanes() throws IOException {
+        String name = "bbh1";
+        int k = 16;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            List<Equivalence> equivalences = new ArrayList<>();
+            IntStream.range(0, proj.lineCount()).forEach(dl -> {
+                Optional<Equivalence> opt = equivalences.stream().parallel()
+                        .filter(e -> ternars(proj, dl).anyMatch(m -> ringIsomorphic(e.map(), m)))
+                        .findAny();
+                if (opt.isPresent()) {
+                    opt.get().dls().set(dl);
+                } else {
+                    TernarMapping map = ternars(proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
+                    equivalences.add(new Equivalence(map, FixBS.of(proj.pointCount(), dl)));
+                }
+                System.out.println(dl);
+            });
+            System.out.println(equivalences);
+        }
+    }
+
+    private record Equivalence(TernarMapping map, FixBS dls) {}
+
     @Test
     public void testRecursive() throws IOException {
         String name = "hughes9";
