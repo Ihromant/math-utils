@@ -39,7 +39,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 int[] infty = proj.line(dl);
@@ -76,7 +76,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 long time = System.currentTimeMillis();
@@ -92,7 +92,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
@@ -110,7 +110,7 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
@@ -160,7 +160,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Map<FixBS, Integer> nonIsomorphic = new HashMap<>();
             for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
@@ -184,7 +184,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             int cnt = k * k + k + 1;
             int[] arr = IntStream.range(0, cnt).toArray();
@@ -437,7 +437,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 Liner liner = new AffinePlane(proj, dl).toLiner();
@@ -471,7 +471,7 @@ public class BatchAffineTest {
             try (InputStream is = new FileInputStream(f);
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readTxt(br);
+                Liner proj = readProj(br);
                 HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
                 int[][] central = new int[proj.pointCount()][proj.lineCount()];
                 for (int o = 0; o < proj.pointCount(); o++) {
@@ -529,7 +529,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             int dl = 1;
             Liner liner = new AffinePlane(proj, dl).toLiner();
@@ -619,7 +619,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, 0).toLiner();
             TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
@@ -646,7 +646,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             for (int triangle : uniqueTriangles.get(name)) {
@@ -678,7 +678,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             Map<Integer, List<TernaryRing>> byIso = new HashMap<>();
@@ -709,7 +709,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             System.out.println(name + " dropped line " + dl);
@@ -747,7 +747,7 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readTxt(br);
+            Liner proj = readProj(br);
             HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             boolean notFanoFound = false;
@@ -842,7 +842,7 @@ public class BatchAffineTest {
             try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readTxt(br);
+                Liner proj = readProj(br);
                 HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
                 for (int dl : dropped.get(plName)) {
                     Liner liner = new AffinePlane(proj, dl).toLiner();
@@ -903,7 +903,7 @@ public class BatchAffineTest {
         }
     }
 
-    public Liner readTxt(BufferedReader br) throws IOException {
+    public static Liner readProj(BufferedReader br) throws IOException {
         List<BitSet> list = new ArrayList<>();
         String line = br.readLine();
         while (line != null) {
@@ -928,7 +928,7 @@ public class BatchAffineTest {
             try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readTxt(br);
+                Liner proj = readProj(br);
                 System.out.println(name + " " + checkD31(proj));
             }
         }
