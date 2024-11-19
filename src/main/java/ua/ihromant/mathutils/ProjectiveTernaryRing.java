@@ -32,7 +32,7 @@ public class ProjectiveTernaryRing implements TernaryRing {
         this.order = diagonalOrder.length - 1;
         for (int i = 0; i < diagonalOrder.length; i++) {
             int infty = diagonalOrder[i];
-            if (plane.flag(infty, dl)) {
+            if (plane.flag(dl, infty)) {
                 diagonalOrder[i] = diagonalOrder[order];
                 diagonalOrder[order] = infty;
                 break;
@@ -100,6 +100,11 @@ public class ProjectiveTernaryRing implements TernaryRing {
             }
         }
         return result;
+    }
+
+    @Override
+    public Quad base() {
+        return new Quad(o, u, w, e);
     }
 
     private int parallel(int l, int p) {

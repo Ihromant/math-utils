@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.util.Arrays;
@@ -82,6 +83,11 @@ public class AffineTernaryRing implements TernaryRing {
     @Override
     public int[][][] matrix() {
         return opMatrix;
+    }
+
+    @Override
+    public Quad base() {
+        return new Quad(o, u, w, e);
     }
 
     public int trIdx() {

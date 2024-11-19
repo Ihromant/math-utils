@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.plane.Quad;
+
 import java.util.Arrays;
 import java.util.OptionalInt;
 import java.util.stream.IntStream;
@@ -10,6 +12,8 @@ public interface TernaryRing {
     int order();
 
     int[][][] matrix();
+
+    Quad base();
 
     default int[][] addMatrix() {
         int[][] result = new int[order()][order()];
