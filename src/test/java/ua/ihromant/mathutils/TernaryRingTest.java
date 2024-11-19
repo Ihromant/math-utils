@@ -51,37 +51,54 @@ public class TernaryRingTest {
                 }));
     }
 
+    private static boolean isInjective(int[] partialFunc) {
+        int[] idxes = new int[partialFunc.length];
+        Arrays.fill(idxes, -1);
+        for (int i = 0; i < partialFunc.length; i++) {
+            int val = partialFunc[i];
+            if (val >= 0) {
+                if (idxes[val] >= 0) {
+                    return false;
+                }
+                idxes[val] = i;
+            }
+        }
+        return true;
+    }
+
+    @Test
+    public void testInjective() {
+        int[] notInjective = new int[]{0, -1, 2, 2};
+        int[] injective = new int[]{3, 0, -1, 2};
+        assertFalse(isInjective(notInjective));
+        assertTrue(isInjective(injective));
+    }
+
     private boolean ringIsomorphic(TernarMapping tm, TernaryRing second) {
         TernaryRing first = tm.ring();
-        int[][] functions = new int[tm.functions().size()][];
-        functions[0] = new int[second.order()];
-        Arrays.fill(functions[0], -1);
-        functions[0][0] = 0;
-        functions[0][1] = 1;
-        FixBS setVals = FixBS.of(second.order(), 0, 1);
-        for (int i = 1; i < functions.length; i++) {
-            functions[i] = functions[i - 1].clone();
+        int[] function = new int[second.order()];
+        Arrays.fill(function, -1);
+        function[0] = 0;
+        function[1] = 1;
+        for (int i = 1; i < tm.xl.size(); i++) {
             FixBS xn1 = tm.xl().get(i);
             FixBS xn = tm.xl().get(i - 1);
             FixBS missing = xn1.copy().symDiff(xn);
             for (int x = missing.nextSetBit(0); x >= 0; x = missing.nextSetBit(x + 1)) {
-                Triangle tr = tm.functions.get(i)[x];
-                int mappedX = second.op(functions[i][tr.o()], functions[i][tr.u()], functions[i][tr.w()]);
-                if (setVals.get(mappedX)) {
-                    return false;
-                }
-                functions[i][x] = mappedX;
-                setVals.set(mappedX);
+                Triangle tr = tm.function()[x];
+                int mappedX = second.op(function[tr.o()], function[tr.u()], function[tr.w()]);
+                function[x] = mappedX;
             }
-            for (int a = xn1.nextSetBit(0); a >= 0; a = xn1.nextSetBit(a + 1)) {
-                for (int b = xn1.nextSetBit(0); b >= 0; b = xn1.nextSetBit(b + 1)) {
-                    for (int c = xn1.nextSetBit(0); c >= 0; c = xn1.nextSetBit(c + 1)) {
-                        if (xn.get(a) && xn.get(b) && xn.get(c)) {
-                            continue;
-                        }
-                        if (second.op(functions[i][a], functions[i][b], functions[i][c]) != first.op(a, b, c)) {
-                            return false;
-                        }
+            if (!isInjective(function)) {
+                return false;
+            }
+        }
+        FixBS xn1 = tm.xl.getLast();
+        for (int a = xn1.nextSetBit(0); a >= 0; a = xn1.nextSetBit(a + 1)) {
+            for (int b = xn1.nextSetBit(0); b >= 0; b = xn1.nextSetBit(b + 1)) {
+                for (int c = xn1.nextSetBit(0); c >= 0; c = xn1.nextSetBit(c + 1)) {
+                    if (second.op(function[a], function[b], function[c]) != function[first.op(a, b, c)]) {
+                        return false;
                     }
                 }
             }
@@ -89,7 +106,7 @@ public class TernaryRingTest {
         return true;
     }
 
-    private record TernarMapping(TernaryRing ring, List<FixBS> xl, List<Triangle[]> functions) {
+    private record TernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function) {
         private boolean isInduced() {
             return xl.getLast().cardinality() == ring.order();
         }
@@ -98,36 +115,33 @@ public class TernaryRingTest {
     private static TernarMapping findTernarMapping(TernaryRing ring) {
         List<FixBS> xl = new ArrayList<>();
         xl.add(FixBS.of(ring.order(), 0, 1));
-        List<Triangle[]> functions = new ArrayList<>();
-        functions.add(new Triangle[ring.order()]);
-        return findTernarMapping(ring, xl, functions);
+        return findTernarMapping(ring, xl, new Triangle[ring.order()]);
     }
 
-    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, List<Triangle[]> functions) {
+    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function) {
         int order = ring.order();
-        FixBS x = xl.getLast();
-        if (x.cardinality() == order) {
-            return new TernarMapping(ring, xl, functions);
+        FixBS xn = xl.getLast();
+        if (xn.cardinality() == order) {
+            return new TernarMapping(ring, xl, function);
         }
-        FixBS nextX = x.copy();
-        Triangle[] nextFunction = functions.getLast().clone();
-        for (int a = x.nextSetBit(0); a >= 0; a = x.nextSetBit(a + 1)) {
-            for (int b = x.nextSetBit(0); b >= 0; b = x.nextSetBit(b + 1)) {
-                for (int c = x.nextSetBit(0); c >= 0; c = x.nextSetBit(c + 1)) {
-                    int res = ring.op(a, b, c);
-                    nextX.set(res);
-                    if (nextFunction[res] == null && res > 1) {
-                        nextFunction[res] = new Triangle(a, b, c);
+        FixBS xn1 = xn.copy();
+        Triangle[] nextFunction = function.clone();
+        for (int a = xn.nextSetBit(0); a >= 0; a = xn.nextSetBit(a + 1)) {
+            for (int b = xn.nextSetBit(0); b >= 0; b = xn.nextSetBit(b + 1)) {
+                for (int c = xn.nextSetBit(0); c >= 0; c = xn.nextSetBit(c + 1)) {
+                    int t = ring.op(a, b, c);
+                    if (!xn1.get(t)) {
+                        xn1.set(t);
+                        nextFunction[t] = new Triangle(a, b, c);
                     }
                 }
             }
         }
-        if (nextX.cardinality() == x.cardinality()) {
-            return new TernarMapping(ring, xl, functions);
+        if (xn1.cardinality() == xn.cardinality()) {
+            return new TernarMapping(ring, xl, nextFunction);
         }
-        xl.add(nextX);
-        functions.add(nextFunction);
-        return findTernarMapping(ring, xl, functions);
+        xl.add(xn1);
+        return findTernarMapping(ring, xl, nextFunction);
     }
 
     @Test
