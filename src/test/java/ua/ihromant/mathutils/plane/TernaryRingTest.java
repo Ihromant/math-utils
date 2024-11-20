@@ -44,9 +44,9 @@ public class TernaryRingTest {
         }
     }
 
-    private static List<TernarMapping> ternarsOfAffine(Liner proj, int dl) {
+    private static List<TernarMapping> ternarsOfAffine(String name, Liner proj, int dl) {
         List<TernarMapping> result = new ArrayList<>();
-        ternars(proj, dl).forEach(tr -> {
+        ternars(name, proj, dl).forEach(tr -> {
             TernarMapping mapping = findTernarMapping(tr);
             if (!mapping.isInduced() || result.stream().parallel().anyMatch(m -> ringIsomorphic(m, tr))) {
                 return;
@@ -56,13 +56,13 @@ public class TernaryRingTest {
         return result;
     }
 
-    private static TernarMapping findInduced(Liner proj, int dl) {
-        return ternars(proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElse(null);
+    private static TernarMapping findInduced(String name, Liner proj, int dl) {
+        return ternars(name, proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElse(null);
     }
 
-    public static TernarMapping inducedOfProjective(Liner proj) {
+    public static TernarMapping inducedOfProjective(String name, Liner proj) {
         for (int dl = 0; dl < proj.lineCount(); dl++) {
-            TernarMapping result = findInduced(proj, dl);
+            TernarMapping result = findInduced(name, proj, dl);
             if (result != null) {
                 return result;
             }
@@ -74,7 +74,7 @@ public class TernaryRingTest {
         List<MappingList> result = new ArrayList<>();
         for (int dl = 0; dl < proj.lineCount(); dl++) {
             System.out.println("Generating for " + name + " line " + dl);
-            TernarMapping induced = findInduced(proj, dl);
+            TernarMapping induced = findInduced(name, proj, dl);
             if (induced == null) {
                 result.add(new MappingList(name, true, dl, new ArrayList<>()));
                 continue;
@@ -83,7 +83,7 @@ public class TernaryRingTest {
                     .anyMatch(m -> ringIsomorphic(m, induced.ring()))) {
                 continue;
             }
-            result.add(new MappingList(name, false, dl, ternarsOfAffine(proj, dl)));
+            result.add(new MappingList(name, false, dl, ternarsOfAffine(name, proj, dl)));
         }
         return result;
     }
@@ -98,15 +98,15 @@ public class TernaryRingTest {
             Liner proj = BatchAffineTest.readProj(br);
             for (int dl1 = 0; dl1 < proj.lineCount(); dl1++) {
                 for (int dl2 = 0; dl2 < proj.lineCount(); dl2++) {
-                    TernarMapping map = ternars(proj, dl1).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
-                    boolean isomorphic = ternars(proj, dl2).anyMatch(m -> ringIsomorphic(map, m));
+                    TernarMapping map = ternars(name, proj, dl1).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
+                    boolean isomorphic = ternars(name, proj, dl2).anyMatch(m -> ringIsomorphic(map, m));
                     System.out.println(dl1 + " " + " " + dl2 + " " + isomorphic);
                 }
             }
         }
     }
 
-    private static Stream<TernaryRing> ternars(Liner plane, int dl) {
+    private static Stream<TernaryRing> ternars(String name, Liner plane, int dl) {
         return IntStream.range(0, plane.pointCount()).filter(o -> !plane.flag(dl, o)).boxed().flatMap(o ->
                 IntStream.range(0, plane.pointCount()).filter(u -> u != o && !plane.flag(dl, u)).boxed().flatMap(u -> {
                     int ou = plane.line(o, u);
@@ -114,7 +114,7 @@ public class TernaryRingTest {
                         int ow = plane.line(o, w);
                         int e = plane.intersection(plane.line(u, plane.intersection(dl, ow)), plane.line(w, plane.intersection(dl, ou)));
                         Quad base = new Quad(o, u, w, e);
-                        return new ProjectiveTernaryRing(plane, base);
+                        return new ProjectiveTernaryRing(name, plane, base);
                     });
                 }));
     }
@@ -305,7 +305,7 @@ public class TernaryRingTest {
                         }
                         int ow = proj.line(o, w);
                         int e = proj.intersection(proj.line(u, proj.intersection(dl, ow)), proj.line(w, proj.intersection(dl, ou)));
-                        TernaryRing ring = new ProjectiveTernaryRing(proj, new Quad(o, u, w, e));
+                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, new Quad(o, u, w, e));
                         testCorrectness(ring);
                     }
                 }

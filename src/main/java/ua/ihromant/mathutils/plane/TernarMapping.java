@@ -10,4 +10,9 @@ public record TernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] functio
     public boolean isInduced() {
         return xl.getLast().cardinality() == ring.order();
     }
+
+    @Override
+    public String toString() {
+        return "TM(" + ring + " " + chr + ")";
+    }
 }

@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.plane.Quad;
 import java.util.Arrays;
 
 public class ProjectiveTernaryRing implements TernaryRing {
+    private final String name;
     private final Liner plane;
     private final int order;
     private final int o;
@@ -18,7 +19,8 @@ public class ProjectiveTernaryRing implements TernaryRing {
     private final int[] diagonalOrder;
     private final int[] idxes;
 
-    public ProjectiveTernaryRing(Liner plane, Quad q) {
+    public ProjectiveTernaryRing(String name, Liner plane, Quad q) {
+        this.name = name;
         this.plane = plane;
         this.o = q.a();
         this.u = q.b();
@@ -128,5 +130,10 @@ public class ProjectiveTernaryRing implements TernaryRing {
 
     public long quadIdx() {
         return quadIdx(plane.pointCount(), o, u, w, e);
+    }
+
+    @Override
+    public String toString() {
+        return "PTR(" + name + " " + dl + " " + quadIdx() + ")";
     }
 }
