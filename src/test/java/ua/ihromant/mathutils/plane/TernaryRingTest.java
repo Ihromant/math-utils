@@ -183,7 +183,6 @@ public class TernaryRingTest {
     private static final Triangle t111 = new Triangle(1, 1, 1);
 
     private static TernarMapping findTernarMapping(TernaryRing ring) {
-        ring = ring.toMatrix();
         Triangle tr = t111;
         int two = ring.op(tr);
         int order = ring.order();
@@ -193,6 +192,7 @@ public class TernaryRingTest {
         if (two == 0) {
             return new TernarMapping(ring, xl, new Triangle[order], simpleChr);
         }
+        ring = ring.toMatrix();
         FixBS x1 = x0.copy();
         x1.set(two);
         xl.add(x1);
