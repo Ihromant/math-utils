@@ -22,8 +22,8 @@ import java.util.stream.Stream;
 public class TranslationPlaneTest {
     @Test
     public void test() {
-        int p = 2;
-        int n = 8;
+        int p = 3;
+        int n = 4;
         LinearSpace sp = LinearSpace.of(p, n);
         int crd = sp.cardinality();
         int half = sp.half();
@@ -34,7 +34,7 @@ public class TranslationPlaneTest {
         FixBS union = base.copy();
         Set<Set<FixBS>> unique = new HashSet<>();
         AtomicInteger counter = new AtomicInteger();
-        List<Liner> projs = new ArrayList<>();
+        List<ProjData> projData = new ArrayList<>();
         Consumer<FixBS[]> cons = arr -> {
             Set<FixBS> set = Arrays.stream(arr).collect(Collectors.toSet());
             if (!unique.add(set)) {
@@ -46,10 +46,10 @@ public class TranslationPlaneTest {
                 return;
             }
             TernarMapping map = TernaryRingTest.inducedOfProjective(counter.toString(), proj);
-            if (projs.stream().parallel().noneMatch(pl -> IntStream.range(0, pl.lineCount()).parallel()
-                    .anyMatch(dl -> TernaryRingTest.ternars(counter.toString(), pl, dl)
-                            .anyMatch(tr -> TernaryRingTest.ringIsomorphic(map, tr))))) {
-                projs.add(proj);
+            if (projData.stream().flatMap(pd -> pd.affines.stream().flatMap(aff -> aff.ternars()
+                            .getOrDefault(map.chr(), List.of()).stream())).parallel()
+                    .noneMatch(m -> TernaryRingTest.ringIsomorphic(m, map.ring()))) {
+                projData.add(new ProjData(counter.toString(), TernaryRingTest.ternarsOfProjective(proj, counter.toString())));
                 counter.incrementAndGet();
                 System.out.println(Arrays.deepToString(proj.lines()));
             }

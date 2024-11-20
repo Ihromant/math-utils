@@ -1,6 +1,6 @@
-package ua.ihromant.mathutils.plane;
+package ua.ihromant.mathutils;
 
-import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.plane.Quad;
 
 import java.util.Arrays;
 
@@ -18,6 +18,7 @@ public class ProjectiveTernaryRing implements TernaryRing {
     private final int oe;
     private final int[] diagonalOrder;
     private final int[] idxes;
+    private final int[][][] matrix;
 
     public ProjectiveTernaryRing(String name, Liner plane, Quad q) {
         this.name = name;
@@ -61,20 +62,12 @@ public class ProjectiveTernaryRing implements TernaryRing {
         for (int i = 0; i < order; i++) {
             idxes[diagonalOrder[i]] = i;
         }
+        this.matrix = generateMatrix();
     }
 
     @Override
     public int op(int x, int a, int b) {
-        int aPt = diagonalOrder[a];
-        int bPt = diagonalOrder[b];
-        int xPt = diagonalOrder[x];
-        int ea = plane.intersection(parallel(hor, aPt), parallel(ver, e));
-        int lao = plane.line(o, ea);
-        int ob = plane.intersection(ver, parallel(hor, bPt));
-        int lab = parallel(lao, ob);
-        int xy = plane.intersection(lab, parallel(ver, xPt));
-        int y = plane.intersection(oe, parallel(hor, xy));
-        return diagIdx(y);
+        return matrix[x][a][b];
     }
 
     @Override
@@ -84,7 +77,7 @@ public class ProjectiveTernaryRing implements TernaryRing {
 
     @Override
     public int[][][] matrix() {
-        return generateMatrix();
+        return matrix;
     }
 
     private int[][][] generateMatrix() {
@@ -111,11 +104,6 @@ public class ProjectiveTernaryRing implements TernaryRing {
     @Override
     public Quad base() {
         return new Quad(o, u, w, e);
-    }
-
-    @Override
-    public TernaryRing toMatrix() {
-        return new MatrixTernaryRing(generateMatrix(), base());
     }
 
     private int parallel(int l, int p) {

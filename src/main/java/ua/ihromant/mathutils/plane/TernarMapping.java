@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.plane;
 
+import ua.ihromant.mathutils.TernaryRing;
 import ua.ihromant.mathutils.Triangle;
 import ua.ihromant.mathutils.util.FixBS;
 

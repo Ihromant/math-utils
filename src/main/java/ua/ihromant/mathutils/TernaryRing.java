@@ -1,7 +1,6 @@
-package ua.ihromant.mathutils.plane;
+package ua.ihromant.mathutils;
 
-import ua.ihromant.mathutils.GaloisField;
-import ua.ihromant.mathutils.Triangle;
+import ua.ihromant.mathutils.plane.Quad;
 
 import java.util.Arrays;
 import java.util.OptionalInt;
@@ -15,8 +14,6 @@ public interface TernaryRing {
     int[][][] matrix();
 
     Quad base();
-
-    TernaryRing toMatrix();
 
     default int op(Triangle tr) {
         return op(tr.o(), tr.u(), tr.w());
