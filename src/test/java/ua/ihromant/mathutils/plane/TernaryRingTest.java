@@ -177,17 +177,89 @@ public class TernaryRingTest {
         return true;
     }
 
+    private static final Triangle simpleChr = new Triangle(2, 2, 2);
+    private static final Triangle t111 = new Triangle(1, 1, 1);
+
     private static TernarMapping findTernarMapping(TernaryRing ring) {
+        Triangle tr = t111;
+        int two = ring.op(tr);
+        int order = ring.order();
+        FixBS x0 = FixBS.of(order, 0, 1);
         List<FixBS> xl = new ArrayList<>();
-        xl.add(FixBS.of(ring.order(), 0, 1));
-        return findTernarMapping(ring, xl, new Triangle[ring.order()]);
+        xl.add(x0);
+        if (two == 0) {
+            return new TernarMapping(ring, xl, new Triangle[order], simpleChr);
+        }
+        FixBS x1 = x0.copy();
+        x1.set(two);
+        xl.add(x1);
+        int a = two;
+        int b = two;
+        int c = two;
+        int i1 = -1;
+        int i2 = -1;
+        int i3 = -1;
+        for (int i = 3; i <= order; i++) {
+            a = ring.op(1, 1, a);
+            b = ring.op(b, 1, 1);
+            c = ring.op(1, c, 1);
+            if (i1 < 0 && a == 0) {
+                i1 = i;
+            }
+            if (i2 < 0 && b == 0) {
+                i2 = i;
+            }
+            if (i3 < 0 && c == 0) {
+                i3 = i;
+            }
+        }
+        Triangle chr = new Triangle(i1, i2, i3);
+        Triangle[] function = new Triangle[order];
+        function[two] = t111;
+        if (i1 == order) {
+            a = two;
+            for (int i = 3; i < order; i++) {
+                tr = new Triangle(1, 1, a);
+                FixBS xi = xl.getLast().copy();
+                xi.set(a);
+                a = ring.op(tr);
+                function[a] = tr;
+                xl.add(xi);
+            }
+            return new TernarMapping(ring, xl, function, chr);
+        }
+        if (i2 == order) {
+            b = two;
+            for (int i = 3; i < order; i++) {
+                tr = new Triangle(b, 1, 1);
+                FixBS xi = xl.getLast().copy();
+                xi.set(b);
+                b = ring.op(tr);
+                function[b] = tr;
+                xl.add(xi);
+            }
+            return new TernarMapping(ring, xl, function, chr);
+        }
+        if (i3 == order) {
+            c = two;
+            for (int i = 3; i < order; i++) {
+                tr = new Triangle(1, c, 1);
+                FixBS xi = xl.getLast().copy();
+                xi.set(c);
+                c = ring.op(tr);
+                function[c] = tr;
+                xl.add(xi);
+            }
+            return new TernarMapping(ring, xl, function, chr);
+        }
+        return findTernarMapping(ring, xl, function, chr);
     }
 
-    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function) {
+    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function, Triangle chr) {
         int order = ring.order();
         FixBS xn = xl.getLast();
         if (xn.cardinality() == order) {
-            return new TernarMapping(ring, xl, function);
+            return new TernarMapping(ring, xl, function, chr);
         }
         FixBS xn1 = xn.copy();
         Triangle[] nextFunction = function.clone();
@@ -203,10 +275,10 @@ public class TernaryRingTest {
             }
         }
         if (xn1.cardinality() == xn.cardinality()) {
-            return new TernarMapping(ring, xl, nextFunction);
+            return new TernarMapping(ring, xl, nextFunction, chr);
         }
         xl.add(xn1);
-        return findTernarMapping(ring, xl, nextFunction);
+        return findTernarMapping(ring, xl, nextFunction, chr);
     }
 
     @Test

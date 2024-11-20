@@ -15,6 +15,10 @@ public interface TernaryRing {
 
     Quad base();
 
+    default int op(Triangle tr) {
+        return op(tr.o(), tr.u(), tr.w());
+    }
+
     default int[][] addMatrix() {
         int[][] result = new int[order()][order()];
         for (int a : elements()) {

@@ -6,7 +6,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.List;
 
-public record TernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function) {
+public record TernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function, Triangle chr) {
     public boolean isInduced() {
         return xl.getLast().cardinality() == ring.order();
     }
