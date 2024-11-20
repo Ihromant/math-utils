@@ -1,7 +1,11 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.plane;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.plane.Quad;
+import ua.ihromant.mathutils.BatchAffineTest;
+import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.ProjectiveTernaryRing;
+import ua.ihromant.mathutils.TernaryRing;
+import ua.ihromant.mathutils.Triangle;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
 
@@ -74,13 +78,6 @@ public class TernaryRingTest {
         return result;
     }
 
-    private record MappingList(String name, boolean translation, int dl, List<TernarMapping> ternars) {
-        @Override
-        public String toString() {
-            return "ML(" + name + " " + dl + " " + translation + " " + ternars.size() + ")";
-        }
-    }
-
     @Test
     public void testRecursive() throws IOException {
         String name = "hughes9";
@@ -145,7 +142,7 @@ public class TernaryRingTest {
         Arrays.fill(function, -1);
         function[0] = 0;
         function[1] = 1;
-        for (int i = 1; i < tm.xl.size(); i++) {
+        for (int i = 1; i < tm.xl().size(); i++) {
             FixBS xn1 = tm.xl().get(i);
             FixBS xn = tm.xl().get(i - 1);
             FixBS missing = xn1.copy().symDiff(xn);
@@ -168,12 +165,6 @@ public class TernaryRingTest {
             }
         }
         return true;
-    }
-
-    private record TernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function) {
-        private boolean isInduced() {
-            return xl.getLast().cardinality() == ring.order();
-        }
     }
 
     private static TernarMapping findTernarMapping(TernaryRing ring) {
