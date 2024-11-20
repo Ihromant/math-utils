@@ -2,11 +2,16 @@ package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.plane.MappingList;
+import ua.ihromant.mathutils.plane.TernarMapping;
+import ua.ihromant.mathutils.plane.TernaryRingTest;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -29,22 +34,31 @@ public class TranslationPlaneTest {
         FixBS union = base.copy();
         Set<Set<FixBS>> unique = new HashSet<>();
         AtomicInteger counter = new AtomicInteger();
+        List<ProjData> projData = new ArrayList<>();
         Consumer<FixBS[]> cons = arr -> {
             Set<FixBS> set = Arrays.stream(arr).collect(Collectors.toSet());
             if (!unique.add(set)) {
                 return;
             }
             int[][] lines = toProjective(sp, arr);
-            Liner l = new Liner(lines.length, lines);
-//            if (isDesargues(l)) {
-//                return;
-//            }
-            counter.incrementAndGet();
+            Liner proj = new Liner(lines.length, lines);
+            if (isDesargues(proj)) {
+                return;
+            }
+            TernarMapping map = TernaryRingTest.inducedOfProjective(proj);
+            if (projData.stream().flatMap(pd -> pd.affines.stream().flatMap(aff -> aff.ternars().stream()))
+                    .parallel().noneMatch(m -> TernaryRingTest.ringIsomorphic(m, map.ring()))) {
+                projData.add(new ProjData(counter.toString(), TernaryRingTest.ternarsOfProjective(proj, counter.toString())));
+                counter.incrementAndGet();
+                System.out.println(Arrays.deepToString(proj.lines()));
+            }
             //System.out.println(isDesargues(l) + " " + set);
         };
         generate(sp, curr, union, half, cons);
         System.out.println(counter);
     }
+
+    private record ProjData(String name, List<MappingList> affines) {}
 
     @Test
     public void checkSubspaces() {

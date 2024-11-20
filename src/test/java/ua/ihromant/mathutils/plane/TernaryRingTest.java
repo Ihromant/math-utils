@@ -44,7 +44,7 @@ public class TernaryRingTest {
         }
     }
 
-    private List<TernarMapping> ternarsOfAffine(Liner proj, int dl) {
+    private static List<TernarMapping> ternarsOfAffine(Liner proj, int dl) {
         List<TernarMapping> result = new ArrayList<>();
         ternars(proj, dl).forEach(tr -> {
             TernarMapping mapping = findTernarMapping(tr);
@@ -56,11 +56,21 @@ public class TernaryRingTest {
         return result;
     }
 
-    private TernarMapping findInduced(Liner proj, int dl) {
+    private static TernarMapping findInduced(Liner proj, int dl) {
         return ternars(proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElse(null);
     }
 
-    private List<MappingList> ternarsOfProjective(Liner proj, String name) {
+    public static TernarMapping inducedOfProjective(Liner proj) {
+        for (int dl = 0; dl < proj.lineCount(); dl++) {
+            TernarMapping result = findInduced(proj, dl);
+            if (result != null) {
+                return result;
+            }
+        }
+        throw new IllegalArgumentException("WTF?");
+    }
+
+    public static List<MappingList> ternarsOfProjective(Liner proj, String name) {
         List<MappingList> result = new ArrayList<>();
         for (int dl = 0; dl < proj.lineCount(); dl++) {
             System.out.println("Generating for " + name + " line " + dl);
@@ -96,7 +106,7 @@ public class TernaryRingTest {
         }
     }
 
-    private Stream<TernaryRing> ternars(Liner plane, int dl) {
+    private static Stream<TernaryRing> ternars(Liner plane, int dl) {
         return IntStream.range(0, plane.pointCount()).filter(o -> !plane.flag(dl, o)).boxed().flatMap(o ->
                 IntStream.range(0, plane.pointCount()).filter(u -> u != o && !plane.flag(dl, u)).boxed().flatMap(u -> {
                     int ou = plane.line(o, u);
@@ -136,7 +146,7 @@ public class TernaryRingTest {
         assertTrue(isBijective(bijective));
     }
 
-    private boolean ringIsomorphic(TernarMapping tm, TernaryRing second) {
+    public static boolean ringIsomorphic(TernarMapping tm, TernaryRing second) {
         TernaryRing first = tm.ring();
         int[] function = new int[second.order()];
         Arrays.fill(function, -1);
