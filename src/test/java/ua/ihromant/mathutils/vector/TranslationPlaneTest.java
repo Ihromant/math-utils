@@ -46,8 +46,9 @@ public class TranslationPlaneTest {
                 return;
             }
             TernarMapping map = TernaryRingTest.inducedOfProjective(counter.toString(), proj);
-            if (projData.stream().flatMap(pd -> pd.affines.stream().flatMap(aff -> aff.ternars().stream()))
-                    .parallel().noneMatch(m -> TernaryRingTest.ringIsomorphic(m, map.ring()))) {
+            if (projData.stream().flatMap(pd -> pd.affines.stream().flatMap(aff -> aff.ternars()
+                            .getOrDefault(map.chr(), List.of()).stream())).parallel()
+                    .noneMatch(m -> TernaryRingTest.ringIsomorphic(m, map.ring()))) {
                 projData.add(new ProjData(counter.toString(), TernaryRingTest.ternarsOfProjective(proj, counter.toString())));
                 counter.incrementAndGet();
                 System.out.println(Arrays.deepToString(proj.lines()));

@@ -16,7 +16,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -44,14 +46,16 @@ public class TernaryRingTest {
         }
     }
 
-    private static List<TernarMapping> ternarsOfAffine(String name, Liner proj, int dl) {
-        List<TernarMapping> result = new ArrayList<>();
+    private static Map<Triangle, List<TernarMapping>> ternarsOfAffine(String name, Liner proj, int dl) {
+        Map<Triangle, List<TernarMapping>> result = new HashMap<>();
         ternars(name, proj, dl).forEach(tr -> {
             TernarMapping mapping = findTernarMapping(tr);
-            if (!mapping.isInduced() || result.stream().parallel().anyMatch(m -> ringIsomorphic(m, tr))) {
+            Triangle chr = mapping.chr();
+            if (!mapping.isInduced() || result.computeIfAbsent(chr, k -> new ArrayList<>()).stream()
+                    .anyMatch(m -> ringIsomorphic(m, tr))) {
                 return;
             }
-            result.add(mapping);
+            result.get(chr).add(mapping);
         });
         return result;
     }
@@ -76,10 +80,10 @@ public class TernaryRingTest {
             System.out.println("Generating for " + name + " line " + dl);
             TernarMapping induced = findInduced(name, proj, dl);
             if (induced == null) {
-                result.add(new MappingList(name, true, dl, new ArrayList<>()));
+                result.add(new MappingList(name, true, dl, Map.of()));
                 continue;
             }
-            if (result.stream().flatMap(ml -> ml.ternars().stream()).parallel()
+            if (result.stream().flatMap(ml -> ml.ternars().getOrDefault(induced.chr(), List.of()).stream()).parallel()
                     .anyMatch(m -> ringIsomorphic(m, induced.ring()))) {
                 continue;
             }
