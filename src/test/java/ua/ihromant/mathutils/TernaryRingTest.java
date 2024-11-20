@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -13,7 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -23,30 +23,63 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class TernaryRingTest {
     @Test
     public void splitByPlanes() throws IOException {
-        String name = "bbh1";
-        int k = 16;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = BatchAffineTest.readProj(br);
-            List<Equivalence> equivalences = new ArrayList<>();
-            IntStream.range(0, proj.lineCount()).forEach(dl -> {
-                Optional<Equivalence> opt = equivalences.stream().parallel()
-                        .filter(e -> ternars(proj, dl).anyMatch(m -> ringIsomorphic(e.map(), m)))
-                        .findAny();
-                if (opt.isPresent()) {
-                    opt.get().dls().set(dl);
-                } else {
-                    TernarMapping map = ternars(proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
-                    equivalences.add(new Equivalence(map, FixBS.of(proj.pointCount(), dl)));
-                }
-                System.out.println(dl);
-            });
-            System.out.println(equivalences);
+        int k = 9;
+        String desargues = "pg29.txt";
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            if (desargues.equals(name)) {
+                continue;
+            }
+            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = BatchAffineTest.readProj(br);
+                List<MappingList> mapping = ternarsOfProjective(proj, name);
+                System.out.println(mapping);
+            }
         }
     }
 
-    private record Equivalence(TernarMapping map, FixBS dls) {}
+    private List<TernarMapping> ternarsOfAffine(Liner proj, int dl) {
+        List<TernarMapping> result = new ArrayList<>();
+        ternars(proj, dl).forEach(tr -> {
+            TernarMapping mapping = findTernarMapping(tr);
+            if (!mapping.isInduced() || result.stream().parallel().anyMatch(m -> ringIsomorphic(m, tr))) {
+                return;
+            }
+            result.add(mapping);
+        });
+        return result;
+    }
+
+    private TernarMapping findInduced(Liner proj, int dl) {
+        return ternars(proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElse(null);
+    }
+
+    private List<MappingList> ternarsOfProjective(Liner proj, String name) {
+        List<MappingList> result = new ArrayList<>();
+        for (int dl = 0; dl < proj.lineCount(); dl++) {
+            System.out.println("Generating for " + name + " line " + dl);
+            TernarMapping induced = findInduced(proj, dl);
+            if (induced == null) {
+                result.add(new MappingList(name, true, dl, new ArrayList<>()));
+                continue;
+            }
+            if (result.stream().flatMap(ml -> ml.ternars().stream()).parallel()
+                    .anyMatch(m -> ringIsomorphic(m, induced.ring()))) {
+                continue;
+            }
+            result.add(new MappingList(name, false, dl, ternarsOfAffine(proj, dl)));
+        }
+        return result;
+    }
+
+    private record MappingList(String name, boolean translation, int dl, List<TernarMapping> ternars) {
+        @Override
+        public String toString() {
+            return "ML(" + name + " " + dl + " " + translation + " " + ternars.size() + ")";
+        }
+    }
 
     @Test
     public void testRecursive() throws IOException {
@@ -79,7 +112,7 @@ public class TernaryRingTest {
                 }));
     }
 
-    private static boolean isInjective(int[] partialFunc) {
+    private static boolean isBijective(int[] partialFunc) {
         int[] idxes = new int[partialFunc.length];
         Arrays.fill(idxes, -1);
         for (int i = 0; i < partialFunc.length; i++) {
@@ -89,17 +122,21 @@ public class TernaryRingTest {
                     return false;
                 }
                 idxes[val] = i;
+            } else {
+                return false;
             }
         }
         return true;
     }
 
     @Test
-    public void testInjective() {
+    public void testBijective() {
         int[] notInjective = new int[]{0, -1, 2, 2};
         int[] injective = new int[]{3, 0, -1, 2};
-        assertFalse(isInjective(notInjective));
-        assertTrue(isInjective(injective));
+        int[] bijective = new int[]{3, 0, 1, 2};
+        assertFalse(isBijective(notInjective));
+        assertFalse(isBijective(injective));
+        assertTrue(isBijective(bijective));
     }
 
     private boolean ringIsomorphic(TernarMapping tm, TernaryRing second) {
@@ -117,14 +154,13 @@ public class TernaryRingTest {
                 int mappedX = second.op(function[tr.o()], function[tr.u()], function[tr.w()]);
                 function[x] = mappedX;
             }
-            if (!isInjective(function)) {
-                return false;
-            }
         }
-        FixBS xn1 = tm.xl.getLast();
-        for (int a = xn1.nextSetBit(0); a >= 0; a = xn1.nextSetBit(a + 1)) {
-            for (int b = xn1.nextSetBit(0); b >= 0; b = xn1.nextSetBit(b + 1)) {
-                for (int c = xn1.nextSetBit(0); c >= 0; c = xn1.nextSetBit(c + 1)) {
+        if (!isBijective(function)) {
+            return false;
+        }
+        for (int a = 1; a < first.order(); a++) {
+            for (int b = 0; b < first.order(); b++) {
+                for (int c = 0; c < first.order(); c++) {
                     if (second.op(function[a], function[b], function[c]) != function[first.op(a, b, c)]) {
                         return false;
                     }
