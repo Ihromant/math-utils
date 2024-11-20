@@ -220,9 +220,9 @@ public class TernaryRingTest {
             a = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(1, 1, a);
+                a = ring.op(tr);
                 FixBS xi = xl.getLast().copy();
                 xi.set(a);
-                a = ring.op(tr);
                 function[a] = tr;
                 xl.add(xi);
             }
@@ -232,9 +232,9 @@ public class TernaryRingTest {
             b = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(b, 1, 1);
+                b = ring.op(tr);
                 FixBS xi = xl.getLast().copy();
                 xi.set(b);
-                b = ring.op(tr);
                 function[b] = tr;
                 xl.add(xi);
             }
@@ -244,9 +244,9 @@ public class TernaryRingTest {
             c = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(1, c, 1);
+                c = ring.op(tr);
                 FixBS xi = xl.getLast().copy();
                 xi.set(c);
-                c = ring.op(tr);
                 function[c] = tr;
                 xl.add(xi);
             }
