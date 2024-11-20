@@ -192,6 +192,7 @@ public class TernaryRingTest {
         if (two == 0) {
             return new TernarMapping(ring, xl, new Triangle[order], simpleChr);
         }
+        ring = ring.toMatrix();
         FixBS x1 = x0.copy();
         x1.set(two);
         xl.add(x1);
@@ -228,7 +229,7 @@ public class TernaryRingTest {
                 function[a] = tr;
                 xl.add(xi);
             }
-            return new TernarMapping(ring.toMatrix(), xl, function, chr);
+            return new TernarMapping(ring, xl, function, chr);
         }
         if (i2 == order) {
             b = two;
@@ -240,7 +241,7 @@ public class TernaryRingTest {
                 function[b] = tr;
                 xl.add(xi);
             }
-            return new TernarMapping(ring.toMatrix(), xl, function, chr);
+            return new TernarMapping(ring, xl, function, chr);
         }
         if (i3 == order) {
             c = two;
@@ -252,7 +253,7 @@ public class TernaryRingTest {
                 function[c] = tr;
                 xl.add(xi);
             }
-            return new TernarMapping(ring.toMatrix(), xl, function, chr);
+            return new TernarMapping(ring, xl, function, chr);
         }
         return findTernarMapping(ring, xl, function, chr);
     }
@@ -261,7 +262,7 @@ public class TernaryRingTest {
         int order = ring.order();
         FixBS xn = xl.getLast();
         if (xn.cardinality() == order) {
-            return new TernarMapping(ring.toMatrix(), xl, function, chr);
+            return new TernarMapping(ring, xl, function, chr);
         }
         FixBS xn1 = xn.copy();
         Triangle[] nextFunction = function.clone();
