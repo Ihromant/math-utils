@@ -3,8 +3,6 @@ package ua.ihromant.mathutils.plane;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.ProjectiveTernaryRing;
-import ua.ihromant.mathutils.TernaryRing;
 import ua.ihromant.mathutils.Triangle;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
@@ -29,8 +27,8 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class TernaryRingTest {
     @Test
     public void splitByPlanes() throws IOException {
-        int k = 9;
-        String desargues = "pg29.txt";
+        int k = 16;
+        String desargues = "desarg.txt";
         for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
             String name = f.getName();
             if (desargues.equals(name)) {
@@ -110,7 +108,7 @@ public class TernaryRingTest {
         }
     }
 
-    private static Stream<TernaryRing> ternars(String name, Liner plane, int dl) {
+    public static Stream<TernaryRing> ternars(String name, Liner plane, int dl) {
         return IntStream.range(0, plane.pointCount()).filter(o -> !plane.flag(dl, o)).boxed().flatMap(o ->
                 IntStream.range(0, plane.pointCount()).filter(u -> u != o && !plane.flag(dl, u)).boxed().flatMap(u -> {
                     int ou = plane.line(o, u);
@@ -185,6 +183,7 @@ public class TernaryRingTest {
     private static final Triangle t111 = new Triangle(1, 1, 1);
 
     private static TernarMapping findTernarMapping(TernaryRing ring) {
+        ring = ring.toMatrix();
         Triangle tr = t111;
         int two = ring.op(tr);
         int order = ring.order();
