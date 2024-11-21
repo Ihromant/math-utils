@@ -167,7 +167,7 @@ public class BibdFinder3Test {
     }
 
     @Test
-    public void withDepth() throws IOException {
+    public void withDepth1() throws IOException {
         int v = 169;
         int k = 8;
         int depth = 4;
@@ -186,7 +186,7 @@ public class BibdFinder3Test {
                             .mapToInt(Integer::parseInt).toArray()));
                 }
             }).collect(Collectors.toSet());
-            limitCores(() -> logResultsDepth(ps, v, k, depth, set));
+            limitCores(() -> logResultsDepth(ps, v, k, depth, set, 35));
         }
     }
 
