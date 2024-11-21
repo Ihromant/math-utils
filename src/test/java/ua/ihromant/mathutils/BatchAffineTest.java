@@ -934,6 +934,58 @@ public class BatchAffineTest {
         }
     }
 
+    private static boolean checkP2(Liner liner) {
+        for (int o = 0; o < liner.pointCount(); o++) {
+            System.out.println(o);
+            for (int l0 : liner.lines(o)) {
+                for (int l1 : liner.lines(o)) {
+                    if (l0 == l1) {
+                        continue;
+                    }
+                    for (int a : liner.line(l0)) {
+                        if (a == o) {
+                            continue;
+                        }
+                        for (int b : liner.line(l0)) {
+                            if (b == o || b == a) {
+                                continue;
+                            }
+                            for (int c : liner.line(l0)) {
+                                if (c == o || c == a || c == b) {
+                                    continue;
+                                }
+                                for (int a1 : liner.line(l1)) {
+                                    if (a1 == o) {
+                                        continue;
+                                    }
+                                    for (int b1 : liner.line(l1)) {
+                                        if (b1 == o || b1 == a1) {
+                                            continue;
+                                        }
+                                        int x = liner.intersection(liner.line(a, b1), liner.line(b, a1));
+                                        int c1 = liner.intersection(liner.line(x, c), l1);
+                                        int y = liner.intersection(liner.line(b, c1), liner.line(b1, c));
+                                        if (!liner.collinear(a, y, a1) || !liner.collinear(o, x, y)) {
+                                            continue;
+                                        }
+                                        int z = liner.intersection(liner.line(a, c1), liner.line(a1, c));
+                                        if (!liner.collinear(b, b1, z)) {
+                                            continue;
+                                        }
+                                        if (!liner.collinear(x, y, z)) {
+                                            return false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
     private static boolean checkD31(Liner liner) {
         for (int o = 0; o < liner.pointCount(); o++) {
             for (int la : liner.lines(o)) {
