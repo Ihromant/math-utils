@@ -42,15 +42,26 @@ public class TernaryRingTest {
                 Liner proj = BatchAffineTest.readProj(br);
                 List<MappingList> mapping = ternarsOfProjective(proj, name);
                 System.out.println(mapping);
+                for (MappingList ml : mapping) {
+                    System.out.println("Dropped " + ml.dl());
+                    System.out.println("1plus " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::onePlus).count());
+                    System.out.println("puls1 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::pulsOne).count());
+                    System.out.println("plus1 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::plusOne).count());
+                    System.out.println("1gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::oneGen).count());
+                    System.out.println("2mul " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::twoMul).count());
+                    System.out.println("mul2 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::mulTwo).count());
+                    System.out.println("2gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::twoGen).count());
+                    System.out.println("gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::generated).count());
+                }
             }
         }
     }
 
-    private static Map<Triangle, List<TernarMapping>> ternarsOfAffine(String name, Liner proj, int dl) {
-        Map<Triangle, List<TernarMapping>> result = new HashMap<>();
+    private static Map<Characteristic, List<TernarMapping>> ternarsOfAffine(String name, Liner proj, int dl) {
+        Map<Characteristic, List<TernarMapping>> result = new HashMap<>();
         ternars(name, proj, dl).forEach(tr -> {
             TernarMapping mapping = findTernarMapping(tr);
-            Triangle chr = mapping.chr();
+            Characteristic chr = mapping.chr();
             if (!mapping.isInduced() || result.computeIfAbsent(chr, k -> new ArrayList<>()).stream()
                     .anyMatch(m -> ringIsomorphic(m, tr))) {
                 return;
@@ -181,7 +192,6 @@ public class TernaryRingTest {
         return true;
     }
 
-    private static final Triangle simpleChr = new Triangle(2, 2, 2);
     private static final Triangle t111 = new Triangle(1, 1, 1);
 
     private static TernarMapping findTernarMapping(TernaryRing ring) {
@@ -192,7 +202,7 @@ public class TernaryRingTest {
         List<FixBS> xl = new ArrayList<>();
         xl.add(x0);
         if (two == 0) {
-            return new TernarMapping(ring, xl, new Triangle[order], simpleChr);
+            return new TernarMapping(ring, xl, new Triangle[order], Characteristic.simpleChr);
         }
         FixBS x1 = x0.copy();
         x1.set(two);
@@ -200,13 +210,19 @@ public class TernaryRingTest {
         int a = two;
         int b = two;
         int c = two;
+        int d = two;
+        int e = two;
         int i1 = -1;
         int i2 = -1;
         int i3 = -1;
+        int i4 = -1;
+        int i5 = -1;
         for (int i = 3; i <= order; i++) {
             a = ring.op(1, 1, a);
             b = ring.op(b, 1, 1);
             c = ring.op(1, c, 1);
+            d = ring.op(two, d, 0);
+            e = ring.op(e, two, 0);
             if (i1 < 0 && a == 0) {
                 i1 = i;
             }
@@ -216,10 +232,16 @@ public class TernaryRingTest {
             if (i3 < 0 && c == 0) {
                 i3 = i;
             }
+            if (i4 < 0 && d == 1) {
+                i4 = i - 1;
+            }
+            if (i5 < 0 && e == 1) {
+                i5 = i - 1;
+            }
         }
-        Triangle chr = new Triangle(i1, i2, i3);
+        Characteristic chr = new Characteristic(i1, i2, i3, i4, i5);
         Triangle[] function = new Triangle[order];
-        function[two] = t111;
+        function[two] = tr;
         if (i1 == order) {
             a = two;
             for (int i = 3; i < order; i++) {
@@ -256,10 +278,34 @@ public class TernaryRingTest {
             }
             return new TernarMapping(ring, xl, function, chr);
         }
+        if (i4 == order - 1) {
+            d = two;
+            for (int i = 3; i < order; i++) {
+                tr = new Triangle(two, d, 0);
+                d = ring.op(tr);
+                FixBS xi = xl.getLast().copy();
+                xi.set(d);
+                function[d] = tr;
+                xl.add(xi);
+            }
+            return new TernarMapping(ring, xl, function, chr);
+        }
+        if (i5 == order - 1) {
+            e = two;
+            for (int i = 3; i < order; i++) {
+                tr = new Triangle(e, two, 0);
+                e = ring.op(tr);
+                FixBS xi = xl.getLast().copy();
+                xi.set(e);
+                function[e] = tr;
+                xl.add(xi);
+            }
+            return new TernarMapping(ring, xl, function, chr);
+        }
         return findTernarMapping(ring, xl, function, chr);
     }
 
-    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function, Triangle chr) {
+    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function, Characteristic chr) {
         int order = ring.order();
         FixBS xn = xl.getLast();
         if (xn.cardinality() == order) {
