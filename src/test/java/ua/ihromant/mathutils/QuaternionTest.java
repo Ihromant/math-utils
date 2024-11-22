@@ -9,6 +9,11 @@ import static org.junit.jupiter.api.Assertions.*;
 public class QuaternionTest {
     @Test
     public void test() {
+        Quaternion a1 = new Quaternion(Rational.ZERO, Rational.of(1), Rational.of(1), Rational.ZERO);
+        Quaternion a2 = new Quaternion(Rational.ZERO, Rational.of(1), Rational.ZERO, Rational.of(1));
+        System.out.println(a1.mul(a2));
+        System.out.println(a2.mul(a1));
+        assertNotEquals(a1.mul(a2), a2.mul(a1));
         Rational half = new Rational(1, 2);
         Quaternion q = new Quaternion(half.neg(), half, half, half);
         assertEquals(new Quaternion(1), q.mul(q).mul(q));
