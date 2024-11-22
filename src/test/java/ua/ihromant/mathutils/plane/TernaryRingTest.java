@@ -218,25 +218,35 @@ public class TernaryRingTest {
         int i4 = -1;
         int i5 = -1;
         for (int i = 3; i <= order; i++) {
-            a = ring.op(1, 1, a);
-            b = ring.op(b, 1, 1);
-            c = ring.op(1, c, 1);
-            d = ring.op(two, d, 0);
-            e = ring.op(e, two, 0);
-            if (i1 < 0 && a == 0) {
-                i1 = i;
+            if (i1 < 0) {
+                a = ring.op(1, 1, a);
+                if (a == 0) {
+                    i1 = i;
+                }
             }
-            if (i2 < 0 && b == 0) {
-                i2 = i;
+            if (i2 < 0) {
+                b = ring.op(b, 1, 1);
+                if (b == 0) {
+                    i2 = i;
+                }
             }
-            if (i3 < 0 && c == 0) {
-                i3 = i;
+            if (i3 < 0) {
+                c = ring.op(1, c, 1);
+                if (c == 0) {
+                    i3 = i;
+                }
             }
-            if (i4 < 0 && d == 1) {
-                i4 = i - 1;
+            if (i4 < 0) {
+                d = ring.op(two, d, 0);
+                if (d == 1) {
+                    i4 = i - 1;
+                }
             }
-            if (i5 < 0 && e == 1) {
-                i5 = i - 1;
+            if (i5 < 0) {
+                e = ring.op(e, two, 0);
+                if (e == 1) {
+                    i5 = i - 1;
+                }
             }
         }
         Characteristic chr = new Characteristic(i1, i2, i3, i4, i5);
