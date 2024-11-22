@@ -94,7 +94,7 @@ public class TernaryRingTest {
                 result.add(new MappingList(name, true, dl, Map.of()));
                 continue;
             }
-            if (result.stream().flatMap(ml -> ml.ternars().getOrDefault(induced.chr(), List.of()).stream()).parallel()
+            if (result.stream().flatMap(ml -> ml.ternars().getOrDefault(induced.chr(), List.of()).stream())
                     .anyMatch(m -> ringIsomorphic(m, induced.ring()))) {
                 continue;
             }
