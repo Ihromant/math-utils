@@ -27,6 +27,17 @@ public record Rational(long numer, long denom) implements Comparable<Rational> {
         return new Rational(-numer, denom);
     }
 
+    public Rational inv() {
+        if (numer == 0) {
+            throw new ArithmeticException();
+        }
+        if (numer < 0) {
+            return new Rational(-denom, -numer);
+        } else {
+            return new Rational(denom, numer);
+        }
+    }
+
     public Rational add(Rational that) {
         return of(this.numer * that.denom + this.denom * that.numer, this.denom * that.denom);
     }

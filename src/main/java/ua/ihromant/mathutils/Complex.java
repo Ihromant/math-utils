@@ -1,64 +1,45 @@
 package ua.ihromant.mathutils;
 
-import java.util.Objects;
-
-public class Complex {
-    // x + iy
-    private final double x;
-    private final double y;
-
-    public Complex(double x, double y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public Complex(double x) {
-        this(x, 0);
-    }
-
-    public double re() {
-        return x;
-    }
-
-    public double im() {
-        return y;
+public record Complex(double re, double im) {
+    public Complex(double re) {
+        this(re, 0);
     }
 
     public Complex add(Complex that) {
-        return new Complex(this.x + that.x, this.y + that.y);
+        return new Complex(this.re + that.re, this.im + that.im);
     }
 
     public Complex add(double numb) {
-        return new Complex(x + numb, y);
+        return new Complex(re + numb, im);
     }
 
     public Complex sub(Complex that) {
-        return new Complex(this.x - that.x, this.y - that.y);
+        return new Complex(this.re - that.re, this.im - that.im);
     }
 
     public Complex sub(double numb) {
-        return new Complex(x - numb, y);
+        return new Complex(re - numb, im);
     }
 
     public Complex mul(Complex that) {
-        return new Complex(this.x * that.x - this.y * that.y, this.y * that.x + this.x * that.y);
+        return new Complex(this.re * that.re - this.im * that.im, this.im * that.re + this.re * that.im);
     }
 
     public Complex mul(double numb) {
-        return new Complex(numb * x, numb * y);
+        return new Complex(numb * re, numb * im);
     }
 
     public Complex div(Complex that) {
-        double scale = that.x * that.x + that.y * that.y;
-        return new Complex((this.x * that.x + this.y * that.y) / scale, (this.y * that.x - this.x * that.y) / scale);
+        double scale = that.re * that.re + that.im * that.im;
+        return new Complex((this.re * that.re + this.im * that.im) / scale, (this.im * that.re - this.re * that.im) / scale);
     }
 
     public double abs() {
-        return Math.hypot(x, y);
+        return Math.hypot(re, im);
     }
 
     public double argument() {
-        return Math.atan2(y, x);
+        return Math.atan2(im, re);
     }
 
     public static Complex fromPolar(double abs, double arg) {
@@ -80,19 +61,6 @@ public class Complex {
 
     @Override
     public String toString() {
-        return x + (y < 0 ? "" : "+") + y + "i";
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Complex that = (Complex) o;
-        return Double.compare(that.x, x) == 0 && Double.compare(that.y, y) == 0;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(x, y);
+        return re + (im < 0 ? "" : "+") + im + "i";
     }
 }
