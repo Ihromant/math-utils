@@ -15,6 +15,9 @@ public record Rational(long numer, long denom) implements Comparable<Rational> {
     }
 
     public static Rational of(long numer, long denom) {
+        if (denom == 0) {
+            throw new ArithmeticException();
+        }
         boolean neg = numer < 0;
         if (neg) {
             numer = -numer;
