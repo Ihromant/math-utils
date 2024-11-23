@@ -208,33 +208,33 @@ public class TernaryRingTest {
         x1.set(two);
         xl.add(x1);
         int[] cff = new int[5];
-        int[][] multiplies = new int[5][order + 1];
+        int[][] vals = new int[5][order + 1];
         for (int i = 0; i < 5; i++) {
-            multiplies[i][2] = two;
+            vals[i][2] = two;
         }
         for (int i = 3; i <= order; i++) {
             if (cff[0] == 0) {
-                if ((multiplies[0][i] = ring.op(1, 1, multiplies[0][i - 1])) == 0) {
+                if ((vals[0][i] = ring.op(1, 1, vals[0][i - 1])) == 0) {
                     cff[0] = i;
                 }
             }
             if (cff[1] == 0) {
-                if ((multiplies[1][i] = ring.op(multiplies[1][i - 1], 1, 1)) == 0) {
+                if ((vals[1][i] = ring.op(vals[1][i - 1], 1, 1)) == 0) {
                     cff[1] = i;
                 }
             }
             if (cff[2] == 0) {
-                if ((multiplies[2][i] = ring.op(1, multiplies[2][i - 1], 1)) == 0) {
+                if ((vals[2][i] = ring.op(1, vals[2][i - 1], 1)) == 0) {
                     cff[2] = i;
                 }
             }
             if (cff[3] == 0) {
-                if ((multiplies[3][i] = ring.op(two, multiplies[3][i - 1], 0)) == 1) {
+                if ((vals[3][i] = ring.op(two, vals[3][i - 1], 0)) == 1) {
                     cff[3] = i;
                 }
             }
             if (cff[4] == 0) {
-                if ((multiplies[4][i] = ring.op(multiplies[4][i - 1], two, 0)) == 1) {
+                if ((vals[4][i] = ring.op(vals[4][i - 1], two, 0)) == 1) {
                     cff[4] = i;
                 }
             }
@@ -242,65 +242,32 @@ public class TernaryRingTest {
         Characteristic chr = new Characteristic(cff[0], cff[1], cff[2], cff[3] - 1, cff[4] - 1);
         Triangle[] function = new Triangle[order];
         function[two] = tr;
-        if (cff[0] == order) {
-            int a = two;
-            for (int i = 3; i < order; i++) {
-                tr = new Triangle(1, 1, a);
-                a = ring.op(tr);
-                FixBS xi = xl.getLast().copy();
-                xi.set(a);
-                function[a] = tr;
-                xl.add(xi);
+        for (int i = 3; i < order; i++) {
+            FixBS xi = xl.getLast().copy();
+            if (!xi.get(vals[0][i])) {
+                xi.set(vals[0][i]);
+                function[vals[0][i]] = new Triangle(1, 1, vals[0][i - 1]);
             }
-            return new TernarMapping(ring, xl, function, chr);
-        }
-        if (cff[1] == order) {
-            int b = two;
-            for (int i = 3; i < order; i++) {
-                tr = new Triangle(b, 1, 1);
-                b = ring.op(tr);
-                FixBS xi = xl.getLast().copy();
-                xi.set(b);
-                function[b] = tr;
-                xl.add(xi);
+            if (!xi.get(vals[1][i])) {
+                xi.set(vals[1][i]);
+                function[vals[1][i]] = new Triangle(vals[1][i - 1], 1, 1);
             }
-            return new TernarMapping(ring, xl, function, chr);
-        }
-        if (cff[2] == order) {
-            int c = two;
-            for (int i = 3; i < order; i++) {
-                tr = new Triangle(1, c, 1);
-                c = ring.op(tr);
-                FixBS xi = xl.getLast().copy();
-                xi.set(c);
-                function[c] = tr;
-                xl.add(xi);
+            if (!xi.get(vals[2][i])) {
+                xi.set(vals[2][i]);
+                function[vals[2][i]] = new Triangle(1, vals[2][i - 1], 1);
             }
-            return new TernarMapping(ring, xl, function, chr);
-        }
-        if (cff[3] == order - 1) {
-            int d = two;
-            for (int i = 3; i < order; i++) {
-                tr = new Triangle(two, d, 0);
-                d = ring.op(tr);
-                FixBS xi = xl.getLast().copy();
-                xi.set(d);
-                function[d] = tr;
-                xl.add(xi);
+            if (!xi.get(vals[3][i])) {
+                xi.set(vals[3][i]);
+                function[vals[3][i]] = new Triangle(two, vals[3][i - 1], 0);
             }
-            return new TernarMapping(ring, xl, function, chr);
-        }
-        if (cff[4] == order - 1) {
-            int e = two;
-            for (int i = 3; i < order; i++) {
-                tr = new Triangle(e, two, 0);
-                e = ring.op(tr);
-                FixBS xi = xl.getLast().copy();
-                xi.set(e);
-                function[e] = tr;
-                xl.add(xi);
+            if (!xi.get(vals[4][i])) {
+                xi.set(vals[4][i]);
+                function[vals[4][i]] = new Triangle(vals[4][i - 1], two, 0);
             }
-            return new TernarMapping(ring, xl, function, chr);
+            xl.add(xi);
+            if (xi.cardinality() == order) {
+                return new TernarMapping(ring, xl, function, chr);
+            }
         }
         return findTernarMapping(ring, xl, function, chr);
     }
