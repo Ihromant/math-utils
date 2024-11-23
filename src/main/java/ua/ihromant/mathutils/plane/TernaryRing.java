@@ -16,6 +16,8 @@ public interface TernaryRing {
 
     Quad base();
 
+    TernaryRing toMatrix();
+
     default int op(Triangle tr) {
         return op(tr.o(), tr.u(), tr.w());
     }

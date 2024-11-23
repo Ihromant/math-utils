@@ -91,6 +91,11 @@ public class AffineTernaryRing implements TernaryRing {
         return new Quad(o, u, w, e);
     }
 
+    @Override
+    public TernaryRing toMatrix() {
+        return new MatrixTernaryRing(opMatrix, base());
+    }
+
     public int trIdx() {
         return liner.trIdx(new Triangle(o, u, w));
     }

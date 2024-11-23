@@ -106,6 +106,11 @@ public class ProjectiveTernaryRing implements TernaryRing {
         return new Quad(o, u, w, e);
     }
 
+    @Override
+    public TernaryRing toMatrix() {
+        return new MatrixTernaryRing(generateMatrix(), base());
+    }
+
     private int parallel(int l, int p) {
         if (l == dl || plane.flag(dl, p)) {
             throw new IllegalArgumentException();

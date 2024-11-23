@@ -10,4 +10,9 @@ public record MatrixTernaryRing(int[][][] matrix, Quad base) implements TernaryR
     public int order() {
         return matrix.length;
     }
+
+    @Override
+    public TernaryRing toMatrix() {
+        return this;
+    }
 }
