@@ -2,16 +2,24 @@ package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.plane.CharVals;
+import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.MappingList;
+import ua.ihromant.mathutils.plane.ProjChar;
+import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
+import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.plane.TernarMapping;
+import ua.ihromant.mathutils.plane.TernaryRing;
 import ua.ihromant.mathutils.plane.TernaryRingTest;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -82,21 +90,25 @@ public class TranslationPlaneTest {
         System.out.println(hulls.length);
         int[] idxes = calcIdxes(sp, hulls);
         AtomicInteger counter = new AtomicInteger();
+        Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
         Consumer<FixBS[]> cons = arr -> {
-//            int[][] lines = toProjective(sp, arr);
-//            Liner l = new Liner(lines.length, lines);
-//            if (isDesargues(l)) {
-//                return;
-//            }
-            counter.incrementAndGet();
-//            System.out.println(isDesargues(l) + " " + Arrays.deepToString(arr));
+            int[][] lines = toProjective(sp, arr);
+            Liner l = new Liner(lines.length, lines);
+            if (isDesargues(l)) {
+                return;
+            }
+            ProjChar chr = newTranslation(counter.toString(), l, projData);
+            if (chr != null) {
+                projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                counter.incrementAndGet();
+            }
         };
         FixBS[] curr = new FixBS[half + 1];
         curr[0] = first;
         curr[1] = second;
         curr[2] = third;
         generateAlt(sp, curr, union, half - 2, hulls, idxes, cons);
-        System.out.println(counter);
+        System.out.println(projData);
     }
 
     private static int[] calcIdxes(LinearSpace sp, FixBS[] spaces) {
@@ -207,6 +219,65 @@ public class TranslationPlaneTest {
         }
         lines[half * half + half] = IntStream.range(half * half, half * half + half + 1).toArray();
         return lines;
+    }
+
+    public static ProjChar newTranslation(String name, Liner proj, Map<Characteristic, List<ProjChar>> map) {
+        List<TernarMapping> mappings = new ArrayList<>();
+        int pc = proj.pointCount();
+        int order = proj.line(0).length - 1;
+        int infty = pc - 1;
+        for (int dl = 0; dl < infty; dl += order) {
+            int inftyPt = proj.intersection(infty, dl);
+            int[] line = proj.line(dl);
+            for (int h : line) {
+                int v = h == 0 ? inftyPt : 0;
+                for (int o = 0; o < pc; o++) {
+                    if (proj.flag(dl, o)) {
+                        continue;
+                    }
+                    int oh = proj.line(o, h);
+                    int ov = proj.line(o, v);
+                    for (int e = 0; e < pc; e++) {
+                        if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                            continue;
+                        }
+                        int w = proj.intersection(proj.line(e, h), ov);
+                        int u = proj.intersection(proj.line(e, v), oh);
+                        Quad base = new Quad(o, u, w, e);
+                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
+                        int two = ring.op(1, 1, 1);
+                        if (two == 0) {
+                            continue;
+                        }
+                        CharVals cv = CharVals.of(ring, two, order);
+                        if (!cv.induced()) {
+                            continue;
+                        }
+                        if (mappings.isEmpty()) {
+                            mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                        }
+                        Characteristic fstChr = mappings.getFirst().chr();
+                        List<ProjChar> existingChars = map.get(fstChr);
+                        boolean eq = fstChr.equals(cv.chr());
+                        if (!eq && existingChars == null) {
+                            continue;
+                        }
+                        TernaryRing matrix = ring.toMatrix();
+                        if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
+                            mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
+                        }
+                        if (existingChars != null) {
+                            if (existingChars.stream()
+                                .flatMap(projChar -> projChar.ternars().stream())
+                                .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
+                                return null;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return new ProjChar(name, mappings);
     }
 
     public static boolean isDesargues(Liner liner) {

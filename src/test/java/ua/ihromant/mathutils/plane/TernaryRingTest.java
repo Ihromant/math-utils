@@ -87,34 +87,6 @@ public class TernaryRingTest {
         throw new IllegalArgumentException("WTF?");
     }
 
-    public static ProjChar projective(String name, Liner proj, Map<Characteristic, ProjChar> map) {
-        List<TernarMapping> mappings = new ArrayList<>();
-        int pc = proj.pointCount();
-        for (int dl = 0; dl < pc; dl++) {
-            for (int o = 0; o < pc; o++) {
-                if (proj.flag(dl, o)) {
-                    continue;
-                }
-                for (int u = 0; u < pc; u++) {
-                    if (o == u || proj.flag(dl, u)) {
-                        continue;
-                    }
-                    int ou = proj.line(o, u);
-                    for (int w = 0; w < pc; w++) {
-                        if (proj.flag(dl, w) || proj.flag(ou, w)) {
-                            return null;
-                        }
-                        int ow = proj.line(o, w);
-                        int e = proj.intersection(proj.line(u, proj.intersection(dl, ow)), proj.line(w, proj.intersection(dl, ou)));
-                        Quad base = new Quad(o, u, w, e);
-                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
-                    }
-                }
-            }
-        }
-        return null;
-    }
-
     public static List<MappingList> ternarsOfProjective(Liner proj, String name) {
         List<MappingList> result = new ArrayList<>();
         for (int dl = 0; dl < proj.lineCount(); dl++) {
@@ -239,11 +211,11 @@ public class TernaryRingTest {
             return new TernarMapping(ring, List.of(base), new Triangle[order], Characteristic.simpleChr);
         }
         CharVals cv = CharVals.of(ring, two, order);
-        TernarMapping result = fillTernarMapping(ring, cv, order, two);
+        TernarMapping result = fillTernarMapping(ring, cv, two, order);
         return finishTernarMapping(result);
     }
 
-    private static TernarMapping fillTernarMapping(TernaryRing ring, CharVals cv, int order, int two) {
+    public static TernarMapping fillTernarMapping(TernaryRing ring, CharVals cv, int two, int order) {
         List<FixBS> xl = new ArrayList<>();
         xl.add(base);
         FixBS xi = base.copy();

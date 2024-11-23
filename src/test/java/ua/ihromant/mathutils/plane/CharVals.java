@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.plane;
 
-public record CharVals(Characteristic chr, int[][] vals) {
+public record CharVals(Characteristic chr, int[][] vals, boolean induced) {
     public static CharVals of(TernaryRing ring, int two, int order) {
         int a = 0;
         int b = 0;
@@ -29,15 +29,15 @@ public record CharVals(Characteristic chr, int[][] vals) {
             }
             if (d == 0) {
                 if ((vals[3][i] = ring.op(two, vals[3][i - 1], 0)) == 1) {
-                    d = i - 1;
+                    d = i;
                 }
             }
             if (e == 0) {
                 if ((vals[4][i] = ring.op(vals[4][i - 1], two, 0)) == 1) {
-                    e = i - 1;
+                    e = i;
                 }
             }
         }
-        return new CharVals(new Characteristic(a, b, c, d, e), vals);
+        return new CharVals(new Characteristic(a, b, c, d - 1, e - 1), vals, a == order || b == order || c == order || d == order || e == order);
     }
 }
