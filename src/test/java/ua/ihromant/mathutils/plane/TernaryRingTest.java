@@ -239,36 +239,37 @@ public class TernaryRingTest {
             }
             xl.add(xi);
             if (xi.cardinality() == order) {
-                return new TernarMapping(ring, xl, function, cv.chr());
+                break;
             }
         }
-        return findTernarMapping(ring, xl, function, cv.chr());
+        TernarMapping result = new TernarMapping(ring, xl, function, cv.chr());
+        return finishTernarMapping(result);
     }
 
-    private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function, Characteristic chr) {
+    private static TernarMapping finishTernarMapping(TernarMapping mapping) {
+        TernaryRing ring = mapping.ring();
         int order = ring.order();
-        FixBS xn = xl.getLast();
+        FixBS xn = mapping.xl().getLast();
         if (xn.cardinality() == order) {
-            return new TernarMapping(ring, xl, function, chr);
+            return mapping;
         }
         FixBS xn1 = xn.copy();
-        Triangle[] nextFunction = function.clone();
         for (int a = xn.nextSetBit(0); a >= 0; a = xn.nextSetBit(a + 1)) {
             for (int b = xn.nextSetBit(0); b >= 0; b = xn.nextSetBit(b + 1)) {
                 for (int c = xn.nextSetBit(0); c >= 0; c = xn.nextSetBit(c + 1)) {
                     int t = ring.op(a, b, c);
                     if (!xn1.get(t)) {
                         xn1.set(t);
-                        nextFunction[t] = new Triangle(a, b, c);
+                        mapping.function()[t] = new Triangle(a, b, c);
                     }
                 }
             }
         }
         if (xn1.cardinality() == xn.cardinality()) {
-            return new TernarMapping(ring, xl, nextFunction, chr);
+            return mapping;
         }
-        xl.add(xn1);
-        return findTernarMapping(ring, xl, nextFunction, chr);
+        mapping.xl().add(xn1);
+        return finishTernarMapping(mapping);
     }
 
     @Test
