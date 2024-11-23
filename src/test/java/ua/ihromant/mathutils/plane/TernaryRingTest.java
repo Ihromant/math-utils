@@ -207,53 +207,43 @@ public class TernaryRingTest {
         FixBS x1 = x0.copy();
         x1.set(two);
         xl.add(x1);
-        int a = two;
-        int b = two;
-        int c = two;
-        int d = two;
-        int e = two;
-        int i1 = -1;
-        int i2 = -1;
-        int i3 = -1;
-        int i4 = -1;
-        int i5 = -1;
+        int[] cff = new int[5];
+        int[][] multiplies = new int[5][order + 1];
+        for (int i = 0; i < 5; i++) {
+            multiplies[i][2] = two;
+        }
         for (int i = 3; i <= order; i++) {
-            if (i1 < 0) {
-                a = ring.op(1, 1, a);
-                if (a == 0) {
-                    i1 = i;
+            if (cff[0] == 0) {
+                if ((multiplies[0][i] = ring.op(1, 1, multiplies[0][i - 1])) == 0) {
+                    cff[0] = i;
                 }
             }
-            if (i2 < 0) {
-                b = ring.op(b, 1, 1);
-                if (b == 0) {
-                    i2 = i;
+            if (cff[1] == 0) {
+                if ((multiplies[1][i] = ring.op(multiplies[1][i - 1], 1, 1)) == 0) {
+                    cff[1] = i;
                 }
             }
-            if (i3 < 0) {
-                c = ring.op(1, c, 1);
-                if (c == 0) {
-                    i3 = i;
+            if (cff[2] == 0) {
+                if ((multiplies[2][i] = ring.op(1, multiplies[2][i - 1], 1)) == 0) {
+                    cff[2] = i;
                 }
             }
-            if (i4 < 0) {
-                d = ring.op(two, d, 0);
-                if (d == 1) {
-                    i4 = i - 1;
+            if (cff[3] == 0) {
+                if ((multiplies[3][i] = ring.op(two, multiplies[3][i - 1], 0)) == 1) {
+                    cff[3] = i;
                 }
             }
-            if (i5 < 0) {
-                e = ring.op(e, two, 0);
-                if (e == 1) {
-                    i5 = i - 1;
+            if (cff[4] == 0) {
+                if ((multiplies[4][i] = ring.op(multiplies[4][i - 1], two, 0)) == 1) {
+                    cff[4] = i;
                 }
             }
         }
-        Characteristic chr = new Characteristic(i1, i2, i3, i4, i5);
+        Characteristic chr = new Characteristic(cff[0], cff[1], cff[2], cff[3] - 1, cff[4] - 1);
         Triangle[] function = new Triangle[order];
         function[two] = tr;
-        if (i1 == order) {
-            a = two;
+        if (cff[0] == order) {
+            int a = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(1, 1, a);
                 a = ring.op(tr);
@@ -264,8 +254,8 @@ public class TernaryRingTest {
             }
             return new TernarMapping(ring, xl, function, chr);
         }
-        if (i2 == order) {
-            b = two;
+        if (cff[1] == order) {
+            int b = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(b, 1, 1);
                 b = ring.op(tr);
@@ -276,8 +266,8 @@ public class TernaryRingTest {
             }
             return new TernarMapping(ring, xl, function, chr);
         }
-        if (i3 == order) {
-            c = two;
+        if (cff[2] == order) {
+            int c = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(1, c, 1);
                 c = ring.op(tr);
@@ -288,8 +278,8 @@ public class TernaryRingTest {
             }
             return new TernarMapping(ring, xl, function, chr);
         }
-        if (i4 == order - 1) {
-            d = two;
+        if (cff[3] == order - 1) {
+            int d = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(two, d, 0);
                 d = ring.op(tr);
@@ -300,8 +290,8 @@ public class TernaryRingTest {
             }
             return new TernarMapping(ring, xl, function, chr);
         }
-        if (i5 == order - 1) {
-            e = two;
+        if (cff[4] == order - 1) {
+            int e = two;
             for (int i = 3; i < order; i++) {
                 tr = new Triangle(e, two, 0);
                 e = ring.op(tr);
