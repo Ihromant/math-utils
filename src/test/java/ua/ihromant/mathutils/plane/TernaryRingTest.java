@@ -120,16 +120,23 @@ public class TernaryRingTest {
     }
 
     private static Stream<TernaryRing> ternars(String name, Liner plane, int dl) {
-        return IntStream.range(0, plane.pointCount()).filter(o -> !plane.flag(dl, o)).boxed().flatMap(o ->
-                IntStream.range(0, plane.pointCount()).filter(u -> u != o && !plane.flag(dl, u)).boxed().flatMap(u -> {
-                    int ou = plane.line(o, u);
-                    return IntStream.range(0, plane.pointCount()).filter(w -> !plane.flag(dl, w) && !plane.flag(ou, w)).mapToObj(w -> {
-                        int ow = plane.line(o, w);
-                        int e = plane.intersection(plane.line(u, plane.intersection(dl, ow)), plane.line(w, plane.intersection(dl, ou)));
-                        Quad base = new Quad(o, u, w, e);
-                        return new ProjectiveTernaryRing(name, plane, base);
-                    });
-                }));
+        int pc = plane.pointCount();
+        return IntStream.range(0, pc * pc * pc).<TernaryRing>mapToObj(idx -> {
+            int o = idx / pc / pc;
+            int u = idx / pc % pc;
+            int w = idx % pc;
+            if (u == o || plane.flag(dl, o) || plane.flag(dl, u) || plane.flag(dl, w)) {
+                return null;
+            }
+            int ou = plane.line(o, u);
+            if (plane.flag(ou, w)) {
+                return null;
+            }
+            int ow = plane.line(o, w);
+            int e = plane.intersection(plane.line(u, plane.intersection(dl, ow)), plane.line(w, plane.intersection(dl, ou)));
+            Quad base = new Quad(o, u, w, e);
+            return new ProjectiveTernaryRing(name, plane, base);
+        }).filter(Objects::nonNull);
     }
 
     private static boolean isBijective(int[] partialFunc) {
