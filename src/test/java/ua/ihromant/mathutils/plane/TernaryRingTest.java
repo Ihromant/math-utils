@@ -198,25 +198,30 @@ public class TernaryRingTest {
     }
 
     private static final Triangle t111 = new Triangle(1, 1, 1);
+    private static final FixBS base = FixBS.of(2, 0, 1);
 
     private static TernarMapping findTernarMapping(TernaryRing ring) {
         int two = ring.op(1, 1, 1);
         int order = ring.order();
-        FixBS x0 = FixBS.of(order, 0, 1);
-        List<FixBS> xl = new ArrayList<>();
-        xl.add(x0);
         if (two == 0) {
-            return new TernarMapping(ring, xl, new Triangle[order], Characteristic.simpleChr);
+            return new TernarMapping(ring, List.of(base), new Triangle[order], Characteristic.simpleChr);
         }
-        FixBS x1 = x0.copy();
-        x1.set(two);
-        xl.add(x1);
         CharVals cv = CharVals.of(ring, two, order);
+        TernarMapping result = fillTernarMapping(ring, cv, order, two);
+        return finishTernarMapping(result);
+    }
+
+    private static TernarMapping fillTernarMapping(TernaryRing ring, CharVals cv, int order, int two) {
+        List<FixBS> xl = new ArrayList<>();
+        xl.add(base);
+        FixBS xi = base.copy();
+        xi.set(two);
+        xl.add(xi);
         int[][] vals = cv.vals();
         Triangle[] function = new Triangle[order];
         function[two] = t111;
         for (int i = 3; i < order; i++) {
-            FixBS xi = xl.getLast().copy();
+            xi = xi.copy();
             if (!xi.get(vals[0][i])) {
                 xi.set(vals[0][i]);
                 function[vals[0][i]] = new Triangle(1, 1, vals[0][i - 1]);
@@ -242,8 +247,7 @@ public class TernaryRingTest {
                 break;
             }
         }
-        TernarMapping result = new TernarMapping(ring, xl, function, cv.chr());
-        return finishTernarMapping(result);
+        return new TernarMapping(ring, xl, function, cv.chr());
     }
 
     private static TernarMapping finishTernarMapping(TernarMapping mapping) {
