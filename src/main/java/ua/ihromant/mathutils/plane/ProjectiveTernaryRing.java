@@ -18,7 +18,6 @@ public class ProjectiveTernaryRing implements TernaryRing {
     private final int oe;
     private final int[] diagonalOrder;
     private final int[] idxes;
-    private final int[][][] matrix;
 
     public ProjectiveTernaryRing(String name, Liner plane, Quad q) {
         this.name = name;
@@ -62,12 +61,20 @@ public class ProjectiveTernaryRing implements TernaryRing {
         for (int i = 0; i < order; i++) {
             idxes[diagonalOrder[i]] = i;
         }
-        this.matrix = generateMatrix();
     }
 
     @Override
     public int op(int x, int a, int b) {
-        return matrix[x][a][b];
+        int aPt = diagonalOrder[a];
+        int bPt = diagonalOrder[b];
+        int xPt = diagonalOrder[x];
+        int ea = plane.intersection(parallel(hor, aPt), parallel(ver, e));
+        int lao = plane.line(o, ea);
+        int ob = plane.intersection(ver, parallel(hor, bPt));
+        int lab = parallel(lao, ob);
+        int xy = plane.intersection(lab, parallel(ver, xPt));
+        int y = plane.intersection(oe, parallel(hor, xy));
+        return diagIdx(y);
     }
 
     @Override
@@ -77,7 +84,7 @@ public class ProjectiveTernaryRing implements TernaryRing {
 
     @Override
     public int[][][] matrix() {
-        return matrix;
+        return generateMatrix();
     }
 
     private int[][][] generateMatrix() {

@@ -60,11 +60,15 @@ public class TernaryRingTest {
         ternars(name, proj, dl).forEach(tr -> {
             TernarMapping mapping = findTernarMapping(tr);
             Characteristic chr = mapping.chr();
-            if (!mapping.isInduced() || result.computeIfAbsent(chr, k -> new ArrayList<>()).stream()
-                    .anyMatch(m -> ringIsomorphic(m, tr))) {
+            if (!mapping.isInduced()) {
                 return;
             }
-            result.get(chr).add(mapping);
+            TernaryRing ring = mapping.ring().toMatrix();
+            if (result.computeIfAbsent(chr, k -> new ArrayList<>()).stream()
+                    .anyMatch(m -> ringIsomorphic(m, ring))) {
+                return;
+            }
+            result.get(chr).add(new TernarMapping(ring, mapping.xl(), mapping.function(), mapping.chr()));
         });
         return result;
     }
@@ -81,6 +85,34 @@ public class TernaryRingTest {
             }
         }
         throw new IllegalArgumentException("WTF?");
+    }
+
+    public static ProjChar projective(String name, Liner proj, Map<Characteristic, ProjChar> map) {
+        List<TernarMapping> mappings = new ArrayList<>();
+        int pc = proj.pointCount();
+        for (int dl = 0; dl < pc; dl++) {
+            for (int o = 0; o < pc; o++) {
+                if (proj.flag(dl, o)) {
+                    continue;
+                }
+                for (int u = 0; u < pc; u++) {
+                    if (o == u || proj.flag(dl, u)) {
+                        continue;
+                    }
+                    int ou = proj.line(o, u);
+                    for (int w = 0; w < pc; w++) {
+                        if (proj.flag(dl, w) || proj.flag(ou, w)) {
+                            return null;
+                        }
+                        int ow = proj.line(o, w);
+                        int e = proj.intersection(proj.line(u, proj.intersection(dl, ow)), proj.line(w, proj.intersection(dl, ou)));
+                        Quad base = new Quad(o, u, w, e);
+                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public static List<MappingList> ternarsOfProjective(Liner proj, String name) {
@@ -255,7 +287,7 @@ public class TernaryRingTest {
         int order = ring.order();
         FixBS xn = mapping.xl().getLast();
         if (xn.cardinality() == order) {
-            return mapping;
+            return new TernarMapping(ring.toMatrix(), mapping.xl(), mapping.function(), mapping.chr());
         }
         FixBS xn1 = xn.copy();
         for (int a = xn.nextSetBit(0); a >= 0; a = xn.nextSetBit(a + 1)) {
