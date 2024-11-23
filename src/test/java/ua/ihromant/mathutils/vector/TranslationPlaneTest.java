@@ -71,7 +71,7 @@ public class TranslationPlaneTest {
 
     @Test
     public void checkSubspaces() {
-        int p = 5;
+        int p = 3;
         int n = 4;
         LinearSpace sp = LinearSpace.of(p, n);
         int half = sp.half();
@@ -257,7 +257,7 @@ public class TranslationPlaneTest {
                             mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
                         }
                         Characteristic fstChr = mappings.getFirst().chr();
-                        List<ProjChar> existingChars = map.get(fstChr);
+                        List<ProjChar> existingChars = map.get(cv.chr());
                         boolean eq = fstChr.equals(cv.chr());
                         if (!eq && existingChars == null) {
                             continue;
@@ -266,12 +266,10 @@ public class TranslationPlaneTest {
                         if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
                             mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
                         }
-                        if (existingChars != null) {
-                            if (existingChars.stream()
+                        if (existingChars != null && existingChars.stream()
                                 .flatMap(projChar -> projChar.ternars().stream())
                                 .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
-                                return null;
-                            }
+                            return null;
                         }
                     }
                 }
