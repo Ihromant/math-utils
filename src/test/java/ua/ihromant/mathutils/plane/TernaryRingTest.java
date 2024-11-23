@@ -200,8 +200,7 @@ public class TernaryRingTest {
     private static final Triangle t111 = new Triangle(1, 1, 1);
 
     private static TernarMapping findTernarMapping(TernaryRing ring) {
-        Triangle tr = t111;
-        int two = ring.op(tr);
+        int two = ring.op(1, 1, 1);
         int order = ring.order();
         FixBS x0 = FixBS.of(order, 0, 1);
         List<FixBS> xl = new ArrayList<>();
@@ -212,41 +211,10 @@ public class TernaryRingTest {
         FixBS x1 = x0.copy();
         x1.set(two);
         xl.add(x1);
-        int[] cff = new int[5];
-        int[][] vals = new int[5][order + 1];
-        for (int i = 0; i < 5; i++) {
-            vals[i][2] = two;
-        }
-        for (int i = 3; i <= order; i++) {
-            if (cff[0] == 0) {
-                if ((vals[0][i] = ring.op(1, 1, vals[0][i - 1])) == 0) {
-                    cff[0] = i;
-                }
-            }
-            if (cff[1] == 0) {
-                if ((vals[1][i] = ring.op(vals[1][i - 1], 1, 1)) == 0) {
-                    cff[1] = i;
-                }
-            }
-            if (cff[2] == 0) {
-                if ((vals[2][i] = ring.op(1, vals[2][i - 1], 1)) == 0) {
-                    cff[2] = i;
-                }
-            }
-            if (cff[3] == 0) {
-                if ((vals[3][i] = ring.op(two, vals[3][i - 1], 0)) == 1) {
-                    cff[3] = i;
-                }
-            }
-            if (cff[4] == 0) {
-                if ((vals[4][i] = ring.op(vals[4][i - 1], two, 0)) == 1) {
-                    cff[4] = i;
-                }
-            }
-        }
-        Characteristic chr = new Characteristic(cff[0], cff[1], cff[2], cff[3] - 1, cff[4] - 1);
+        CharVals cv = CharVals.of(ring, two, order);
+        int[][] vals = cv.vals();
         Triangle[] function = new Triangle[order];
-        function[two] = tr;
+        function[two] = t111;
         for (int i = 3; i < order; i++) {
             FixBS xi = xl.getLast().copy();
             if (!xi.get(vals[0][i])) {
@@ -271,10 +239,10 @@ public class TernaryRingTest {
             }
             xl.add(xi);
             if (xi.cardinality() == order) {
-                return new TernarMapping(ring, xl, function, chr);
+                return new TernarMapping(ring, xl, function, cv.chr());
             }
         }
-        return findTernarMapping(ring, xl, function, chr);
+        return findTernarMapping(ring, xl, function, cv.chr());
     }
 
     private static TernarMapping findTernarMapping(TernaryRing ring, List<FixBS> xl, Triangle[] function, Characteristic chr) {
