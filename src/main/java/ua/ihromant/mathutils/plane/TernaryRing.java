@@ -1,6 +1,7 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.plane;
 
-import ua.ihromant.mathutils.plane.Quad;
+import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.Triangle;
 
 import java.util.Arrays;
 import java.util.OptionalInt;

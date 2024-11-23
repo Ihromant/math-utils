@@ -3,8 +3,6 @@ package ua.ihromant.mathutils.plane;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.ProjectiveTernaryRing;
-import ua.ihromant.mathutils.TernaryRing;
 import ua.ihromant.mathutils.Triangle;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
