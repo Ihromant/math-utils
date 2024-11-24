@@ -62,13 +62,14 @@ public class TranslationPlaneTest {
         Consumer<FixBS[]> cons = arr -> {
             int[][] lines = toProjective(sp, arr);
             Liner l = new Liner(lines.length, lines);
-            if (isDesargues(l)) {
+            if (isDesargues(l, half)) {
                 return;
             }
             ProjChar chr = newTranslation(counter.toString(), l, projData);
             if (chr != null) {
                 projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
                 System.out.println(counter.incrementAndGet() + Arrays.toString(arr));
+                System.out.println(chr);
             }
         };
         FixBS[] curr = new FixBS[half + 1];
@@ -79,16 +80,6 @@ public class TranslationPlaneTest {
         curr[4] = fifth;
         generate(curr, union, half - 4, hulls, cons);
         System.out.println(projData);
-    }
-
-    private static int[] calcIdxes(LinearSpace sp, FixBS[] spaces) {
-        int max = sp.cardinality();
-        int[] idxes = new int[max];
-        for (int i = 1; i < idxes.length; i++) {
-            FixBS top = FixBS.of(max, i);
-            idxes[i] = -Arrays.binarySearch(spaces, idxes[i - 1], spaces.length, top, Comparator.reverseOrder()) - 1;
-        }
-        return idxes;
     }
 
     private static void generate(FixBS[] curr, FixBS union, int needed, FixBS[] hulls, Consumer<FixBS[]> cons) {
@@ -211,52 +202,15 @@ public class TranslationPlaneTest {
         return new ProjChar(name, mappings);
     }
 
-    public static boolean isDesargues(Liner liner) {
-        int l0 = 0;
-        int o = 0;
-        for (int la : liner.lines(o)) {
-            if (la == o) {
-                continue;
-            }
-            for (int lb : liner.lines(o)) {
-                if (lb == o || lb == la) {
-                    continue;
-                }
-                for (int lc : liner.lines(o)) {
-                    if (lc == o || lc == la || lc == lb) {
-                        continue;
-                    }
-                    for (int a : liner.points(la)) {
-                        if (a == o) {
-                            continue;
-                        }
-                        for (int b : liner.points(lb)) {
-                            if (b == o) {
-                                continue;
-                            }
-                            int x = liner.intersection(liner.line(a, b), l0);
-                            for (int c : liner.points(lc)) {
-                                if (c == o || liner.collinear(a, b, c)) {
-                                    continue;
-                                }
-                                int y = liner.intersection(liner.line(a, c), l0);
-                                int z = liner.intersection(liner.line(b, c), l0);
-                                for (int a1 : liner.points(la)) {
-                                    if (a1 == a || a1 == o) {
-                                        continue;
-                                    }
-                                    int b1 = liner.intersection(liner.line(a1, x), lb);
-                                    int c1 = liner.intersection(liner.line(a1, y), lc);
-                                    if (!liner.collinear(b1, c1, z)) {
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return true;
+    public static boolean isDesargues(Liner liner, int order) {
+        int dl = 0;
+        int o = order;
+        int u = order + order;
+        int w = order + 1;
+        int ou = order;
+        int ow = 1;
+        int e = liner.intersection(liner.line(u, liner.intersection(dl, ow)), liner.line(w, liner.intersection(dl, ou)));
+        TernaryRing ring = new ProjectiveTernaryRing("", liner, new Quad(o, u, w, e)).toMatrix();
+        return ring.addComm() && ring.mulComm() && ring.isLinear() && ring.addAssoc() && ring.mulAssoc();
     }
 }

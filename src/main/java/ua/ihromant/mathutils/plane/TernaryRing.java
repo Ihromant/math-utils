@@ -61,9 +61,10 @@ public interface TernaryRing {
     }
 
     default boolean isLinear() {
-        for (int x : elements()) {
-            for (int a : elements()) {
-                for (int b : elements()) {
+        int order = order();
+        for (int x = 0; x < order; x++) {
+            for (int a = 0; a < order; a++) {
+                for (int b = 0; b < order; b++) {
                     if (op(x, a, b) != add(mul(x, a), b)) {
                         return false;
                     }
@@ -159,9 +160,10 @@ public interface TernaryRing {
     }
 
     default boolean addAssoc() {
-        for (int a : elements()) {
-            for (int b : elements()) {
-                for (int c : elements()) {
+        int order = order();
+        for (int a = 0; a < order; a++) {
+            for (int b = 0; b < order; b++) {
+                for (int c = 0; c < order; c++) {
                     if (add(add(a, b), c) != add(a, add(b, c))) {
                         return false;
                     }
@@ -172,9 +174,10 @@ public interface TernaryRing {
     }
 
     default boolean mulAssoc() {
-        for (int a : elements()) {
-            for (int b : elements()) {
-                for (int c : elements()) {
+        int order = order();
+        for (int a = 0; a < order; a++) {
+            for (int b = 0; b < order; b++) {
+                for (int c = 0; c < order; c++) {
                     if (mul(mul(a, b), c) != mul(a, mul(b, c))) {
                         return false;
                     }
@@ -225,8 +228,9 @@ public interface TernaryRing {
     }
 
     default boolean addComm() {
-        for (int a : elements()) {
-            for (int b : elements()) {
+        int order = order();
+        for (int a = 1; a < order; a++) {
+            for (int b = a + 1; b < order; b++) {
                 if (add(a, b) != add(b, a)) {
                     return false;
                 }
@@ -265,8 +269,9 @@ public interface TernaryRing {
     }
 
     default boolean mulComm() {
-        for (int a : elements()) {
-            for (int b : elements()) {
+        int order = order();
+        for (int a = 2; a < order; a++) {
+            for (int b = a + 1; b < order; b++) {
                 if (mul(a, b) != mul(b, a)) {
                     return false;
                 }
