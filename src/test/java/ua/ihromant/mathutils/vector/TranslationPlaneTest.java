@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.plane.CharVals;
 import ua.ihromant.mathutils.plane.Characteristic;
-import ua.ihromant.mathutils.plane.MappingList;
 import ua.ihromant.mathutils.plane.ProjChar;
 import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
 import ua.ihromant.mathutils.plane.Quad;
@@ -28,47 +27,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class TranslationPlaneTest {
-    @Test
-    public void test() {
-        int p = 3;
-        int n = 4;
-        LinearSpace sp = LinearSpace.of(p, n);
-        int crd = sp.cardinality();
-        int half = sp.half();
-        FixBS[] curr = new FixBS[half + 1];
-        FixBS base = new FixBS(crd);
-        base.set(1, half);
-        curr[0] = base;
-        FixBS union = base.copy();
-        Set<Set<FixBS>> unique = new HashSet<>();
-        AtomicInteger counter = new AtomicInteger();
-        List<ProjData> projData = new ArrayList<>();
-        Consumer<FixBS[]> cons = arr -> {
-            Set<FixBS> set = Arrays.stream(arr).collect(Collectors.toSet());
-            if (!unique.add(set)) {
-                return;
-            }
-            int[][] lines = toProjective(sp, arr);
-            Liner proj = new Liner(lines.length, lines);
-            if (isDesargues(proj)) {
-                return;
-            }
-            TernarMapping map = TernaryRingTest.inducedOfProjective(counter.toString(), proj);
-            if (projData.stream().flatMap(pd -> pd.affines.stream().flatMap(aff -> aff.ternars()
-                            .getOrDefault(map.chr(), List.of()).stream())).parallel()
-                    .noneMatch(m -> TernaryRingTest.ringIsomorphic(m, map.ring()))) {
-                projData.add(new ProjData(counter.toString(), TernaryRingTest.ternarsOfProjective(proj, counter.toString())));
-                counter.incrementAndGet();
-                System.out.println(Arrays.deepToString(proj.lines()));
-            }
-            //System.out.println(isDesargues(l) + " " + set);
-        };
-        generate(sp, curr, union, half, cons);
-        System.out.println(counter);
-    }
-
-    private record ProjData(String name, List<MappingList> affines) {}
-
     @Test
     public void checkSubspaces() {
         int p = 3;
@@ -100,14 +58,14 @@ public class TranslationPlaneTest {
             ProjChar chr = newTranslation(counter.toString(), l, projData);
             if (chr != null) {
                 projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
-                counter.incrementAndGet();
+                System.out.println(counter.incrementAndGet());
             }
         };
         FixBS[] curr = new FixBS[half + 1];
         curr[0] = first;
         curr[1] = second;
         curr[2] = third;
-        generateAlt(sp, curr, union, half - 2, hulls, idxes, cons);
+        generate(curr, union, half - 2, hulls, idxes, cons);
         System.out.println(projData);
     }
 
@@ -121,30 +79,7 @@ public class TranslationPlaneTest {
         return idxes;
     }
 
-    private static void generate(LinearSpace space, FixBS[] curr, FixBS union, int needed, Consumer<FixBS[]> cons) {
-        if (needed == 0) {
-            cons.accept(curr);
-            return;
-        }
-        int halfCrd = space.half() - 1;
-        Set<FixBS> unique = new HashSet<>();
-        Consumer<int[]> consumer = arr -> {
-            FixBS bs = space.hull(arr);
-            if (bs.intersects(union) || bs.cardinality() != halfCrd || !unique.add(bs)) {
-                return;
-            }
-            FixBS[] newCurr = curr.clone();
-            newCurr[curr.length - needed] = bs;
-            FixBS newUnion = union.union(bs);
-            generate(space, newCurr, newUnion, needed - 1, cons);
-        };
-        int half = space.n() / 2;
-        int[] arr = new int[half];
-        arr[0] = union.nextClearBit(1);
-        generateOne(space, arr, half - 1, consumer);
-    }
-
-    private static void generateAlt(LinearSpace space, FixBS[] curr, FixBS union, int needed, FixBS[] hulls, int[] idxes, Consumer<FixBS[]> cons) {
+    private static void generate(FixBS[] curr, FixBS union, int needed, FixBS[] hulls, int[] idxes, Consumer<FixBS[]> cons) {
         if (needed == 0) {
             cons.accept(curr);
             return;
@@ -157,20 +92,7 @@ public class TranslationPlaneTest {
             }
             FixBS[] newCurr = curr.clone();
             newCurr[curr.length - needed] = bs;
-            generateAlt(space, newCurr, union.union(bs), needed - 1, hulls, idxes, cons);
-        }
-    }
-
-    private static void generateOne(LinearSpace sp, int[] curr, int needed, Consumer<int[]> cons) {
-        if (needed == 0) {
-            cons.accept(curr);
-            return;
-        }
-        int prev = curr[curr.length - needed - 1];
-        for (int i = prev + 1; i < sp.cardinality(); i++) {
-            int[] newCurr = curr.clone();
-            newCurr[curr.length - needed] = i;
-            generateOne(sp, newCurr, needed - 1, cons);
+            generate(newCurr, union.union(bs), needed - 1, hulls, idxes, cons);
         }
     }
 

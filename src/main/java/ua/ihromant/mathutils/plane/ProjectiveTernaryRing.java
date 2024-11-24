@@ -57,7 +57,7 @@ public class ProjectiveTernaryRing implements TernaryRing {
             }
         }
         this.idxes = new int[plane.pointCount()];
-        Arrays.fill(idxes, -1);
+        // Arrays.fill(idxes, -1); // uncomment when looking for issues
         for (int i = 0; i < order; i++) {
             idxes[diagonalOrder[i]] = i;
         }
