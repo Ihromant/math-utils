@@ -31,6 +31,7 @@ public class TranslationPlaneTest {
     public void checkSubspaces() {
         int p = 3;
         int n = 4;
+        System.out.println(p + " " + n);
         LinearSpace sp = LinearSpace.of(p, n);
         int half = sp.half();
         FixBS first = new FixBS(sp.cardinality());
@@ -40,17 +41,22 @@ public class TranslationPlaneTest {
             second.set(i * half);
         }
         FixBS union = first.union(second);
+        FixBS third = new FixBS(sp.cardinality());
+        for (int i = 1; i < half; i++) {
+            third.set(half * i + i);
+        }
+        union.or(third);
         FixBS[] hulls = generateSpaces(sp, union).toArray(FixBS[]::new);
         Arrays.sort(hulls, Comparator.reverseOrder());
-        FixBS third = hulls[0];
-        union.or(third);
-        hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
         System.out.println(hulls.length);
         FixBS fourth = hulls[0];
         union.or(fourth);
         hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
         System.out.println(hulls.length);
-        int[] idxes = calcIdxes(sp, hulls);
+        FixBS fifth = hulls[0];
+        union.or(fifth);
+        hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
+        System.out.println(hulls.length);
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
         Consumer<FixBS[]> cons = arr -> {
@@ -70,7 +76,8 @@ public class TranslationPlaneTest {
         curr[1] = second;
         curr[2] = third;
         curr[3] = fourth;
-        generate(curr, union, half - 3, hulls, idxes, cons);
+        curr[4] = fifth;
+        generate(curr, union, half - 4, hulls, cons);
         System.out.println(projData);
     }
 
@@ -84,20 +91,19 @@ public class TranslationPlaneTest {
         return idxes;
     }
 
-    private static void generate(FixBS[] curr, FixBS union, int needed, FixBS[] hulls, int[] idxes, Consumer<FixBS[]> cons) {
+    private static void generate(FixBS[] curr, FixBS union, int needed, FixBS[] hulls, Consumer<FixBS[]> cons) {
         if (needed == 0) {
             cons.accept(curr);
             return;
         }
         int next = union.nextClearBit(1);
-        for (int i = idxes[next - 1]; i < idxes[next]; i++) {
+        int max = IntStream.range(0, hulls.length).filter(i -> hulls[i].nextSetBit(0) != next).findFirst().orElse(hulls.length);
+        for (int i = 0; i < max; i++) {
             FixBS bs = hulls[i];
-            if (bs.intersects(union)) {
-                continue;
-            }
             FixBS[] newCurr = curr.clone();
             newCurr[curr.length - needed] = bs;
-            generate(newCurr, union.union(bs), needed - 1, hulls, idxes, cons);
+            FixBS[] nextHulls = Arrays.stream(hulls, max, hulls.length).filter(h -> !bs.intersects(h)).toArray(FixBS[]::new);
+            generate(newCurr, union.union(bs), needed - 1, nextHulls, cons);
         }
     }
 
