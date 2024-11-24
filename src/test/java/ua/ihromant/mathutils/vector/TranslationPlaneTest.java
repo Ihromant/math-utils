@@ -48,11 +48,11 @@ public class TranslationPlaneTest {
         generateSpaces(sp, union, set::add);
         FixBS[] hulls = set.toArray(FixBS[]::new);
         Arrays.sort(hulls, Comparator.reverseOrder());
-        System.out.println(hulls.length);
+        System.out.println(hulls.length + " " + Arrays.stream(hulls).takeWhile(h -> h.nextSetBit(0) == third.nextSetBit(0) + 1).count());
         FixBS fourth = hulls[0];
         union.or(fourth);
         hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
-        System.out.println(hulls.length);
+        System.out.println(hulls.length + " " + Arrays.stream(hulls).takeWhile(h -> h.nextSetBit(0) == fourth.nextSetBit(0) + 1).count());
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
         Consumer<FixBS[]> cons = arr -> {
