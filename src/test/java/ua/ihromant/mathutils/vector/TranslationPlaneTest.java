@@ -53,10 +53,6 @@ public class TranslationPlaneTest {
         union.or(fourth);
         hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
         System.out.println(hulls.length);
-        FixBS fifth = hulls[0];
-        union.or(fifth);
-        hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
-        System.out.println(hulls.length);
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
         Consumer<FixBS[]> cons = arr -> {
@@ -77,8 +73,7 @@ public class TranslationPlaneTest {
         curr[1] = second;
         curr[2] = third;
         curr[3] = fourth;
-        curr[4] = fifth;
-        generate(curr, union, half - 4, hulls, cons);
+        generate(curr, union, half - 3, hulls, cons);
         System.out.println(projData);
     }
 
