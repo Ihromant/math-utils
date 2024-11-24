@@ -4,11 +4,15 @@ import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.util.FixBS;
 
 public interface LinearSpace {
+    int p();
+
     int n();
 
     int cardinality();
 
     int half();
+
+    int mul(int a, int x);
 
     int add(int... numbers);
 

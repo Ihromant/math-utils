@@ -49,11 +49,12 @@ public class PrimeLinearSpace implements LinearSpace {
         return res;
     }
 
-    public int mul(int a, int cff) {
+    @Override
+    public int mul(int a, int x) {
         int res = 0;
         for (int i = 0; i < n; i++) {
-            int acrd = crd(a, i);
-            res = res + powList[i] * ((acrd * cff) % p);
+            int xc = crd(x, i);
+            res = res + powList[i] * ((xc * a) % p);
         }
         return res;
     }

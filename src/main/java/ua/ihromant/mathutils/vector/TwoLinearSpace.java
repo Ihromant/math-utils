@@ -4,6 +4,11 @@ import ua.ihromant.mathutils.util.FixBS;
 
 public record TwoLinearSpace(int n) implements LinearSpace {
     @Override
+    public int p() {
+        return 2;
+    }
+
+    @Override
     public int cardinality() {
         return 1 << n;
     }
@@ -11,6 +16,11 @@ public record TwoLinearSpace(int n) implements LinearSpace {
     @Override
     public int half() {
         return 1 << (n / 2);
+    }
+
+    @Override
+    public int mul(int a, int x) {
+        return a % 2 == 0 ? 0 : x;
     }
 
     @Override

@@ -22,9 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class TranslationPlaneTest {
     @Test
@@ -46,7 +44,9 @@ public class TranslationPlaneTest {
             third.set(half * i + i);
         }
         union.or(third);
-        FixBS[] hulls = generateSpaces(sp, union).toArray(FixBS[]::new);
+        Set<FixBS> set = new HashSet<>();
+        generateSpaces(sp, union, set::add);
+        FixBS[] hulls = set.toArray(FixBS[]::new);
         Arrays.sort(hulls, Comparator.reverseOrder());
         System.out.println(hulls.length);
         FixBS fourth = hulls[0];
@@ -98,25 +98,37 @@ public class TranslationPlaneTest {
         }
     }
 
-    private static Set<FixBS> generateSpaces(LinearSpace sp, FixBS filter) {
-        int half = sp.half() - 1;
-        return IntStream.range(half + 1, sp.cardinality()).boxed().flatMap(i -> {
-            int[] curr = new int[sp.n() / 2];
-            curr[0] = i;
-            return generateSpaces(sp, curr, curr.length - 1);
-        }).filter(ssp -> ssp.cardinality() == half && !ssp.intersects(filter)).collect(Collectors.toSet());
+    private static void generateSpaces(LinearSpace sp, FixBS filter, Consumer<FixBS> sink) {
+        int half = sp.half();
+        FixBS hull = new FixBS(sp.cardinality());
+        generateSpaces(sp, hull, filter, half, sp.n() / 2, sink);
     }
 
-    private static Stream<FixBS> generateSpaces(LinearSpace sp, int[] curr, int needed) {
+    private static void generateSpaces(LinearSpace sp, FixBS hull, FixBS filter, int prev, int needed, Consumer<FixBS> sink) {
         if (needed == 0) {
-            return Stream.of(sp.hull(curr));
+            sink.accept(hull);
+            return;
         }
-        int prev = curr[curr.length - needed - 1];
-        return IntStream.range(prev + 1, sp.cardinality()).boxed().flatMap(i -> {
-            int[] newCurr = curr.clone();
-            newCurr[curr.length - needed] = i;
-            return generateSpaces(sp, newCurr, needed - 1);
-        });
+        for (int curr = prev; curr < sp.cardinality(); curr++) {
+            if (hull.get(curr)) {
+                continue;
+            }
+            FixBS nextHull = hull.copy();
+            for (int i = 1; i < sp.p(); i++) {
+                int mul = sp.mul(i, curr);
+                nextHull.set(mul);
+            }
+            for (int j = hull.nextSetBit(0); j >= 0; j = hull.nextSetBit(j + 1)) {
+                for (int i = 1; i < sp.p(); i++) {
+                    int mul = sp.mul(i, curr);
+                    nextHull.set(sp.add(mul, j));
+                }
+            }
+            if (filter.intersects(nextHull)) {
+                continue;
+            }
+            generateSpaces(sp, nextHull, filter, curr, needed - 1, sink);
+        }
     }
 
     public static int[][] toProjective(LinearSpace space, FixBS[] spread) {
