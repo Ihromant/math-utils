@@ -46,6 +46,10 @@ public class TranslationPlaneTest {
         union.or(third);
         hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
         System.out.println(hulls.length);
+        FixBS fourth = hulls[0];
+        union.or(fourth);
+        hulls = Arrays.stream(hulls).filter(h -> !union.intersects(h)).toArray(FixBS[]::new);
+        System.out.println(hulls.length);
         int[] idxes = calcIdxes(sp, hulls);
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
@@ -58,14 +62,15 @@ public class TranslationPlaneTest {
             ProjChar chr = newTranslation(counter.toString(), l, projData);
             if (chr != null) {
                 projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
-                System.out.println(counter.incrementAndGet());
+                System.out.println(counter.incrementAndGet() + Arrays.toString(arr));
             }
         };
         FixBS[] curr = new FixBS[half + 1];
         curr[0] = first;
         curr[1] = second;
         curr[2] = third;
-        generate(curr, union, half - 2, hulls, idxes, cons);
+        curr[3] = fourth;
+        generate(curr, union, half - 3, hulls, idxes, cons);
         System.out.println(projData);
     }
 
