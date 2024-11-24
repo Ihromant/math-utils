@@ -12,9 +12,13 @@ import ua.ihromant.mathutils.plane.TernaryRing;
 import ua.ihromant.mathutils.plane.TernaryRingTest;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -25,6 +29,38 @@ import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public class TranslationPlaneTest {
+    @Test
+    public void writeHulls() throws IOException {
+        int p = 2;
+        int n = 10;
+        File f = new File("/home/ihromant/maths/", "spaces-" + p + "^" + n + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            System.out.println(p + " " + n);
+            LinearSpace sp = LinearSpace.of(p, n);
+            int half = sp.half();
+            FixBS first = new FixBS(sp.cardinality());
+            first.set(1, half);
+            FixBS second = new FixBS(sp.cardinality());
+            for (int i = 1; i < half; i++) {
+                second.set(i * half);
+            }
+            FixBS union = first.union(second);
+            FixBS third = new FixBS(sp.cardinality());
+            for (int i = 1; i < half; i++) {
+                third.set(half * i + i);
+            }
+            union.or(third);
+            Set<FixBS> distinct = new HashSet<>();
+            generateSpaces(sp, union, h -> {
+                if (distinct.add(h)) {
+                    ps.println(h);
+                }
+            });
+        }
+    }
+
     @Test
     public void checkSubspaces() {
         int p = 3;
@@ -44,10 +80,14 @@ public class TranslationPlaneTest {
             third.set(half * i + i);
         }
         union.or(third);
-        Set<FixBS> set = new HashSet<>();
-        generateSpaces(sp, union, set::add);
-        FixBS[] hulls = set.toArray(FixBS[]::new);
-        Arrays.sort(hulls, Comparator.reverseOrder());
+        Set<FixBS> distinct = new HashSet<>();
+        List<FixBS> lst = new ArrayList<>();
+        generateSpaces(sp, union, h -> {
+            if (distinct.add(h)) {
+                lst.add(h);
+            }
+        });
+        FixBS[] hulls = lst.toArray(FixBS[]::new);
         System.out.println(hulls.length + " " + Arrays.stream(hulls).takeWhile(h -> h.nextSetBit(0) == third.nextSetBit(0) + 1).count());
         FixBS fourth = hulls[0];
         union.or(fourth);
@@ -83,13 +123,14 @@ public class TranslationPlaneTest {
             return;
         }
         int next = union.nextClearBit(1);
-        int max = IntStream.range(0, hulls.length).filter(i -> hulls[i].nextSetBit(0) != next).findFirst().orElse(hulls.length);
-        for (int i = 0; i < max; i++) {
-            FixBS bs = hulls[i];
+        for (FixBS bs : hulls) {
             FixBS[] newCurr = curr.clone();
             newCurr[curr.length - needed] = bs;
-            FixBS[] nextHulls = Arrays.stream(hulls, max, hulls.length).filter(h -> !bs.intersects(h)).toArray(FixBS[]::new);
+            FixBS[] nextHulls = Arrays.stream(hulls).filter(h -> !bs.intersects(h)).toArray(FixBS[]::new);
             generate(newCurr, union.union(bs), needed - 1, nextHulls, cons);
+            if (bs.nextSetBit(0) != next) {
+                break;
+            }
         }
     }
 
