@@ -396,11 +396,11 @@ public class TranslationPlaneTest {
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
-        FixBS invertible = generateInvertible(mini);
+        FixBS invertible = generateInvertibleAlt(mini);
         int sc = sp.cardinality();
         int mc = mini.cardinality();
         int[] gl = invertible.stream().toArray();
-        Map<Integer, Integer> mapGl = generateInvertibleGl(gl, p, half);
+        Map<Integer, Integer> mapGl = generateInvertibleGlAlt(gl, p, half);
         System.out.println(gl.length + " " + Arrays.toString(gl));
         int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, invertible)).toArray();
         System.out.println(v.length + " " + Arrays.toString(v));
@@ -485,6 +485,7 @@ public class TranslationPlaneTest {
                 int[][] multiplied = multiply(multiply(invMatrix, aMatrix, p), matrix, p);
                 int prod = fromMatrix(multiplied, p);
                 filter.set(prod);
+                filter.set(inv.get(prod));
 
                 int[][] lMul = multiply(aMatrix, matrix, p);
                 int[][] rMul = multiply(matrix, aMatrix, p);
@@ -502,6 +503,25 @@ public class TranslationPlaneTest {
         return !inv.get(fromMatrix(sub, p));
     }
 
+    private Map<Integer, Integer> generateInvertibleGlAlt(int[] gl, int p, int n) {
+        Map<Integer, Integer> result = new HashMap<>();
+        for (int i : gl) {
+            int[][] matrix = toMatrix(i, p, n);
+            if (result.containsKey(i)) {
+                continue;
+            }
+            try {
+                int[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix, p);
+                int inv = fromMatrix(rev, p);
+                result.put(i, inv);
+                result.put(inv, i);
+            } catch (ArithmeticException e) {
+                // ok
+            }
+        }
+        return result;
+    }
+
     private Map<Integer, Integer> generateInvertibleGl(int[] gl, int p, int n) {
         Map<Integer, Integer> result = new HashMap<>();
         int one = fromMatrix(unity(n), p);
@@ -517,6 +537,21 @@ public class TranslationPlaneTest {
                     result.put(j, i);
                     break;
                 }
+            }
+        }
+        return result;
+    }
+
+    private FixBS generateInvertibleAlt(LinearSpace sp) {
+        int cnt = LinearSpace.pow(sp.p(), sp.n() * sp.n());
+        FixBS result = new FixBS(cnt);
+        for (int i = 0; i < cnt; i++) {
+            int[][] matrix = toMatrix(i, sp.p(), sp.n());
+            try {
+                MatrixInverseFiniteField.inverseMatrix(matrix, sp.p());
+                result.set(i);
+            } catch (ArithmeticException e) {
+                // ok
             }
         }
         return result;
