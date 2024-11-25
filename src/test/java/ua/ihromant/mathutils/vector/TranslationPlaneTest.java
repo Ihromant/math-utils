@@ -396,7 +396,7 @@ public class TranslationPlaneTest {
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
-        Map<Integer, Integer> map = generateInvAndReverse(mini);
+        Map<Integer, Integer> map = generateInvertible(mini);
         int sc = sp.cardinality();
         int mc = mini.cardinality();
         int[] gl = map.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
@@ -480,7 +480,24 @@ public class TranslationPlaneTest {
         return !inv.containsKey(fromMatrix(sub, p));
     }
 
-    private Map<Integer, Integer> generateInvAndReverse(LinearSpace sp) {
+    private Map<Integer, Integer> generateInvertibleSlow(int p, int n) {
+        int cnt = LinearSpace.pow(p, n * n);
+        Map<Integer, Integer> result = new HashMap<>();
+        int one = fromMatrix(unity(n), p);
+        for (int i = 0; i < cnt; i++) {
+            for (int j = 0; j < cnt; j++) {
+                int[][] first = toMatrix(i, p, n);
+                int[][] second = toMatrix(j, p, n);
+                if (fromMatrix(multiply(first, second, p), p) == one) {
+                    result.put(i, j);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private Map<Integer, Integer> generateInvertible(LinearSpace sp) {
         int cnt = LinearSpace.pow(sp.p(), sp.n() * sp.n());
         Map<Integer, Integer> result = new HashMap<>();
         ex: for (int i = 0; i < cnt; i++) {
