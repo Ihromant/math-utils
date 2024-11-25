@@ -396,12 +396,13 @@ public class TranslationPlaneTest {
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
-        Map<Integer, Integer> map = generateInvertible(mini);
+        FixBS invertible = generateInvertible(mini);
         int sc = sp.cardinality();
         int mc = mini.cardinality();
-        int[] gl = map.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
+        int[] gl = invertible.stream().toArray();
+        Map<Integer, Integer> mapGl = generateInvertibleGl(gl, p, half);
         System.out.println(gl.length + " " + Arrays.toString(gl));
-        int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, map)).toArray();
+        int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, invertible)).toArray();
         System.out.println(v.length + " " + Arrays.toString(v));
         FixBS first = new FixBS(sc);
         first.set(0, mc);
@@ -446,7 +447,7 @@ public class TranslationPlaneTest {
             System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
-        tree(p, n, gl, gl, v, partSpread, 0, cons);
+        tree(p, half, mapGl, gl, gl, v, partSpread, 0, cons);
     }
 
     private int sub(int a, int b, int p, int n) {
@@ -455,12 +456,17 @@ public class TranslationPlaneTest {
         return fromMatrix(sub(aMat, bMat, p), p);
     }
 
-    private void tree(int p, int n, int[] gl, int[] subGl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
+    private void tree(int p, int n, Map<Integer, Integer> inv, int[] gl, int[] subGl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
         if (idx == partSpread.length) {
             sink.accept(partSpread);
             return;
         }
+        int sz = LinearSpace.pow(p, n * n);
+        FixBS filter = new FixBS(sz);
         for (int a : v) {
+            if (filter.get(a)) {
+                continue;
+            }
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
             int[] newV = Arrays.stream(v).filter(b -> {
@@ -470,26 +476,45 @@ public class TranslationPlaneTest {
                 int sub = sub(b, a, p, n);
                 return Arrays.binarySearch(gl, sub) >= 0;
             }).toArray();
-            tree(p, n, gl, subGl, newV, newArr, idx + 1, sink);
+            FixBS centralizer = new FixBS(sz);
+            int[][] aMatrix = toMatrix(a, p, n);
+            for (int el : subGl) {
+                int invEl = inv.get(el);
+                int[][] invMatrix = toMatrix(invEl, p, n);
+                int[][] matrix = toMatrix(el, p, n);
+                int[][] multiplied = multiply(multiply(invMatrix, aMatrix, p), matrix, p);
+                int prod = fromMatrix(multiplied, p);
+                filter.set(prod);
+
+                int[][] lMul = multiply(aMatrix, matrix, p);
+                int[][] rMul = multiply(matrix, aMatrix, p);
+                if (Arrays.deepEquals(lMul, rMul)) {
+                    centralizer.set(el);
+                }
+            }
+            tree(p, n, inv, gl, centralizer.stream().toArray(), newV, newArr, idx + 1, sink);
         }
     }
 
-    private boolean hasEigenOne(int a, int p, int n, Map<Integer, Integer> inv) {
+    private boolean hasEigenOne(int a, int p, int n, FixBS inv) {
         int[][] matrix = toMatrix(a, p, n);
         int[][] sub = sub(matrix, unity(n), p);
-        return !inv.containsKey(fromMatrix(sub, p));
+        return !inv.get(fromMatrix(sub, p));
     }
 
-    private Map<Integer, Integer> generateInvertibleSlow(int p, int n) {
-        int cnt = LinearSpace.pow(p, n * n);
+    private Map<Integer, Integer> generateInvertibleGl(int[] gl, int p, int n) {
         Map<Integer, Integer> result = new HashMap<>();
         int one = fromMatrix(unity(n), p);
-        for (int i = 0; i < cnt; i++) {
-            for (int j = 0; j < cnt; j++) {
+        for (int i : gl) {
+            if (result.containsKey(i)) {
+                continue;
+            }
+            for (int j : gl) {
                 int[][] first = toMatrix(i, p, n);
                 int[][] second = toMatrix(j, p, n);
                 if (fromMatrix(multiply(first, second, p), p) == one) {
                     result.put(i, j);
+                    result.put(j, i);
                     break;
                 }
             }
@@ -497,9 +522,9 @@ public class TranslationPlaneTest {
         return result;
     }
 
-    private Map<Integer, Integer> generateInvertible(LinearSpace sp) {
+    private FixBS generateInvertible(LinearSpace sp) {
         int cnt = LinearSpace.pow(sp.p(), sp.n() * sp.n());
-        Map<Integer, Integer> result = new HashMap<>();
+        FixBS result = new FixBS(cnt);
         ex: for (int i = 0; i < cnt; i++) {
             int[][] matrix = toMatrix(i, sp.p(), sp.n());
             for (int j = 1; j < sp.cardinality(); j++) {
@@ -509,7 +534,7 @@ public class TranslationPlaneTest {
                     continue ex;
                 }
             }
-            result.put(i, i);
+            result.set(i);
         }
         return result;
     }
