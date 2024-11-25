@@ -446,7 +446,7 @@ public class TranslationPlaneTest {
             System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
-        tree(p, n, gl, v, partSpread, 0, cons);
+        tree(p, n, gl, gl, v, partSpread, 0, cons);
     }
 
     private int sub(int a, int b, int p, int n) {
@@ -455,7 +455,7 @@ public class TranslationPlaneTest {
         return fromMatrix(sub(aMat, bMat, p), p);
     }
 
-    private void tree(int p, int n, int[] gl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
+    private void tree(int p, int n, int[] gl, int[] subGl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
         if (idx == partSpread.length) {
             sink.accept(partSpread);
             return;
@@ -470,7 +470,7 @@ public class TranslationPlaneTest {
                 int sub = sub(b, a, p, n);
                 return Arrays.binarySearch(gl, sub) >= 0;
             }).toArray();
-            tree(p, n, gl, newV, newArr, idx + 1, sink);
+            tree(p, n, gl, subGl, newV, newArr, idx + 1, sink);
         }
     }
 
