@@ -54,4 +54,9 @@ public record TwoLinearSpace(int n) implements LinearSpace {
     public int scalar(int a, int b) {
         return Integer.bitCount(a & b) % 2;
     }
+
+    @Override
+    public int crd(int v, int crd) {
+        return (v >>> crd) & 1;
+    }
 }

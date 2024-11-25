@@ -280,4 +280,41 @@ public class TranslationPlaneTest {
         }
         return true;
     }
+
+    @Test
+    public void testGenerateAlt1() {
+        int p = 2;
+        int n = 10;
+        int half = n / 2;
+        LinearSpace sp = LinearSpace.of(p, n);
+        LinearSpace mini = LinearSpace.of(p, half);
+        LinearSpace mega = LinearSpace.of(mini.cardinality(), half);
+        System.out.println(generateAlt(mini, mega).cardinality());
+    }
+
+    private static FixBS generateAlt(LinearSpace mini, LinearSpace mega) {
+        int max = mega.cardinality();
+        FixBS result = new FixBS(max);
+        ex: for (int a = 1; a < max; a++) {
+            FixBS unique = new FixBS(mini.cardinality());
+            for (int x = 1; x < mini.cardinality(); x++) {
+                int ax = ax(mini, mega, a, x);
+                if (ax == x || unique.get(ax)) {
+                    continue ex;
+                }
+                unique.set(ax);
+            }
+            result.set(a);
+        }
+        return result;
+    }
+
+    private static int ax(LinearSpace mini, LinearSpace mega, int a, int x) {
+        int[] crd = mega.toCrd(a);
+        int[] mapped = new int[mini.n()];
+        for (int k = 0; k < mini.n(); k++) {
+            mapped[k] = mini.scalar(crd[k], x);
+        }
+        return mini.fromCrd(mapped);
+    }
 }

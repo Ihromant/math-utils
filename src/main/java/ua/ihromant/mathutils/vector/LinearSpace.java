@@ -1,7 +1,8 @@
 package ua.ihromant.mathutils.vector;
 
-import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.util.FixBS;
+
+import java.util.stream.IntStream;
 
 public interface LinearSpace {
     int p();
@@ -20,8 +21,18 @@ public interface LinearSpace {
 
     int scalar(int a, int b);
 
-    default LinearSpace halfSpace() {
-        return of(p(), n() / 2);
+    int crd(int v, int crd);
+
+    default int[] toCrd(int a) {
+        return IntStream.range(0, n()).map(i -> crd(a, i)).toArray();
+    }
+
+    default int fromCrd(int[] crd) {
+        int result = 0;
+        for (int i = crd.length - 1; i >= 0; i--) {
+            result = result * p() + crd[i];
+        }
+        return result;
     }
 
     static int pow(int a, int b) {
@@ -41,10 +52,8 @@ public interface LinearSpace {
     static LinearSpace of(int p, int n) {
         if (p == 2) {
             return new TwoLinearSpace(n);
-        }
-        if (GaloisField.isPrime(p)) {
+        } else {
             return new PrimeLinearSpace(p, n);
         }
-        throw new IllegalArgumentException();
     }
 }

@@ -32,6 +32,7 @@ public class PrimeLinearSpace implements LinearSpace {
         return powList[n / 2];
     }
 
+    @Override
     public int crd(int v, int crd) {
         return (v / powList[crd]) % p;
     }
