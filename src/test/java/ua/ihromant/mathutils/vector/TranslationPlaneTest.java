@@ -13,9 +13,12 @@ import ua.ihromant.mathutils.plane.TernaryRingTest;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,10 +34,10 @@ import java.util.stream.IntStream;
 public class TranslationPlaneTest {
     @Test
     public void writeHulls() throws IOException {
-        int p = 2;
-        int n = 10;
+        int p = 7;
+        int n = 4;
         File f = new File("/home/ihromant/maths/", "spaces-" + p + "^" + n + ".txt");
-        try (FileOutputStream fos = new FileOutputStream(f, true);
+        try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             System.out.println(p + " " + n);
@@ -62,10 +65,20 @@ public class TranslationPlaneTest {
         }
     }
 
+    private static FixBS[] readHulls(LinearSpace sp) throws IOException {
+        File f = new File("/home/ihromant/maths/", "spaces-" + sp.p() + "^" + sp.n() + ".txt");
+        try (FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            return br.lines().map(l -> FixBS.of(sp.cardinality(), Arrays.stream(l.substring(1, l.length() - 1)
+                    .split(", ")).mapToInt(Integer::parseInt).toArray())).toArray(FixBS[]::new);
+        }
+    }
+
     @Test
-    public void checkSubspaces() {
-        int p = 3;
-        int n = 4;
+    public void checkSubspaces() throws IOException {
+        int p = 2;
+        int n = 10;
         System.out.println(p + " " + n);
         LinearSpace sp = LinearSpace.of(p, n);
         int half = sp.half();
@@ -81,14 +94,7 @@ public class TranslationPlaneTest {
             third.set(half * i + i);
         }
         union.or(third);
-        Set<FixBS> distinct = new HashSet<>();
-        List<FixBS> lst = new ArrayList<>();
-        generateSpaces(sp, union, h -> {
-            if (distinct.add(h)) {
-                lst.add(h);
-            }
-        });
-        FixBS[] hulls = lst.toArray(FixBS[]::new);
+        FixBS[] hulls = readHulls(sp);
         System.out.println(hulls.length + " " + Arrays.stream(hulls).takeWhile(h -> h.nextSetBit(0) == third.nextSetBit(0) + 1).count());
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
@@ -282,15 +288,76 @@ public class TranslationPlaneTest {
     }
 
     @Test
-    public void testGenerateAlt1() {
-        int p = 2;
-        int n = 10;
+    public void testGenerateAlt() {
+        int p = 3;
+        int n = 4;
         int half = n / 2;
         LinearSpace sp = LinearSpace.of(p, n);
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace mega = LinearSpace.of(mini.cardinality(), half);
         FixBS suitable = generateOperators(mini, mega);
+        System.out.println(suitable.cardinality());
+        int sc = sp.cardinality();
+        int mc = mini.cardinality();
+        FixBS first = new FixBS(sc);
+        first.set(0, mc);
+        FixBS second = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            second.set(i * mc);
+        }
+        FixBS third = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            third.set(mc * i + i);
+        }
+        FixBS[] base = new FixBS[mc + 1];
+        base[0] = first;
+        base[1] = second;
+        base[2] = third;
+        AtomicInteger counter = new AtomicInteger();
+        Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
+        Consumer<int[]> cons = arr -> {
+            FixBS[] cand = base.clone();
+            for (int i = 0; i < arr.length; i++) {
+                int a = arr[i];
+                FixBS elem = new FixBS(sc);
+                elem.set(0);
+                for (int x = 1; x < mc; x++) {
+                    elem.set(ax(mini, mega, a, x) * mc + x);
+                }
+                cand[i + 3] = elem;
+            }
+            int[][] lines = toProjective(sp, cand);
+            Liner l = new Liner(lines.length, lines);
+            if (isDesargues(l, half)) {
+                return;
+            }
+            ProjChar chr = newTranslation(counter.toString(), l, projData);
+            if (chr != null) {
+                projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                System.out.println(counter.incrementAndGet() + Arrays.toString(arr));
+                System.out.println(chr);
+            }
+        };
+        int[] baseArr = new int[mc - 2];
+        generateAlt(mega, suitable, baseArr, 0, 0, cons);
+    }
 
+    private static void generateAlt(LinearSpace mega, FixBS suitable, int[] arr, int prev, int idx, Consumer<int[]> sink) {
+        if (idx == arr.length) {
+            sink.accept(arr);
+            return;
+        }
+        ex: for (int a = suitable.nextSetBit(prev + 1); a >= 0; a = suitable.nextSetBit(a + 1)) {
+            for (int i = 0; i < idx; i++) {
+                int b = arr[i];
+                if (!suitable.get(mega.sub(a, b))) {
+                    continue ex;
+                }
+            }
+            int[] newArr = arr.clone();
+            newArr[idx] = a;
+            generateAlt(mega, suitable, newArr, a, idx + 1, sink);
+        }
     }
 
     private static FixBS generateOperators(LinearSpace mini, LinearSpace mega) {
