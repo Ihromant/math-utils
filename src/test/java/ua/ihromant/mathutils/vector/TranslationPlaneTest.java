@@ -401,9 +401,9 @@ public class TranslationPlaneTest {
         int mc = mini.cardinality();
         int[] gl = invertible.stream().toArray();
         Map<Integer, Integer> mapGl = generateInvertibleGlAlt(gl, p, half);
-        System.out.println(gl.length + " " + Arrays.toString(gl));
+        System.out.println(gl.length);
         int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, invertible)).toArray();
-        System.out.println(v.length + " " + Arrays.toString(v));
+        System.out.println(v.length);
         FixBS first = new FixBS(sc);
         first.set(0, mc);
         FixBS second = new FixBS(sc);
