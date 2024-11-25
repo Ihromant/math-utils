@@ -59,6 +59,7 @@ public class PrimeLinearSpace implements LinearSpace {
         return res;
     }
 
+    @Override
     public int scalar(int a, int b) {
         int res = 0;
         for (int i = 0; i < n; i++) {

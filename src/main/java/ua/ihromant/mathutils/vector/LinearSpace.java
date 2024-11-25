@@ -18,6 +18,12 @@ public interface LinearSpace {
 
     FixBS hull(int... arr);
 
+    int scalar(int a, int b);
+
+    default LinearSpace halfSpace() {
+        return of(p(), n() / 2);
+    }
+
     static int pow(int a, int b) {
         if (b == 0) {
             return 1;
