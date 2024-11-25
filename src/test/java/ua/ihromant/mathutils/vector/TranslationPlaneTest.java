@@ -77,8 +77,8 @@ public class TranslationPlaneTest {
 
     @Test
     public void checkSubspaces() throws IOException {
-        int p = 2;
-        int n = 10;
+        int p = 3;
+        int n = 4;
         System.out.println(p + " " + n);
         LinearSpace sp = LinearSpace.of(p, n);
         int half = sp.half();
@@ -98,8 +98,10 @@ public class TranslationPlaneTest {
         System.out.println(hulls.length + " " + Arrays.stream(hulls).takeWhile(h -> h.nextSetBit(0) == third.nextSetBit(0) + 1).count());
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
+        AtomicInteger allCounter = new AtomicInteger();
         Consumer<FixBS[]> cons = arr -> {
             int[][] lines = toProjective(sp, arr);
+            allCounter.incrementAndGet();
             Liner l = new Liner(lines.length, lines);
             if (isDesargues(l, half)) {
                 return;
@@ -116,7 +118,7 @@ public class TranslationPlaneTest {
         curr[1] = second;
         curr[2] = third;
         generate(curr, union, half - 2, hulls, cons);
-        System.out.println(projData);
+        System.out.println(allCounter + " " + projData);
     }
 
     private static void generate(FixBS[] curr, FixBS union, int needed, FixBS[] hulls, Consumer<FixBS[]> cons) {
@@ -384,5 +386,194 @@ public class TranslationPlaneTest {
             mapped[k] = mini.scalar(crd[k], x);
         }
         return mini.fromCrd(mapped);
+    }
+
+    @Test
+    public void generateAlt123() {
+        int p = 3;
+        int n = 4;
+        int half = n / 2;
+        Map<Integer, Integer> map = generateMatrixAndReverse(p, half);
+        LinearSpace mini = LinearSpace.of(p, half);
+        LinearSpace sp = LinearSpace.of(p, n);
+        int sc = sp.cardinality();
+        int mc = mini.cardinality();
+        int[] gl = map.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
+        System.out.println(gl.length + " " + Arrays.toString(gl));
+        map.forEach((k, v) -> System.out.println(Arrays.deepToString(toMatrix(k, p, half)) + " => "
+            + Arrays.deepToString(toMatrix(v, p, half))));
+        int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, mini)).toArray();
+        System.out.println(v.length + " " + Arrays.toString(v));
+        FixBS first = new FixBS(sc);
+        first.set(0, mc);
+        FixBS second = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            second.set(i * mc);
+        }
+        FixBS third = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            third.set(mc * i + i);
+        }
+        FixBS[] base = new FixBS[mc + 1];
+        base[0] = first;
+        base[1] = second;
+        base[2] = third;
+        AtomicInteger counter = new AtomicInteger();
+        Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
+        Consumer<int[]> cons = arr -> {
+            FixBS[] newBase = base.clone();
+            for (int i = 0; i < arr.length; i++) {
+                FixBS ln = new FixBS(sc);
+                int a = arr[i];
+                int[][] matrix = toMatrix(a, p, half);
+                for (int x = 1; x < mc; x++) {
+                    int[] vec = mini.toCrd(x);
+                    int ax = mini.fromCrd(multiply(matrix, vec, p));
+                    ln.set(ax * mc + x);
+                }
+                newBase[i + 3] = ln;
+            }
+            int[][] lines = toProjective(sp, newBase);
+            Liner l = new Liner(lines.length, lines);
+            if (isDesargues(l, mc)) {
+                System.out.println("Desargues");
+                return;
+            }
+            ProjChar chr = newTranslation(counter.toString(), l, projData);
+            if (chr != null) {
+                projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                System.out.println(chr);
+            }
+            System.out.println(Arrays.toString(arr));
+        };
+        int[] partSpread = new int[mini.cardinality() - 2];
+        tree(p, n, gl, v, partSpread, 0, cons);
+    }
+
+    private int sub(int a, int b, int p, int n) {
+        int[][] aMat = toMatrix(a, p, n);
+        int[][] bMat = toMatrix(b, p, n);
+        return fromMatrix(sub(aMat, bMat, p), p);
+    }
+
+    private void tree(int p, int n, int[] gl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
+        if (idx == partSpread.length) {
+            sink.accept(partSpread);
+            return;
+        }
+        for (int a : v) {
+            int[] newArr = partSpread.clone();
+            newArr[idx] = a;
+            int[] newV = Arrays.stream(v).filter(b -> {
+                if (b < a) {
+                    return false;
+                }
+                int sub = sub(b, a, p, n);
+                return Arrays.binarySearch(gl, sub) >= 0;
+            }).toArray();
+            tree(p, n, gl, newV, newArr, idx + 1, sink);
+        }
+    }
+
+    private boolean hasEigenOne(int a, LinearSpace sp) {
+        int[][] matrix = toMatrix(a, sp.p(), sp.n());
+        for (int i = 1; i < sp.cardinality(); i++) {
+            int[] arr = sp.toCrd(i);
+            if (sp.fromCrd(multiply(matrix, arr, sp.p())) == i) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private Map<Integer, Integer> generateMatrixAndReverse(int p, int n) {
+        int cnt = LinearSpace.pow(p, n * n);
+        Map<Integer, Integer> result = new HashMap<>();
+        int one = fromMatrix(unity(n), p);
+        for (int i = 0; i < cnt; i++) {
+            for (int j = 0; j < cnt; j++) {
+                int[][] first = toMatrix(i, p, n);
+                int[][] second = toMatrix(j, p, n);
+                if (fromMatrix(multiply(first, second, p), p) == one) {
+                    result.put(i, j);
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    private int[][] sub(int[][] first, int[][] second, int p) {
+        int[][] result = new int[first.length][first.length];
+        for (int i = 0; i < first.length; i++) {
+            for (int j = 0; j < first.length; j++) {
+                result[i][j] = (p + first[i][j] - second[i][j]) % p;
+            }
+        }
+        return result;
+    }
+
+    private int[] multiply(int[][] first, int[] arr, int p) {
+        int[] result = new int[first.length];
+        for (int i = 0; i < first.length; i++) {
+            int sum = 0;
+            for (int j = 0; j < first.length; j++) {
+                sum = sum + first[i][j] * arr[j];
+            }
+            result[i] = sum % p;
+        }
+        return result;
+    }
+
+    private int[][] multiply(int[][] first, int[][] second, int p) {
+        int[][] result = new int[first.length][first.length];
+        for (int i = 0; i < first.length; i++) {
+            for (int j = 0; j < first.length; j++) {
+                int sum = 0;
+                for (int k = 0; k < first.length; k++) {
+                    sum = sum + first[i][k] * second[k][j];
+                }
+                result[i][j] = sum % p;
+            }
+        }
+        return result;
+    }
+
+    private int[][] toMatrix(int a, int p, int n) {
+        int[][] result = new int[n][n];
+        for (int i = 0; i < n * n; i++) {
+            result[i / n][i % n] = a % p;
+            a = a / p;
+        }
+        return result;
+    }
+
+    private int[][] unity(int n) {
+        int[][] result = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            result[i][i] = 1;
+        }
+        return result;
+    }
+
+    private int fromMatrix(int[][] matrix, int p) {
+        int result = 0;
+        for (int i = matrix.length * matrix.length - 1; i >= 0; i--) {
+            result = result * p + matrix[i / matrix.length][i % matrix.length];
+        }
+        return result;
+    }
+
+    @Test
+    public void testMatrices() {
+        int p = 3;
+        int n = 4;
+        int half = n / 2;
+        int all = LinearSpace.pow(p, half * half);
+        for (int i = 0; i < all; i++) {
+            int[][] matrix = toMatrix(i, p, half);
+            int dConv = fromMatrix(matrix, p);
+            System.out.println(i + " " + dConv + " " + Arrays.deepToString(matrix));
+        }
     }
 }
