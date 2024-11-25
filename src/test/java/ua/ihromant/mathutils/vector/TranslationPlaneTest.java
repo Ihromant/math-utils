@@ -401,8 +401,6 @@ public class TranslationPlaneTest {
         int mc = mini.cardinality();
         int[] gl = map.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
         System.out.println(gl.length + " " + Arrays.toString(gl));
-        map.forEach((k, v) -> System.out.println(Arrays.deepToString(toMatrix(k, p, half)) + " => "
-            + Arrays.deepToString(toMatrix(v, p, half))));
         int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, map)).toArray();
         System.out.println(v.length + " " + Arrays.toString(v));
         FixBS first = new FixBS(sc);
