@@ -56,6 +56,7 @@ public class TranslationPlaneTest {
             generateSpaces(sp, union, h -> {
                 if (distinct.add(h)) {
                     ps.println(h);
+                    ps.flush();
                 }
             });
         }
@@ -259,6 +260,29 @@ public class TranslationPlaneTest {
         int ow = 1;
         int e = liner.intersection(liner.line(u, liner.intersection(dl, ow)), liner.line(w, liner.intersection(dl, ou)));
         TernaryRing ring = new ProjectiveTernaryRing("", liner, new Quad(o, u, w, e)).toMatrix();
-        return ring.addComm() && ring.mulComm() && ring.isLinear() && ring.addAssoc() && ring.mulAssoc();
+        for (int x = 1; x < order; x++) {
+            for (int y = x + 1; y < order; y++) {
+                int xy = ring.mul(x, y);
+                if (xy != ring.mul(y, x)) {
+                    return false;
+                }
+                if (ring.mul(ring.mul(x, x), y) != ring.mul(x, xy)) {
+                    return false;
+                }
+                for (int z = 1; z < order; z++) {
+                    int yz = ring.add(y, z);
+                    if (ring.op(x, y, z) != ring.add(xy, z)) {
+                        return false;
+                    }
+                    if (ring.add(ring.add(x, y), z) != ring.add(x, yz)) {
+                        return false;
+                    }
+                    if (ring.mul(x, yz) != ring.add(xy, ring.mul(x, z))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }

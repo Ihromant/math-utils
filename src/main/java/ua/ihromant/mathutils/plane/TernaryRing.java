@@ -48,16 +48,16 @@ public interface TernaryRing {
         return result;
     }
 
-    default int add(int x, int b) {
-        return op(x, 1, b);
+    default int add(int a, int b) {
+        return op(a, 1, b);
     }
 
-    default int puls(int x, int b) {
-        return op(1, x, b);
+    default int puls(int a, int b) {
+        return op(1, a, b);
     }
 
-    default int mul(int x, int a) {
-        return op(x, a, 0);
+    default int mul(int a, int b) {
+        return op(a, b, 0);
     }
 
     default boolean isLinear() {
