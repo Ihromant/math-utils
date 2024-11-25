@@ -33,6 +33,11 @@ public record TwoLinearSpace(int n) implements LinearSpace {
     }
 
     @Override
+    public int neg(int a) {
+        return a;
+    }
+
+    @Override
     public FixBS hull(int... arr) {
         int al = arr.length;
         int fin = 1 << al;

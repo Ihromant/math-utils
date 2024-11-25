@@ -289,10 +289,11 @@ public class TranslationPlaneTest {
         LinearSpace sp = LinearSpace.of(p, n);
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace mega = LinearSpace.of(mini.cardinality(), half);
-        System.out.println(generateAlt(mini, mega).cardinality());
+        FixBS suitable = generateOperators(mini, mega);
+
     }
 
-    private static FixBS generateAlt(LinearSpace mini, LinearSpace mega) {
+    private static FixBS generateOperators(LinearSpace mini, LinearSpace mega) {
         int max = mega.cardinality();
         FixBS result = new FixBS(max);
         ex: for (int a = 1; a < max; a++) {

@@ -71,6 +71,7 @@ public class PrimeLinearSpace implements LinearSpace {
         return res % p;
     }
 
+    @Override
     public int neg(int a) {
         return mul(a, p - 1);
     }

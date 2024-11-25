@@ -17,6 +17,12 @@ public interface LinearSpace {
 
     int add(int... numbers);
 
+    int neg(int a);
+
+    default int sub(int a, int b) {
+        return add(a, neg(b));
+    }
+
     FixBS hull(int... arr);
 
     int scalar(int a, int b);
