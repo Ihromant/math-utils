@@ -392,17 +392,18 @@ public class TranslationPlaneTest {
     public void generateAlt123() {
         int p = 3;
         int n = 4;
+        System.out.println(p + " " + n);
         int half = n / 2;
-        Map<Integer, Integer> map = generateMatrixAndReverse(p, half);
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
+        Map<Integer, Integer> map = generateInvAndReverse(mini);
         int sc = sp.cardinality();
         int mc = mini.cardinality();
         int[] gl = map.keySet().stream().mapToInt(Integer::intValue).sorted().toArray();
         System.out.println(gl.length + " " + Arrays.toString(gl));
         map.forEach((k, v) -> System.out.println(Arrays.deepToString(toMatrix(k, p, half)) + " => "
             + Arrays.deepToString(toMatrix(v, p, half))));
-        int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, mini)).toArray();
+        int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, map)).toArray();
         System.out.println(v.length + " " + Arrays.toString(v));
         FixBS first = new FixBS(sc);
         first.set(0, mc);
@@ -475,30 +476,25 @@ public class TranslationPlaneTest {
         }
     }
 
-    private boolean hasEigenOne(int a, LinearSpace sp) {
-        int[][] matrix = toMatrix(a, sp.p(), sp.n());
-        for (int i = 1; i < sp.cardinality(); i++) {
-            int[] arr = sp.toCrd(i);
-            if (sp.fromCrd(multiply(matrix, arr, sp.p())) == i) {
-                return true;
-            }
-        }
-        return false;
+    private boolean hasEigenOne(int a, int p, int n, Map<Integer, Integer> inv) {
+        int[][] matrix = toMatrix(a, p, n);
+        int[][] sub = sub(matrix, unity(n), p);
+        return !inv.containsKey(fromMatrix(sub, p));
     }
 
-    private Map<Integer, Integer> generateMatrixAndReverse(int p, int n) {
-        int cnt = LinearSpace.pow(p, n * n);
+    private Map<Integer, Integer> generateInvAndReverse(LinearSpace sp) {
+        int cnt = LinearSpace.pow(sp.p(), sp.n() * sp.n());
         Map<Integer, Integer> result = new HashMap<>();
-        int one = fromMatrix(unity(n), p);
-        for (int i = 0; i < cnt; i++) {
-            for (int j = 0; j < cnt; j++) {
-                int[][] first = toMatrix(i, p, n);
-                int[][] second = toMatrix(j, p, n);
-                if (fromMatrix(multiply(first, second, p), p) == one) {
-                    result.put(i, j);
-                    break;
+        ex: for (int i = 0; i < cnt; i++) {
+            int[][] matrix = toMatrix(i, sp.p(), sp.n());
+            for (int j = 1; j < sp.cardinality(); j++) {
+                int[] vec = sp.toCrd(j);
+                int[] mul = multiply(matrix, vec, sp.p());
+                if (sp.fromCrd(mul) == 0) {
+                    continue ex;
                 }
             }
+            result.put(i, i);
         }
         return result;
     }
