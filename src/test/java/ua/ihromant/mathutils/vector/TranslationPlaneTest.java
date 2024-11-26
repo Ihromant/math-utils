@@ -470,7 +470,7 @@ public class TranslationPlaneTest {
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
             int[] newV = Arrays.stream(v).filter(b -> {
-                if (b < a) {
+                if (b <= a) {
                     return false;
                 }
                 int sub = sub(b, a, p, n);
@@ -485,7 +485,9 @@ public class TranslationPlaneTest {
                 int[][] multiplied = multiply(multiply(invMatrix, aMatrix, p), matrix, p);
                 int prod = fromMatrix(multiplied, p);
                 filter.set(prod);
-                filter.set(inv.get(prod));
+                if (idx == 0) {
+                    filter.set(inv.get(prod));
+                }
 
                 int[][] lMul = multiply(aMatrix, matrix, p);
                 int[][] rMul = multiply(matrix, aMatrix, p);
