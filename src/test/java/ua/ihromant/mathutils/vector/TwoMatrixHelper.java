@@ -19,7 +19,7 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     public TwoMatrixHelper(int n) {
         this.half = n / 2;
         this.unity = calcUnity();
-        this.matCount = 1 << half * half;
+        this.matCount = 1 << (half * half);
         this.invertible = generateInvertibleAlt();
         this.gl = invertible.stream().toArray();
         System.out.println(gl.length);
