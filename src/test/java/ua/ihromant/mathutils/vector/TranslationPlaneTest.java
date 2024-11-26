@@ -440,10 +440,10 @@ public class TranslationPlaneTest {
             System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
-        tree(helper, helper.gl(), helper.v(), partSpread, 0, cons);
+        tree(helper, Arrays.stream(helper.gl()).boxed().toList(), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
     }
 
-    private void tree(ModuloMatrixHelper helper, int[] subGl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
+    private void tree(ModuloMatrixHelper helper, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, Consumer<int[]> sink) {
         if (idx == partSpread.length) {
             sink.accept(partSpread);
             return;
@@ -455,13 +455,13 @@ public class TranslationPlaneTest {
             }
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
-            List<Integer> newV = new ArrayList<>();
+            List<Integer> newV = new ArrayList<>(v.size());
             for (int b : v) {
                 if (b > a && helper.hasInv(helper.sub(b, a))) {
                     newV.add(b);
                 }
             }
-            List<Integer> centralizer = new ArrayList<>();
+            List<Integer> centralizer = new ArrayList<>(subGl.size());
             for (int el : subGl) {
                 int invEl = helper.inv(el);
                 int prod = helper.mul(helper.mul(invEl, a), el);
@@ -476,7 +476,7 @@ public class TranslationPlaneTest {
                     centralizer.add(el);
                 }
             }
-            tree(helper, centralizer.stream().mapToInt(Integer::intValue).toArray(), newV.stream().mapToInt(Integer::intValue).toArray(), newArr, idx + 1, sink);
+            tree(helper, centralizer, newV, newArr, idx + 1, sink);
         }
     }
 }
