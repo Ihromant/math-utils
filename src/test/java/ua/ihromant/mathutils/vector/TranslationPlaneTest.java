@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -316,7 +317,7 @@ public class TranslationPlaneTest {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
-        Consumer<int[]> cons = arr -> {
+        BiConsumer<int[], List<Integer>> cons = (arr, vl) -> {
             FixBS[] newBase = base.clone();
             for (int i = 0; i < arr.length; i++) {
                 FixBS ln = new FixBS(sc);
@@ -344,9 +345,13 @@ public class TranslationPlaneTest {
         tree(helper, Arrays.stream(helper.gl()).boxed().toList(), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
     }
 
-    private void tree(ModuloMatrixHelper helper, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, Consumer<int[]> sink) {
-        if (idx == partSpread.length) {
-            sink.accept(partSpread);
+    private void tree(ModuloMatrixHelper helper, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], List<Integer>> sink) {
+        int needed = partSpread.length - idx;
+        if (v.size() < needed) {
+            return;
+        }
+        if (needed == 0) {
+            sink.accept(partSpread, v);
             return;
         }
         FixBS filter = new FixBS(helper.matCount());
@@ -381,8 +386,34 @@ public class TranslationPlaneTest {
         }
     }
 
+    @Test
+    public void generateSimples() throws IOException {
+        int p = 2;
+        int n = 10;
+        File f = new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            System.out.println(p + " " + n);
+            ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+            int len = 3;
+            int rest = LinearSpace.pow(p, n / 2) - 2 - len;
+            BiConsumer<int[], List<Integer>> cons = (arr, vl) -> {
+                if (rest <= vl.size()) {
+                    ps.println(Arrays.toString(arr));
+                }
+            };
+            int[] partSpread = new int[len];
+            tree(helper, Arrays.stream(helper.gl()).boxed().toList(), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+        }
+    }
+
     private void treeSimple(ModuloMatrixHelper helper, List<Integer> v, int[] partSpread, int idx, Consumer<int[]> sink) {
-        if (idx == partSpread.length) {
+        int needed = partSpread.length - idx;
+        if (v.size() < needed) {
+            return;
+        }
+        if (needed == 0) {
             sink.accept(partSpread);
             return;
         }
