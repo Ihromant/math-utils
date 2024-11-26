@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 public interface ModuloMatrixHelper {
-    int unity();
+    int matCount();
 
     int sub(int i, int j);
 

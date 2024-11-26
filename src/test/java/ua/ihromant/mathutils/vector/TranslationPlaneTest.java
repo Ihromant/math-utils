@@ -396,14 +396,9 @@ public class TranslationPlaneTest {
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
-        FixBS invertible = generateInvertibleAlt(mini);
         int sc = sp.cardinality();
         int mc = mini.cardinality();
-        int[] gl = invertible.stream().toArray();
-        Map<Integer, Integer> mapGl = generateInvertibleGlAlt(gl, p, half);
-        System.out.println(gl.length);
-        int[] v = Arrays.stream(gl).filter(a -> !hasEigenOne(a, p, half, invertible)).toArray();
-        System.out.println(v.length);
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
         FixBS first = new FixBS(sc);
         first.set(0, mc);
         FixBS second = new FixBS(sc);
@@ -425,10 +420,8 @@ public class TranslationPlaneTest {
             for (int i = 0; i < arr.length; i++) {
                 FixBS ln = new FixBS(sc);
                 int a = arr[i];
-                int[][] matrix = toMatrix(a, p, half);
                 for (int x = 1; x < mc; x++) {
-                    int[] vec = mini.toCrd(x);
-                    int ax = mini.fromCrd(multiply(matrix, vec, p));
+                    int ax = helper.mulVec(a, x);
                     ln.set(ax * mc + x);
                 }
                 newBase[i + 3] = ln;
@@ -447,206 +440,38 @@ public class TranslationPlaneTest {
             System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
-        tree(p, half, mapGl, invertible, gl, v, partSpread, 0, cons);
+        tree(helper, helper.gl(), helper.v(), partSpread, 0, cons);
     }
 
-    private int sub(int a, int b, int p, int n) {
-        int[][] aMat = toMatrix(a, p, n);
-        int[][] bMat = toMatrix(b, p, n);
-        return fromMatrix(sub(aMat, bMat, p), p);
-    }
-
-    private void tree(int p, int n, Map<Integer, Integer> inv, FixBS gl, int[] subGl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
+    private void tree(ModuloMatrixHelper helper, int[] subGl, int[] v, int[] partSpread, int idx, Consumer<int[]> sink) {
         if (idx == partSpread.length) {
             sink.accept(partSpread);
             return;
         }
-        int sz = LinearSpace.pow(p, n * n);
-        FixBS filter = new FixBS(sz);
+        FixBS filter = new FixBS(helper.matCount());
         for (int a : v) {
             if (filter.get(a)) {
                 continue;
             }
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
-            int[] newV = Arrays.stream(v).filter(b -> {
-                if (b <= a) {
-                    return false;
-                }
-                int sub = sub(b, a, p, n);
-                return gl.get(sub);
-            }).toArray();
-            FixBS centralizer = new FixBS(sz);
-            int[][] aMatrix = toMatrix(a, p, n);
+            int[] newV = Arrays.stream(v).filter(b -> b > a && helper.hasInv(helper.sub(b, a))).toArray();
+            FixBS centralizer = new FixBS(helper.matCount());
             for (int el : subGl) {
-                int invEl = inv.get(el);
-                int[][] invMatrix = toMatrix(invEl, p, n);
-                int[][] matrix = toMatrix(el, p, n);
-                int[][] multiplied = multiply(multiply(invMatrix, aMatrix, p), matrix, p);
-                int prod = fromMatrix(multiplied, p);
+                int invEl = helper.inv(el);
+                int prod = helper.mul(helper.mul(invEl, a), el);
                 filter.set(prod);
                 if (idx == 0) {
-                    filter.set(inv.get(prod));
+                    filter.set(helper.inv(prod));
                 }
 
-                int[][] lMul = multiply(aMatrix, matrix, p);
-                int[][] rMul = multiply(matrix, aMatrix, p);
-                if (Arrays.deepEquals(lMul, rMul)) {
+                int lMul = helper.mul(a, el);
+                int rMul = helper.mul(el, a);
+                if (lMul == rMul) {
                     centralizer.set(el);
                 }
             }
-            tree(p, n, inv, gl, centralizer.stream().toArray(), newV, newArr, idx + 1, sink);
-        }
-    }
-
-    private boolean hasEigenOne(int a, int p, int n, FixBS inv) {
-        int[][] matrix = toMatrix(a, p, n);
-        int[][] sub = sub(matrix, unity(n), p);
-        return !inv.get(fromMatrix(sub, p));
-    }
-
-    private Map<Integer, Integer> generateInvertibleGlAlt(int[] gl, int p, int n) {
-        Map<Integer, Integer> result = new HashMap<>();
-        for (int i : gl) {
-            int[][] matrix = toMatrix(i, p, n);
-            if (result.containsKey(i)) {
-                continue;
-            }
-            try {
-                int[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix, p);
-                int inv = fromMatrix(rev, p);
-                result.put(i, inv);
-                result.put(inv, i);
-            } catch (ArithmeticException e) {
-                // ok
-            }
-        }
-        return result;
-    }
-
-    private Map<Integer, Integer> generateInvertibleGl(int[] gl, int p, int n) {
-        Map<Integer, Integer> result = new HashMap<>();
-        int one = fromMatrix(unity(n), p);
-        for (int i : gl) {
-            if (result.containsKey(i)) {
-                continue;
-            }
-            for (int j : gl) {
-                int[][] first = toMatrix(i, p, n);
-                int[][] second = toMatrix(j, p, n);
-                if (fromMatrix(multiply(first, second, p), p) == one) {
-                    result.put(i, j);
-                    result.put(j, i);
-                    break;
-                }
-            }
-        }
-        return result;
-    }
-
-    private FixBS generateInvertibleAlt(LinearSpace sp) {
-        int cnt = LinearSpace.pow(sp.p(), sp.n() * sp.n());
-        FixBS result = new FixBS(cnt);
-        for (int i = 0; i < cnt; i++) {
-            int[][] matrix = toMatrix(i, sp.p(), sp.n());
-            try {
-                MatrixInverseFiniteField.inverseMatrix(matrix, sp.p());
-                result.set(i);
-            } catch (ArithmeticException e) {
-                // ok
-            }
-        }
-        return result;
-    }
-
-    private FixBS generateInvertible(LinearSpace sp) {
-        int cnt = LinearSpace.pow(sp.p(), sp.n() * sp.n());
-        FixBS result = new FixBS(cnt);
-        ex: for (int i = 0; i < cnt; i++) {
-            int[][] matrix = toMatrix(i, sp.p(), sp.n());
-            for (int j = 1; j < sp.cardinality(); j++) {
-                int[] vec = sp.toCrd(j);
-                int[] mul = multiply(matrix, vec, sp.p());
-                if (sp.fromCrd(mul) == 0) {
-                    continue ex;
-                }
-            }
-            result.set(i);
-        }
-        return result;
-    }
-
-    private int[][] sub(int[][] first, int[][] second, int p) {
-        int[][] result = new int[first.length][first.length];
-        for (int i = 0; i < first.length; i++) {
-            for (int j = 0; j < first.length; j++) {
-                result[i][j] = (p + first[i][j] - second[i][j]) % p;
-            }
-        }
-        return result;
-    }
-
-    private int[] multiply(int[][] first, int[] arr, int p) {
-        int[] result = new int[first.length];
-        for (int i = 0; i < first.length; i++) {
-            int sum = 0;
-            for (int j = 0; j < first.length; j++) {
-                sum = sum + first[i][j] * arr[j];
-            }
-            result[i] = sum % p;
-        }
-        return result;
-    }
-
-    private int[][] multiply(int[][] first, int[][] second, int p) {
-        int[][] result = new int[first.length][first.length];
-        for (int i = 0; i < first.length; i++) {
-            for (int j = 0; j < first.length; j++) {
-                int sum = 0;
-                for (int k = 0; k < first.length; k++) {
-                    sum = sum + first[i][k] * second[k][j];
-                }
-                result[i][j] = sum % p;
-            }
-        }
-        return result;
-    }
-
-    private int[][] toMatrix(int a, int p, int n) {
-        int[][] result = new int[n][n];
-        for (int i = 0; i < n * n; i++) {
-            result[i / n][i % n] = a % p;
-            a = a / p;
-        }
-        return result;
-    }
-
-    private int[][] unity(int n) {
-        int[][] result = new int[n][n];
-        for (int i = 0; i < n; i++) {
-            result[i][i] = 1;
-        }
-        return result;
-    }
-
-    private int fromMatrix(int[][] matrix, int p) {
-        int result = 0;
-        for (int i = matrix.length * matrix.length - 1; i >= 0; i--) {
-            result = result * p + matrix[i / matrix.length][i % matrix.length];
-        }
-        return result;
-    }
-
-    @Test
-    public void testMatrices() {
-        int p = 3;
-        int n = 4;
-        int half = n / 2;
-        int all = LinearSpace.pow(p, half * half);
-        for (int i = 0; i < all; i++) {
-            int[][] matrix = toMatrix(i, p, half);
-            int dConv = fromMatrix(matrix, p);
-            System.out.println(i + " " + dConv + " " + Arrays.deepToString(matrix));
+            tree(helper, centralizer.stream().toArray(), newV, newArr, idx + 1, sink);
         }
     }
 }
