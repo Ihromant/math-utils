@@ -18,6 +18,9 @@ public interface ModuloMatrixHelper {
     int[] v();
 
     static ModuloMatrixHelper of(int p, int n) {
+        if (p == 2) {
+            return new TwoMatrixHelper(n);
+        }
         return new CommonMatrixHelper(p, n);
     }
 }
