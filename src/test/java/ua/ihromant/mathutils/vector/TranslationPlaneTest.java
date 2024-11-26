@@ -455,8 +455,13 @@ public class TranslationPlaneTest {
             }
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
-            int[] newV = Arrays.stream(v).filter(b -> b > a && helper.hasInv(helper.sub(b, a))).toArray();
-            FixBS centralizer = new FixBS(helper.matCount());
+            List<Integer> newV = new ArrayList<>();
+            for (int b : v) {
+                if (b > a && helper.hasInv(helper.sub(b, a))) {
+                    newV.add(b);
+                }
+            }
+            List<Integer> centralizer = new ArrayList<>();
             for (int el : subGl) {
                 int invEl = helper.inv(el);
                 int prod = helper.mul(helper.mul(invEl, a), el);
@@ -468,10 +473,10 @@ public class TranslationPlaneTest {
                 int lMul = helper.mul(a, el);
                 int rMul = helper.mul(el, a);
                 if (lMul == rMul) {
-                    centralizer.set(el);
+                    centralizer.add(el);
                 }
             }
-            tree(helper, centralizer.stream().toArray(), newV, newArr, idx + 1, sink);
+            tree(helper, centralizer.stream().mapToInt(Integer::intValue).toArray(), newV.stream().mapToInt(Integer::intValue).toArray(), newArr, idx + 1, sink);
         }
     }
 }
