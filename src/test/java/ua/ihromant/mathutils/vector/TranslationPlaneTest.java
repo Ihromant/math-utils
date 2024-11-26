@@ -342,7 +342,25 @@ public class TranslationPlaneTest {
             System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
-        tree(helper, Arrays.stream(helper.gl()).boxed().toList(), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+        tree(helper, filterGl(helper, helper.gl(), p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+    }
+
+    private List<Integer> filterGl(ModuloMatrixHelper helper, int[] gl, int p) {
+        List<Integer> result = new ArrayList<>();
+        FixBS filter = new FixBS(helper.matCount());
+        for (int i = 1; i < p; i++) {
+            filter.set(helper.mulCff(helper.unity(), i));
+        }
+        for (int i : gl) {
+            if (filter.get(i)) {
+                continue;
+            }
+            for (int j = 2; j < p; j++) {
+                filter.set(helper.mulCff(i, j));
+            }
+            result.add(i);
+        }
+        return result;
     }
 
     private void tree(ModuloMatrixHelper helper, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], List<Integer>> sink) {

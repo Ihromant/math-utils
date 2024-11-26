@@ -30,6 +30,11 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     }
 
     @Override
+    public int unity() {
+        return unity;
+    }
+
+    @Override
     public int matCount() {
         return matCount;
     }
