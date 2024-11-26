@@ -9,6 +9,8 @@ public interface ModuloMatrixHelper {
 
     int mulVec(int a, int vec);
 
+    int mulCff(int a, int cff);
+
     int inv(int i);
 
     boolean hasInv(int i);

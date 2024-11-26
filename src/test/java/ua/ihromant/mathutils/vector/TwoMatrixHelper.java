@@ -50,6 +50,11 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     }
 
     @Override
+    public int mulCff(int a, int cff) {
+        return cff % 2 == 0 ? 0 : a;
+    }
+
+    @Override
     public int inv(int i) {
         return mapGl.get(i);
     }
