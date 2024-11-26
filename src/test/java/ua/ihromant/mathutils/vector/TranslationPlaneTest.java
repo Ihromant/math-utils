@@ -380,4 +380,22 @@ public class TranslationPlaneTest {
             tree(helper, centralizer, newV, newArr, idx + 1, sink);
         }
     }
+
+    private void treeSimple(ModuloMatrixHelper helper, List<Integer> v, int[] partSpread, int idx, Consumer<int[]> sink) {
+        if (idx == partSpread.length) {
+            sink.accept(partSpread);
+            return;
+        }
+        for (int a : v) {
+            int[] newArr = partSpread.clone();
+            newArr[idx] = a;
+            List<Integer> newV = new ArrayList<>(v.size());
+            for (int b : v) {
+                if (b > a && helper.hasInv(helper.sub(b, a))) {
+                    newV.add(b);
+                }
+            }
+            treeSimple(helper, newV, newArr, idx + 1, sink);
+        }
+    }
 }
