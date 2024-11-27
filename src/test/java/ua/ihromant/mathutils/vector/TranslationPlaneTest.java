@@ -339,6 +339,7 @@ public class TranslationPlaneTest {
             ProjChar chr = newTranslation(counter.toString(), l, projData);
             if (chr != null) {
                 projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                counter.incrementAndGet();
                 System.out.println(chr);
             }
             System.out.println(Arrays.toString(arr));
@@ -435,6 +436,7 @@ public class TranslationPlaneTest {
     public void printStatistics() throws IOException {
         int p = 3;
         int n = 6;
+        System.out.println(p + " " + n);
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
@@ -444,6 +446,92 @@ public class TranslationPlaneTest {
                 frq[start.length]++;
             });
             System.out.println(Arrays.toString(frq));
+        }
+    }
+
+    @Test
+    public void generateBySimple() throws IOException {
+        int p = 2;
+        int n = 8;
+        System.out.println(p + " " + n);
+        int half = n / 2;
+        LinearSpace mini = LinearSpace.of(p, half);
+        LinearSpace sp = LinearSpace.of(p, n);
+        int sc = sp.cardinality();
+        int mc = mini.cardinality();
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        FixBS first = new FixBS(sc);
+        first.set(0, mc);
+        FixBS second = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            second.set(i * mc);
+        }
+        FixBS third = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            third.set(mc * i + i);
+        }
+        FixBS[] base = new FixBS[mc + 1];
+        base[0] = first;
+        base[1] = second;
+        base[2] = third;
+        AtomicInteger counter = new AtomicInteger();
+        Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr)) {
+            br.lines().forEach(line -> {
+                int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
+                if (start.length <= 10) {
+                    return;
+                }
+                FixBS[] newBase = base.clone();
+                for (int i = 0; i < start.length; i++) {
+                    FixBS ln = new FixBS(sc);
+                    int a = start[i];
+                    for (int x = 1; x < mc; x++) {
+                        int ax = helper.mulVec(a, x);
+                        ln.set(ax * mc + x);
+                    }
+                    newBase[i + 3] = ln;
+                }
+                int from = 3 + start.length;
+                Consumer<int[]> cons = arr -> {
+                    FixBS[] finalBase = newBase.clone();
+                    for (int i = 0; i < arr.length; i++) {
+                        FixBS ln = new FixBS(sc);
+                        int a = arr[i];
+                        for (int x = 1; x < mc; x++) {
+                            int ax = helper.mulVec(a, x);
+                            ln.set(ax * mc + x);
+                        }
+                        finalBase[i + from] = ln;
+                    }
+                    int[][] lines = toProjective(sp, finalBase);
+                    Liner l = new Liner(lines.length, lines);
+                    if (isDesargues(l, mc)) {
+                        System.out.println("Desargues");
+                        return;
+                    }
+                    ProjChar chr = newTranslation(counter.toString(), l, projData);
+                    if (chr != null) {
+                        projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                        counter.incrementAndGet();
+                        System.out.println(chr);
+                    }
+                    System.out.println("Found " + Arrays.toString(start) + " " + Arrays.toString(arr));
+                };
+                int[] partSpread = new int[mini.cardinality() - 2 - start.length];
+                List<Integer> newV = Arrays.stream(helper.v()).filter(b -> {
+                    for (int a : start) {
+                        if (b <= a || !helper.hasInv(helper.sub(b, a))) {
+                            return false;
+                        }
+                    }
+                    return true;
+                }).boxed().toList();
+                treeSimple(helper, newV, partSpread, 0, cons);
+                System.out.println(Arrays.toString(start) + " " + newV.size());
+            });
         }
     }
 
