@@ -41,6 +41,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class TranslationPlaneTest {
@@ -544,24 +545,24 @@ public class TranslationPlaneTest {
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
         int sc = sp.cardinality();
-        int mc = mini.cardinality();
+        int order = mini.cardinality();
         ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
         FixBS first = new FixBS(sc);
-        first.set(0, mc);
+        first.set(0, order);
         FixBS second = new FixBS(sc);
-        for (int i = 0; i < mc; i++) {
-            second.set(i * mc);
+        for (int i = 0; i < order; i++) {
+            second.set(i * order);
         }
         FixBS third = new FixBS(sc);
-        for (int i = 0; i < mc; i++) {
-            third.set(mc * i + i);
+        for (int i = 0; i < order; i++) {
+            third.set(order * i + i);
         }
-        FixBS[] base = new FixBS[mc + 1];
+        FixBS[] base = new FixBS[order + 1];
         base[0] = first;
         base[1] = second;
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
-        Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
+        Map<Characteristic, List<ProjChar>> projData = readKnown(order);
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
@@ -574,9 +575,9 @@ public class TranslationPlaneTest {
                 for (int i = 0; i < start.length; i++) {
                     FixBS ln = new FixBS(sc);
                     int a = start[i];
-                    for (int x = 1; x < mc; x++) {
+                    for (int x = 1; x < order; x++) {
                         int ax = helper.mulVec(a, x);
-                        ln.set(ax * mc + x);
+                        ln.set(ax * order + x);
                     }
                     newBase[i + 3] = ln;
                 }
@@ -586,15 +587,15 @@ public class TranslationPlaneTest {
                     for (int i = 0; i < arr.length; i++) {
                         FixBS ln = new FixBS(sc);
                         int a = arr[i];
-                        for (int x = 1; x < mc; x++) {
+                        for (int x = 1; x < order; x++) {
                             int ax = helper.mulVec(a, x);
-                            ln.set(ax * mc + x);
+                            ln.set(ax * order + x);
                         }
                         finalBase[i + from] = ln;
                     }
                     int[][] lines = toProjective(sp, finalBase);
                     Liner l = new Liner(lines.length, lines);
-                    if (isDesargues(l, mc)) {
+                    if (isDesargues(l, order)) {
                         System.out.println("Desargues");
                         return;
                     }
@@ -679,11 +680,9 @@ public class TranslationPlaneTest {
         }
     }
 
-    @Test
-    public void readKnown() throws IOException {
-        int k = 9;
+    private Map<Characteristic, List<ProjChar>> readKnown(int order) throws IOException {
         List<ProjChar> chars = new ArrayList<>();
-        try (FileInputStream is = new FileInputStream("/home/ihromant/maths/trans/known-" + k + ".txt");
+        try (FileInputStream is = new FileInputStream("/home/ihromant/maths/trans/known-" + order + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line;
@@ -701,6 +700,6 @@ public class TranslationPlaneTest {
                 chars.add(chr);
             }
         }
-        System.out.println(chars);
+        return chars.stream().collect(Collectors.groupingBy(pc -> pc.ternars().getFirst().chr()));
     }
 }
