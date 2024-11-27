@@ -474,13 +474,13 @@ public class TranslationPlaneTest {
     public void generateSimples() throws IOException {
         int p = 2;
         int n = 10;
+        System.out.println(p + " " + n);
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        int all = LinearSpace.pow(p, n / 2) - 2;
         File f = new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            System.out.println(p + " " + n);
-            ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
-            int all = LinearSpace.pow(p, n / 2) - 2;
             BiConsumer<int[], List<Integer>> cons = (arr, vl) -> {
                 int rest = all - IntStream.range(0, arr.length).filter(i -> arr[i] < 0).findAny().orElse(arr.length);
                 if (rest <= vl.size()) {
