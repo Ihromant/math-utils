@@ -18,6 +18,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -426,6 +428,22 @@ public class TranslationPlaneTest {
             int[] partSpread = new int[all];
             Arrays.fill(partSpread, -1);
             tree(helper, filterGl(helper, p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+        }
+    }
+
+    @Test
+    public void printStatistics() throws IOException {
+        int p = 3;
+        int n = 6;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr)) {
+            int[] frq = new int[LinearSpace.pow(p, n / 2)];
+            br.lines().forEach(line -> {
+                int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
+                frq[start.length]++;
+            });
+            System.out.println(Arrays.toString(frq));
         }
     }
 
