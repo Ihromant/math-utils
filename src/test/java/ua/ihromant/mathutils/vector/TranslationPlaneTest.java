@@ -342,10 +342,11 @@ public class TranslationPlaneTest {
             System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
-        tree(helper, filterGl(helper, helper.gl(), p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+        tree(helper, filterGl(helper, p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
     }
 
-    private List<Integer> filterGl(ModuloMatrixHelper helper, int[] gl, int p) {
+    private List<Integer> filterGl(ModuloMatrixHelper helper, int p) {
+        int[] gl = helper.gl();
         List<Integer> result = new ArrayList<>();
         FixBS filter = new FixBS(helper.matCount());
         for (int i = 1; i < p; i++) {
@@ -408,21 +409,23 @@ public class TranslationPlaneTest {
     public void generateSimples() throws IOException {
         int p = 2;
         int n = 10;
-        File f = new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + ".txt");
+        File f = new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             System.out.println(p + " " + n);
             ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
-            int len = 3;
-            int rest = LinearSpace.pow(p, n / 2) - 2 - len;
+            int all = LinearSpace.pow(p, n / 2) - 2;
             BiConsumer<int[], List<Integer>> cons = (arr, vl) -> {
+                int rest = all - IntStream.range(0, arr.length).filter(i -> arr[i] < 0).findAny().orElse(arr.length);
                 if (rest <= vl.size()) {
-                    ps.println(Arrays.toString(arr));
+                    ps.println(Arrays.toString(Arrays.stream(arr).filter(a -> a >= 0).toArray()));
+                    ps.flush();
                 }
             };
-            int[] partSpread = new int[len];
-            tree(helper, Arrays.stream(helper.gl()).boxed().toList(), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+            int[] partSpread = new int[all];
+            Arrays.fill(partSpread, -1);
+            tree(helper, filterGl(helper, p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
         }
     }
 
