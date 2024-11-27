@@ -266,56 +266,54 @@ public class TranslationPlaneTest {
         return new ProjChar(name, mappings);
     }
 
-    public static ProjChar fromProj(String name, Liner proj) {
-        List<TernarMapping> mappings = new CopyOnWriteArrayList<>();
+    public static ProjChar fromProj(String name, Liner proj, int transLine) {
+        List<TernarMapping> mappings = new ArrayList<>();
         int pc = proj.pointCount();
         int order = proj.line(0).length - 1;
-        IntStream.range(0, pc).parallel().forEach(dl -> {
+        int zero = IntStream.range(0, proj.pointCount()).filter(p -> !proj.flag(transLine, p)).findAny().orElseThrow();
+        for (int dl : proj.lines(zero)) {
+            int inftyPt = proj.intersection(transLine, dl);
             int[] line = proj.line(dl);
             for (int h : line) {
-                for (int v : line) {
-                    if (v == h) {
+                int v = h == zero ? inftyPt : zero;
+                for (int o = 0; o < pc; o++) {
+                    if (proj.flag(dl, o)) {
                         continue;
                     }
-                    for (int o = 0; o < pc; o++) {
-                        if (proj.flag(dl, o)) {
+                    int oh = proj.line(o, h);
+                    int ov = proj.line(o, v);
+                    for (int e = 0; e < pc; e++) {
+                        if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
                             continue;
                         }
-                        int oh = proj.line(o, h);
-                        int ov = proj.line(o, v);
-                        for (int e = 0; e < pc; e++) {
-                            if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
-                                continue;
-                            }
-                            int w = proj.intersection(proj.line(e, h), ov);
-                            int u = proj.intersection(proj.line(e, v), oh);
-                            Quad base = new Quad(o, u, w, e);
-                            TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
-                            int two = ring.op(1, 1, 1);
-                            if (two == 0) {
-                                continue;
-                            }
-                            CharVals cv = CharVals.of(ring, two, order);
-                            if (!cv.induced()) {
-                                continue;
-                            }
-                            if (mappings.isEmpty()) {
-                                mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
-                            }
-                            Characteristic fstChr = mappings.getFirst().chr();
-                            boolean eq = fstChr.equals(cv.chr());
-                            if (!eq) {
-                                continue;
-                            }
-                            TernaryRing matrix = ring.toMatrix();
-                            if (mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
-                                mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
-                            }
+                        int w = proj.intersection(proj.line(e, h), ov);
+                        int u = proj.intersection(proj.line(e, v), oh);
+                        Quad base = new Quad(o, u, w, e);
+                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
+                        int two = ring.op(1, 1, 1);
+                        if (two == 0) {
+                            continue;
+                        }
+                        CharVals cv = CharVals.of(ring, two, order);
+                        if (!cv.induced()) {
+                            continue;
+                        }
+                        if (mappings.isEmpty()) {
+                            mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                        }
+                        Characteristic fstChr = mappings.getFirst().chr();
+                        boolean eq = fstChr.equals(cv.chr());
+                        if (!eq) {
+                            continue;
+                        }
+                        TernaryRing matrix = ring.toMatrix();
+                        if (mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
+                            mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
                         }
                     }
                 }
             }
-        });
+        }
         return new ProjChar(name, mappings);
     }
 
@@ -352,6 +350,26 @@ public class TranslationPlaneTest {
             }
         }
         return true;
+    }
+
+    public static int findTranslationLine(Liner liner) {
+        for (int dl : IntStream.range(0, liner.lineCount()).toArray()) {
+            int o = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p)).findAny().orElseThrow();
+            int[] dropped = liner.line(dl);
+            int v = dropped[0];
+            int h = dropped[1];
+            int oh = liner.line(o, h);
+            int ov = liner.line(o, v);
+            int e = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p) && !liner.flag(ov, p) && !liner.flag(oh, p)).findAny().orElseThrow();
+            int w = liner.intersection(liner.line(e, h), ov);
+            int u = liner.intersection(liner.line(e, v), oh);
+            Quad base = new Quad(o, u, w, e);
+            TernaryRing ring = new ProjectiveTernaryRing("", liner, base).toMatrix();
+            if (ring.isLinear() && ring.addAssoc() && ring.addComm() && ring.isRightDistributive()) {
+                return dl;
+            }
+        }
+        return -1;
     }
 
     @Test
@@ -621,8 +639,8 @@ public class TranslationPlaneTest {
 
     @Test
     public void generateKnown() throws IOException {
-        int k = 9;
-        String desarg = "pg29";
+        int k = 32;
+        String desarg = "c";
         try (FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/trans/known-" + k + ".txt"));
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
@@ -635,7 +653,12 @@ public class TranslationPlaneTest {
                      InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                      BufferedReader br = new BufferedReader(isr)) {
                     Liner proj = BatchAffineTest.readProj(br);
-                    ProjChar chr = fromProj(name, proj);
+                    int transLine = findTranslationLine(proj);
+                    if (transLine < 0) {
+                        System.out.println("Not translation " + name);
+                        return;
+                    }
+                    ProjChar chr = fromProj(name, proj, transLine);
                     ObjectMapper om = new ObjectMapper();
                     om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
                     om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
