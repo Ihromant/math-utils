@@ -659,7 +659,7 @@ public class TranslationPlaneTest {
     public void generateKnown() throws IOException {
         int k = 25;
         String desarg = "s1";
-        try (FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/trans/known-" + k + ".txt"));
+        try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/known-" + k + ".txt");
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             Arrays.stream(Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())).parallel().forEach(f -> {
