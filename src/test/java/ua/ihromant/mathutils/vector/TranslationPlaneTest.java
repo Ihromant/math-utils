@@ -36,8 +36,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -119,7 +119,7 @@ public class TranslationPlaneTest {
                 return;
             }
             ProjChar chr = newTranslation(counter.toString(), l, projData);
-            if (chr != null) {
+            if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
                 projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
                 System.out.println(counter.incrementAndGet() + Arrays.toString(arr));
                 System.out.println(chr);
@@ -254,10 +254,14 @@ public class TranslationPlaneTest {
                         if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
                             mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
                         }
-                        if (existingChars != null && existingChars.stream()
-                                .flatMap(projChar -> projChar.ternars().stream())
-                                .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
-                            return null;
+                        if (existingChars != null) {
+                            Optional<ProjChar> opt = existingChars.stream()
+                                    .filter(projChar -> projChar.ternars().stream()
+                                            .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix)))
+                                    .findAny();
+                            if (opt.isPresent()) {
+                                return opt.get();
+                            }
                         }
                     }
                 }
@@ -417,12 +421,14 @@ public class TranslationPlaneTest {
                 return;
             }
             ProjChar chr = newTranslation(counter.toString(), l, projData);
-            if (chr != null) {
+            if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
                 projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
                 counter.incrementAndGet();
                 System.out.println(chr);
+                System.out.println(Arrays.toString(arr));
+            } else {
+                System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr));
             }
-            System.out.println(Arrays.toString(arr));
         };
         int[] partSpread = new int[mini.cardinality() - 2];
         tree(helper, filterGl(helper, p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
@@ -593,12 +599,15 @@ public class TranslationPlaneTest {
                         return;
                     }
                     ProjChar chr = newTranslation(counter.toString(), l, projData);
-                    if (chr != null) {
+                    if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
                         projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
                         counter.incrementAndGet();
                         System.out.println(chr);
+                        System.out.println("New " + Arrays.toString(start) + " " + Arrays.toString(arr));
+                        System.out.println("Lines " + Arrays.deepToString(lines));
+                    } else {
+                        System.out.println("Existing " + chr.name() + " " + Arrays.toString(start) + " " + Arrays.toString(arr));
                     }
-                    System.out.println("Found " + Arrays.toString(start) + " " + Arrays.toString(arr));
                 };
                 int[] partSpread = new int[mini.cardinality() - 2 - start.length];
                 List<Integer> newV = Arrays.stream(helper.v()).filter(b -> {
