@@ -600,7 +600,7 @@ public class TranslationPlaneTest {
                     int[][] lines = toProjective(sp, finalBase);
                     Liner l = new Liner(lines.length, lines);
                     if (isDesargues(l, order)) {
-                        System.out.println("Desargues");
+                        System.out.println("Desargues " + Arrays.toString(start) + " " + Arrays.toString(arr));
                         return;
                     }
                     ProjChar chr = newTranslation(counter.toString(), l, projData);
