@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.vector;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleAbstractTypeResolver;
@@ -562,6 +563,9 @@ public class TranslationPlaneTest {
         base[1] = second;
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
+        ObjectMapper om = new ObjectMapper();
+        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         Map<Characteristic, List<ProjChar>> projData = readKnown(order);
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
@@ -603,7 +607,11 @@ public class TranslationPlaneTest {
                     if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
                         projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
                         counter.incrementAndGet();
-                        System.out.println(chr);
+                        try {
+                            System.out.println(om.writeValueAsString(chr));
+                        } catch (JsonProcessingException e) {
+                            throw new RuntimeException(e);
+                        }
                         System.out.println("New " + Arrays.toString(start) + " " + Arrays.toString(arr));
                         System.out.println("Spread " + Arrays.deepToString(finalBase));
                     } else {
@@ -649,8 +657,8 @@ public class TranslationPlaneTest {
 
     @Test
     public void generateKnown() throws IOException {
-        int k = 32;
-        String desarg = "c";
+        int k = 25;
+        String desarg = "s1";
         try (FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/trans/known-" + k + ".txt"));
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
