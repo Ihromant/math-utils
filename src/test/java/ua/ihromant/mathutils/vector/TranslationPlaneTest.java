@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.plane.CharVals;
 import ua.ihromant.mathutils.plane.Characteristic;
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -257,6 +259,59 @@ public class TranslationPlaneTest {
         return new ProjChar(name, mappings);
     }
 
+    public static ProjChar fromProj(String name, Liner proj) {
+        List<TernarMapping> mappings = new CopyOnWriteArrayList<>();
+        int pc = proj.pointCount();
+        int order = proj.line(0).length - 1;
+        IntStream.range(0, pc).parallel().forEach(dl -> {
+            int[] line = proj.line(dl);
+            for (int h : line) {
+                for (int v : line) {
+                    if (v == h) {
+                        continue;
+                    }
+                    for (int o = 0; o < pc; o++) {
+                        if (proj.flag(dl, o)) {
+                            continue;
+                        }
+                        int oh = proj.line(o, h);
+                        int ov = proj.line(o, v);
+                        for (int e = 0; e < pc; e++) {
+                            if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                                continue;
+                            }
+                            int w = proj.intersection(proj.line(e, h), ov);
+                            int u = proj.intersection(proj.line(e, v), oh);
+                            Quad base = new Quad(o, u, w, e);
+                            TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
+                            int two = ring.op(1, 1, 1);
+                            if (two == 0) {
+                                continue;
+                            }
+                            CharVals cv = CharVals.of(ring, two, order);
+                            if (!cv.induced()) {
+                                continue;
+                            }
+                            if (mappings.isEmpty()) {
+                                mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                            }
+                            Characteristic fstChr = mappings.getFirst().chr();
+                            boolean eq = fstChr.equals(cv.chr());
+                            if (!eq) {
+                                continue;
+                            }
+                            TernaryRing matrix = ring.toMatrix();
+                            if (mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
+                                mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        return new ProjChar(name, mappings);
+    }
+
     public static boolean isDesargues(Liner liner, int order) {
         int dl = 0;
         int o = order;
@@ -481,7 +536,7 @@ public class TranslationPlaneTest {
              BufferedReader br = new BufferedReader(isr)) {
             br.lines().forEach(line -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
-                if (start.length <= 10) {
+                if (start.length < 8) {
                     return;
                 }
                 FixBS[] newBase = base.clone();
@@ -530,7 +585,7 @@ public class TranslationPlaneTest {
                     return true;
                 }).boxed().toList();
                 treeSimple(helper, newV, partSpread, 0, cons);
-                System.out.println(Arrays.toString(start) + " " + newV.size());
+                //System.out.println(Arrays.toString(start) + " " + newV.size());
             });
         }
     }
@@ -554,6 +609,55 @@ public class TranslationPlaneTest {
                 }
             }
             treeSimple(helper, newV, newArr, idx + 1, sink);
+        }
+    }
+
+    @Test
+    public void generateKnown() throws IOException {
+        int k = 9;
+        String desarg = "pg29";
+        try (FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/trans/known-" + k + ".txt"));
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            Arrays.stream(Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())).parallel().forEach(f -> {
+                String name = f.getName().substring(0, f.getName().indexOf('.'));
+                if (desarg.equals(name)) {
+                    return;
+                }
+                try (FileInputStream is = new FileInputStream(f);
+                     InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                     BufferedReader br = new BufferedReader(isr)) {
+                    Liner proj = BatchAffineTest.readProj(br);
+                    ProjChar chr = fromProj(name, proj);
+                    StringBuilder builder = new StringBuilder();
+                    builder.append(chr.name()).append(' ');
+                    builder.append('[');
+                    int len = chr.ternars().size();
+                    for (int i = 0; i < len; i++) {
+                        TernarMapping tm = chr.ternars().get(i);
+                        builder.append("TM(");
+                        builder.append("m=");
+                        builder.append(Arrays.deepToString(tm.ring().matrix()));
+                        builder.append(", ");
+                        builder.append("xl=");
+                        builder.append(tm.xl().toString());
+                        builder.append(", ");
+                        builder.append("f=");
+                        builder.append(Arrays.toString(tm.function()));
+                        builder.append(", ");
+                        builder.append("chr=");
+                        builder.append(tm.chr().toString());
+                        builder.append(")");
+                        if (i != len - 1) {
+                            builder.append(", ");
+                        }
+                    }
+                    builder.append(']');
+                    ps.println(builder);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
         }
     }
 }
