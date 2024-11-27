@@ -1,5 +1,8 @@
 package ua.ihromant.mathutils.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -20,7 +23,8 @@ public class FixBS implements Comparable<FixBS> {
         return wordIndex(n - 1) + 1;
     }
 
-    public FixBS(long[] arr) {
+    @JsonCreator
+    public FixBS(@JsonProperty("words") long[] arr) {
         this.words = arr;
     }
 

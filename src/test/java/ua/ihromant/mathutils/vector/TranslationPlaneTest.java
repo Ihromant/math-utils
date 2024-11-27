@@ -1,10 +1,17 @@
 package ua.ihromant.mathutils.vector;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleAbstractTypeResolver;
+import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.plane.CharVals;
 import ua.ihromant.mathutils.plane.Characteristic;
+import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 import ua.ihromant.mathutils.plane.ProjChar;
 import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
 import ua.ihromant.mathutils.plane.Quad;
@@ -629,35 +636,39 @@ public class TranslationPlaneTest {
                      BufferedReader br = new BufferedReader(isr)) {
                     Liner proj = BatchAffineTest.readProj(br);
                     ProjChar chr = fromProj(name, proj);
-                    StringBuilder builder = new StringBuilder();
-                    builder.append(chr.name()).append(' ');
-                    builder.append('[');
-                    int len = chr.ternars().size();
-                    for (int i = 0; i < len; i++) {
-                        TernarMapping tm = chr.ternars().get(i);
-                        builder.append("TM(");
-                        builder.append("m=");
-                        builder.append(Arrays.deepToString(tm.ring().matrix()));
-                        builder.append(", ");
-                        builder.append("xl=");
-                        builder.append(tm.xl().toString());
-                        builder.append(", ");
-                        builder.append("f=");
-                        builder.append(Arrays.toString(tm.function()));
-                        builder.append(", ");
-                        builder.append("chr=");
-                        builder.append(tm.chr().toString());
-                        builder.append(")");
-                        if (i != len - 1) {
-                            builder.append(", ");
-                        }
-                    }
-                    builder.append(']');
-                    ps.println(builder);
+                    ObjectMapper om = new ObjectMapper();
+                    om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+                    om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+                    ps.println(om.writeValueAsString(chr));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             });
         }
+    }
+
+    @Test
+    public void readKnown() throws IOException {
+        int k = 9;
+        List<ProjChar> chars = new ArrayList<>();
+        try (FileInputStream is = new FileInputStream("/home/ihromant/maths/trans/known-" + k + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            String line;
+            ObjectMapper om = new ObjectMapper();
+            SimpleModule module = new SimpleModule("CustomModel", Version.unknownVersion());
+
+            SimpleAbstractTypeResolver resolver = new SimpleAbstractTypeResolver();
+            resolver.addMapping(TernaryRing.class, MatrixTernaryRing.class);
+
+            module.setAbstractTypes(resolver);
+
+            om.registerModule(module);
+            while ((line = br.readLine()) != null) {
+                ProjChar chr = om.readValue(line, ProjChar.class);
+                chars.add(chr);
+            }
+        }
+        System.out.println(chars);
     }
 }
