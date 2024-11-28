@@ -631,20 +631,21 @@ public class TranslationPlaneTest {
                     }
                 };
                 int[] partSpread = new int[mini.cardinality() - 2 - start.length];
-                List<Integer> newV = Arrays.stream(helper.v()).filter(b -> {
+                List<Integer> newV = new ArrayList<>((int) Math.round(Math.sqrt(helper.v().length)));
+                ex: for (int b : helper.v()) {
                     for (int a : start) {
                         if (b <= a || !helper.hasInv(helper.sub(b, a))) {
-                            return false;
+                            continue ex;
                         }
                     }
-                    return true;
-                }).boxed().toList();
+                    newV.add(b);
+                }
                 treeSimple(helper, newV, partSpread, 0, cons);
                 ps.println(Arrays.toString(start));
+                ps.flush();
                 if (ai.incrementAndGet() % 1000 == 0) {
                     System.out.println(ai.get());
                 }
-                //System.out.println(Arrays.toString(start) + " " + newV.size());
             });
         }
     }
