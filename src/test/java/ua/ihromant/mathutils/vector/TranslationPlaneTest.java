@@ -542,7 +542,7 @@ public class TranslationPlaneTest {
     @Test
     public void generateBySimple() throws IOException {
         int p = 2;
-        int n = 8;
+        int n = 10;
         System.out.println(p + " " + n);
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
@@ -584,7 +584,7 @@ public class TranslationPlaneTest {
             AtomicInteger ai = new AtomicInteger();
             br.lines().parallel().forEach(line -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
-                if (start.length != 8 || processed.contains(Arrays.stream(start).boxed().toList())) {
+                if (start.length != 7 || processed.contains(Arrays.stream(start).boxed().toList())) {
                     return;
                 }
                 FixBS[] newBase = base.clone();
