@@ -39,6 +39,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -566,13 +568,23 @@ public class TranslationPlaneTest {
         ObjectMapper om = new ObjectMapper();
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        Map<Characteristic, List<ProjChar>> projData = readKnown(order);
+        Map<Characteristic, List<ProjChar>> projData = new ConcurrentHashMap<>(readKnown(order));
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
-             BufferedReader br = new BufferedReader(isr)) {
-            br.lines().forEach(line -> {
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/simples-" + p + "^" + n + "processed.txt", true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream pris = new FileInputStream("/home/ihromant/maths/trans/simples-" + p + "^" + n + "processed.txt");
+             InputStreamReader prisr = new InputStreamReader(pris);
+             BufferedReader prbr = new BufferedReader(prisr)) {
+            Set<List<Integer>> processed = new HashSet<>();
+            prbr.lines().forEach(line -> processed.add(
+                    Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
+            AtomicInteger ai = new AtomicInteger();
+            br.lines().parallel().forEach(line -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
-                if (start.length < 8) {
+                if (start.length != 8 || processed.contains(Arrays.stream(start).boxed().toList())) {
                     return;
                 }
                 FixBS[] newBase = base.clone();
@@ -605,7 +617,7 @@ public class TranslationPlaneTest {
                     }
                     ProjChar chr = newTranslation(counter.toString(), l, projData);
                     if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
-                        projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                        projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new CopyOnWriteArrayList<>()).add(chr);
                         counter.incrementAndGet();
                         try {
                             System.out.println(om.writeValueAsString(chr));
@@ -628,6 +640,10 @@ public class TranslationPlaneTest {
                     return true;
                 }).boxed().toList();
                 treeSimple(helper, newV, partSpread, 0, cons);
+                ps.println(Arrays.toString(start));
+                if (ai.incrementAndGet() % 1000 == 0) {
+                    System.out.println(ai.get());
+                }
                 //System.out.println(Arrays.toString(start) + " " + newV.size());
             });
         }
@@ -708,7 +724,7 @@ public class TranslationPlaneTest {
                 chars.add(chr);
             }
         }
-        return chars.stream().collect(Collectors.groupingBy(pc -> pc.ternars().getFirst().chr()));
+        return chars.stream().collect(Collectors.groupingBy(pc -> pc.ternars().getFirst().chr(), Collectors.toCollection(CopyOnWriteArrayList::new)));
     }
 
     private static final int[][] candidate = {{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31}, {32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992}, {33, 66, 99, 132, 165, 198, 231, 264, 297, 330, 363, 396, 429, 462, 495, 528, 561, 594, 627, 660, 693, 726, 759, 792, 825, 858, 891, 924, 957, 990, 1023}, {34, 67, 97, 136, 170, 203, 233, 272, 306, 339, 369, 408, 442, 475, 505, 524, 558, 591, 621, 644, 678, 711, 741, 796, 830, 863, 893, 916, 950, 983, 1013}, {35, 65, 98, 140, 175, 205, 238, 280, 315, 345, 378, 404, 439, 469, 502, 540, 575, 605, 638, 656, 691, 721, 754, 772, 807, 837, 870, 904, 939, 969, 1002}, {36, 72, 108, 144, 180, 216, 252, 257, 293, 329, 365, 401, 437, 473, 509, 518, 546, 590, 618, 662, 690, 734, 762, 775, 803, 847, 875, 919, 947, 991, 1019}, {37, 74, 111, 148, 177, 222, 251, 265, 300, 323, 358, 413, 440, 471, 498, 534, 563, 604, 633, 642, 679, 712, 749, 799, 826, 853, 880, 907, 942, 961, 996}, {38, 75, 109, 152, 190, 211, 245, 273, 311, 346, 380, 393, 431, 450, 484, 522, 556, 577, 615, 658, 692, 729, 767, 795, 829, 848, 886, 899, 933, 968, 1006}, {39, 73, 110, 156, 187, 213, 242, 281, 318, 336, 375, 389, 418, 460, 491, 538, 573, 595, 628, 646, 673, 719, 744, 771, 804, 842, 877, 927, 952, 982, 1009}, {40, 87, 127, 157, 181, 202, 226, 267, 291, 348, 372, 406, 446, 449, 489, 529, 569, 582, 622, 652, 676, 731, 755, 794, 818, 845, 869, 903, 943, 976, 1016}, {41, 85, 124, 153, 176, 204, 229, 259, 298, 342, 383, 410, 435, 463, 486, 513, 552, 596, 637, 664, 689, 717, 740, 770, 811, 855, 894, 923, 946, 974, 999}, {42, 84, 126, 149, 191, 193, 235, 283, 305, 335, 357, 398, 420, 474, 496, 541, 567, 585, 611, 648, 674, 732, 758, 774, 812, 850, 888, 915, 953, 967, 1005}, {43, 86, 125, 145, 186, 199, 236, 275, 312, 325, 366, 386, 425, 468, 511, 525, 550, 603, 624, 668, 695, 714, 737, 798, 821, 840, 867, 911, 932, 985, 1010}, {44, 95, 115, 141, 161, 210, 254, 266, 294, 341, 377, 391, 427, 472, 500, 535, 571, 584, 612, 666, 694, 709, 745, 797, 817, 834, 878, 912, 956, 975, 995}, {45, 93, 112, 137, 164, 212, 249, 258, 303, 351, 370, 395, 422, 470, 507, 519, 554, 602, 631, 654, 675, 723, 766, 773, 808, 856, 885, 908, 929, 977, 1020}, {46, 92, 114, 133, 171, 217, 247, 282, 308, 326, 360, 415, 433, 451, 493, 539, 565, 583, 617, 670, 688, 706, 748, 769, 815, 861, 883, 900, 938, 984, 1014}, {47, 94, 113, 129, 174, 223, 240, 274, 317, 332, 355, 403, 444, 461, 482, 523, 548, 597, 634, 650, 677, 724, 763, 793, 822, 839, 872, 920, 951, 966, 1001}, {48, 90, 106, 146, 162, 200, 248, 276, 292, 334, 382, 390, 438, 476, 492, 543, 559, 581, 629, 653, 701, 727, 743, 779, 827, 849, 865, 921, 937, 963, 1011}, {49, 88, 105, 150, 167, 206, 255, 284, 301, 324, 373, 394, 443, 466, 483, 527, 574, 599, 614, 665, 680, 705, 752, 787, 802, 843, 890, 901, 948, 989, 1004}, {50, 89, 107, 154, 168, 195, 241, 260, 310, 349, 367, 414, 428, 455, 501, 531, 545, 586, 632, 649, 699, 720, 738, 791, 805, 846, 892, 909, 959, 980, 998}, {51, 91, 104, 158, 173, 197, 246, 268, 319, 343, 356, 402, 417, 457, 506, 515, 560, 600, 619, 669, 686, 710, 757, 783, 828, 852, 871, 913, 930, 970, 1017}, {52, 82, 102, 130, 182, 208, 228, 277, 289, 327, 371, 407, 419, 453, 497, 537, 557, 587, 639, 667, 687, 713, 765, 780, 824, 862, 874, 910, 954, 988, 1000}, {53, 80, 101, 134, 179, 214, 227, 285, 296, 333, 376, 411, 430, 459, 510, 521, 572, 601, 620, 655, 698, 735, 746, 788, 801, 836, 881, 914, 935, 962, 1015}, {54, 81, 103, 138, 188, 219, 237, 261, 307, 340, 354, 399, 441, 478, 488, 533, 547, 580, 626, 671, 681, 718, 760, 784, 806, 833, 887, 922, 940, 971, 1021}, {55, 83, 100, 142, 185, 221, 234, 269, 314, 350, 361, 387, 436, 464, 487, 517, 562, 598, 609, 651, 700, 728, 751, 776, 831, 859, 876, 902, 945, 981, 994}, {56, 77, 117, 143, 183, 194, 250, 287, 295, 338, 362, 400, 424, 477, 485, 526, 566, 579, 635, 641, 697, 716, 756, 785, 809, 860, 868, 926, 934, 979, 1003}, {57, 79, 118, 139, 178, 196, 253, 279, 302, 344, 353, 412, 421, 467, 490, 542, 551, 593, 616, 661, 684, 730, 739, 777, 816, 838, 895, 898, 955, 973, 1012}, {58, 78, 116, 135, 189, 201, 243, 271, 309, 321, 379, 392, 434, 454, 508, 514, 568, 588, 630, 645, 703, 715, 753, 781, 823, 835, 889, 906, 944, 964, 1022}, {59, 76, 119, 131, 184, 207, 244, 263, 316, 331, 368, 388, 447, 456, 499, 530, 553, 606, 613, 657, 682, 733, 742, 789, 814, 857, 866, 918, 941, 986, 993}, {60, 69, 121, 159, 163, 218, 230, 286, 290, 347, 359, 385, 445, 452, 504, 520, 564, 589, 625, 663, 683, 722, 750, 790, 810, 851, 879, 905, 949, 972, 1008}, {61, 71, 122, 155, 166, 220, 225, 278, 299, 337, 364, 397, 432, 458, 503, 536, 549, 607, 610, 643, 702, 708, 761, 782, 819, 841, 884, 917, 936, 978, 1007}, {62, 70, 120, 151, 169, 209, 239, 270, 304, 328, 374, 409, 423, 479, 481, 516, 570, 578, 636, 659, 685, 725, 747, 778, 820, 844, 882, 925, 931, 987, 997}, {63, 68, 123, 147, 172, 215, 232, 262, 313, 322, 381, 405, 426, 465, 494, 532, 555, 592, 623, 647, 696, 707, 764, 786, 813, 854, 873, 897, 958, 965, 1018}};
