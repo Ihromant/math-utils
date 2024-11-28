@@ -3,8 +3,6 @@ package ua.ihromant.mathutils.vector;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.stream.IntStream;
 
 public class CommonMatrixHelper implements ModuloMatrixHelper {
@@ -18,7 +16,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
     private final int[][] subMatrix;
     private final int[][] mulVecMatrix;
     private final int[] idxArr;
-    private final Map<Integer, Integer> mapGl;
+    private final int[] mapGl;
     private final int[] v;
 
     public CommonMatrixHelper(int p, int n) {
@@ -93,12 +91,12 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
 
     @Override
     public int inv(int i) {
-        return mapGl.get(i);
+        return mapGl[i];
     }
 
     @Override
     public boolean hasInv(int i) {
-        return mapGl.containsKey(i);
+        return mapGl[i] > 0;
     }
 
     @Override
@@ -140,18 +138,18 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
         return !invertible.get(sub(a, unity));
     }
 
-    private Map<Integer, Integer> generateInvertibleGlAlt(int[] gl) {
-        Map<Integer, Integer> result = new HashMap<>();
+    private int[] generateInvertibleGlAlt(int[] gl) {
+        int[] result = new int[matCount];
         for (int i : gl) {
             int[][] matrix = toMatrix(i);
-            if (result.containsKey(i)) {
+            if (result[i] > 0) {
                 continue;
             }
             try {
                 int[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix, p);
                 int inv = fromMatrix(rev);
-                result.put(i, inv);
-                result.put(inv, i);
+                result[i] = inv;
+                result[inv] = i;
             } catch (ArithmeticException e) {
                 // ok
             }
