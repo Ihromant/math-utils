@@ -584,7 +584,7 @@ public class TranslationPlaneTest {
             AtomicInteger ai = new AtomicInteger();
             br.lines().parallel().forEach(line -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
-                if (start.length != 7 || processed.contains(Arrays.stream(start).boxed().toList())) {
+                if (start.length != 5 || processed.contains(Arrays.stream(start).boxed().toList())) {
                     return;
                 }
                 FixBS[] newBase = base.clone();
