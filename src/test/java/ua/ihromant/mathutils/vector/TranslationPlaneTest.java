@@ -581,12 +581,16 @@ public class TranslationPlaneTest {
             Set<List<Integer>> processed = new HashSet<>();
             prbr.lines().forEach(line -> processed.add(
                     Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
-            AtomicInteger ai = new AtomicInteger();
-            br.lines().parallel().forEach(line -> {
+            List<int[]> starts = br.lines().<int[]>mapMulti((line, sink) -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
                 if (start.length != 5 || processed.contains(Arrays.stream(start).boxed().toList())) {
                     return;
                 }
+                sink.accept(start);
+            }).toList();
+            AtomicInteger ai = new AtomicInteger();
+            System.out.println("Remaining " + starts.size());
+            starts.stream().parallel().forEach(start -> {
                 FixBS[] newBase = base.clone();
                 for (int i = 0; i < start.length; i++) {
                     FixBS ln = new FixBS(sc);
