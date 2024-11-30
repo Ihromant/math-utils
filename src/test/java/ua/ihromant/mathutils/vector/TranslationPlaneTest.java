@@ -635,10 +635,13 @@ public class TranslationPlaneTest {
                     }
                 };
                 int[] partSpread = new int[mini.cardinality() - 2 - start.length];
-                List<Integer> newV = new ArrayList<>((int) Math.round(Math.sqrt(helper.v().length)));
-                ex: for (int b : helper.v()) {
+                int last = start[start.length - 1];
+                int[] v = helper.v();
+                List<Integer> newV = new ArrayList<>(v.length - helper.vIdxes()[last]);
+                ex: for (int i = helper.vIdxes()[last] + 1; i < v.length; i++) {
+                    int b = v[i];
                     for (int a : start) {
-                        if (b <= a || !helper.hasInv(helper.sub(b, a))) {
+                        if (!helper.hasInv(helper.sub(b, a))) {
                             continue ex;
                         }
                     }

@@ -21,6 +21,8 @@ public interface ModuloMatrixHelper {
 
     int[] v();
 
+    int[] vIdxes();
+
     static ModuloMatrixHelper of(int p, int n) {
         if (p == 2) {
             return new TwoMatrixHelper(n);

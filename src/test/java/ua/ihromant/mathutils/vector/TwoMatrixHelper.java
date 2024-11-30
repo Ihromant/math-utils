@@ -13,6 +13,7 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     private final LinearSpace mini;
     private final int[] mapGl;
     private final int[] v;
+    private final int[] vIdxes;
 
     public TwoMatrixHelper(int n) {
         this.half = n / 2;
@@ -24,6 +25,10 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.mini = LinearSpace.of(2, half);
         this.mapGl = generateInvertibleGlAlt(gl);
         this.v = Arrays.stream(gl).filter(a -> !hasEigenOne(a)).toArray();
+        this.vIdxes = new int[matCount];
+        for (int i = 0; i < v.length; i++) {
+            vIdxes[v[i]] = i;
+        }
         System.out.println(v.length);
     }
 
@@ -75,6 +80,11 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     @Override
     public int[] v() {
         return v;
+    }
+
+    @Override
+    public int[] vIdxes() {
+        return vIdxes;
     }
 
     private int[][] toMatrix(int a) {

@@ -18,6 +18,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
     private final int[] idxArr;
     private final int[] mapGl;
     private final int[] v;
+    private final int[] vIdxes;
 
     public CommonMatrixHelper(int p, int n) {
         this.p = p;
@@ -50,6 +51,10 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
         });
         this.mapGl = generateInvertibleGlAlt(gl);
         this.v = Arrays.stream(gl).filter(a -> !hasEigenOne(a)).toArray();
+        this.vIdxes = new int[matCount];
+        for (int i = 0; i < v.length; i++) {
+            vIdxes[v[i]] = i;
+        }
         System.out.println(v.length);
     }
 
@@ -107,6 +112,11 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
     @Override
     public int[] v() {
         return v;
+    }
+
+    @Override
+    public int[] vIdxes() {
+        return vIdxes;
     }
 
     private int[][] toMatrix(int a) {
