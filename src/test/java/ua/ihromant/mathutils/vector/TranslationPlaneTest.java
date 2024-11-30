@@ -666,12 +666,14 @@ public class TranslationPlaneTest {
             sink.accept(partSpread);
             return;
         }
-        for (int a : v) {
+        for (int i = 0; i < v.size(); i++) {
+            int a = v.get(i);
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
             List<Integer> newV = new ArrayList<>(v.size());
-            for (int b : v) {
-                if (b > a && helper.hasInv(helper.sub(b, a))) {
+            for (int j = i + 1; j < v.size(); j++) {
+                int b = v.get(j);
+                if (helper.hasInv(helper.sub(b, a))) {
                     newV.add(b);
                 }
             }
