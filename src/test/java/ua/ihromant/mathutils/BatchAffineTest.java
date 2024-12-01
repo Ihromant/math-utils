@@ -938,7 +938,6 @@ public class BatchAffineTest {
 
     private static boolean checkP2(Liner liner) {
         for (int o = 0; o < liner.pointCount(); o++) {
-            System.out.println(o);
             for (int l0 : liner.lines(o)) {
                 for (int l1 : liner.lines(o)) {
                     if (l0 == l1) {
@@ -967,9 +966,6 @@ public class BatchAffineTest {
                                         int x = liner.intersection(liner.line(a, b1), liner.line(b, a1));
                                         int c1 = liner.intersection(liner.line(x, c), l1);
                                         int y = liner.intersection(liner.line(b, c1), liner.line(b1, c));
-                                        if (!liner.collinear(a, y, a1) || !liner.collinear(o, x, y)) {
-                                            continue;
-                                        }
                                         int z = liner.intersection(liner.line(a, c1), liner.line(a1, c));
                                         if (!liner.collinear(b, b1, z)) {
                                             continue;
