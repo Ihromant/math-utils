@@ -168,6 +168,10 @@ public class GaloisField {
         return additionTable[a][b];
     }
 
+    public int sub(int a, int b) {
+        return additionTable[a][neg(b)];
+    }
+
     public int add(int... vals) {
         return Arrays.stream(vals).reduce(0, this::add);
     }

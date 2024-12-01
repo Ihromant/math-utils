@@ -1,9 +1,12 @@
 package ua.ihromant.mathutils.plane;
 
 import ua.ihromant.mathutils.GaloisField;
-import ua.ihromant.mathutils.Triangle;
+import ua.ihromant.mathutils.Liner;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.List;
 import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
@@ -512,5 +515,33 @@ public interface TernaryRing {
 
     default Iterable<Integer> elements() {
         return () -> IntStream.range(0, order()).boxed().iterator();
+    }
+
+    default Liner toProjective() {
+        int order = order();
+        List<BitSet> lines = new ArrayList<>(order * order + order + 1);
+        for (int a = 0; a < order; a++) {
+            for (int b = 0; b < order; b++) {
+                BitSet line = new BitSet(order * order + order + 1);
+                for (int x = 0; x < order; x++) {
+                    int y = op(x, a, b);
+                    line.set(y * order + x);
+                }
+                line.set(order * order + a);
+                lines.add(line);
+            }
+        }
+        for (int x = 0; x < order; x++) {
+            BitSet line = new BitSet(order * order + order + 1);
+            for (int y = 0; y < order; y++) {
+                line.set(y * order + x);
+            }
+            line.set(order * order + order);
+            lines.add(line);
+        }
+        BitSet last = new BitSet(order * order + order + 1);
+        last.set(order * order, order * order + order + 1);
+        lines.add(last);
+        return new Liner(lines.toArray(BitSet[]::new));
     }
 }

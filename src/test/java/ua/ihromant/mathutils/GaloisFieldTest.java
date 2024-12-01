@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -537,5 +538,47 @@ public class GaloisFieldTest {
         assertEquals(5, GaloisField.combinations(5, 4));
         assertEquals(20, GaloisField.combinations(6, 3));
         assertEquals(35, GaloisField.combinations(7, 4));
+    }
+
+    @Test
+    public void buildHall() {
+        int base = 7;
+        GaloisField fd = new GaloisField(base);
+        int r = fd.neg(3);
+        int[] poly = new int[]{1, fd.neg(r), 1};
+        assertFalse(fd.solve(poly).findAny().isPresent());
+        int sqr = base * base;
+        int[][] addition = new int[sqr][sqr];
+        int[][] multiplication = new int[sqr][sqr];
+        for (int i = 0; i < sqr; i++) {
+            for (int j = 0; j < sqr; j++) {
+                int a = i % base;
+                int b = i / base;
+                int c = j % base;
+                int d = j / base;
+                int sum = fd.add(b, d) * base + fd.add(a, c);
+                addition[i][j] = sum;
+                if (d == 0) {
+                    int m = fd.mul(b, c) * base + fd.mul(a, c);
+                    multiplication[i][j] = m;
+                } else {
+                    int m1 = fd.sub(fd.mul(a, c), fd.mul(b, fd.inverse(d), fd.evalPolynomial(poly, c)));
+                    int m2 = fd.sub(fd.add(fd.mul(a, d), fd.mul(b, r)), fd.mul(b, c));
+                    int m = m2 * base + m1;
+                    multiplication[i][j] = m;
+                }
+            }
+        }
+        int[][][] ternar = new int[sqr][sqr][sqr];
+        for (int x = 0; x < sqr; x++) {
+            for (int a = 0; a < sqr; a++) {
+                for (int b = 0; b < sqr; b++) {
+                    ternar[x][a][b] = addition[multiplication[x][a]][b];
+                }
+            }
+        }
+        MatrixTernaryRing ring = new MatrixTernaryRing(ternar, null);
+        Liner lnr = ring.toProjective();
+        System.out.println(BatchAffineTest.checkP31(lnr));
     }
 }
