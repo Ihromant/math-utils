@@ -581,16 +581,16 @@ public class TranslationPlaneTest {
             Set<List<Integer>> processed = new HashSet<>();
             prbr.lines().forEach(line -> processed.add(
                     Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
-            List<int[]> starts = br.lines().<int[]>mapMulti((line, sink) -> {
+            int[][] starts = br.lines().<int[]>mapMulti((line, sink) -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
                 if (start.length != 5 || processed.contains(Arrays.stream(start).boxed().toList())) {
                     return;
                 }
                 sink.accept(start);
-            }).toList();
+            }).toArray(int[][]::new);
             AtomicInteger ai = new AtomicInteger();
-            System.out.println("Remaining " + starts.size());
-            starts.stream().parallel().forEach(start -> {
+            System.out.println("Remaining " + starts.length);
+            Arrays.stream(starts).parallel().forEach(start -> {
                 FixBS[] newBase = base.clone();
                 for (int i = 0; i < start.length; i++) {
                     FixBS ln = new FixBS(sc);
@@ -637,7 +637,8 @@ public class TranslationPlaneTest {
                 int[] partSpread = new int[mini.cardinality() - 2 - start.length];
                 int last = start[start.length - 1];
                 int[] v = helper.v();
-                List<Integer> newV = new ArrayList<>(v.length - helper.vIdxes()[last]);
+                int[] newV = new int[v.length - helper.vIdxes()[last]];
+                int newVSize = 0;
                 ex: for (int i = helper.vIdxes()[last] + 1; i < v.length; i++) {
                     int b = v[i];
                     for (int a : start) {
@@ -645,9 +646,9 @@ public class TranslationPlaneTest {
                             continue ex;
                         }
                     }
-                    newV.add(b);
+                    newV[newVSize++] = b;
                 }
-                treeSimple(helper, newV, partSpread, 0, cons);
+                treeSimple(helper, newV, newVSize, partSpread, 0, cons);
                 ps.println(Arrays.toString(start));
                 ps.flush();
                 if (ai.incrementAndGet() % 1000 == 0) {
@@ -657,27 +658,28 @@ public class TranslationPlaneTest {
         }
     }
 
-    private void treeSimple(ModuloMatrixHelper helper, List<Integer> v, int[] partSpread, int idx, Consumer<int[]> sink) {
+    private void treeSimple(ModuloMatrixHelper helper, int[] v, int vSize, int[] partSpread, int idx, Consumer<int[]> sink) {
         int needed = partSpread.length - idx;
-        if (v.size() < needed) {
+        if (vSize < needed) {
             return;
         }
         if (needed == 0) {
             sink.accept(partSpread);
             return;
         }
-        for (int i = 0; i < v.size(); i++) {
-            int a = v.get(i);
+        for (int i = 0; i < vSize; i++) {
+            int a = v[i];
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
-            List<Integer> newV = new ArrayList<>(v.size());
-            for (int j = i + 1; j < v.size(); j++) {
-                int b = v.get(j);
+            int[] newV = new int[vSize - i];
+            int newVSize = 0;
+            for (int j = i + 1; j < vSize; j++) {
+                int b = v[j];
                 if (helper.hasInv(helper.sub(b, a))) {
-                    newV.add(b);
+                    newV[newVSize++] = b;
                 }
             }
-            treeSimple(helper, newV, newArr, idx + 1, sink);
+            treeSimple(helper, newV, newVSize, newArr, idx + 1, sink);
         }
     }
 
