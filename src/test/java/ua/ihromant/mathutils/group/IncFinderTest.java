@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
@@ -117,6 +118,27 @@ public class IncFinderTest {
         }
         for (int i = 0; i < k; i++) {
             res.set(r, i * (k - 1) + 1);
+        }
+        return res;
+    }
+
+    private static Inc krBlocks(int v, int k) {
+        int r = (v - 1) / (k - 1);
+        Inc res = Inc.empty(v, 2 * r);
+        Liner pr = new Liner(new GaloisField(k - 1).generatePlane());
+        int[][] lines = pr.lines();
+        for (int l = 0; l < lines.length; l++) {
+            for (int pt : lines[l]) {
+                res.set(l, pt);
+            }
+        }
+        int last = v - 1;
+        for (int l = lines.length; l < 2 * lines.length; l++) {
+            int pt = l - lines.length;
+            for (int i = 0; i < k - 1; i++) {
+                res.set(l, pt + i * lines.length);
+            }
+            res.set(l, last);
         }
         return res;
     }
