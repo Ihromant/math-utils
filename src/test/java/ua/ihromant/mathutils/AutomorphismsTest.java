@@ -1,13 +1,26 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.plane.CharVals;
+import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
+import ua.ihromant.mathutils.plane.Quad;
+import ua.ihromant.mathutils.plane.TernarMapping;
+import ua.ihromant.mathutils.plane.TernaryRing;
+import ua.ihromant.mathutils.plane.TernaryRingTest;
+import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
@@ -198,6 +211,109 @@ public class AutomorphismsTest {
             set = next(plane, set);
         } while (!result.contains(set));
         result.add(set);
+        return result;
+    }
+
+    @Test
+    public void testAutomorphismsAlt() throws IOException {
+        int k = 9;
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            if ("pg29.txt".equals(name)) {
+                continue;
+            }
+            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = BatchAffineTest.readProj(br);
+                long time = System.currentTimeMillis();
+                List<int[]> auto = automorphismsProj(proj);
+                assertTrue(isAutomorphism(proj, auto.get(1)));
+                assertTrue(isAutomorphism(proj, auto.get(1000)));
+                System.out.println(name + " " + auto.size() + " time elapsed " + (System.currentTimeMillis() - time));
+            }
+        }
+    }
+
+    private static boolean isAutomorphism(Liner liner, int[] map) {
+        for (int l = 0; l < liner.lineCount(); l++) {
+            int[] line = liner.line(l);
+            int[] mapped = Arrays.stream(line).map(pt -> map[pt]).toArray();
+            int[] mappedLine = liner.line(liner.line(mapped[0], mapped[1]));
+            if (!FixBS.of(liner.pointCount(), mapped).equals(FixBS.of(liner.pointCount(), mappedLine))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static List<int[]> automorphismsProj(Liner proj) {
+        List<int[]> result = new ArrayList<>();
+        ProjectiveTernaryRing first = null;
+        TernarMapping mapping = null;
+        int pc = proj.pointCount();
+        int order = proj.line(0).length - 1;
+        for (int dl = 0; dl < proj.lineCount(); dl++) {
+            int[] line = proj.line(dl);
+            for (int h : line) {
+                for (int v : line) {
+                    if (v == h) {
+                        continue;
+                    }
+                    for (int o = 0; o < pc; o++) {
+                        if (proj.flag(dl, o)) {
+                            continue;
+                        }
+                        int oh = proj.line(o, h);
+                        int ov = proj.line(o, v);
+                        for (int e = 0; e < pc; e++) {
+                            if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                                continue;
+                            }
+                            int w = proj.intersection(proj.line(e, h), ov);
+                            int u = proj.intersection(proj.line(e, v), oh);
+                            Quad base = new Quad(o, u, w, e);
+                            ProjectiveTernaryRing ring = new ProjectiveTernaryRing("", proj, base);
+                            int two = ring.op(1, 1, 1);
+                            if (two == 0) {
+                                continue;
+                            }
+                            CharVals cv = CharVals.of(ring, two, order);
+                            if (!cv.induced()) {
+                                continue;
+                            }
+                            if (mapping == null) {
+                                first = ring;
+                                mapping = TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order);
+                                result.add(IntStream.range(0, proj.pointCount()).toArray());
+                                continue;
+                            }
+                            if (!mapping.chr().equals(cv.chr())) {
+                                continue;
+                            }
+                            TernaryRing matrix = ring.toMatrix();
+                            int[] ringIsomorphism = TernaryRingTest.ringIsomorphism(mapping, matrix);
+                            if (ringIsomorphism == null) {
+                                continue;
+                            }
+                            int[] map = new int[order * order + order + 1];
+                            for (int i = 0; i < order; i++) {
+                                for (int j = 0; j < order; j++) {
+                                    int fromPt = first.withCrd(i, j);
+                                    int toPt = ring.withCrd(ringIsomorphism[i], ringIsomorphism[j]);
+                                    map[fromPt] = toPt;
+                                }
+                                int fromDir = first.withDirection(i);
+                                int toDir = ring.withDirection(ringIsomorphism[i]);
+                                map[fromDir] = toDir;
+                            }
+                            map[first.horDir()] = map[ring.horDir()];
+                            result.add(map);
+                        }
+                    }
+                }
+            }
+        }
         return result;
     }
 }

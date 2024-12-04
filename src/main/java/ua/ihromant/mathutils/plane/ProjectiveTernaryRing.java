@@ -2,8 +2,6 @@ package ua.ihromant.mathutils.plane;
 
 import ua.ihromant.mathutils.Liner;
 
-import java.util.Arrays;
-
 public class ProjectiveTernaryRing implements TernaryRing {
     private final String name;
     private final Liner plane;
@@ -139,6 +137,18 @@ public class ProjectiveTernaryRing implements TernaryRing {
 
     public long quadIdx() {
         return quadIdx(plane.pointCount(), o, u, w, e);
+    }
+
+    public int withCrd(int a, int b) {
+        return plane.intersection(parallel(hor, diagonalOrder[a]), parallel(ver, diagonalOrder[b]));
+    }
+
+    public int withDirection(int a) {
+        return plane.intersection(dl, plane.line(o, withCrd(1, a)));
+    }
+
+    public int horDir() {
+        return plane.intersection(dl, hor);
     }
 
     @Override

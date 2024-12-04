@@ -201,6 +201,37 @@ public class TernaryRingTest {
         return true;
     }
 
+    public static int[] ringIsomorphism(TernarMapping tm, TernaryRing second) {
+        TernaryRing first = tm.ring();
+        int[] function = new int[second.order()];
+        Arrays.fill(function, -1);
+        function[0] = 0;
+        function[1] = 1;
+        for (int i = 1; i < tm.xl().size(); i++) {
+            FixBS xn1 = tm.xl().get(i);
+            FixBS xn = tm.xl().get(i - 1);
+            FixBS missing = xn1.copy().symDiff(xn);
+            for (int x = missing.nextSetBit(0); x >= 0; x = missing.nextSetBit(x + 1)) {
+                Triangle tr = tm.function()[x];
+                int mappedX = second.op(function[tr.o()], function[tr.u()], function[tr.w()]);
+                function[x] = mappedX;
+            }
+        }
+        if (!isBijective(function)) {
+            return null;
+        }
+        for (int a = 1; a < first.order(); a++) {
+            for (int b = 0; b < first.order(); b++) {
+                for (int c = 0; c < first.order(); c++) {
+                    if (second.op(function[a], function[b], function[c]) != function[first.op(a, b, c)]) {
+                        return null;
+                    }
+                }
+            }
+        }
+        return function;
+    }
+
     private static final Triangle t111 = new Triangle(1, 1, 1);
     private static final FixBS base = FixBS.of(2, 0, 1);
 
