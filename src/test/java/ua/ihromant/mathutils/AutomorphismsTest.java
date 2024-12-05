@@ -228,8 +228,9 @@ public class AutomorphismsTest {
                 Liner proj = BatchAffineTest.readProj(br);
                 long time = System.currentTimeMillis();
                 List<int[]> auto = automorphismsProj(proj);
-                assertTrue(isAutomorphism(proj, auto.get(1)));
-                assertTrue(isAutomorphism(proj, auto.get(1000)));
+                for (int i = 0; i < auto.size(); i++) {
+                    assertTrue(isAutomorphism(proj, auto.get(i)), i + " " + Arrays.toString(auto.get(i)));
+                }
                 System.out.println(name + " " + auto.size() + " time elapsed " + (System.currentTimeMillis() - time));
             }
         }
@@ -307,7 +308,7 @@ public class AutomorphismsTest {
                                 int toDir = ring.withDirection(ringIsomorphism[i]);
                                 map[fromDir] = toDir;
                             }
-                            map[first.horDir()] = map[ring.horDir()];
+                            map[first.horDir()] = ring.horDir();
                             result.add(map);
                         }
                     }
