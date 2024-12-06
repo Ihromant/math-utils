@@ -699,7 +699,7 @@ public class BibdFinderTest {
         return true;
     }
 
-    private static int[] minimalTuple(int[] arr, int v) {
+    public static int[] minimalTuple(int[] arr, int v) {
         Arrays.sort(arr);
         int l = arr.length;
         int[] diffs = new int[l];
