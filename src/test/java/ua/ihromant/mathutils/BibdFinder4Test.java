@@ -194,7 +194,7 @@ public class BibdFinder4Test {
     }
 
     @Test
-    public void withDepth() throws IOException {
+    public void toFile() throws IOException {
         int v = 91;
         int k = 6;
         File f = new File("/home/ihromant/maths/diffSets/beg", k + "-" + v + ".txt");
@@ -252,9 +252,6 @@ public class BibdFinder4Test {
             allDifferenceSets(v, k, new int[][]{init}, blocksNeeded - 1, newFilter, designConsumer);
             destination.println(Arrays.toString(init));
             destination.flush();
-            if (destination != System.out) {
-                System.out.println(Arrays.toString(init));
-            }
         });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
