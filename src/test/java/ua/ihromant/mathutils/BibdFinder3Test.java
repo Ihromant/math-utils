@@ -4,7 +4,6 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedInputStream;
@@ -22,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -184,7 +182,7 @@ public class BibdFinder3Test {
                 if (l.length() > 20) {
                     System.out.println(l);
                 } else {
-                    sink.accept(of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
+                    sink.accept(FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
                             .mapToInt(Integer::parseInt).toArray()));
                 }
             }).collect(Collectors.toSet());
@@ -204,7 +202,7 @@ public class BibdFinder3Test {
         FixBS filter = baseFilter(v, k);
         List<int[]> initial = new ArrayList<>();
         calcCycles(v, k, depth, start(v, k), filter, blocksNeeded, arr -> {
-            if (!processed.contains(of(v, arr)) && IntStream.range(0, start.length).allMatch(i -> arr[i + 1] == start[i])) {
+            if (!processed.contains(FixBS.of(v, arr)) && IntStream.range(0, start.length).allMatch(i -> arr[i + 1] == start[i])) {
                 initial.add(arr);
             }
         });
@@ -228,37 +226,6 @@ public class BibdFinder3Test {
             }
         });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
-    }
-
-    @Test
-    public void logNotEqCycles() throws IOException {
-        int v = 175;
-        int k = 7;
-        File f = new File("/home/ihromant/maths/diffSets/new", k + "-" + v + "beg.txt");
-        try (FileOutputStream fos = new FileOutputStream(f, true);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            logFirstCycles(ps, v, k);
-        }
-    }
-
-    private static void logFirstCycles(PrintStream destination, int v, int k) {
-        System.out.println(v + " " + k);
-        int blocksNeeded = v / k / (k - 1);
-        FixBS filter = baseFilter(v, k);
-        Set<FixBS> unique = new HashSet<>();
-        int[] multipliers = IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
-        calcCycles(v, k, k, start(v, k), filter, blocksNeeded, arr -> {
-            if (Arrays.stream(multipliers).anyMatch(m -> {
-                int[] multiplied = Arrays.stream(arr).map(p -> p * m % v).toArray();
-                int[] minimal = BibdFinderTest.minimalTuple(multiplied, v);
-                return unique.contains(FixBS.of(v, minimal));
-            })) {
-                return;
-            }
-            unique.add(FixBS.of(v, arr));
-            destination.println(Arrays.toString(arr));
-        });
     }
 
     private static void logResults(PrintStream destination, int v, int k) {
@@ -406,7 +373,7 @@ public class BibdFinder3Test {
             int[] arr = idxes[i - 1];
             arr[0] = i == 1 ? 0 : idxes[i - 2][vk - 1];
             for (int j = 1; j < arr.length; j++) {
-                FixBS top = of(v, new int[]{i, i + j, v - 1});
+                FixBS top = FixBS.of(v, new int[]{i, i + j, v - 1});
                 arr[j] = -Arrays.binarySearch(pairs, arr[j - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
             }
         }
@@ -462,14 +429,6 @@ public class BibdFinder3Test {
         while (depth-- > 0) {
             res.set(val);
             val = bs.nextSetBit(val + 1);
-        }
-        return res;
-    }
-
-    private static FixBS of(int v, int[] tuple) {
-        FixBS res = new FixBS(v);
-        for (int i : tuple) {
-            res.set(i);
         }
         return res;
     }
