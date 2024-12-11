@@ -2,9 +2,7 @@ package ua.ihromant.mathutils.fuzzy;
 
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayDeque;
 import java.util.List;
-import java.util.Queue;
 import java.util.function.UnaryOperator;
 
 public class PSP1Test {
@@ -53,15 +51,6 @@ public class PSP1Test {
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        base = base.addPoints(4);
-        ArrayDeque<Rel> q = new ArrayDeque<>();
-        q.addAll(List.of(new Col(7, 9, 10), new Col(8, 9, 11), new Col(7, 9, 12), new Col(8, 9, 13)));
-        q.addAll(List.of(new Col(0, 1, 10), new Col(0, 3, 11), new Col(0, 4, 12), new Col(0, 6, 13)));
-        base.update(q);
-        base.printChars();
-        base = op.apply(base);
-        base = ContradictionUtil.singleByContradiction(base, false, op);
-        base.printChars();
         base = base.intersectLines();
         base.printChars();
         base = op.apply(base);
@@ -101,12 +90,6 @@ public class PSP1Test {
         FuzzySLiner base = FuzzySLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
         UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
-        base.printChars();
-        base = base.addPoints(6);
-        Queue<Rel> q = new ArrayDeque<>();
-        q.addAll(List.of(new Col(7, 8, 10), new Col(7, 9, 11), new Col(8, 9, 12), new Col(7, 8, 13), new Col(7, 9, 14), new Col(8, 9, 15)));
-        q.addAll(List.of(new Col(0, 5, 11), new Col(0, 5, 12), new Col(10, 11, 12), new Col(0, 2, 14), new Col(0, 2, 15), new Col(13, 14, 15)));
-        base.update(q);
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
