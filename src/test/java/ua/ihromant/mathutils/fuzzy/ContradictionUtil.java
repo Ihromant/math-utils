@@ -362,8 +362,6 @@ public class ContradictionUtil {
                                         if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
                                             if (ab1a1b < 0) {
                                                 ab1a1b = i;
-                                            } else {
-                                                res.add(new Same(ab1a1b, i));
                                             }
                                             if (bc1b1c >= 0 && ac1a1c >= 0 && !liner.collinear(bc1b1c, ac1a1c, i)
                                                     && liner.collinear(o, bc1b1c, ac1a1c) && (liner.collinear(a, a1, bc1b1c) || liner.collinear(b, b1, ac1a1c))) {
@@ -373,8 +371,6 @@ public class ContradictionUtil {
                                         if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
                                             if (bc1b1c < 0) {
                                                 bc1b1c = i;
-                                            } else {
-                                                res.add(new Same(bc1b1c, i));
                                             }
                                             if (ab1a1b >= 0 && ac1a1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, i)
                                                     && liner.collinear(o, ab1a1b, ac1a1c) && (liner.collinear(c, c1, ab1a1b) || liner.collinear(b, b1, ac1a1c))) {
@@ -384,8 +380,6 @@ public class ContradictionUtil {
                                         if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
                                             if (ac1a1c < 0) {
                                                 ac1a1c = i;
-                                            } else {
-                                                res.add(new Same(ac1a1c, i));
                                             }
                                             if (ab1a1b >= 0 && bc1b1c >= 0 && !liner.collinear(ab1a1b, bc1b1c, i)
                                                     && liner.collinear(o, bc1b1c, ab1a1b) && (liner.collinear(a, a1, bc1b1c) || liner.collinear(c, c1, ab1a1b))) {
@@ -605,22 +599,16 @@ public class ContradictionUtil {
                             if (liner.collinear(o, a, i) && liner.collinear(b, c, i)) {
                                 if (a1 < 0) {
                                     a1 = i;
-                                } else {
-                                    res.add(new Same(a1, i));
                                 }
                             }
                             if (liner.collinear(o, b, i) && liner.collinear(a, c, i)) {
                                 if (b1 < 0) {
                                     b1 = i;
-                                } else {
-                                    res.add(new Same(b1, i));
                                 }
                             }
                             if (liner.collinear(o, c, i) && liner.collinear(a, b, i)) {
                                 if (c1 < 0) {
                                     c1 = i;
-                                } else {
-                                    res.add(new Same(c1, i));
                                 }
                             }
                         }
@@ -631,8 +619,6 @@ public class ContradictionUtil {
                             if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
                                 if (aba1b1 < 0) {
                                     aba1b1 = i;
-                                } else {
-                                    res.add(new Same(aba1b1, i));
                                 }
                                 if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, i)) {
                                     res.add(new Col(bcb1c1, aca1c1, i));
@@ -641,8 +627,6 @@ public class ContradictionUtil {
                             if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
                                 if (aca1c1 < 0) {
                                     aca1c1 = i;
-                                } else {
-                                    res.add(new Same(aca1c1, i));
                                 }
                                 if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, i)) {
                                     res.add(new Col(aba1b1, bcb1c1, i));
@@ -651,8 +635,6 @@ public class ContradictionUtil {
                             if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
                                 if (bcb1c1 < 0) {
                                     bcb1c1 = i;
-                                } else {
-                                    res.add(new Same(bcb1c1, i));
                                 }
                                 if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, i)) {
                                     res.add(new Col(aba1b1, aca1c1, i));

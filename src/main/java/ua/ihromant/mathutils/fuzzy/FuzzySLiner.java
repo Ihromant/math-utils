@@ -244,14 +244,62 @@ public class FuzzySLiner {
             if (triangle(x, y, w)) {
                 queue.add(new Trg(x, z, w));
                 queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(x, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, y, z)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
+                    }
+                    if (collinear(y, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, z)) {
+                                queue.add(new Same(y, v));
+                            }
+                        }
+                    }
+                }
             }
             if (triangle(x, z, w)) {
                 queue.add(new Trg(x, y, w));
                 queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(x, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, y, z)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
+                    }
+                    if (collinear(z, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, y)) {
+                                queue.add(new Same(z, v));
+                            }
+                        }
+                    }
+                }
             }
             if (triangle(y, z, w)) {
                 queue.add(new Trg(x, z, w));
                 queue.add(new Trg(x, y, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(y, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, z)) {
+                                queue.add(new Same(y, v));
+                            }
+                        }
+                    }
+                    if (collinear(z, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, y)) {
+                                queue.add(new Same(z, v));
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -279,14 +327,62 @@ public class FuzzySLiner {
             if (collinear(x, y, w)) {
                 queue.add(new Trg(x, z, w));
                 queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(y, u, z)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, x, w) && collinear(v, u, z)) {
+                                queue.add(new Same(y, v));
+                            }
+                        }
+                    }
+                    if (collinear(x, u, z)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, y, w) && collinear(v, u, z)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
+                    }
+                }
             }
             if (collinear(x, z, w)) {
                 queue.add(new Trg(x, y, w));
                 queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(x, u, y)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, z, w) && collinear(v, u, y)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
+                    }
+                    if (collinear(z, u, y)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, x, w) && collinear(v, u, y)) {
+                                queue.add(new Same(z, v));
+                            }
+                        }
+                    }
+                }
             }
             if (collinear(y, z, w)) {
                 queue.add(new Trg(x, z, w));
                 queue.add(new Trg(x, y, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(y, u, x)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, z, w) && collinear(v, u, x)) {
+                                queue.add(new Same(y, v));
+                            }
+                        }
+                    }
+                    if (collinear(z, u, x)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, y, w) && collinear(v, u, x)) {
+                                queue.add(new Same(z, v));
+                            }
+                        }
+                    }
+                }
             }
         }
     }
