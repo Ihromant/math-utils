@@ -8,7 +8,7 @@ import java.util.function.UnaryOperator;
 
 public class D3P2Test {
     @Test
-    public void test() {
+    public void testD3S() {
         int[][] d31 = new int[][]{
                 {0, 1, 2},
                 {0, 3, 4},
@@ -28,6 +28,67 @@ public class D3P2Test {
         base = base.intersectLines();
         base.printChars();
         base = op.apply(base);
+        base.printChars();
+        base = ContradictionUtil.singleByContradiction(base, false, op);
+        base.printChars();
+    }
+
+    @Test
+    public void testP3S() {
+        int[][] p31 = new int[][]{
+                {0, 1, 2, 3},
+                {0, 4, 5, 6},
+                {0, 7, 8, 9},
+                {1, 6, 9},
+                {2, 5, 9},
+                {3, 4, 9},
+                {1, 5, 7},
+                {2, 4, 7},
+                {3, 6, 7},
+                {2, 6, 8},
+                {3, 5, 8},
+                {1, 4, 8}
+        };
+        FuzzySLiner base = FuzzySLiner.of(p31, new Triple[]{new Triple(0, 1, 4)});
+        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP3S));
+        base.printChars();
+        base = base.intersectLines();
+        base.printChars();
+        base = op.apply(base);
+        base.printChars();
+        List<FuzzySLiner> liners = new ArrayList<>();
+        ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
+        if (liners.size() == 1) {
+            base = liners.getFirst();
+        } else {
+            throw new IllegalStateException();
+        }
+        base.printChars();
+    }
+
+    @Test
+    public void testP2S() {
+        int[][] p21 = new int[][]{
+                {0, 1, 2, 3},
+                {0, 4, 5, 6},
+                {0, 7, 8, 9},
+                {1, 6, 9},
+                {2, 5, 9},
+                {3, 4, 9},
+                {1, 5, 7},
+                {2, 4, 7},
+                {3, 6, 7},
+                {2, 6, 8},
+                {3, 5, 8}
+        };
+        FuzzySLiner base = FuzzySLiner.of(p21, new Triple[]{new Triple(0, 1, 4)});
+        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP2S));
+        base.printChars();
+        base = base.intersectLines();
+        base.printChars();
+        base = op.apply(base);
+        base.printChars();
+        base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
         List<FuzzySLiner> liners = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
