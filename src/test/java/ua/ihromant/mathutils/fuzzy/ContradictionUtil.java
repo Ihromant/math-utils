@@ -245,59 +245,54 @@ public class ContradictionUtil {
     public static List<Rel> processP1(FuzzySLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
-        for (int o = 0; o < pc; o++) {
-            for (int a = 0; a < pc; a++) {
-                if (!liner.distinct(o, a)) {
+        for (int a = 0; a < pc; a++) {
+            for (int b = 0; b < pc; b++) {
+                if (!liner.distinct(a, b)) {
                     continue;
                 }
-                for (int b = 0; b < pc; b++) {
-                    if (!liner.collinear(o, a, b)) {
+                for (int c = 0; c < pc; c++) {
+                    if (!liner.collinear(a, b, c)) {
                         continue;
                     }
-                    for (int c = 0; c < pc; c++) {
-                        if (!liner.collinear(o, a, c) || !liner.collinear(a, b, c)) {
+                    for (int a1 = 0; a1 < pc; a1++) {
+                        if (!liner.triangle(a, b, a1) || !liner.triangle(a, c, a1) || !liner.triangle(b, c, a1)) {
                             continue;
                         }
-                        for (int a1 = 0; a1 < pc; a1++) {
-                            if (!liner.triangle(o, a, a1)) {
+                        for (int b1 = 0; b1 < pc; b1++) {
+                            if (!liner.triangle(a, a1, b1) || !liner.triangle(b, a1, b1) || !liner.triangle(c, a1, b1)) {
                                 continue;
                             }
-                            for (int b1 = 0; b1 < pc; b1++) {
-                                if (!liner.collinear(o, a1, b1)) {
-                                    continue;
+                            int c1 = -1;
+                            int ab1a1b = -1;
+                            int ac1a1c = -1;
+                            int bc1b1c = -1;
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a1, b, i) && liner.collinear(a, b1, i)) {
+                                    ab1a1b = i;
+                                    break;
                                 }
-                                int c1 = -1;
-                                int ab1a1b = -1;
-                                int ac1a1c = -1;
-                                int bc1b1c = -1;
-                                for (int i = 0; i < liner.getPc(); i++) {
-                                    if (liner.collinear(a1, b, i) && liner.collinear(a, b1, i)) {
-                                        ab1a1b = i;
-                                        break;
-                                    }
+                            }
+                            if (ab1a1b < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a1, b1, i) && liner.collinear(c, ab1a1b, i)) {
+                                    c1 = i;
+                                    break;
                                 }
-                                if (ab1a1b < 0) {
-                                    continue;
+                            }
+                            if (c1 < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
+                                    bc1b1c = i;
                                 }
-                                for (int i = 0; i < liner.getPc(); i++) {
-                                    if (liner.collinear(a1, b1, i) && liner.collinear(c, ab1a1b, i)) {
-                                        c1 = i;
-                                        break;
-                                    }
+                                if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
+                                    ac1a1c = i;
                                 }
-                                if (c1 < 0) {
-                                    continue;
-                                }
-                                for (int i = 0; i < liner.getPc(); i++) {
-                                    if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
-                                        bc1b1c = i;
-                                    }
-                                    if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
-                                        ac1a1c = i;
-                                    }
-                                    if (ac1a1c >= 0 && bc1b1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, bc1b1c)) {
-                                        res.add(new Col(ac1a1c, ab1a1b, bc1b1c));
-                                    }
+                                if (ac1a1c >= 0 && bc1b1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, bc1b1c)) {
+                                    res.add(new Col(ac1a1c, ab1a1b, bc1b1c));
                                 }
                             }
                         }
