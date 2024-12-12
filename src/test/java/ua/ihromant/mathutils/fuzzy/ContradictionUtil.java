@@ -783,18 +783,10 @@ public class ContradictionUtil {
                         int c1 = -1;
                         for (int i = 0; i < pc; i++) {
                             if (liner.collinear(o, a, i) && liner.collinear(b, c, i)) {
-                                if (a1 < 0) {
-                                    a1 = i;
-                                } else {
-                                    res.add(new Same(a1, i));
-                                }
+                                a1 = i;
                             }
                             if (liner.collinear(o, c, i) && liner.collinear(a, b, i)) {
-                                if (c1 < 0) {
-                                    c1 = i;
-                                } else {
-                                    res.add(new Same(c1, i));
-                                }
+                                c1 = i;
                             }
                         }
                         if (a1 < 0 || c1 < 0) {
@@ -802,11 +794,7 @@ public class ContradictionUtil {
                         }
                         for (int i = 0; i < pc; i++) {
                             if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
-                                if (aca1c1 < 0) {
-                                    aca1c1 = i;
-                                } else {
-                                    res.add(new Same(aca1c1, i));
-                                }
+                                aca1c1 = i;
                             }
                         }
                         if (aca1c1 < 0) {
@@ -814,38 +802,25 @@ public class ContradictionUtil {
                         }
                         for (int i = 0; i < pc; i++) {
                             if (liner.collinear(o, aca1c1, i) && liner.collinear(a, b, i)) {
-                                if (aba1b1 < 0) {
-                                    aba1b1 = i;
-                                } else {
-                                    res.add(new Same(aba1b1, i));
-                                }
+                                aba1b1 = i;
                             }
                             if (liner.collinear(o, aca1c1, i) && liner.collinear(b, c, i)) {
-                                if (bcb1c1 < 0) {
-                                    bcb1c1 = i;
-                                } else {
-                                    res.add(new Same(bcb1c1, i));
-                                }
+                                bcb1c1 = i;
                             }
                         }
                         if (aba1b1 < 0 || bcb1c1 < 0) {
                             continue;
                         }
                         for (int i = 0; i < pc; i++) {
-                            if (liner.collinear(a, aba1b1, i) && liner.collinear(o, b, i)) {
-                                if (b1 < 0) {
-                                    b1 = i;
-                                } else {
-                                    res.add(new Same(aba1b1, i));
-                                }
+                            if (liner.collinear(a1, aba1b1, i) && liner.collinear(o, b, i)) {
+                                b1 = i;
                             }
-                            if (liner.collinear(c, bcb1c1, i) && liner.collinear(o, b, i)) {
-                                if (b1 < 0) {
-                                    b1 = i;
-                                } else {
-                                    res.add(new Same(aba1b1, i));
-                                }
-                            }
+                        }
+                        if (b1 < 0) {
+                            continue;
+                        }
+                        if (!liner.collinear(b1, c1, bcb1c1)) {
+                            res.add(new Col(b1, c1, bcb1c1));
                         }
                     }
                 }
