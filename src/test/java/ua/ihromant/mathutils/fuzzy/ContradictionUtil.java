@@ -387,61 +387,61 @@ public class ContradictionUtil {
                 if (!liner.distinct(o, a)) {
                     continue;
                 }
-                for (int b = a + 1; b < pc; b++) {
-                    if (!liner.collinear(o, a, b)) {
+                for (int a1 = 0; a1 < pc; a1++) {
+                    if (!liner.triangle(o, a, a1)) {
                         continue;
                     }
-                    for (int c = b + 1; c < pc; c++) {
-                        if (!liner.collinear(o, a, c) || !liner.collinear(a, b, c)) {
+                    for (int ab1a1b = 0; ab1a1b < pc; ab1a1b++) {
+                        if (!liner.triangle(o, a, ab1a1b) || !liner.triangle(o, a1, ab1a1b) || !liner.triangle(a, a1, ab1a1b)) {
                             continue;
                         }
-                        for (int a1 = 0; a1 < pc; a1++) {
-                            if (!liner.triangle(o, a, a1)) {
-                                continue;
+                        int b = -1;
+                        int b1 = -1;
+                        int ac1a1c = -1;
+                        int c = -1;
+                        int c1 = -1;
+                        int bc1b1c = -1;
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(o, a, i) && liner.collinear(a1, ab1a1b, i)) {
+                                b = i;
                             }
-                            for (int b1 = 0; b1 < pc; b1++) {
-                                if (!liner.collinear(o, a1, b1)) {
-                                    continue;
-                                }
-                                for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(o, a1, c1) || !liner.collinear(a1, b1, c1)) {
-                                        continue;
-                                    }
-                                    int ab1a1b = -1;
-                                    int ac1a1c = -1;
-                                    int bc1b1c = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
-                                        if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
-                                            if (ab1a1b < 0) {
-                                                ab1a1b = i;
-                                            }
-                                            if (bc1b1c >= 0 && ac1a1c >= 0 && !liner.collinear(bc1b1c, ac1a1c, i)
-                                                    && liner.collinear(o, bc1b1c, ac1a1c) && (liner.collinear(a, a1, bc1b1c) || liner.collinear(b, b1, ac1a1c))) {
-                                                res.add(new Col(bc1b1c, ac1a1c, i));
-                                            }
-                                        }
-                                        if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
-                                            if (bc1b1c < 0) {
-                                                bc1b1c = i;
-                                            }
-                                            if (ab1a1b >= 0 && ac1a1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, i)
-                                                    && liner.collinear(o, ab1a1b, ac1a1c) && (liner.collinear(c, c1, ab1a1b) || liner.collinear(b, b1, ac1a1c))) {
-                                                res.add(new Col(ac1a1c, ab1a1b, i));
-                                            }
-                                        }
-                                        if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
-                                            if (ac1a1c < 0) {
-                                                ac1a1c = i;
-                                            }
-                                            if (ab1a1b >= 0 && bc1b1c >= 0 && !liner.collinear(ab1a1b, bc1b1c, i)
-                                                    && liner.collinear(o, bc1b1c, ab1a1b) && (liner.collinear(a, a1, bc1b1c) || liner.collinear(c, c1, ab1a1b))) {
-                                                res.add(new Col(ab1a1b, bc1b1c, i));
-                                            }
-                                        }
-                                    }
-                                }
+                            if (liner.collinear(o, a1, i) && liner.collinear(a, ab1a1b, i)) {
+                                b1 = i;
                             }
                         }
+                        if (b < 0 || b1 < 0) {
+                            continue;
+                        }
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(b, b1, i) && liner.collinear(o, ab1a1b, i)) {
+                                ac1a1c = i;
+                                break;
+                            }
+                        }
+                        if (ac1a1c < 0) {
+                            continue;
+                        }
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(a, ac1a1c, i) && liner.collinear(o, a1, i)) {
+                                c1 = i;
+                            }
+                            if (liner.collinear(a1, ac1a1c, i) && liner.collinear(o, a, i)) {
+                                c = i;
+                            }
+                        }
+                        if (c < 0 || c1 < 0) {
+                            continue;
+                        }
+                        for (int i = 0; i < liner.getPc(); i++) {
+                            if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
+                                bc1b1c = i;
+                                break;
+                            }
+                        }
+                        if (bc1b1c < 0) {
+                            continue;
+                        }
+                        res.add(new Col(ab1a1b, ac1a1c, bc1b1c));
                     }
                 }
             }
