@@ -291,9 +291,12 @@ public class ContradictionUtil {
                                 if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
                                     ac1a1c = i;
                                 }
-                                if (ac1a1c >= 0 && bc1b1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, bc1b1c)) {
-                                    res.add(new Col(ac1a1c, ab1a1b, bc1b1c));
-                                }
+                            }
+                            if (ac1a1c < 0 || bc1b1c < 0) {
+                                continue;
+                            }
+                            if (!liner.collinear(ac1a1c, ab1a1b, bc1b1c)) {
+                                res.add(new Col(ac1a1c, ab1a1b, bc1b1c));
                             }
                         }
                     }
@@ -354,7 +357,9 @@ public class ContradictionUtil {
                             if (bc1b1c < 0) {
                                 continue;
                             }
-                            res.add(new Col(ab1a1b, ac1a1c, bc1b1c));
+                            if (!liner.collinear(ab1a1b, ac1a1c, bc1b1c)) {
+                                res.add(new Col(ab1a1b, ac1a1c, bc1b1c));
+                            }
                         }
                     }
                 }
