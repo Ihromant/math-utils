@@ -583,7 +583,7 @@ public class TranslationPlaneTest {
                     Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
             int[][] starts = br.lines().<int[]>mapMulti((line, sink) -> {
                 int[] start = Arrays.stream(line.substring(1, line.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray();
-                if (start.length != 5 || processed.contains(Arrays.stream(start).boxed().toList())) {
+                if (start.length != 4 || processed.contains(Arrays.stream(start).boxed().toList())) {
                     return;
                 }
                 sink.accept(start);
