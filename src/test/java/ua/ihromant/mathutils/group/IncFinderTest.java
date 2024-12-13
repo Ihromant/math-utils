@@ -336,7 +336,7 @@ public class IncFinderTest {
         IntStream.range(0, liners.size()).parallel().forEach(idx -> {
             Inc pl = liners.get(idx);
             PartialLiner partial = new PartialLiner(pl);
-            dist.compute(partial.designs(process, (p, b) -> true, des -> {
+            dist.compute(partial.designs(process, p -> p.altBlocks((p1, b) -> true), des -> {
                 Inc next = des.toInc();
                 if (iso.putIfAbsent(next.removeTwins().getCanonicalOld(), next) == null) {
                     System.out.println("Found " + next.toLines());
@@ -375,7 +375,7 @@ public class IncFinderTest {
             Arrays.stream(toProcess).parallel().forEach(idx -> {
                 Inc pl = liners.get(idx);
                 PartialLiner partial = new PartialLiner(pl);
-                partial.designs(process, (p, b) -> true, des -> {
+                partial.designs(process, p -> p.altBlocks((p1, b) -> true), des -> {
                     Inc res = des.toInc();
                     if (nonIsomorphic.putIfAbsent(res.removeTwins().getCanonicalOld(), res) == null) {
                         ps.println(res.toLines());
@@ -537,7 +537,7 @@ public class IncFinderTest {
             PartialLiner pl = new PartialLiner(conf.partials()[ThreadLocalRandom.current().nextInt(conf.partials().length)]);
             try {
                 PartialLiner res = randomize(pl, filter, conf.left() - cap);
-                rests.compute(res.designs(cap, filter, full -> System.out.println("Found " + Arrays.deepToString(full.lines()))), (a, b) -> b == null ? 1 : b + 1);
+                rests.compute(res.designs(cap, p -> p.altBlocks(filter), full -> System.out.println("Found " + Arrays.deepToString(full.lines()))), (a, b) -> b == null ? 1 : b + 1);
                 freqs[0]++;
             } catch (IllegalStateException e) {
                 freqs[Integer.parseInt(e.getMessage())]++;

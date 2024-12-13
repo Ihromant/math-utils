@@ -1164,15 +1164,15 @@ public class PartialLiner {
 
     private static int min = Integer.MAX_VALUE;
 
-    public int designs(int needed, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+    public int designs(int needed, Function<PartialLiner, Iterable<int[]>> gen, Consumer<PartialLiner> cons) {
         int res = needed;
-        for (int[] block : altBlocks(pred)) {
+        for (int[] block : gen.apply(this)) {
             PartialLiner nextPartial = new PartialLiner(this, block);
             if (needed == 1) {
                 cons.accept(nextPartial);
                 res = 0;
             } else {
-                int next = nextPartial.designs(needed - 1, pred, cons);
+                int next = nextPartial.designs(needed - 1, gen, cons);
                 if (next < res) {
                     res = next;
                     if (next < min) {
