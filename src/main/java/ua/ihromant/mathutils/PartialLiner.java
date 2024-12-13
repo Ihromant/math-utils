@@ -1354,7 +1354,7 @@ public class PartialLiner {
     }
 
     public List<int[]> availableRegular() {
-        List<List<int[]>> possible = new ArrayList<>();
+        List<int[]> min = null;
         int k = lines[0].length;
         for (int l1 = 0; l1 < lines.length; l1++) {
             for (int l2 = l1 + 1; l2 < lines.length; l2++) {
@@ -1401,17 +1401,21 @@ public class PartialLiner {
                             regBlocks(line, k - 3, lns::add);
                         }
                     }
-                    possible.add(lns);
+                    if (min == null || min.size() > lns.size()) {
+                        min = lns;
+                    }
                 }
             }
         }
-        return possible.stream().min(Comparator.comparingInt(List::size)).orElseGet(() -> {
+        if (min != null) {
+            return min;
+        } else {
             List<int[]> res = new ArrayList<>();
             for (int[] bl : altBlocks((l, b) -> true)) {
                 res.add(bl);
             }
             return res;
-        });
+        }
     }
 
     private void regBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
