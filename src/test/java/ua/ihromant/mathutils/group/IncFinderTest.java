@@ -58,6 +58,29 @@ public class IncFinderTest {
     }
 
     @Test
+    public void generateReg() throws IOException {
+        String prefix = "reg";
+        int v = 45;
+        int k = 5;
+        int b = v * (v - 1) / k / (k - 1);
+        int r = (v - 1) / (k - 1);
+        DumpConfig conf = readLast(prefix, v, k, () -> new DumpConfig(v, k, b - r - 1, new Inc[]{(beamBlocks(v, k))}));
+        List<Inc> liners = Arrays.asList(conf.partials());
+        int left = conf.left();
+        long time = System.currentTimeMillis();
+        System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + left + ", base size " + liners.size());
+        while (left > 0 && !liners.isEmpty()) {
+            AtomicLong cnt = new AtomicLong();
+            liners = nextStageRegular(liners, cnt);
+            left--;
+            dump(prefix, v, k, left, liners);
+            System.out.println(left + " " + liners.size() + " " + cnt.get());
+        }
+        System.out.println("Generated " + left + " " + liners.size());
+        System.out.println(System.currentTimeMillis() - time);
+    }
+
+    @Test
     public void generateAP() throws IOException {
         String prefix = "ap";
         int v = 28;
@@ -556,6 +579,19 @@ public class IncFinderTest {
         Map<FixBS, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
             PartialLiner partial = new PartialLiner(inc);
             for (int[] block : generator.apply(partial)) {
+                Inc liner = inc.addLine(block);
+                cnt.incrementAndGet();
+                sink.accept(liner);
+            }
+        }).collect(Collectors.toMap(l -> l.removeTwins().getCanonicalOld(), Function.identity(), (a, b) -> a, ConcurrentHashMap::new));
+        return new ArrayList<>(nonIso.values());
+    }
+
+    private static List<Inc> nextStageRegular(List<Inc> partials, AtomicLong cnt) {
+        Map<FixBS, Inc> nonIso = partials.stream().parallel().<Inc>mapMulti((inc, sink) -> {
+            PartialLiner partial = new PartialLiner(inc);
+            List<int[]> reg = partial.availableRegular();
+            for (int[] block : reg) {
                 Inc liner = inc.addLine(block);
                 cnt.incrementAndGet();
                 sink.accept(liner);

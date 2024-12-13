@@ -1353,6 +1353,90 @@ public class PartialLiner {
         }
     }
 
+    public List<int[]> availableRegular() {
+        List<List<int[]>> possible = new ArrayList<>();
+        int k = lines[0].length;
+        for (int l1 = 0; l1 < lines.length; l1++) {
+            for (int l2 = l1 + 1; l2 < lines.length; l2++) {
+                int inter = intersection(l1, l2);
+                if (inter < 0) {
+                    continue;
+                }
+                FixBS needed = new FixBS(pointCount);
+                needed.set(0, pointCount);
+                int counter = k * k - 1;
+                for (int p1 : lines[l1]) {
+                    for (int p2 : lines[l2]) {
+                        int ln = line(p1, p2);
+                        if (ln < 0) {
+                            continue;
+                        }
+                        counter--;
+                        for (int pt : lines[ln]) {
+                            needed.clear(pt);
+                        }
+                    }
+                }
+                int crd = needed.cardinality();
+                if (crd == 0) {
+                    continue;
+                }
+                if (counter * (k - 2) < crd) {
+                    return List.of();
+                }
+                for (int pt = needed.nextSetBit(0); pt >= 0; pt = needed.nextSetBit(pt + 1)) {
+                    List<int[]> lns = new ArrayList<>();
+                    for (int p1 : lines[l1]) {
+                        if (p1 == inter || line(pt, p1) >= 0) {
+                            continue;
+                        }
+                        for (int p2 : lines[l2]) {
+                            if (p2 == inter || line(pt, p2) >= 0 || line(p1, p2) >= 0) {
+                                continue;
+                            }
+                            int[] line = new int[k];
+                            line[0] = pt;
+                            line[1] = p1;
+                            line[2] = p2;
+                            regBlocks(line, k - 3, lns::add);
+                        }
+                    }
+                    possible.add(lns);
+                }
+            }
+        }
+        return possible.stream().min(Comparator.comparingInt(List::size)).orElseGet(() -> {
+            List<int[]> res = new ArrayList<>();
+            for (int[] bl : altBlocks((l, b) -> true)) {
+                res.add(bl);
+            }
+            return res;
+        });
+    }
+
+    private void regBlocks(int[] curr, int moreNeeded, Consumer<int[]> cons) {
+        int len = curr.length - moreNeeded;
+        ex: for (int p = len == 3 ? 0 : curr[len - 1] + 1; p < pointCount; p++) {
+            if (p == curr[0] || p == curr[1] || p == curr[2]) {
+                continue;
+            }
+            int[] look = lookup[p];
+            for (int i = 0; i < len; i++) {
+                if (look[curr[i]] >= 0) {
+                    continue ex;
+                }
+            }
+            curr[len] = p;
+            if (moreNeeded == 1) {
+                int[] res = curr.clone();
+                Arrays.sort(res);
+                cons.accept(res);
+            } else {
+                regBlocks(curr, moreNeeded - 1, cons);
+            }
+        }
+    }
+
     public boolean checkAP(int[] line) {
         int ll = line.length;
         for (int p : line) {

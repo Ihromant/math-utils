@@ -421,7 +421,9 @@ public class FixBS implements Comparable<FixBS> {
 
     public static FixBS of(int v, int... values) {
         FixBS bs = new FixBS(v);
-        IntStream.of(values).forEach(bs::set);
+        for (int i : values) {
+            bs.set(i);
+        }
         return bs;
     }
 }
