@@ -353,9 +353,9 @@ public class IncFinderTest {
 
     @Test
     public void generateFt() throws IOException {
-        String prefix = "com1";
-        int v = 61;
-        int k = 6;
+        String prefix = "reg";
+        int v = 45;
+        int k = 5;
         int process = 1;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         Map<FixBS, Inc> nonIsomorphic = readList("ft/" + prefix, v, k, v * (v - 1) / k / (k - 1) - conf.left() + process)
@@ -375,7 +375,7 @@ public class IncFinderTest {
             Arrays.stream(toProcess).parallel().forEach(idx -> {
                 Inc pl = liners.get(idx);
                 PartialLiner partial = new PartialLiner(pl);
-                partial.designs(process, p -> p.altBlocks((p1, b) -> true), des -> {
+                partial.designs(process, PartialLiner::availableRegular, des -> {
                     Inc res = des.toInc();
                     if (nonIsomorphic.putIfAbsent(res.removeTwins().getCanonicalOld(), res) == null) {
                         ps.println(res.toLines());
@@ -523,21 +523,21 @@ public class IncFinderTest {
 
     @Test
     public void randomizer() {
-        String prefix = "com";
-        int v = 51;
-        int k = 6;
-        int cap = 44;
+        String prefix = "reg";
+        int v = 41;
+        int k = 5;
+        int cap = 10;
         DumpConfig conf = readLast(prefix, v, k, () -> {throw new IllegalArgumentException();});
         long[] freqs = new long[conf.left() - cap + 1];
         Map<Integer, Long> rests = new ConcurrentHashMap<>();
         System.out.println("Started generation for v = " + v + ", k = " + k + ", blocks left " + conf.left() + ", base size " + conf.partials().length);
         AtomicLong al = new AtomicLong();
-        BiPredicate<PartialLiner, int[]> filter = (p, b) -> true;
+        Function<PartialLiner, Iterable<int[]>> gen = PartialLiner::availableRegular;
         LongStream.range(0, Long.MAX_VALUE).parallel().forEach(l -> {
             PartialLiner pl = new PartialLiner(conf.partials()[ThreadLocalRandom.current().nextInt(conf.partials().length)]);
             try {
-                PartialLiner res = randomize(pl, filter, conf.left() - cap);
-                rests.compute(res.designs(cap, p -> p.altBlocks(filter), full -> System.out.println("Found " + Arrays.deepToString(full.lines()))), (a, b) -> b == null ? 1 : b + 1);
+                PartialLiner res = randomize(pl, gen, conf.left() - cap);
+                rests.compute(res.designs(cap, gen, full -> System.out.println("Found " + Arrays.deepToString(full.lines()))), (a, b) -> b == null ? 1 : b + 1);
                 freqs[0]++;
             } catch (IllegalStateException e) {
                 freqs[Integer.parseInt(e.getMessage())]++;
@@ -548,19 +548,19 @@ public class IncFinderTest {
         });
     }
 
-    public PartialLiner randomize(PartialLiner partial, BiPredicate<PartialLiner, int[]> filter, int steps) {
+    public PartialLiner randomize(PartialLiner partial, Function<PartialLiner, Iterable<int[]>> gen, int steps) {
         if (steps == 0) {
             return partial;
         }
         List<int[]> blocks = new ArrayList<>();
-        for (int[] bl : partial.altBlocks(filter)) {
+        for (int[] bl : gen.apply(partial)) {
             blocks.add(bl);
         }
         if (blocks.isEmpty()) {
             throw new IllegalStateException(String.valueOf(steps));
         }
         PartialLiner next = new PartialLiner(partial, blocks.get(ThreadLocalRandom.current().nextInt(blocks.size())));
-        return randomize(next, filter, steps - 1);
+        return randomize(next, gen, steps - 1);
     }
 
     private static List<Inc> nextStageAltConc(List<Inc> partials, AtomicLong cnt) {
