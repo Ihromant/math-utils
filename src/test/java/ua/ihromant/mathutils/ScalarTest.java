@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.plane.NumeratedAffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
+import ua.ihromant.mathutils.vector.TranslationPlaneTest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -10,16 +11,22 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Objects;
 
-public class NumeratedAffineTest {
+public class ScalarTest {
     @Test
-    public void testScalars() throws IOException {
+    public void testAffineScalars() throws IOException {
         String name = "dhall9";
         int order = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, 0);
+            int line = TranslationPlaneTest.findTranslationLine(proj);
+            if (line < 0) {
+                throw new IllegalArgumentException("Not translation");
+            } else {
+                System.out.println(name + " dropped line " + line);
+            }
+            NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, line);
             int lc = aff.lineCount();
             int[][] triples = aff.triples();
             QuickFind find = new QuickFind(triples.length * lc);
