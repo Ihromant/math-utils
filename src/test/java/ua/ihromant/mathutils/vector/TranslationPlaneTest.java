@@ -658,6 +658,31 @@ public class TranslationPlaneTest {
         }
     }
 
+    private void treeSimplePar(ModuloMatrixHelper helper, int[] v, int vSize, int[] partSpread, int idx, Consumer<int[]> sink) {
+        int needed = partSpread.length - idx;
+        if (vSize < needed) {
+            return;
+        }
+        if (needed == 0) {
+            sink.accept(partSpread);
+            return;
+        }
+        (idx <= 1 ? IntStream.range(0, vSize).parallel() : IntStream.range(0, vSize)).forEach(i -> {;
+            int a = v[i];
+            int[] newArr = partSpread.clone();
+            newArr[idx] = a;
+            int[] newV = new int[vSize - i];
+            int newVSize = 0;
+            for (int j = i + 1; j < vSize; j++) {
+                int b = v[j];
+                if (helper.hasInv(helper.sub(b, a))) {
+                    newV[newVSize++] = b;
+                }
+            }
+            treeSimplePar(helper, newV, newVSize, newArr, idx + 1, sink);
+        });
+    }
+
     private void treeSimple(ModuloMatrixHelper helper, int[] v, int vSize, int[] partSpread, int idx, Consumer<int[]> sink) {
         int needed = partSpread.length - idx;
         if (vSize < needed) {
