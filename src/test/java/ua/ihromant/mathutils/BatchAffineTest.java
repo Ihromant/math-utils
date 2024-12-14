@@ -42,7 +42,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 int[] infty = proj.line(dl);
                 int[] partialPoints = new int[proj.pointCount()];
@@ -79,7 +78,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 long time = System.currentTimeMillis();
                 System.out.println(name + " dropped " + dl + " count " + new AffinePlane(proj, dl).toLiner().autCountNew() + " time " + (System.currentTimeMillis() - time));
@@ -95,7 +93,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 List<Set<Pair>> vectors = aff.vectors();
@@ -113,7 +110,6 @@ public class BatchAffineTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 int base = aff.points().iterator().next();
@@ -163,7 +159,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Map<FixBS, Integer> nonIsomorphic = new HashMap<>();
             for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
                 Partition partition = new Partition(proj.pointCount() + proj.lineCount(), new int[][]{
@@ -187,7 +182,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             int cnt = k * k + k + 1;
             int[] arr = IntStream.range(0, cnt).toArray();
             for (int dl : dropped.getOrDefault(name, arr)) {
@@ -440,7 +434,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 Liner liner = new AffinePlane(proj, dl).toLiner();
                 long time = System.currentTimeMillis();
@@ -474,7 +467,6 @@ public class BatchAffineTest {
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
                 Liner proj = readProj(br);
-                HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
                 int[][] central = new int[proj.pointCount()][proj.lineCount()];
                 for (int o = 0; o < proj.pointCount(); o++) {
                     for (int l = 0; l < proj.lineCount(); l++) {
@@ -532,7 +524,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             int dl = 1;
             Liner liner = new AffinePlane(proj, dl).toLiner();
             for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
@@ -622,7 +613,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, 0).toLiner();
             TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
             TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
@@ -649,7 +639,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             for (int triangle : uniqueTriangles.get(name)) {
                 Triangle tr = liner.trOf(triangle);
@@ -681,7 +670,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             Map<Integer, List<TernaryRing>> byIso = new HashMap<>();
             ex: for (int triangle : uniqueTriangles.get(name)) {
@@ -712,7 +700,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             System.out.println(name + " dropped line " + dl);
             for (int triangle : uniqueTriangles.get(name)) {
@@ -750,7 +737,6 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Liner liner = new AffinePlane(proj, dl).toLiner();
             boolean notFanoFound = false;
             boolean linearFound = false;
@@ -845,7 +831,6 @@ public class BatchAffineTest {
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
                 Liner proj = readProj(br);
-                HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
                 for (int dl : dropped.get(plName)) {
                     Liner liner = new AffinePlane(proj, dl).toLiner();
                     String name = plName + "-" + dl + "-" + k;

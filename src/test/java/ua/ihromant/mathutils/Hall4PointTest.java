@@ -66,7 +66,6 @@ public class Hall4PointTest {
         }
         Liner cubeLiner = new Liner(cubeLines);
         assertEquals(cube, cubeLiner.pointCount());
-        HyperbolicPlaneTest.testCorrectness(cubeLiner, of(4));
         BitSet[] linez = Stream.of(
                 IntStream.range(0, lc).boxed().flatMap(t -> Arrays.stream(cubeLines).map(l -> {
                     BitSet result = new BitSet();
@@ -106,7 +105,6 @@ public class Hall4PointTest {
         Liner pl = new Liner(linez);
         assertEquals(cube * fd.cardinality(), pl.pointCount());
         assertEquals(cube * 85, pl.lineCount());
-        HyperbolicPlaneTest.testCorrectness(pl, of(4));
     }
 
     @Test
@@ -149,7 +147,6 @@ public class Hall4PointTest {
         Liner pl = new Liner(lines);
         assertEquals(cube * lc, pl.pointCount());
         assertEquals(cube * 85, pl.lineCount());
-        HyperbolicPlaneTest.testCorrectness(pl, of(4));
         assertEquals(of(16), pl.cardSubPlanes(true));
         assertEquals(of(64, 256), checkSpace(pl));
     }

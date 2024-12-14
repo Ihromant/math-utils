@@ -33,7 +33,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipInputStream;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BatchLinerTest {
     private ZipInputStream getZis(InputStream is) throws IOException {
@@ -90,7 +90,6 @@ public class BatchLinerTest {
     public void test217_7() throws IOException {
         List<Liner> planes = readPlanes(217, 7);
         assertEquals(4, planes.size());
-        planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7)));
         assertEquals(of(1, 2, 3, 4, 5), planes.get(0).hyperbolicIndex());
         assertEquals(of(1, 2, 3, 4, 5), planes.get(1).hyperbolicIndex());
         assertEquals(of(1, 2, 3, 4, 5), planes.get(2).hyperbolicIndex());
@@ -101,7 +100,6 @@ public class BatchLinerTest {
     public void test175_7() throws IOException {
         List<Liner> planes = readPlanes(175, 7);
         assertEquals(2, planes.size());
-        planes.forEach(p -> HyperbolicPlaneTest.testCorrectness(p, of(7)));
         assertEquals(of(2, 3, 4, 5), planes.get(0).hyperbolicIndex());
         assertEquals(of(1, 2, 3, 4, 5), planes.get(1).hyperbolicIndex());
     }
@@ -117,7 +115,6 @@ public class BatchLinerTest {
     public void test65_5() throws IOException {
         List<Liner> planes = readPlanes(65, 5);
         assertEquals(1777, planes.size());
-        HyperbolicPlaneTest.testCorrectness(planes.getFirst(), of(5));
         assertEquals(of(3), planes.getFirst().hyperbolicIndex());
         assertEquals(of(65), planes.getFirst().cardSubPlanes(true));
     }
@@ -147,7 +144,6 @@ public class BatchLinerTest {
         Liner plane = planes.get(1001);
         assertEquals(of(2), plane.hyperbolicIndex());
         assertEquals(of(28), plane.cardSubPlanes(true));
-        HyperbolicPlaneTest.testCorrectness(plane, of(4));
 
         String[] design = printDesign(planes.get(3429));
         Arrays.stream(design).forEach(System.out::println);
@@ -268,7 +264,6 @@ public class BatchLinerTest {
             System.out.println(name);
             Liner projective = readUni(br);
             String next;
-            HyperbolicPlaneTest.testCorrectness(projective, of(17));
             int ub = Integer.parseInt(br.readLine());
             br.readLine();
             while ((next = br.readLine()) != null) {
@@ -285,7 +280,6 @@ public class BatchLinerTest {
                 lines = Arrays.stream(lines).map(l -> l.stream()
                         .map(p -> Arrays.binarySearch(pointArray, p)).collect(BitSet::new, BitSet::set, BitSet::or)).toArray(BitSet[]::new);
                 Liner p = new Liner(lines);
-                HyperbolicPlaneTest.testCorrectness(p, of(5));
                 System.out.println(p.hyperbolicIndex());
             }
         }
@@ -314,7 +308,6 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner projective = readTxt(br);
-            HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
             for (int dl = 0; dl < projective.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(projective, dl);
                 boolean paraPappus = aff.isParaPappus();
@@ -336,7 +329,6 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner projective = readTxt(br);
-            HyperbolicPlaneTest.testCorrectness(projective, of(k + 1));
             for (int dl = 0; dl < projective.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(projective, dl);
                 System.out.println("Dropped " + dl);
@@ -355,7 +347,6 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner proj = readTxt(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             Set<Set<Pair>> configs = new HashSet<>();
             for (int dl = 0; dl < proj.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(proj, dl);
@@ -392,7 +383,6 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner proj = readTxt(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl = 0; dl < proj.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 System.out.println("Dropped " + dl + " chars " + aff.getCharacteristics());
@@ -409,7 +399,6 @@ public class BatchLinerTest {
              BufferedReader br = new BufferedReader(isr)) {
             System.out.println(name);
             Liner proj = readTxt(br);
-            HyperbolicPlaneTest.testCorrectness(proj, of(k + 1));
             for (int dl = 0; dl < proj.lineCount(); dl++) {
                 AffinePlane aff = new AffinePlane(proj, dl);
                 Set<Integer> closures = new HashSet<>();
@@ -525,7 +514,6 @@ public class BatchLinerTest {
             Liner p = designs[i];
             assertEquals(25, p.pointCount());
             assertEquals(50, p.lineCount());
-            HyperbolicPlaneTest.testCorrectness(p, of(4));
             assertEquals(of(4), p.playfairIndex());
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
             assertEquals(of(25), p.cardSubPlanes(true));

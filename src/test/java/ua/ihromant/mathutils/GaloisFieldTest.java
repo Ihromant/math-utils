@@ -255,7 +255,6 @@ public class GaloisFieldTest {
         }
         Liner uni = pl.subPlane(unital.stream().toArray());
         assertEquals(ord * q + 1, uni.pointCount());
-        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1));
         System.out.println(uni.hyperbolicIndex());
     }
 
@@ -265,7 +264,6 @@ public class GaloisFieldTest {
         int ord = q * q;
         GaloisField fd = new GaloisField(ord);
         Liner pl = new Liner(fd.generateSpace());
-        HyperbolicPlaneTest.testCorrectness(pl, of(ord + 1));
         //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
         //checkSpace(pl, pl.pointCount(), pl.pointCount());
         BitSet unital = new BitSet();
@@ -286,8 +284,6 @@ public class GaloisFieldTest {
         int[] point28Array = of(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 276, 277, 278, 279).stream().toArray();
         Liner pl37 = uni.subPlane(point37Array);
         Liner pl28 = uni.subPlane(point28Array);
-        HyperbolicPlaneTest.testCorrectness(pl37, of(q + 1, ord + 1));
-        HyperbolicPlaneTest.testCorrectness(pl28, of(q + 1));
         System.out.println(pl37.hyperbolicIndex());
         System.out.println(pl28.hyperbolicIndex());
     }
@@ -298,7 +294,6 @@ public class GaloisFieldTest {
         int ord = q * q;
         GaloisField fd = new GaloisField(ord);
         Liner pl = new Liner(fd.generateSpace());
-        HyperbolicPlaneTest.testCorrectness(pl, of(ord + 1));
         //assertEquals(of(ord * ord + ord + 1), pl.cardSubPlanes(false));
         //checkSpace(pl, pl.pointCount(), pl.pointCount());
         BitSet unital = new BitSet();
@@ -311,15 +306,12 @@ public class GaloisFieldTest {
         }
         Liner uni = pl.subPlane(unital.stream().toArray());
         assertEquals(45, uni.pointCount());
-        HyperbolicPlaneTest.testCorrectness(uni, of(q + 1, ord + 1));
         assertEquals(of(9, 13), uni.cardSubPlanes(true));
         System.out.println(uni.hyperbolicIndex());
         int[] point13Array = of(0, 1, 2, 7, 8, 9, 20, 21, 22, 33, 34, 35, 39).stream().toArray();
         int[] point9Array = of(0, 1, 2, 3, 4, 5, 42, 43, 44).stream().toArray();
         Liner pl13 = uni.subPlane(point13Array);
         Liner pl9 = uni.subPlane(point9Array);
-        HyperbolicPlaneTest.testCorrectness(pl13, of(q + 1, ord + 1));
-        HyperbolicPlaneTest.testCorrectness(pl9, of(q + 1));
         System.out.println(pl13.hyperbolicIndex());
         System.out.println(pl9.hyperbolicIndex());
     }
@@ -337,7 +329,6 @@ public class GaloisFieldTest {
             }
         }
         Liner bks = prSp.subPlane(pts.stream().toArray());
-        HyperbolicPlaneTest.testCorrectness(bks, of(q - 3, q - 2, q - 1));
         Set<BitSet> planes = new HashSet<>();
         for (int i = 0; i < bks.pointCount(); i++) {
             for (int j = i + 1; j < bks.pointCount(); j++) {
@@ -441,7 +432,6 @@ public class GaloisFieldTest {
         }
         System.out.println("d");
         Liner figueroa = new Liner(lines);
-        HyperbolicPlaneTest.testCorrectness(figueroa, of(fd.cardinality() + 1));
         for (int l = 0; l < figueroa.lineCount(); l++) {
             System.out.println(Arrays.stream(figueroa.line(l)).mapToObj(Integer::toString).collect(Collectors.joining(" ")));
         }

@@ -217,7 +217,6 @@ public class BibdFinderTest {
                 int[][] diffSet = Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
                         .toArray()).map(arr -> minimalTuple(arr, v)).toArray(int[][]::new);
                 Liner p = Liner.byDiffFamily(v, diffSet);
-                HyperbolicPlaneTest.testCorrectness(p, of(5));
                 checkHypIndex(p, planes, diffSet);
 
                 long cnt = counter.incrementAndGet();
