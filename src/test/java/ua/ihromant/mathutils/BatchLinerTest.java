@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -517,6 +518,21 @@ public class BatchLinerTest {
             assertEquals(of(4), p.playfairIndex());
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
             assertEquals(of(25), p.cardSubPlanes(true));
+            PermutationGroup perm = p.automorphisms();
+            QuickFind pts = new QuickFind(p.pointCount());
+            QuickFind lns = new QuickFind(p.lineCount());
+            for (int a = 0; a < perm.order(); a++) {
+                int[] arr = perm.permutation(a);
+                for (int p1 = 0; p1 < p.pointCount(); p1++) {
+                    pts.union(p1, arr[p1]);
+                    for (int p2 = p1 + 1; p2 < p.pointCount(); p2++) {
+                        lns.union(p.line(p1, p2), p.line(arr[p1], arr[p2]));
+                    }
+                }
+            }
+            System.out.println("Liner " + i + " auths " + perm.order());
+            System.out.println("Points " + pts.components());
+            System.out.println("Lines " + lns.components());
         }
     }
 
