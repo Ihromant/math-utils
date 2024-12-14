@@ -65,18 +65,18 @@ public class BooleanThalesTest {
             newLines.get(bd).set(base.pointCount());
             newLines.get(ad).set(base.pointCount() + 1);
             newLines.get(bc).set(base.pointCount() + 1);
-            newLines.add(of(newPc, abcd, base.pointCount(), base.pointCount() + 1));
+            newLines.add(FixBS.of(newPc, abcd, base.pointCount(), base.pointCount() + 1));
         } else {
             newLines.get(ab).set(base.pointCount());
             newLines.get(cd).set(base.pointCount());
             if (acbd >= 0) {
                 newLines.get(ad).set(base.pointCount() + 1);
                 newLines.get(bc).set(base.pointCount() + 1);
-                newLines.add(of(newPc, acbd, base.pointCount(), base.pointCount() + 1));
+                newLines.add(FixBS.of(newPc, acbd, base.pointCount(), base.pointCount() + 1));
             } else {
                 newLines.get(ac).set(base.pointCount() + 1);
                 newLines.get(bd).set(base.pointCount() + 1);
-                newLines.add(of(newPc, adbc, base.pointCount(), base.pointCount() + 1));
+                newLines.add(FixBS.of(newPc, adbc, base.pointCount(), base.pointCount() + 1));
             }
         }
         return joinByTwo(new SimpleLiner(newPc, newLines.toArray(FixBS[]::new)));
@@ -100,7 +100,7 @@ public class BooleanThalesTest {
         newLines.get(bd).set(base.pointCount() + 1);
         newLines.get(ad).set(base.pointCount() + 2);
         newLines.get(bc).set(base.pointCount() + 2);
-        newLines.add(of(newPc, base.pointCount(), base.pointCount() + 1, base.pointCount() + 2));
+        newLines.add(FixBS.of(newPc, base.pointCount(), base.pointCount() + 1, base.pointCount() + 2));
         return joinByTwo(new SimpleLiner(newPc, newLines.toArray(FixBS[]::new)));
     }
 
@@ -209,12 +209,6 @@ public class BooleanThalesTest {
                         Arrays.stream(notJoined).map(p -> new int[]{p.f(), p.s()})).toArray(int[][]::new));
     }
 
-    private static FixBS of(int v, int... values) {
-        FixBS bs = new FixBS(v);
-        IntStream.of(values).forEach(bs::set);
-        return bs;
-    }
-
     private static Pair[] notJoined(SimpleLiner liner) {
         List<Pair> notIntersecting = new ArrayList<>();
         for (int a = 0; a < liner.pointCount(); a++) {
@@ -267,7 +261,7 @@ public class BooleanThalesTest {
                     liner.intersection(liner.line(q.a(), q.c()), liner.line(q.b(), q.d())),
                     liner.intersection(liner.line(q.a(), q.d()), liner.line(q.b(), q.c()))).filter(i -> i >= 0).toArray();
             if (!liner.collinear(pts)) {
-                failed.add(of(liner.pointCount(), pts));
+                failed.add(FixBS.of(liner.pointCount(), pts));
             }
         });
         if (!failed.isEmpty()) {
@@ -293,7 +287,7 @@ public class BooleanThalesTest {
                     liner.intersection(liner.line(q.a(), q.c()), liner.line(q.b(), q.d())),
                     liner.intersection(liner.line(q.a(), q.d()), liner.line(q.b(), q.c()))).filter(i -> i >= 0).toArray();
             if (!liner.collinear(pts)) {
-                FixBS bs = of(liner.pointCount(), pts);
+                FixBS bs = FixBS.of(liner.pointCount(), pts);
                 if (unique.add(bs)) {
                     System.out.println("Consider points " + q.a() + ", " + q.b() + ", " + q.c() + ", " + q.d() + ". They form full fano, but intersections "
                             + liner.intersection(liner.line(q.a(), q.b()), liner.line(q.c(), q.d())) + ", " + liner.intersection(liner.line(q.a(), q.c()), liner.line(q.b(), q.d()))

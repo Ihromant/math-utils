@@ -244,15 +244,7 @@ public class AssumptionTest {
                 val.set(pt);
             }
         } else {
-            map.put(line, of(pts));
+            map.put(line, FixBS.of(Arrays.stream(pts).max().orElseThrow() + 1, pts));
         }
-    }
-
-    private static FixBS of(int... vals) {
-        FixBS bs = new FixBS(Arrays.stream(vals).max().orElseThrow() + 1);
-        for (int val : vals) {
-            bs.set(val);
-        }
-        return bs;
     }
 }
