@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;

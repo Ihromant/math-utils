@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.FinderTest;
+import ua.ihromant.mathutils.plane.AffinePlane;
 
 import java.util.ArrayList;
 import java.util.List;

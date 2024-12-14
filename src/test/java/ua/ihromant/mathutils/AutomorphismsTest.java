@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.plane.CharVals;
 import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
 import ua.ihromant.mathutils.plane.Quad;

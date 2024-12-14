@@ -1,5 +1,6 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.plane;
 
+import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.fuzzy.Pair;
 
 import java.util.ArrayList;

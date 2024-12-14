@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
+import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.plane.AffineTernaryRing;
 import ua.ihromant.mathutils.plane.TernaryRing;
 import ua.ihromant.mathutils.util.FixBS;
