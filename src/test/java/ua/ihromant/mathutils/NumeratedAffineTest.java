@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.plane.NumeratedAffinePlane;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -55,7 +56,7 @@ public class NumeratedAffineTest {
                     }
                 }
             }
-            System.out.println(find.components());
+            System.out.println(find.components().stream().map(FixBS::cardinality).toList());
         }
     }
 }
