@@ -146,67 +146,73 @@ public class ScalarTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            int line = 192;
-            NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, line);
-            int lc = aff.lineCount();
-            int[][] pairs = aff.pairs();
-            QuickFind find = new QuickFind(pairs.length * lc);
-            for (int l1 = 0; l1 < lc; l1++) {
-                for (int l2 = l1 + 1; l2 < lc; l2++) {
-                    int inter = aff.intersection(l1, l2);
-                    if (inter >= 0) {
-                        continue;
-                    }
-                    int[] fPts = aff.line(l1);
-                    int[] sPts = aff.line(l2);
-                    int fst = fPts[0] == inter ? fPts[1] : fPts[0];
-                    for (int i = 0; i < order; i++) {
-                        int snd = sPts[i];
-                        if (snd == inter) {
+            for (int line = 0; line < proj.lineCount(); line++) {
+                NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, line);
+                int lc = aff.lineCount();
+                int[][] pairs = aff.pairs();
+                QuickFind find = new QuickFind(pairs.length * lc);
+                for (int l1 = 0; l1 < lc; l1++) {
+                    for (int l2 = l1 + 1; l2 < lc; l2++) {
+                        int inter = aff.intersection(l1, l2);
+                        if (inter >= 0) {
                             continue;
                         }
-                        int[] map = new int[order];
-                        int par = aff.line(fst, snd);
-                        for (int j = 0; j < order; j++) {
-                            int aSnd = sPts[j];
-                            if (aSnd == inter) {
-                                map[j] = aff.idxOf(l1, inter);
+                        int[] fPts = aff.line(l1);
+                        int[] sPts = aff.line(l2);
+                        int fst = fPts[0] == inter ? fPts[1] : fPts[0];
+                        for (int i = 0; i < order; i++) {
+                            int snd = sPts[i];
+                            if (snd == inter) {
                                 continue;
                             }
-                            int parInter = aff.intersection(l1, aff.parallel(par, aSnd));
-                            map[j] = aff.idxOf(l1, parInter);
-                        }
-                        for (int[] tr : pairs) {
-                            int p = l2 * pairs.length + aff.pairIdx(tr[0], tr[1]);
-                            int q = l1 * pairs.length + aff.pairIdx(map[tr[0]], map[tr[1]]);
-                            find.union(p, q);
+                            int[] map = new int[order];
+                            int par = aff.line(fst, snd);
+                            for (int j = 0; j < order; j++) {
+                                int aSnd = sPts[j];
+                                if (aSnd == inter) {
+                                    map[j] = aff.idxOf(l1, inter);
+                                    continue;
+                                }
+                                int parInter = aff.intersection(l1, aff.parallel(par, aSnd));
+                                map[j] = aff.idxOf(l1, parInter);
+                            }
+                            for (int[] tr : pairs) {
+                                int p = l2 * pairs.length + aff.pairIdx(tr[0], tr[1]);
+                                int q = l1 * pairs.length + aff.pairIdx(map[tr[0]], map[tr[1]]);
+                                find.union(p, q);
+                            }
                         }
                     }
                 }
-            }
-            List<FixBS> components = find.components();
-            int[] zeroBeam = IntStream.range(0, aff.lineCount()).filter(i -> aff.line(i)[0] == 0).toArray();
-            FixBS l = FixBS.of(pairs.length * lc);
-            for (int ln : zeroBeam) {
-                l.set(ln * pairs.length, ln * pairs.length + order - 1);
-            }
-            FixBS res = new FixBS(aff.pointCount());
-            res.set(0);
-            for (FixBS comp : components) {
-                if (comp.cardinality() != aff.pointCount()) {
+                List<FixBS> components = find.components();
+                int[] zeroBeam = IntStream.range(0, aff.lineCount()).filter(i -> aff.line(i)[0] == 0).toArray();
+                FixBS l = FixBS.of(pairs.length * lc);
+                for (int ln : zeroBeam) {
+                    l.set(ln * pairs.length, ln * pairs.length + order - 1);
+                }
+                FixBS res = new FixBS(aff.pointCount());
+                res.set(0);
+                for (FixBS comp : components) {
+                    if (comp.cardinality() != aff.pointCount()) {
+                        continue;
+                    }
+                    FixBS prs = comp.intersection(l);
+                    for (int un = prs.nextSetBit(0); un >= 0; un = prs.nextSetBit(un + 1)) {
+                        int ln = un / pairs.length;
+                        int[] pair = pairs[un % pairs.length];
+                        int pt = aff.line(ln)[pair[1]];
+                        res.set(pt);
+                    }
+                }
+                System.out.println(line);
+                System.out.println(components.stream().map(FixBS::cardinality).toList());
+                if (res.cardinality() == 1) {
+                    System.out.println("Empty func vectors");
                     continue;
                 }
-                FixBS prs = comp.intersection(l);
-                for (int un = prs.nextSetBit(0); un >= 0; un = prs.nextSetBit(un + 1)) {
-                    int ln = un / pairs.length;
-                    int[] pair = pairs[un % pairs.length];
-                    int pt = aff.line(ln)[pair[1]];
-                    res.set(pt);
-                }
+                Liner funcVectors = aff.subPlane(res);
+                System.out.println(funcVectors.pointCount() + " " + funcVectors.lineCount());
             }
-            System.out.println(components.stream().map(FixBS::cardinality).toList());
-            Liner funcVectors = aff.subPlane(res);
-            System.out.println(funcVectors.pointCount() + " " + funcVectors.lineCount());
         }
     }
 }
