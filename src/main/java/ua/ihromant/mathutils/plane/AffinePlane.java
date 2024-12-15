@@ -3,12 +3,10 @@ package ua.ihromant.mathutils.plane;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.fuzzy.Pair;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
@@ -66,19 +64,8 @@ public class AffinePlane {
         return () -> Arrays.stream(plane.line(line)).filter(p -> !plane.flag(dl, p)).boxed().iterator();
     }
 
-    public Iterable<Integer> notLine(int line) {
-        if (line == dl) {
-            throw new IllegalArgumentException();
-        }
-        return () -> IntStream.range(0, plane.pointCount()).filter(p -> !plane.flag(line, p) && !plane.flag(dl, p)).boxed().iterator();
-    }
-
     public Liner toLiner() {
         return plane.subPlane(IntStream.range(0, plane.pointCount()).filter(p -> !plane.flag(dl, p)).toArray());
-    }
-
-    public Liner subPlane(int[] pointArray) {
-        return plane.subPlane(pointArray);
     }
 
     public boolean isParallel(int l1, int l2) {
@@ -292,40 +279,5 @@ public class AffinePlane {
             charToPoint.put(pairs, o);
         }
         return charToPoint;
-    }
-
-    public List<Set<Pair>> vectors() {
-        List<Set<Pair>> result = new ArrayList<>();
-        for (int p1 : points()) {
-            for (int p2 : points()) {
-                if (p1 == p2) {
-                    continue;
-                }
-                Pair p = new Pair(p1, p2);
-                if (result.stream().anyMatch(s -> s.contains(p))) {
-                    continue;
-                }
-                Set<Pair> vectors = new HashSet<>();
-                vectors.add(new Pair(p1, p2));
-                Set<Pair> currentLayer = new HashSet<>(vectors);
-                while (!currentLayer.isEmpty()) {
-                    Set<Pair> nextLayer = new HashSet<>();
-                    for (Pair pair : currentLayer) {
-                        int line = line(pair.f(), pair.s());
-                        for (int beg : notLine(line)) {
-                            int end = parallelogram(pair.f(), pair.s(), beg);
-                            Pair newPair = new Pair(beg, end);
-                            if (!vectors.contains(newPair)) {
-                                nextLayer.add(newPair);
-                            }
-                        }
-                    }
-                    vectors.addAll(currentLayer);
-                    currentLayer = nextLayer;
-                }
-                result.add(vectors);
-            }
-        }
-        return result;
     }
 }

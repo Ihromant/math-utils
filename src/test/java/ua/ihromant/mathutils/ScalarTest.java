@@ -10,7 +10,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
+import java.util.stream.IntStream;
 
 public class ScalarTest {
     @Test
@@ -138,13 +140,13 @@ public class ScalarTest {
 
     @Test
     public void testVectors() throws IOException {
-        String name = "hall9";
-        int order = 9;
+        String name = "bbh1";
+        int order = 16;
         try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            int line = 81;
+            int line = 192;
             NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, line);
             int lc = aff.lineCount();
             int[][] pairs = aff.pairs();
@@ -182,7 +184,29 @@ public class ScalarTest {
                     }
                 }
             }
-            System.out.println(find.components().stream().map(FixBS::cardinality).toList());
+            List<FixBS> components = find.components();
+            int[] zeroBeam = IntStream.range(0, aff.lineCount()).filter(i -> aff.line(i)[0] == 0).toArray();
+            FixBS l = FixBS.of(pairs.length * lc);
+            for (int ln : zeroBeam) {
+                l.set(ln * pairs.length, ln * pairs.length + order - 1);
+            }
+            FixBS res = new FixBS(aff.pointCount());
+            res.set(0);
+            for (FixBS comp : components) {
+                if (comp.cardinality() != aff.pointCount()) {
+                    continue;
+                }
+                FixBS prs = comp.intersection(l);
+                for (int un = prs.nextSetBit(0); un >= 0; un = prs.nextSetBit(un + 1)) {
+                    int ln = un / pairs.length;
+                    int[] pair = pairs[un % pairs.length];
+                    int pt = aff.line(ln)[pair[1]];
+                    res.set(pt);
+                }
+            }
+            System.out.println(components.stream().map(FixBS::cardinality).toList());
+            Liner funcVectors = aff.subPlane(res);
+            System.out.println(funcVectors.pointCount() + " " + funcVectors.lineCount());
         }
     }
 }

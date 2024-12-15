@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.plane.AffinePlane;
@@ -82,72 +81,6 @@ public class BatchAffineTest {
             for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
                 long time = System.currentTimeMillis();
                 System.out.println(name + " dropped " + dl + " count " + new AffinePlane(proj, dl).toLiner().autCountNew() + " time " + (System.currentTimeMillis() - time));
-            }
-        }
-    }
-
-    @Test
-    public void testVectors() throws IOException {
-        String name = "math";
-        int k = 16;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                AffinePlane aff = new AffinePlane(proj, dl);
-                List<Set<Pair>> vectors = aff.vectors();
-                System.out.println(name + " dropped " + dl + " vectors " + Arrays.toString(vectors.stream().mapToInt(Set::size).sorted().toArray()));
-            }
-        }
-    }
-
-    @Test
-    public void testFuncVectors() throws IOException {
-        String name = "dbbs4";
-        int k = 16;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            System.out.println(name);
-            Liner proj = readProj(br);
-            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                AffinePlane aff = new AffinePlane(proj, dl);
-                int base = aff.points().iterator().next();
-                BitSet vectorSub = new BitSet();
-                vectorSub.set(base);
-                br: for (int end : aff.points()) {
-                    if (base == end) {
-                        continue;
-                    }
-                    int l = aff.line(base, end);
-                    for (int l1 : aff.parallel(l)) {
-                        if (l1 == l) {
-                            continue;
-                        }
-                        for (int l2 : aff.parallel(l)) {
-                            if (l2 == l1 || l2 == l) {
-                                continue;
-                            }
-                            for (int b1 : aff.points(l1)) {
-                                for (int b2 : aff.points(l2)) {
-                                    int e1 = aff.parallelogram(base, end, b1);
-                                    int e2 = aff.parallelogram(b1, e1, b2);
-                                    int altEnd = aff.parallelogram(b2, e2, base);
-                                    if (end != altEnd) {
-                                        continue br;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    vectorSub.set(end);
-                }
-                Liner subliner = proj.subPlane(vectorSub.stream().toArray());
-                if (vectorSub.cardinality() == 1) {
-                    continue;
-                }
-                System.out.println("Dropped " + dl + " size: " + vectorSub.cardinality() + " points " + vectorSub);
             }
         }
     }
@@ -1064,12 +997,6 @@ public class BatchAffineTest {
             }
         }
         return true;
-    }
-
-    private static BitSet of(int... values) {
-        BitSet bs = new BitSet();
-        IntStream.of(values).forEach(bs::set);
-        return bs;
     }
 
     private static final Map<String, int[]> dropped = Map.of(

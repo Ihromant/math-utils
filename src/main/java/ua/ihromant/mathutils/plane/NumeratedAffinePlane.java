@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.plane;
 
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 
@@ -124,5 +125,13 @@ public class NumeratedAffinePlane {
 
     public int lineCount() {
         return lines.length;
+    }
+
+    public int pointCount() {
+        return ptMap.length;
+    }
+
+    public Liner subPlane(FixBS pts) {
+        return proj.subPlane(pts.stream().map(i -> ptMap[i]).toArray());
     }
 }
