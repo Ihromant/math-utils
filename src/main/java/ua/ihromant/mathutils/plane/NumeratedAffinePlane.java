@@ -13,6 +13,8 @@ public class NumeratedAffinePlane {
     private final int[] ptRev;
     private final int[][] lines;
     private final int[][] lineIdxes;
+    private final int[][] pairs;
+    private final int[][] pairRev;
     private final int[][] triples;
     private final int[][][] trRev;
 
@@ -53,14 +55,20 @@ public class NumeratedAffinePlane {
             }
             lnMap[idx++] = i;
         }
+        this.pairs = new int[order * (order - 1)][2];
+        this.pairRev = new int[order][order];
         this.triples = new int[order * (order - 1) * (order - 2)][3];
         this.trRev = new int[order][order][order];
         idx = 0;
+        int pairIdx = 0;
         for (int i = 0; i < order; i++) {
             for (int j = 0; j < order; j++) {
                 if (i == j) {
                     continue;
                 }
+                pairs[pairIdx][0] = i;
+                pairs[pairIdx][1] = j;
+                pairRev[i][j] = pairIdx++;
                 for (int k = 0; k < order; k++) {
                     if (i == k || j == k) {
                         continue;
@@ -100,6 +108,14 @@ public class NumeratedAffinePlane {
 
     public int[][] triples() {
         return triples;
+    }
+
+    public int pairIdx(int i, int j) {
+        return pairRev[i][j];
+    }
+
+    public int[][] pairs() {
+        return pairs;
     }
 
     public int idxOf(int line, int pt) {
