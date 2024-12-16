@@ -227,12 +227,38 @@ public class AutomorphismsTest {
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
                 Liner proj = BatchAffineTest.readProj(br);
-                long time = System.currentTimeMillis();
+                //long time = System.currentTimeMillis();
                 List<int[]> auto = automorphismsProj(proj);
                 for (int i = 0; i < auto.size(); i++) {
                     assertTrue(isAutomorphism(proj, auto.get(i)), i + " " + Arrays.toString(auto.get(i)));
                 }
-                System.out.println(name + " " + auto.size() + " time elapsed " + (System.currentTimeMillis() - time));
+                QuickFind pts = new QuickFind(proj.pointCount());
+                QuickFind lns = new QuickFind(proj.lineCount());
+                int ll = proj.line(0).length;
+                QuickFind flags = new QuickFind(proj.lineCount() * ll);
+                for (int[] arr : auto) {
+                    int[] lineMap = new int[proj.lineCount()];
+                    for (int p1 = 0; p1 < proj.pointCount(); p1++) {
+                        pts.union(p1, arr[p1]);
+                        for (int p2 = p1 + 1; p2 < proj.pointCount(); p2++) {
+                            lineMap[proj.line(p1, p2)] = proj.line(arr[p1], arr[p2]);
+                        }
+                    }
+                    for (int ln = 0; ln < proj.lineCount(); ln++) {
+                        int ml = lineMap[ln];
+                        lns.union(ln, ml);
+                        int[] line = proj.line(ln);
+                        int[] mappedLine = proj.line(ml);
+                        for (int pt = 0; pt < line.length; pt++) {
+                            flags.union(ln * ll + pt, lineMap[ln] * ll + Arrays.binarySearch(mappedLine, arr[line[pt]]));
+                        }
+                    }
+                }
+                System.out.println("Liner " + name + " auths " + auto.size());
+                System.out.println("Points " + pts.components());
+                System.out.println("Lines " + lns.components());
+                System.out.println("Flags " + flags.components().stream().map(bs -> bs.stream().mapToObj(fl -> "(" + fl / ll + ", " + proj.line(fl / ll)[fl % ll] + ")")
+                        .collect(Collectors.joining(", ", "[", "]"))).collect(Collectors.joining(", ", "[", "]")));
             }
         }
     }
