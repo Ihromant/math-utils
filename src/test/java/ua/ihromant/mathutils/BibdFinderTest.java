@@ -95,6 +95,52 @@ public class BibdFinderTest {
     }
 
     @Test
+    public void filterIsomorphicBySet() throws IOException {
+        int v = 151;
+        int k = 6;
+        try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/new", k + "-" + v + ".txt"));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            String line = br.readLine();
+            CyclicGroup gr = new CyclicGroup(v);
+            int[][] auths = gr.auth();
+            Set<Set<BitSet>> unique = new HashSet<>();
+            long time = System.currentTimeMillis();
+            AtomicLong counter = new AtomicLong();
+            ps.println(v + " " + k);
+            while ((line = br.readLine()) != null) {
+                String cut = line.replace("[[", "").replace("]]", "")
+                        .replace("{{", "").replace("}}", "")
+                        .replace("[{", "").replace("}]", "");
+                String[] arrays = cut.split("\\], \\[|\\}, \\{");
+                int[][] diffSet = Stream.concat(Arrays.stream(arrays).map(s -> Arrays.stream(s.split(", ")).mapToInt(Integer::parseInt)
+                        .toArray()), v % k == 0 ? Stream.of(IntStream.range(0, k).map(i -> i * v / k).toArray()) : Stream.empty()).toArray(int[][]::new);
+                IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
+                    int[][] diffs = IntStream.range(0, diffSet.length)
+                            .mapToObj(i -> ((1 << i) & comb) == 0 ? minimalTuple(diffSet[i].clone(), v) : mirrorTuple(gr, minimalTuple(diffSet[i], v)))
+                            .toArray(int[][]::new);
+                    if (Arrays.stream(auths).noneMatch(auth -> {
+                        Set<BitSet> result = new HashSet<>();
+                        for (int[] arr : diffs) {
+                            result.add(of(minimalTuple(applyAuth(arr, auth), v)));
+                        }
+                        return unique.contains(result);
+                    })) {
+                        unique.add(Arrays.stream(diffs).map(BibdFinderTest::of).collect(Collectors.toSet()));
+                        ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
+                                .collect(Collectors.joining(", ", "{", "}")));
+                        counter.incrementAndGet();
+                    }
+                });
+            }
+            System.out.println(counter.get() + " " + (System.currentTimeMillis() - time));
+        }
+    }
+
+    @Test
     public void calcIsomorphic() throws IOException {
         int v = 88;
         int k = 4;
