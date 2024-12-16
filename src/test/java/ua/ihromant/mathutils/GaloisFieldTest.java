@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.plane.MatrixTernaryRing;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -570,5 +571,24 @@ public class GaloisFieldTest {
         MatrixTernaryRing ring = new MatrixTernaryRing(ternar, null);
         Liner lnr = ring.toProjective();
         System.out.println(BatchAffineTest.checkP31(lnr));
+    }
+
+    @Test
+    public void testInvolutions() {
+        GaloisField fd = new GaloisField(11);
+        for (int i = 2; i < fd.cardinality(); i++) {
+            FixBS closure = new FixBS(fd.cardinality());
+            closure.set(i);
+            FixBS next = closure.copy();
+            do {
+                closure = next;
+                next = next.copy();
+                for (int j = closure.nextSetBit(0); j >= 0; j = closure.nextSetBit(j + 1)) {
+                    next.set(fd.inverse(j));
+                    next.set(fd.add(1, fd.neg(j)));
+                }
+            } while (next.cardinality() != closure.cardinality());
+            System.out.println(i + " " + next);
+        }
     }
 }
