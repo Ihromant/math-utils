@@ -522,18 +522,32 @@ public class BatchLinerTest {
             PermutationGroup perm = p.automorphisms();
             QuickFind pts = new QuickFind(p.pointCount());
             QuickFind lns = new QuickFind(p.lineCount());
+            int ll = p.line(0).length;
+            QuickFind flags = new QuickFind(p.lineCount() * ll);
             for (int a = 0; a < perm.order(); a++) {
                 int[] arr = perm.permutation(a);
+                int[] lineMap = new int[p.lineCount()];
                 for (int p1 = 0; p1 < p.pointCount(); p1++) {
                     pts.union(p1, arr[p1]);
                     for (int p2 = p1 + 1; p2 < p.pointCount(); p2++) {
-                        lns.union(p.line(p1, p2), p.line(arr[p1], arr[p2]));
+                        lineMap[p.line(p1, p2)] = p.line(arr[p1], arr[p2]);
+                    }
+                }
+                for (int ln = 0; ln < p.lineCount(); ln++) {
+                    int ml = lineMap[ln];
+                    lns.union(ln, ml);
+                    int[] line = p.line(ln);
+                    int[] mappedLine = p.line(ml);
+                    for (int pt = 0; pt < line.length; pt++) {
+                        flags.union(ln * ll + pt, lineMap[ln] * ll + Arrays.binarySearch(mappedLine, arr[line[pt]]));
                     }
                 }
             }
             System.out.println("Liner " + i + " auths " + perm.order());
             System.out.println("Points " + pts.components());
             System.out.println("Lines " + lns.components());
+            System.out.println("Flags " + flags.components().stream().map(bs -> bs.stream().mapToObj(fl -> "(" + fl / ll + ", " + p.line(fl / ll)[fl % ll] + ")")
+                    .collect(Collectors.joining(", ", "[", "]"))).collect(Collectors.joining(", ", "[", "]")));
         }
     }
 
