@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 public class BurnsideGroup implements Group {
     private final CyclicGroup c3 = new CyclicGroup(3);
-    private final GroupProduct mul = new GroupProduct(c3, c3, c3);
+    private final GroupProduct mul = new GroupProduct(3, 3, 3);
 
     @Override
     public int op(int a, int b) {

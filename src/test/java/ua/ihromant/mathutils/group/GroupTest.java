@@ -39,9 +39,7 @@ public class GroupTest {
     @Test
     public void testSpecific() {
         GroupProduct cp = new GroupProduct(7, 5, 5);
-        assertArrayEquals(new int[]{0, 25, 50, 75, 100, 125, 150}, IntStream.range(0, cp.base().get(0).order()).map(i -> cp.fromArr(i, 0, 0)).toArray());
-        GroupProduct cp1 = new GroupProduct(new GroupProduct(2, 2), new CyclicGroup(7));
-        assertArrayEquals(new int[]{0, 7, 14, 21}, IntStream.range(0, cp1.base().get(0).order()).map(i -> cp1.fromArr(i, 0)).toArray());
+        assertArrayEquals(new int[]{0, 25, 50, 75, 100, 125, 150}, IntStream.range(0, cp.base()[0]).map(i -> cp.fromArr(i, 0, 0)).toArray());
     }
 
     @Test

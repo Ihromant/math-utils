@@ -112,6 +112,9 @@ public class BibdFinderTest {
             AtomicLong counter = new AtomicLong();
             ps.println(v + " " + k);
             while ((line = br.readLine()) != null) {
+                if (line.length() < 40) {
+                    continue;
+                }
                 String cut = line.replace("[[", "").replace("]]", "")
                         .replace("{{", "").replace("}}", "")
                         .replace("[{", "").replace("}]", "");
@@ -216,7 +219,7 @@ public class BibdFinderTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String l = br.readLine();
-            Group g = new GroupProduct(new CyclicGroup(3), new CyclicGroup(3), new CyclicGroup(3), new CyclicGroup(3));
+            Group g = new GroupProduct(3, 3, 3, 3);
             String[] chunks = l.split(" ");
             int k = Integer.parseInt(chunks[1]);
             int[] degenerate = chunks.length <= 3 ? new int[0] : Arrays.stream(chunks, 3, chunks.length)
