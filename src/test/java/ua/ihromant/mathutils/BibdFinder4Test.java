@@ -216,11 +216,12 @@ public class BibdFinder4Test {
         }
         int val = arr[maxIdx];
         int[] res = new int[l];
-        for (int j = 0; j < l; j++) {
-            int i = arr[j];
-            res[j] = i >= val ? i - val : v + i - val;
+        for (int i = maxIdx + 1; i < l; i++) {
+            res[i - maxIdx] = arr[i] - val;
         }
-        Arrays.sort(res);
+        for (int i = 0; i < maxIdx; i++) {
+            res[i + l - maxIdx] = v + arr[i] - val;
+        }
         return res;
     }
 
