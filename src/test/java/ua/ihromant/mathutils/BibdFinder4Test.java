@@ -94,7 +94,7 @@ public class BibdFinder4Test {
         }
     }
 
-    private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, FixBS filter, Consumer<int[][]> designSink) {
+    private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, FixBS filter, int[] multipliers, Consumer<int[][]> designSink) {
         int cl = curr.length;
         int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
         Consumer<int[]> blockSink = block -> {
@@ -113,7 +113,7 @@ public class BibdFinder4Test {
                     nextFilter.set(variants - l + s);
                 }
             }
-            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, designSink);
+            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, multipliers, designSink);
         };
         calcCycles(variants, k, k, prev, filter, needed, blockSink);
     }
@@ -144,7 +144,7 @@ public class BibdFinder4Test {
             counter.incrementAndGet();
             System.out.println(Arrays.deepToString(design));
         };
-        allDifferenceSets(v, k, hints, v / k / (k - 1) - hints.length, filter, designConsumer);
+        allDifferenceSets(v, k, hints, v / k / (k - 1) - hints.length, filter, multipliers(v), designConsumer);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
@@ -171,7 +171,7 @@ public class BibdFinder4Test {
         System.out.println(v + " " + k);
         int blocksNeeded = v / k / (k - 1);
         FixBS filter = baseFilter(v, k);
-        int[] multipliers = IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
+        int[] multipliers = multipliers(v);
         calcCycles(v, k, k, start(v, k), filter, blocksNeeded, arr -> {
             for (int m : multipliers) {
                 int[] multiplied = new int[arr.length];
@@ -186,6 +186,10 @@ public class BibdFinder4Test {
             destination.println(Arrays.toString(arr));
             destination.flush();
         });
+    }
+
+    private static int[] multipliers(int v) {
+        return IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
     }
 
     private static boolean less(int[] cand, int[] arr) {
@@ -235,6 +239,20 @@ public class BibdFinder4Test {
             IntStream.range(1, k).forEach(i -> filter.set(i * v / k));
         }
         return filter;
+    }
+
+    @Test
+    public void toConsole() throws IOException {
+        int v = 91;
+        int k = 6;
+        File beg = new File("/home/ihromant/maths/diffSets/beg", k + "-" + v + "beg.txt");
+        try (FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr)) {
+            Set<FixBS> set = allBr.lines().map(l -> FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
+                    .mapToInt(Integer::parseInt).toArray())).collect(Collectors.toSet());
+            logResultsDepth(System.out, v, k, set.stream().map(bs -> bs.stream().toArray()).toList());
+        }
     }
 
     @Test
@@ -293,7 +311,7 @@ public class BibdFinder4Test {
                     newFilter.set(outDiff);
                 }
             }
-            allDifferenceSets(v, k, new int[][]{init}, blocksNeeded - 1, newFilter, designConsumer);
+            allDifferenceSets(v, k, new int[][]{init}, blocksNeeded - 1, newFilter, multipliers(v), designConsumer);
             destination.println(Arrays.toString(init));
             destination.flush();
         });
