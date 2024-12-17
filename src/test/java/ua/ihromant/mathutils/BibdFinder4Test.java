@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -161,24 +160,73 @@ public class BibdFinder4Test {
         }
     }
 
+    @Test
+    public void logConsoleCycles() {
+        int v = 91;
+        int k = 6;
+        logFirstCycles(System.out, v, k);
+    }
+
     private static void logFirstCycles(PrintStream destination, int v, int k) {
         System.out.println(v + " " + k);
         int blocksNeeded = v / k / (k - 1);
         FixBS filter = baseFilter(v, k);
-        Set<FixBS> unique = new HashSet<>();
         int[] multipliers = IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
         calcCycles(v, k, k, start(v, k), filter, blocksNeeded, arr -> {
-            if (Arrays.stream(multipliers).anyMatch(m -> {
-                int[] multiplied = Arrays.stream(arr).map(p -> p * m % v).toArray();
-                int[] minimal = BibdFinderTest.minimalTuple(multiplied, v);
-                return unique.contains(FixBS.of(v, minimal));
-            })) {
-                return;
+            for (int m : multipliers) {
+                int[] multiplied = new int[arr.length];
+                for (int i = 0; i < arr.length; i++) {
+                    multiplied[i] = arr[i] * m % v;
+                }
+                int[] minimal = minimalTuple(multiplied, v);
+                if (less(minimal, arr)) {
+                    return;
+                }
             }
-            unique.add(FixBS.of(v, arr));
             destination.println(Arrays.toString(arr));
             destination.flush();
         });
+    }
+
+    private static boolean less(int[] cand, int[] arr) {
+        for (int i = 0; i < cand.length; i++) {
+            if (arr[i] < cand[i]) {
+                return false;
+            }
+            if (cand[i] < arr[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static int[] minimalTuple(int[] arr, int v) {
+        Arrays.sort(arr);
+        int l = arr.length;
+        int[] diffs = new int[l];
+        int last = arr[l - 1];
+        diffs[l - 1] = Math.min(last, v - last);
+        for (int i = 0; i < l - 1; i++) {
+            int d = arr[i + 1] - arr[i];
+            diffs[i] = Math.min(d, v - d);
+        }
+        int maxIdx = 0;
+        int max = Integer.MIN_VALUE;
+        for (int i = 0; i < l; i++) {
+            int diff = diffs[i];
+            if (diff > max) {
+                maxIdx = i;
+                max = diff;
+            }
+        }
+        int val = arr[maxIdx];
+        int[] res = new int[l];
+        for (int j = 0; j < l; j++) {
+            int i = arr[j];
+            res[j] = i >= val ? i - val : v + i - val;
+        }
+        Arrays.sort(res);
+        return res;
     }
 
     private static int start(int v, int k) {
