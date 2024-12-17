@@ -203,17 +203,12 @@ public class BibdFinder4Test {
     private static int[] minimalTuple(int[] arr, int v) {
         Arrays.sort(arr);
         int l = arr.length;
-        int[] diffs = new int[l];
+        int maxIdx = l - 1;
         int last = arr[l - 1];
-        diffs[l - 1] = Math.min(last, v - last);
+        int max = Math.min(last, v - last);
         for (int i = 0; i < l - 1; i++) {
             int d = arr[i + 1] - arr[i];
-            diffs[i] = Math.min(d, v - d);
-        }
-        int maxIdx = 0;
-        int max = Integer.MIN_VALUE;
-        for (int i = 0; i < l; i++) {
-            int diff = diffs[i];
+            int diff = Math.min(d, v - d);
             if (diff > max) {
                 maxIdx = i;
                 max = diff;
