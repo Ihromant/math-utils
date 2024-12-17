@@ -94,9 +94,9 @@ public class BibdFinder4Test {
         }
     }
 
-    private static void allDifferenceSets(int variants, int k, int[][] curr, int needed, FixBS filter, int[] multipliers, Consumer<int[][]> designSink) {
+    private static void allDifferenceSets(int v, int k, int[][] curr, int needed, FixBS filter, int[] multipliers, Consumer<int[][]> designSink) {
         int cl = curr.length;
-        int prev = cl == 0 ? start(variants, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
+        int prev = cl == 0 ? start(v, k) : filter.nextClearBit(curr[cl - 1][1] + 1);
         Consumer<int[]> blockSink = block -> {
             int[][] nextCurr = Arrays.copyOf(curr, cl + 1);
             nextCurr[cl] = block;
@@ -104,18 +104,29 @@ public class BibdFinder4Test {
                 designSink.accept(nextCurr);
                 return;
             }
+            int[] beg = nextCurr[0];
+            for (int m : multipliers) {
+                int[] multiplied = new int[block.length];
+                for (int i = 0; i < block.length; i++) {
+                    multiplied[i] = block[i] * m % v;
+                }
+                int[] minimal = minimalTuple(multiplied, v);
+                if (less(minimal, beg)) {
+                    return;
+                }
+            }
             FixBS nextFilter = filter.copy();
             for (int i = 0; i < k; i++) {
                 for (int j = i + 1; j < k; j++) {
                     int l = block[j];
                     int s = block[i];
                     nextFilter.set(l - s);
-                    nextFilter.set(variants - l + s);
+                    nextFilter.set(v - l + s);
                 }
             }
-            allDifferenceSets(variants, k, nextCurr, needed - 1, nextFilter, multipliers, designSink);
+            allDifferenceSets(v, k, nextCurr, needed - 1, nextFilter, multipliers, designSink);
         };
-        calcCycles(variants, k, k, prev, filter, needed, blockSink);
+        calcCycles(v, k, k, prev, filter, needed, blockSink);
     }
 
     @Test // [[0, 68, 69, 105, 135, 156, 160], [0, 75, 86, 113, 159, 183, 203], [0, 80, 95, 98, 145, 158, 201], [0, 101, 134, 141, 143, 153, 182], [0, 110, 115, 132, 138, 164, 209]]
@@ -280,7 +291,7 @@ public class BibdFinder4Test {
                             .mapToInt(Integer::parseInt).toArray()));
                 }
             });
-            logResultsDepth(ps, v, k, set.stream().map(bs -> bs.stream().toArray()).toList());
+            logResultsDepth(ps, v, k, set.stream().map(bs -> bs.stream().toArray()).filter(arr -> arr[1] >= 31).toList());
         }
     }
 
@@ -299,6 +310,7 @@ public class BibdFinder4Test {
                 System.out.println(Arrays.deepToString(design));
             }
         };
+        AtomicInteger cnt = new AtomicInteger();
         unProcessed.stream().parallel().forEach(init -> {
             FixBS newFilter = filter.copy();
             for (int i = 0; i < init.length; i++) {
@@ -312,8 +324,14 @@ public class BibdFinder4Test {
                 }
             }
             allDifferenceSets(v, k, new int[][]{init}, blocksNeeded - 1, newFilter, multipliers(v), designConsumer);
-            destination.println(Arrays.toString(init));
-            destination.flush();
+            if (destination != System.out) {
+                destination.println(Arrays.toString(init));
+                destination.flush();
+            }
+            int val = cnt.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val);
+            }
         });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
