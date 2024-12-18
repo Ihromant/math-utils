@@ -88,6 +88,24 @@ public class GroupTest {
     public void testAuth() {
         assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}}, new CyclicGroup(3).auth());
         assertArrayEquals(new int[][]{{0, 1, 2, 3}, {0, 3, 2, 1}}, new CyclicGroup(4).auth());
+        Group simple = new GroupProduct(7);
+        int[][] auths = simple.auth();
+        assertEquals(6, auths.length);
+        checkAuth(auths, simple);
+        Group product = new GroupProduct(2, 2, 3, 3);
+        auths = product.auth();
+        assertEquals(288, auths.length);
+        checkAuth(auths, product);
+    }
+
+    private static void checkAuth(int[][] auths, Group simple) {
+        for (int[] aut : auths) {
+            for (int a = 0; a < simple.order(); a++) {
+                for (int b = 0; b < simple.order(); b++) {
+                    assertEquals(simple.op(aut[a], aut[b]), aut[simple.op(a, b)]);
+                }
+            }
+        }
     }
 
     @Test
