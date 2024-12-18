@@ -88,21 +88,25 @@ public class BibdFinderCyclicTest {
         calcCycles(group, k - 2, newFilter, newWhiteList, arr, sink);
     }
 
-    private static void allDifferenceSets(Group group, int[][] auths, int v, int k, int[][] curr, int needed, FixBS filter, Consumer<int[][]> designSink) {
+    private record BlockPair(FixBS bs, int[] block) {}
+
+    private static void allDifferenceSets(Group group, int[][] auths, int v, int k, BlockPair[] curr, int needed, FixBS filter, Consumer<BlockPair[]> designSink) {
         int cl = curr.length;
-        int prev = cl == 0 ? 0 : filter.nextClearBit(curr[cl - 1][1] + 1);
+        int prev = cl == 0 ? 0 : filter.nextClearBit(curr[cl - 1].block()[1] + 1);
         Consumer<int[]> blockSink = block -> {
-            int[][] nextCurr = Arrays.copyOf(curr, cl + 1);
-            nextCurr[cl] = block;
+            BlockPair[] nextCurr = Arrays.copyOf(curr, cl + 1);
+            FixBS bs = FixBS.of(v, block);
+            nextCurr[cl] = new BlockPair(bs, block);
             for (int[] auth : auths) {
-                int[][] multiplied = new int[cl + 1][block.length];
+                FixBS[] multiplied = new FixBS[cl + 1];
                 for (int i = 0; i <= cl; i++) {
+                    int[] arr = new int[block.length];
                     for (int j = 0; j < block.length; j++) {
-                        multiplied[i][j] = auth[nextCurr[i][j]];
+                        arr[j] = auth[nextCurr[i].block()[j]];
                     }
-                    Arrays.sort(multiplied[i]);
+                    multiplied[i] = minimalTuple(arr, group, v);
                 }
-                Arrays.sort(multiplied, Comparator.comparingInt(arr -> arr[1]));
+                Arrays.sort(multiplied, Comparator.comparingInt(bp -> bp.nextSetBit(1)));
                 if (less(multiplied, nextCurr)) {
                     return;
                 }
@@ -129,20 +133,24 @@ public class BibdFinderCyclicTest {
     // [[0, 68, 69, 105, 135, 156, 160], [0, 75, 86, 113, 159, 183, 203], [0, 80, 95, 98, 145, 158, 201], [0, 101, 134, 141, 143, 153, 182], [0, 110, 115, 132, 138, 164, 209]]
     public void byHint() {
         CyclicGroup gr = new CyclicGroup(217);
-        findByHint(new int[][]{{0, 68, 69, 105, 135, 156, 160}, {0, 75, 86, 113, 159, 183, 203}}, gr, 7);
+        findByHint(new BlockPair[]{toBp(gr.order(), new int[]{0, 68, 69, 105, 135, 156, 160}), toBp(gr.order(), new int[]{0, 75, 86, 113, 159, 183, 203})}, gr, 7);
         //findByHint(new int[]{0, 34, 36, 42, 66, 71, 80}, 91, 7);
     }
 
-    private static void findByHint(int[][] hints, Group group, int k) {
+    private static BlockPair toBp(int v, int[] arr) {
+        return new BlockPair(FixBS.of(v, arr), arr);
+    }
+
+    private static void findByHint(BlockPair[] hints, Group group, int k) {
         int v = group.order();
         System.out.println(v + " " + k + " " + Arrays.deepToString(hints));
         FixBS filter = baseFilter(group, k);
         int[][] auths = group.auth();
-        for (int[] hint : hints) {
-            for (int i = 0; i < hint.length; i++) {
-                int fst = hint[i];
-                for (int j = i + 1; j < hint.length; j++) {
-                    int snd = hint[j];
+        for (BlockPair hint : hints) {
+            for (int i = 0; i < hint.block().length; i++) {
+                int fst = hint.block()[i];
+                for (int j = i + 1; j < hint.block().length; j++) {
+                    int snd = hint.block()[j];
                     filter.set(group.op(fst, group.inv(snd)));
                     filter.set(group.op(snd, group.inv(fst)));
                 }
@@ -150,9 +158,9 @@ public class BibdFinderCyclicTest {
         }
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
-        Consumer<int[][]> designConsumer = design -> {
+        Consumer<BlockPair[]> designConsumer = design -> {
             counter.incrementAndGet();
-            System.out.println(Arrays.deepToString(design));
+            System.out.println(Arrays.deepToString(Arrays.stream(design).map(BlockPair::block).toArray(int[][]::new)));
         };
         allDifferenceSets(group.asTable(), auths, v, k, hints, v / k / (k - 1) - hints.length, filter, designConsumer);
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
@@ -163,7 +171,7 @@ public class BibdFinderCyclicTest {
         Group group = new GroupProduct(5, 5, 7);
         int k = 7;
         File f = new File("/home/ihromant/maths/diffSets/beg", k + "-" + group.name() + "beg.txt");
-        try (FileOutputStream fos = new FileOutputStream(f, true);
+        try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             logFirstCycles(ps, group, k);
@@ -182,42 +190,48 @@ public class BibdFinderCyclicTest {
         int v = group.order();
         FixBS filter = baseFilter(group, k);
         int[][] auths = group.auth();
-        calcCycles(group, v, k, 0, filter, arr -> {
+        Group table = group.asTable();
+        calcCycles(table, v, k, 0, filter, arr -> {
+            FixBS res = FixBS.of(v, arr);
             for (int[] auth : auths) {
                 int[] multiplied = new int[arr.length];
                 for (int i = 0; i < arr.length; i++) {
                     multiplied[i] = auth[arr[i]];
                 }
-                Arrays.sort(multiplied);
-                if (less(multiplied, arr)) {
+                FixBS mulBs = minimalTuple(multiplied, table, v);
+                if (res.compareTo(mulBs) < 0) {
                     return;
                 }
             }
-            destination.println(Arrays.toString(arr));
+            destination.println(res);
             destination.flush();
         });
     }
 
-    private static boolean less(int[] cand, int[] arr) {
-        for (int i = 0; i < cand.length; i++) {
-            if (arr[i] < cand[i]) {
-                return false;
+    private static FixBS minimalTuple(int[] arr, Group gr, int order) {
+        FixBS min = null;
+        for (int el : arr) {
+            int inv = gr.inv(el);
+            FixBS cnd = new FixBS(order);
+            for (int i : arr) {
+                cnd.set(gr.op(i, inv));
             }
-            if (cand[i] < arr[i]) {
-                return true;
+            if (min == null || cnd.compareTo(min) > 0) {
+                min = cnd;
             }
         }
-        return false;
+        return min;
     }
 
-    private static boolean less(int[][] cand, int[][] arr) {
-        for (int i = 0; i < cand.length; i++) {
-            int[] ca = cand[i];
-            int[] aa = arr[i];
-            if (less(aa, ca)) {
+    private static boolean less(FixBS[] cnd, BlockPair[] bp) {
+        for (int i = 0; i < cnd.length; i++) {
+            FixBS ca = cnd[i];
+            FixBS aa = bp[i].bs();
+            int cmp = ca.compareTo(aa);
+            if (cmp < 0) {
                 return false;
             }
-            if (less(ca, aa)) {
+            if (cmp > 0) {
                 return true;
             }
         }
@@ -239,9 +253,9 @@ public class BibdFinderCyclicTest {
 
     @Test
     public void toConsole() throws IOException {
-        Group gr = new GroupProduct(2, 2, 7);
+        Group gr = new GroupProduct(11, 11);
         int v = gr.order();
-        int k = 4;
+        int k = 6;
         File beg = new File("/home/ihromant/maths/diffSets/beg", k + "-" + gr.name() + "beg.txt");
         try (FileInputStream allFis = new FileInputStream(beg);
              InputStreamReader allIsr = new InputStreamReader(allFis);
@@ -292,12 +306,12 @@ public class BibdFinderCyclicTest {
         FixBS filter = baseFilter(group, k);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
-        Consumer<int[][]> designConsumer = design -> {
+        Consumer<BlockPair[]> designConsumer = design -> {
             counter.incrementAndGet();
-            destination.println(Arrays.deepToString(design));
+            destination.println(Arrays.deepToString(Arrays.stream(design).map(BlockPair::block).toArray(int[][]::new)));
             destination.flush();
             if (destination != System.out) {
-                System.out.println(Arrays.deepToString(design));
+                System.out.println(Arrays.deepToString(Arrays.stream(design).map(BlockPair::block).toArray(int[][]::new)));
             }
         };
         AtomicInteger cnt = new AtomicInteger();
@@ -313,13 +327,13 @@ public class BibdFinderCyclicTest {
                     newFilter.set(outDiff);
                 }
             }
-            allDifferenceSets(table, auths, v, k, new int[][]{init}, blocksNeeded - 1, newFilter, designConsumer);
+            allDifferenceSets(table, auths, v, k, new BlockPair[]{toBp(v, init)}, blocksNeeded - 1, newFilter, designConsumer);
             if (destination != System.out) {
                 destination.println(Arrays.toString(init));
                 destination.flush();
             }
             int val = cnt.incrementAndGet();
-            if (val % 1000 == 0) {
+            if (val % 100 == 0) {
                 System.out.println(val);
             }
         });
