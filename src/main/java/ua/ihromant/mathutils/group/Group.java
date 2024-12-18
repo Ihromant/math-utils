@@ -66,6 +66,10 @@ public interface Group {
         return mul(from, (order() + 1) / 2);
     }
 
+    default int[] squareRoots(int from) {
+        return IntStream.range(0, order()).filter(i -> op(i, i) == from).toArray();
+    }
+
     default IntStream elements() {
         return IntStream.range(0, order());
     }
@@ -73,7 +77,8 @@ public interface Group {
     default Group asTable() {
         return new TableGroup(
                 elements().mapToObj(i -> elements().map(j -> op(i, j)).toArray()).toArray(int[][]::new),
-                elements().map(this::inv).toArray());
+                elements().map(this::inv).toArray(),
+                elements().mapToObj(this::squareRoots).toArray(int[][]::new));
     }
 
     default BitSet difference(int[] basic) {
