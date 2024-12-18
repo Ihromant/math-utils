@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -104,14 +105,16 @@ public class BibdFinder4Test {
                 designSink.accept(nextCurr);
                 return;
             }
-            int[] beg = nextCurr[0];
             for (int m : multipliers) {
-                int[] multiplied = new int[block.length];
-                for (int i = 0; i < block.length; i++) {
-                    multiplied[i] = block[i] * m % v;
+                int[][] multiplied = new int[cl + 1][block.length];
+                for (int i = 0; i <= cl; i++) {
+                    for (int j = 0; j < block.length; j++) {
+                        multiplied[i][j] = nextCurr[i][j] * m % v;
+                    }
+                    multiplied[i] = minimalTuple(multiplied[i], v);
                 }
-                int[] minimal = minimalTuple(multiplied, v);
-                if (less(minimal, beg)) {
+                Arrays.sort(multiplied, Comparator.comparingInt(arr -> arr[1]));
+                if (less(multiplied, nextCurr)) {
                     return;
                 }
             }
@@ -209,6 +212,20 @@ public class BibdFinder4Test {
                 return false;
             }
             if (cand[i] < arr[i]) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean less(int[][] cand, int[][] arr) {
+        for (int i = 0; i < cand.length; i++) {
+            int[] ca = cand[i];
+            int[] aa = arr[i];
+            if (less(aa, ca)) {
+                return false;
+            }
+            if (less(ca, aa)) {
                 return true;
             }
         }
