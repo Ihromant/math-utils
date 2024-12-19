@@ -292,4 +292,209 @@ public class TranslationPlane1Test {
             tree(helper, orbits, tupleIdx, centralizer, newV, newArr, idx + 1, sink);
         }
     }
+
+    @Test
+    public void generateAlt() throws IOException {
+        int p = 2;
+        int n = 8;
+        int half = n / 2;
+        int pow = LinearSpace.pow(p, half);
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
+        int[][] orbits = readOrbits(pow);
+        QuickFind find = new QuickFind(orbits.length);
+        find.union(1, 2);
+        find.union(1, 3);
+        List<FixBS> components = find.components();
+
+        LinearSpace mini = LinearSpace.of(p, half);
+        LinearSpace sp = LinearSpace.of(p, n);
+        int sc = sp.cardinality();
+        int mc = mini.cardinality();
+
+        FixBS first = new FixBS(sc);
+        first.set(0, mc);
+        FixBS second = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            second.set(i * mc);
+        }
+        FixBS third = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            third.set(mc * i + i);
+        }
+        FixBS[] base = new FixBS[mc + 1];
+        base[0] = first;
+        base[1] = second;
+        base[2] = third;
+        AtomicInteger counter = new AtomicInteger();
+        Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
+        for (FixBS comp : components) {
+            int min = comp.nextSetBit(0);
+            BiConsumer<int[], Func> cons = (arr, vl) -> {
+                FixBS[] newBase = base.clone();
+                for (int i = 0; i < arr.length; i++) {
+                    FixBS ln = new FixBS(sc);
+                    int a = arr[i];
+                    for (int x = 1; x < mc; x++) {
+                        int ax = helper.mulVec(a, x);
+                        ln.set(ax * mc + x);
+                    }
+                    newBase[i + 3] = ln;
+                }
+                int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
+                Liner l = new Liner(lines.length, lines);
+                if (TranslationPlaneTest.isDesargues(l, mc)) {
+                    System.out.println("Desargues " + Arrays.toString(arr) + " " + vl);
+                    return;
+                }
+                ProjChar chr = TranslationPlaneTest.newTranslation(counter.toString(), l, projData);
+                if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
+                    projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                    counter.incrementAndGet();
+                    System.out.println(chr);
+                    System.out.println(Arrays.toString(arr));
+                } else {
+                    System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + vl);
+                }
+            };
+            int[] partSpread = new int[mini.cardinality() - 2];
+            treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
+        }
+    }
+
+    private record Func(int[] dom, int[] rng, int len) {
+        private int sum() {
+            int result = 0;
+            for (int i : rng) {
+                result = result + i;
+            }
+            return result;
+        }
+
+        private int[] possibleJumps(int orbitsLength) {
+            FixBS possible = new FixBS(orbitsLength);
+            possible.set(0, orbitsLength);
+            for (int used : dom) {
+                possible.clear(used);
+            }
+            return possible.stream().toArray();
+        }
+
+        private boolean canJump(int orbitsLength, int needed) {
+            return rng[len - 1] * (orbitsLength - len) + sum() >= needed;
+        }
+
+        private boolean canStay() {
+            return len <= 1 || rng[len - 1] < rng[len - 2];
+        }
+
+        private Func inc() {
+            int[] nextRng = rng.clone();
+            nextRng[len - 1]++;
+            return new Func(dom, nextRng, len);
+        }
+
+        private Func extendDom(int next) {
+            int[] nextDom = Arrays.copyOf(dom, len + 1);
+            nextDom[len] = next;
+            int[] nextRng = Arrays.copyOf(rng, len + 1);
+            nextRng[len] = 1;
+            return new Func(nextDom, nextRng, len + 1);
+        }
+
+        @Override
+        public String toString() {
+            return "Func{" +
+                    "dom=" + Arrays.toString(dom) +
+                    ", rng=" + Arrays.toString(rng) +
+                    ", len=" + len + '}';
+        }
+    }
+
+    private void treeAlt(ModuloMatrixHelper helper, int[][] orbits, List<Integer> subGl, Func func, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], Func> sink) {
+        int needed = partSpread.length - idx;
+        if (needed == 0) {
+            sink.accept(partSpread, func);
+            return;
+        }
+        boolean canJump = func.canJump(orbits.length, partSpread.length);
+        boolean canStay = func.canStay();
+        if (canStay) {
+            Func next = func.inc();
+            FixBS filter = new FixBS(helper.matCount());
+            for (int a : v) {
+                if (filter.get(a)) {
+                    continue;
+                }
+                int[] newArr = partSpread.clone();
+                newArr[idx] = a;
+                List<Integer> newV = new ArrayList<>(v.size());
+                for (int b : v) {
+                    if (b > a && helper.hasInv(helper.sub(b, a))) {
+                        newV.add(b);
+                    }
+                }
+                List<Integer> centralizer = new ArrayList<>(subGl.size());
+                for (int el : subGl) {
+                    int invEl = helper.inv(el);
+                    int prod = helper.mul(helper.mul(invEl, a), el);
+                    filter.set(prod);
+                    if (idx == 0) {
+                        filter.set(helper.inv(prod));
+                    }
+
+                    int lMul = helper.mul(a, el);
+                    int rMul = helper.mul(el, a);
+                    if (lMul == rMul) {
+                        centralizer.add(el);
+                    }
+                }
+                treeAlt(helper, orbits, centralizer, next, newV, newArr, idx + 1, sink);
+            }
+        }
+        if (canJump) {
+            for (int possible : func.possibleJumps(orbits.length)) {
+                v = new ArrayList<>();
+                ex: for (int b : orbits[possible]) {
+                    for (int i = 0; i < idx; i++) {
+                        int el = partSpread[i];
+                        if (!helper.hasInv(helper.sub(b, el))) {
+                            continue ex;
+                        }
+                    }
+                    v.add(b);
+                }
+                Func next = func.extendDom(possible);
+                FixBS filter = new FixBS(helper.matCount());
+                for (int a : v) {
+                    if (filter.get(a)) {
+                        continue;
+                    }
+                    int[] newArr = partSpread.clone();
+                    newArr[idx] = a;
+                    List<Integer> newV = new ArrayList<>(v.size());
+                    for (int b : v) {
+                        if (b > a && helper.hasInv(helper.sub(b, a))) {
+                            newV.add(b);
+                        }
+                    }
+                    List<Integer> centralizer = new ArrayList<>(subGl.size());
+                    for (int el : subGl) {
+                        int invEl = helper.inv(el);
+                        int prod = helper.mul(helper.mul(invEl, a), el);
+                        filter.set(prod);
+                        if (idx == 0) {
+                            filter.set(helper.inv(prod));
+                        }
+
+                        int lMul = helper.mul(a, el);
+                        int rMul = helper.mul(el, a);
+                        if (lMul == rMul) {
+                            centralizer.add(el);
+                        }
+                    }
+                    treeAlt(helper, orbits, centralizer, next, newV, newArr, idx + 1, sink);
+                }
+            }
+        }
+    }
 }
