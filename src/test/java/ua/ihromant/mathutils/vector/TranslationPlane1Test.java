@@ -357,11 +357,11 @@ public class TranslationPlane1Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
+            treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(find, new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
         }
     }
 
-    private record Func(int[] dom, int[] rng, int len) {
+    private record Func(QuickFind find, int[] dom, int[] rng, int len) {
         private int sum() {
             int result = 0;
             for (int i : rng) {
@@ -384,13 +384,30 @@ public class TranslationPlane1Test {
         }
 
         private boolean canStay() {
-            return len <= 1 || rng[len - 1] < rng[len - 2];
+            if (len <= 1) {
+                return true;
+            }
+            int last = rng[len - 1];
+            int preLast = rng[len - 2];
+            int diff = preLast - last;
+            if (diff == 1) {
+                for (int i = len - 2; i >= 0; i--) {
+                    if (rng[i] != preLast) {
+                        break;
+                    }
+                    if (find.connected(dom[i], dom[len - 1]) && dom[len - 1] < dom[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return diff > 0;
         }
 
         private Func inc() {
             int[] nextRng = rng.clone();
             nextRng[len - 1]++;
-            return new Func(dom, nextRng, len);
+            return new Func(find, dom, nextRng, len);
         }
 
         private Func extendDom(int next) {
@@ -398,7 +415,7 @@ public class TranslationPlane1Test {
             nextDom[len] = next;
             int[] nextRng = Arrays.copyOf(rng, len + 1);
             nextRng[len] = 1;
-            return new Func(nextDom, nextRng, len + 1);
+            return new Func(find, nextDom, nextRng, len + 1);
         }
 
         @Override
