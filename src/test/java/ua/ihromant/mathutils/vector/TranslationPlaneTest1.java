@@ -39,6 +39,9 @@ public class TranslationPlaneTest1 {
             idxes[v[i]] = i;
         }
         for (int b : v) {
+            if (quickFind.size(idxes[b]) > 1) {
+                continue;
+            }
             for (int a : helper.gl()) {
                 quickFind.union(idxes[b], idxes[helper.mul(helper.mul(a, b), helper.inv(a))]);
             }
