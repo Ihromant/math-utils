@@ -113,17 +113,18 @@ public class TranslationPlane1Test {
     @Test
     public void testSplits() {
         int p = 2;
-        int n = 8;
+        int n = 10;
         int half = n / 2;
         int pow = LinearSpace.pow(p, half);
         int sum = pow - 2;
         List<int[]> tuples = new ArrayList<>();
-        int tl = 5;
+        int tl = 8;
         int[] baseTuple = new int[tl];
         generate(baseTuple, 0, sum, tuples::add);
         System.out.println(tuples.size());
         //tuples.forEach(t -> System.out.println(Arrays.toString(t)));
-        List<int[]> filtered = tuples.stream().filter(t -> t[1] >= t[2] && t[1] >= t[3]).toList();
+        List<int[]> filtered = tuples.stream().filter(t -> t[0] >= t[1]
+                && t[2] >= t[3] && t[2] >= t[4] && t[2] >= t[5] && t[2] >= t[6] && t[2] >= t[7]).toList();
         System.out.println(filtered.size());
         filtered.forEach(t -> System.out.println(Arrays.toString(t)));
     }
@@ -147,12 +148,12 @@ public class TranslationPlane1Test {
     @Test
     public void generate() throws IOException {
         int p = 2;
-        int n = 8;
+        int n = 10;
         int half = n / 2;
         int pow = LinearSpace.pow(p, half);
         ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
         int[][] orbits = readOrbits(pow);
-        int[][] splits = readTuples(pow);
+        int[][] tuples = readTuples(pow);
 
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
@@ -175,7 +176,7 @@ public class TranslationPlane1Test {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
-        for (int[] tuple : splits) {
+        for (int[] tuple : tuples) {
             int[] splitOrder = splitOrder(tuple);
             int[] tupleIdx = calcTupleIdx(tuple, splitOrder);
             BiConsumer<int[], List<Integer>> cons = (arr, vl) -> {
