@@ -61,4 +61,20 @@ public class QuickFind {
         }
         return map.values().stream().sorted(Comparator.comparingInt(bs -> bs.nextSetBit(0))).toList();
     }
+
+    public FixBS[] mapComponents() {
+        int size = size();
+        FixBS[] result = new FixBS[size];
+        for (int i = 0; i < size; i++) {
+            int root = root(i);
+            FixBS currComp = result[root];
+            if (currComp == null) {
+                currComp = new FixBS(size);
+                result[root] = currComp;
+            }
+            currComp.set(i);
+            result[i] = currComp;
+        }
+        return result;
+    }
 }

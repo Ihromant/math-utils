@@ -299,12 +299,15 @@ public class TranslationPlane1Test {
         int n = 8;
         int half = n / 2;
         int pow = LinearSpace.pow(p, half);
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
+
         int[][] orbits = readOrbits(pow);
         QuickFind find = new QuickFind(orbits.length);
         find.union(1, 2);
         find.union(1, 3);
         List<FixBS> components = find.components();
+        FixBS[] compMap = find.mapComponents();
+
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
 
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
@@ -357,11 +360,11 @@ public class TranslationPlane1Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(find, new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
+            treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(compMap, new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
         }
     }
 
-    private record Func(QuickFind find, int[] dom, int[] rng, int len) {
+    private record Func(FixBS[] compMap, int[] dom, int[] rng, int len) {
         private int sum() {
             int result = 0;
             for (int i : rng) {
@@ -373,8 +376,16 @@ public class TranslationPlane1Test {
         private int[] possibleJumps(int orbitsLength) {
             FixBS possible = new FixBS(orbitsLength);
             possible.set(0, orbitsLength);
-            for (int used : dom) {
+            int last = rng[len - 1];
+            for (int i = 0; i < dom.length; i++) {
+                int used = dom[i];
                 possible.clear(used);
+                if (last == 1 && rng[i] == 1) {
+                    FixBS comp = compMap[used];
+                    for (int less = comp.nextSetBit(0); less >= 0 && less < used; less = comp.nextSetBit(less + 1)) {
+                        possible.clear(less);
+                    }
+                }
             }
             return possible.stream().toArray();
         }
@@ -395,7 +406,7 @@ public class TranslationPlane1Test {
                     if (rng[i] != preLast) {
                         break;
                     }
-                    if (find.connected(dom[i], dom[len - 1]) && dom[len - 1] < dom[i]) {
+                    if (compMap[dom[i]] == compMap[dom[len - 1]] && dom[len - 1] < dom[i]) {
                         return false;
                     }
                 }
@@ -407,7 +418,7 @@ public class TranslationPlane1Test {
         private Func inc() {
             int[] nextRng = rng.clone();
             nextRng[len - 1]++;
-            return new Func(find, dom, nextRng, len);
+            return new Func(compMap, dom, nextRng, len);
         }
 
         private Func extendDom(int next) {
@@ -415,7 +426,7 @@ public class TranslationPlane1Test {
             nextDom[len] = next;
             int[] nextRng = Arrays.copyOf(rng, len + 1);
             nextRng[len] = 1;
-            return new Func(find, nextDom, nextRng, len + 1);
+            return new Func(compMap, nextDom, nextRng, len + 1);
         }
 
         @Override
