@@ -14,7 +14,6 @@ import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -174,7 +173,7 @@ public class TranslationPlaneTest1 {
         base[1] = second;
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
-        Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
+        Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
         for (int[] tuple : splits) {
             int[] splitOrder = splitOrder(tuple);
             int[] tupleIdx = calcTupleIdx(tuple, splitOrder);

@@ -763,7 +763,7 @@ public class TranslationPlaneTest {
         }
     }
 
-    private Map<Characteristic, List<ProjChar>> readKnown(int order) throws IOException {
+    public static Map<Characteristic, List<ProjChar>> readKnown(int order) throws IOException {
         List<ProjChar> chars = new ArrayList<>();
         try (FileInputStream is = new FileInputStream("/home/ihromant/maths/trans/known-" + order + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
