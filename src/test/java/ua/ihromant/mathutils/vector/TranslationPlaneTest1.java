@@ -118,7 +118,7 @@ public class TranslationPlaneTest1 {
         //tuples.forEach(t -> System.out.println(Arrays.toString(t)));
         List<int[]> filtered = tuples.stream().filter(t -> t[1] >= t[2] && t[1] >= t[3]).toList();
         System.out.println(filtered.size());
-        filtered.forEach(t -> System.out.println(Arrays.toString(t) + " " + Arrays.toString(splitOrder(t))));
+        filtered.forEach(t -> System.out.println(Arrays.toString(t)));
     }
 
     private static void generate(int[] tuple, int idx, int sum, Consumer<int[]> cons) {
@@ -129,7 +129,7 @@ public class TranslationPlaneTest1 {
         for (int i = 0; i <= sum; i++) {
             tuple[idx] = i;
             if (idx == tuple.length - 2) {
-                tuple[idx + 1] = sum;
+                tuple[idx + 1] = sum - i;
                 generate(tuple, tuple.length, 0, cons);
                 continue;
             }
