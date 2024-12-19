@@ -28,7 +28,7 @@ public class TranslationPlaneTest1 {
     @Test
     public void findBeginnings() {
         int p = 2;
-        int n = 8;
+        int n = 10;
         System.out.println(p + " " + n);
         int half = n / 2;
         ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
@@ -48,18 +48,18 @@ public class TranslationPlaneTest1 {
         }
         List<FixBS> components = quickFind.components();
         for (int i = 0; i < components.size(); i++) {
-            System.out.println(i + " " + components.get(i).cardinality() + " " + " " + Arrays.toString(components.get(i).stream().map(j -> v[j]).toArray()));
+            System.out.println(i + " " + components.get(i).cardinality() + " " + Arrays.toString(components.get(i).stream().map(j -> v[j]).toArray()));
         }
     }
 
     @Test
     public void readOrbits() throws IOException {
         int p = 2;
-        int n = 8;
+        int n = 10;
         int half = n / 2;
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
         int pow = LinearSpace.pow(p, half);
         int[][] orbits = readOrbits(pow);
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
         for (int i = 0; i < orbits.length; i++) {
             int first = orbits[i][0];
             int inv = helper.inv(first);
@@ -83,9 +83,13 @@ public class TranslationPlaneTest1 {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             return br.lines().map(line -> {
-                String[] split = line.substring(1, line.length() - 1).split(", ");
+                int idx = line.indexOf('[');
+                if (idx < 0) {
+                    return null;
+                }
+                String[] split = line.substring(idx + 1, line.length() - 1).split(", ");
                 return Arrays.stream(split).mapToInt(Integer::parseInt).toArray();
-            }).toArray(int[][]::new);
+            }).filter(Objects::nonNull).toArray(int[][]::new);
         }
     }
 
