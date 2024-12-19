@@ -32,6 +32,18 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         System.out.println(v.length);
     }
 
+    public TwoMatrixHelper(int n, int[] mapGl) {
+        this.n = n;
+        this.unity = calcUnity();
+        this.matCount = 1 << (this.n * this.n);
+        this.mini = LinearSpace.of(2, this.n);
+        this.mapGl = mapGl;
+        this.v = null; // TODO finish
+        this.invertible = null;
+        this.gl = null;
+        this.vIdxes = null;
+    }
+
     @Override
     public int p() {
         return 2;
@@ -134,10 +146,10 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     private int[] generateInvertibleGlAlt(int[] gl) {
         int[] result = new int[matCount];
         for (int i : gl) {
-            int[][] matrix = toMatrix(i);
             if (result[i] > 0) {
                 continue;
             }
+            int[][] matrix = toMatrix(i);
             try {
                 int[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix, 2);
                 int inv = fromMatrix(rev);
