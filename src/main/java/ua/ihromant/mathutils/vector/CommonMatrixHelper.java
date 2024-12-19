@@ -13,6 +13,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
     private final FixBS invertible;
     private final int[] gl;
     private final int[][] mulMatrix;
+    private final int[][] addMatrix;
     private final int[][] subMatrix;
     private final int[][] mulVecMatrix;
     private final int[] idxArr;
@@ -35,6 +36,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
             idxArr[gl[i]] = i;
         }
         this.mulMatrix = new int[gl.length][gl.length];
+        this.addMatrix = new int[gl.length][gl.length];
         this.subMatrix = new int[gl.length][gl.length];
         this.mulVecMatrix = new int[gl.length][mini.cardinality()];
         IntStream.range(0, gl.length).parallel().forEach(i -> {
@@ -42,6 +44,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
             for (int j = 0; j < gl.length; j++) {
                 int[][] jMat = toMatrix(gl[j]);
                 mulMatrix[i][j] = fromMatrix(multiply(iMat, jMat));
+                addMatrix[i][j] = fromMatrix(add(iMat, jMat));
                 subMatrix[i][j] = fromMatrix(subtract(iMat, jMat));
             }
             for (int j = 0; j < mini.cardinality(); j++) {
@@ -76,6 +79,11 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
     @Override
     public int matCount() {
         return matCount;
+    }
+
+    @Override
+    public int add(int i, int j) {
+        return addMatrix[idxArr[i]][idxArr[j]];
     }
 
     @Override
@@ -196,6 +204,16 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
         for (int i = 0; i < first.length; i++) {
             for (int j = 0; j < first.length; j++) {
                 result[i][j] = (p + first[i][j] - second[i][j]) % p;
+            }
+        }
+        return result;
+    }
+
+    private int[][] add(int[][] first, int[][] second) {
+        int[][] result = new int[first.length][first.length];
+        for (int i = 0; i < first.length; i++) {
+            for (int j = 0; j < first.length; j++) {
+                result[i][j] = (p + first[i][j] + second[i][j]) % p;
             }
         }
         return result;

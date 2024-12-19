@@ -65,7 +65,7 @@ public class TranslationPlaneTest1 {
                     System.out.println(i + " " + j);
                 }
             }
-            int added = helper.sub(first, helper.unity());
+            int added = helper.add(first, helper.unity());
             for (int j = 0; j < orbits.length; j++) {
                 if (Arrays.binarySearch(orbits[j], added) >= 0) {
                     System.out.println(i + " " + j);
@@ -168,8 +168,9 @@ public class TranslationPlaneTest1 {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = new HashMap<>();
-        for (int[] split : splits) {
-            int[] splitOrder = splitOrder(split);
+        for (int[] tuple : splits) {
+            int[] splitOrder = splitOrder(tuple);
+            int[] tupleIdx = calcTupleIdx(tuple, splitOrder);
             BiConsumer<int[], List<Integer>> cons = (arr, vl) -> {
                 FixBS[] newBase = base.clone();
                 for (int i = 0; i < arr.length; i++) {
@@ -198,7 +199,8 @@ public class TranslationPlaneTest1 {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            tree(helper, split, TranslationPlaneTest.filterGl(helper, p), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
+            tree(helper, orbits, tupleIdx, TranslationPlaneTest.filterGl(helper, p), Arrays.stream(orbits[tupleIdx[0]]).boxed().toList(), partSpread, 0, cons);
+            System.out.println(Arrays.toString(tuple));
         }
     }
 
@@ -226,11 +228,12 @@ public class TranslationPlaneTest1 {
         throw new IllegalStateException();
     }
 
-    private void tree(ModuloMatrixHelper helper, int[] tuple, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], List<Integer>> sink) {
+    private static int[] calcTupleIdx(int[] tuple, int[] tupleOrder) {
+        return IntStream.range(0, Arrays.stream(tuple).sum()).map(i -> forIdx(i, tuple, tupleOrder)).toArray();
+    }
+
+    private void tree(ModuloMatrixHelper helper, int[][] orbits, int[] tupleIdx, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], List<Integer>> sink) {
         int needed = partSpread.length - idx;
-        if (v.size() < needed) {
-            return;
-        }
         if (needed == 0) {
             sink.accept(partSpread, v);
             return;
@@ -242,10 +245,25 @@ public class TranslationPlaneTest1 {
             }
             int[] newArr = partSpread.clone();
             newArr[idx] = a;
+            int orbitIdx = tupleIdx[idx];
             List<Integer> newV = new ArrayList<>(v.size());
-            for (int b : v) {
-                if (b > a && helper.hasInv(helper.sub(b, a))) {
+            boolean last = needed == 1;
+            int nextOrbitIdx = last ? 0 : tupleIdx[idx + 1];
+            if (!last && orbitIdx != nextOrbitIdx) {
+                ex: for (int b : orbits[nextOrbitIdx]) {
+                    for (int i = 0; i <= idx; i++) {
+                        int el = newArr[i];
+                        if (!helper.hasInv(helper.sub(b, el))) {
+                            continue ex;
+                        }
+                    }
                     newV.add(b);
+                }
+            } else {
+                for (int b : v) {
+                    if (b > a && helper.hasInv(helper.sub(b, a))) {
+                        newV.add(b);
+                    }
                 }
             }
             List<Integer> centralizer = new ArrayList<>(subGl.size());
@@ -263,7 +281,7 @@ public class TranslationPlaneTest1 {
                     centralizer.add(el);
                 }
             }
-            tree(helper, tuple, centralizer, newV, newArr, idx + 1, sink);
+            tree(helper, orbits, tupleIdx, centralizer, newV, newArr, idx + 1, sink);
         }
     }
 }
