@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.plane.ProjChar;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -23,7 +24,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class TranslationPlaneTest1 {
+public class TranslationPlane1Test {
     @Test
     public void findBeginnings() {
         int p = 2;
@@ -78,7 +79,7 @@ public class TranslationPlaneTest1 {
     }
 
     private int[][] readOrbits(int pow) throws IOException {
-        try (InputStream is = getClass().getResourceAsStream("/trans/orbits" + pow + ".txt");
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/orbits" + pow + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             return br.lines().map(line -> {
@@ -93,7 +94,7 @@ public class TranslationPlaneTest1 {
     }
 
     private int[][] readTuples(int pow) throws IOException {
-        try (InputStream is = getClass().getResourceAsStream("/trans/tuples" + pow + ".txt");
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/tuples" + pow + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             return br.lines().map(line -> {
