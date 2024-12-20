@@ -52,32 +52,6 @@ public class TranslationPlane1Test {
         }
     }
 
-    @Test
-    public void readOrbits() throws IOException {
-        int p = 2;
-        int n = 10;
-        int half = n / 2;
-        int pow = LinearSpace.pow(p, half);
-        int[][] orbits = readOrbits(pow);
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
-        for (int i = 0; i < orbits.length; i++) {
-            int first = orbits[i][0];
-            int inv = helper.inv(first);
-            for (int j = 0; j < orbits.length; j++) {
-                if (Arrays.binarySearch(orbits[j], inv) >= 0) {
-                    System.out.println(i + " " + j);
-                }
-            }
-            int added = helper.add(first, helper.unity());
-            for (int j = 0; j < orbits.length; j++) {
-                if (Arrays.binarySearch(orbits[j], added) >= 0) {
-                    System.out.println(i + " " + j);
-                }
-            }
-        }
-        System.out.println(Arrays.deepToString(orbits));
-    }
-
     private int[][] readOrbits(int pow) throws IOException {
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/orbits" + pow + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
@@ -301,12 +275,9 @@ public class TranslationPlane1Test {
         int pow = LinearSpace.pow(p, half);
 
         int[][] orbits = readOrbits(pow);
-        QuickFind find = new QuickFind(orbits.length);
-        find.union(1, 2);
-        find.union(1, 3);
-        List<FixBS> components = find.components();
-
         ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
+        QuickFind find = orbitComponents(helper, orbits);
+        System.out.println("Components " + find.components());
 
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
@@ -329,7 +300,7 @@ public class TranslationPlane1Test {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
-        for (FixBS comp : components) {
+        for (FixBS comp : find.components()) {
             int min = comp.nextSetBit(0);
             BiConsumer<int[], Func> cons = (arr, vl) -> {
                 FixBS[] newBase = base.clone();
@@ -361,6 +332,26 @@ public class TranslationPlane1Test {
             int[] partSpread = new int[mini.cardinality() - 2];
             treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
         }
+    }
+
+    private static QuickFind orbitComponents(ModuloMatrixHelper helper, int[][] orbits) {
+        QuickFind find = new QuickFind(orbits.length);
+        for (int i = 0; i < orbits.length; i++) {
+            int first = orbits[i][0];
+            int inv = helper.inv(first);
+            for (int j = 0; j < orbits.length; j++) {
+                if (Arrays.binarySearch(orbits[j], inv) >= 0) {
+                    find.union(i, j);
+                }
+            }
+            int added = helper.add(first, helper.unity());
+            for (int j = 0; j < orbits.length; j++) {
+                if (Arrays.binarySearch(orbits[j], added) >= 0) {
+                    find.union(i, j);
+                }
+            }
+        }
+        return find;
     }
 
     private record Func(int[] dom, int[] rng, int len) {
