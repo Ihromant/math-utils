@@ -7,8 +7,8 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     private final int n;
     private final int unity;
     private final int matCount;
+    private final int mask;
     private final int[] gl;
-    private final LinearSpace mini;
     private final int[] mapGl;
     private final int[] v;
     private final int[] vIdxes;
@@ -17,7 +17,7 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.n = n;
         this.unity = calcUnity();
         this.matCount = 1 << (this.n * this.n);
-        this.mini = LinearSpace.of(2, this.n);
+        this.mask = (1 << n) - 1;
         this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         System.out.println(gl.length);
@@ -33,7 +33,7 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.n = n;
         this.unity = calcUnity();
         this.matCount = 1 << (this.n * this.n);
-        this.mini = LinearSpace.of(2, this.n);
+        this.mask = (1 << n) - 1;
         this.mapGl = mapGl;
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
@@ -75,13 +75,25 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     }
 
     @Override
-    public int mul(int i, int j) {
-        return fromMatrix(multiply(toMatrix(i), toMatrix(j)));
+    public int mul(int a, int b) {
+        return switch (n) {
+            case 1 -> mulMagic1(a, b);
+            case 2 -> mulMagic2(a, b);
+            case 3 -> mulMagic3(a, b);
+            case 4 -> mulMagic4(a, b);
+            case 5 -> mulMagic5(a, b);
+            default -> throw new IllegalStateException();
+        };
     }
 
     @Override
     public int mulVec(int a, int vec) {
-        return mini.fromCrd(multiply(toMatrix(a), mini.toCrd(vec)));
+        int res = 0;
+        for (int i = 0; i < n; i++) {
+            int part = (a >>> i * n) & mask;
+            res = res | ((Integer.bitCount(part & vec) & 1) << i);
+        }
+        return res;
     }
 
     @Override
@@ -114,6 +126,66 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         return vIdxes;
     }
 
+    private int mulMagic1(int a, int b) {
+        return a & b;
+    }
+
+    private int mulMagic2(int a, int b) {
+        int r = 0;
+        for (int i = 0; i < 2; i++) {
+            int x = (b >>> i) & 0x5;
+            x = x ^ (x >>> 1);
+            x = x & 0x3;
+            x = x * 0x5;
+            x = x & a;
+            x = x ^ (x >>> 1);
+            r = r | ((x & 0x5) << i);
+        }
+        return r;
+    }
+
+    private int mulMagic3(int a, int b) {
+        int r = 0;
+        for (int i = 0; i < 3; i++) {
+            int x = (b >>> i) & 0x49;
+            x = x ^ (x >>> 2) ^ (x >>> 4);
+            x = x & 0x7;
+            x = x * 0x49;
+            x = x & a;
+            x = x ^ (x >>> 2) ^ (x >>> 1);
+            r = r | ((x & 0x49) << i);
+        }
+        return r;
+    }
+
+    private int mulMagic4(int a, int b) {
+        int r = 0;
+        for (int i = 0; i < 4; i++) {
+            int x = (b >>> i) & 0x1111;
+            x = x ^ (x >>> 3) ^ (x >>> 6) ^ (x >>> 9);
+            x = x & 0xF;
+            x = x * 0x1111;
+            x = x & a;
+            x = x ^ (x >>> 3) ^ (x >>> 2) ^ (x >>> 1);
+            r = r | ((x & 0x1111) << i);
+        }
+        return r;
+    }
+
+    private int mulMagic5(int a, int b) {
+        int r = 0;
+        for (int i = 0; i < 5; ++i) {
+            int x = (b >>> i) & 0x108421;
+            x = x ^ (x >>> 4) ^ (x >>> 8) ^ (x >>> 12) ^ (x >>> 16);
+            x = x & 0x1F;
+            x = x * 0x108421;
+            x = x & a;
+            x = x ^ (x >>> 4) ^ (x >>> 3) ^ (x >>> 2) ^ (x >>> 1);
+            r = r | ((x & 0x108421) << i);
+        }
+        return r;
+    }
+
     private int[][] toMatrix(int a) {
         int[][] result = new int[n][n];
         for (int i = 0; i < n * n; i++) {
@@ -131,12 +203,12 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         return result;
     }
 
-    public int calcUnity() {
-        int[][] result = new int[n][n];
+    private int calcUnity() {
+        int res = 0;
         for (int i = 0; i < n; i++) {
-            result[i][i] = 1;
+            res = (res << (n + 1)) + 1;
         }
-        return fromMatrix(result);
+        return res;
     }
 
     private int[] generateMapGl() {
@@ -153,32 +225,6 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
                 result[inv] = i;
             } catch (ArithmeticException e) {
                 // ok
-            }
-        }
-        return result;
-    }
-
-    private int[] multiply(int[][] first, int[] arr) {
-        int[] result = new int[first.length];
-        for (int i = 0; i < first.length; i++) {
-            int sum = 0;
-            for (int j = 0; j < first.length; j++) {
-                sum = sum + first[i][j] * arr[j];
-            }
-            result[i] = sum % 2;
-        }
-        return result;
-    }
-
-    private int[][] multiply(int[][] first, int[][] second) {
-        int[][] result = new int[first.length][first.length];
-        for (int i = 0; i < first.length; i++) {
-            for (int j = 0; j < first.length; j++) {
-                int sum = 0;
-                for (int k = 0; k < first.length; k++) {
-                    sum = sum + first[i][k] * second[k][j];
-                }
-                result[i][j] = sum % 2;
             }
         }
         return result;
