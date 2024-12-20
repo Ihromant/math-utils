@@ -230,4 +230,42 @@ public class MulTest {
         }
         return r;
     }
+
+    @Test
+    public void testMulVec() {
+        for (int n = 1; n <= 4; n++) {
+            LinearSpace sp = LinearSpace.of(2, n);
+            int cap = 1 << (n * n);
+            for (int i = 0; i < 10000; i++) {
+                int mat = ThreadLocalRandom.current().nextInt(cap);
+                int vec = ThreadLocalRandom.current().nextInt(1 << n);
+                assertEquals(mulVec(mat, vec, sp), mulBinary(mat, vec, n));
+            }
+        }
+    }
+
+    private int mulBinary(int m, int vec, int n) {
+        int res = 0;
+        for (int i = 0; i < n; i++) {
+            int part = (m >>> i * n) & ((1 << n) - 1);
+            res = res | ((Integer.bitCount(part & vec) & 1) << i);
+        }
+        return res;
+    }
+
+    private int[] multiply(int[][] first, int[] arr) {
+        int[] result = new int[first.length];
+        for (int i = 0; i < first.length; i++) {
+            int sum = 0;
+            for (int j = 0; j < first.length; j++) {
+                sum = sum + first[i][j] * arr[j];
+            }
+            result[i] = sum % 2;
+        }
+        return result;
+    }
+
+    private int mulVec(int a, int vec, LinearSpace sp) {
+        return sp.fromCrd(multiply(toMatrix(a, sp.n()), sp.toCrd(vec)));
+    }
 }
