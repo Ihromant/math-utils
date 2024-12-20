@@ -18,7 +18,7 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.unity = calcUnity();
         this.matCount = 1 << (this.n * this.n);
         this.mini = LinearSpace.of(2, this.n);
-        this.mapGl = generateInvertibleGlAlt();
+        this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         System.out.println(gl.length);
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
@@ -139,7 +139,7 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         return fromMatrix(result);
     }
 
-    private int[] generateInvertibleGlAlt() {
+    private int[] generateMapGl() {
         int[] result = new int[matCount];
         for (int i = 0; i < matCount; i++) {
             if (result[i] > 0) {

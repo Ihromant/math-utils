@@ -50,6 +50,6 @@ public interface ModuloMatrixHelper {
         if (p == 2) {
             return new TwoMatrixHelper(n);
         }
-        return new CommonMatrixHelper(p, n);
+        return new TableMatrixHelper(p, n);
     }
 }

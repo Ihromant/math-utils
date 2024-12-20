@@ -1,16 +1,13 @@
 package ua.ihromant.mathutils.vector;
 
-import ua.ihromant.mathutils.util.FixBS;
-
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-public class CommonMatrixHelper implements ModuloMatrixHelper {
+public class TableMatrixHelper implements ModuloMatrixHelper {
     private final int p;
     private final int n;
     private final int unity;
     private final int matCount;
-    private final FixBS invertible;
     private final int[] gl;
     private final int[][] mulMatrix;
     private final int[][] addMatrix;
@@ -21,13 +18,13 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
     private final int[] v;
     private final int[] vIdxes;
 
-    public CommonMatrixHelper(int p, int n) {
+    public TableMatrixHelper(int p, int n) {
         this.p = p;
         this.n = n;
         this.unity = calcUnity();
         this.matCount = LinearSpace.pow(p, n * n);
-        this.invertible = generateInvertibleAlt();
-        this.gl = invertible.stream().toArray();
+        this.mapGl = generateMapGl();
+        this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         System.out.println(gl.length);
         this.idxArr = new int[matCount];
         LinearSpace mini = LinearSpace.of(p, n);
@@ -52,8 +49,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
                 mulVecMatrix[i][j] = mini.fromCrd(multiply(iMat, vec));
             }
         });
-        this.mapGl = generateInvertibleGlAlt(gl);
-        this.v = Arrays.stream(gl).filter(a -> !hasEigenOne(a)).toArray();
+        this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
         this.vIdxes = new int[matCount];
         for (int i = 0; i < v.length; i++) {
             vIdxes[v[i]] = i;
@@ -162,36 +158,18 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
         return fromMatrix(result);
     }
 
-    private boolean hasEigenOne(int a) {
-        return !invertible.get(sub(a, unity));
-    }
-
-    private int[] generateInvertibleGlAlt(int[] gl) {
+    private int[] generateMapGl() {
         int[] result = new int[matCount];
-        for (int i : gl) {
-            int[][] matrix = toMatrix(i);
+        for (int i  = 0; i < matCount; i++) {
             if (result[i] > 0) {
                 continue;
             }
             try {
+                int[][] matrix = toMatrix(i);
                 int[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix, p);
                 int inv = fromMatrix(rev);
                 result[i] = inv;
                 result[inv] = i;
-            } catch (ArithmeticException e) {
-                // ok
-            }
-        }
-        return result;
-    }
-
-    private FixBS generateInvertibleAlt() {
-        FixBS result = new FixBS(matCount);
-        for (int i = 0; i < matCount; i++) {
-            int[][] matrix = toMatrix(i);
-            try {
-                MatrixInverseFiniteField.inverseMatrix(matrix, p);
-                result.set(i);
             } catch (ArithmeticException e) {
                 // ok
             }
