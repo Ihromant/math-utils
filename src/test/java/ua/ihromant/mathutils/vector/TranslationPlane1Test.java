@@ -488,16 +488,7 @@ public class TranslationPlane1Test {
         if (canJump) {
             for (int possible : func.possibleJumps()) {
                 int[] orbit = func.orbits[possible];
-                v = new IntList(orbit.length);
-                ex: for (int b : orbit) {
-                    for (int i = 0; i < idx; i++) {
-                        int el = partSpread[i];
-                        if (!helper.hasInv(helper.sub(b, el))) {
-                            continue ex;
-                        }
-                    }
-                    v.add(b);
-                }
+                v = filterOrbit(helper, partSpread, orbit, idx);
                 Func next = func.extendDom(possible);
                 FixBS filter = new FixBS(helper.matCount());
                 for (int j = 0; j < v.size(); j++) {
@@ -540,6 +531,20 @@ public class TranslationPlane1Test {
         }
     }
 
+    private static IntList filterOrbit(ModuloMatrixHelper helper, int[] partSpread, int[] orbit, int idx) {
+        IntList result = new IntList(orbit.length);
+        ex: for (int b : orbit) {
+            for (int i = 0; i < idx; i++) {
+                int el = partSpread[i];
+                if (!helper.hasInv(helper.sub(b, el))) {
+                    continue ex;
+                }
+            }
+            result.add(b);
+        }
+        return result;
+    }
+
     private void treeAltNoSubGl(ModuloMatrixHelper helper, Func func, IntList v, int[] partSpread, BiConsumer<int[], Func> sink) {
         int idx = func.sum();
         if (idx == partSpread.length) {
@@ -567,16 +572,7 @@ public class TranslationPlane1Test {
         if (canJump) {
             for (int possible : func.possibleJumps()) {
                 int[] orbit = func.orbits[possible];
-                v = new IntList(orbit.length);
-                ex: for (int b : orbit) {
-                    for (int i = 0; i < idx; i++) {
-                        int el = partSpread[i];
-                        if (!helper.hasInv(helper.sub(b, el))) {
-                            continue ex;
-                        }
-                    }
-                    v.add(b);
-                }
+                v = filterOrbit(helper, partSpread, orbit, idx);
                 Func next = func.extendDom(possible);
                 for (int j = 0; j < v.size(); j++) {
                     int a = v.get(j);
