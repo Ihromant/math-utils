@@ -38,10 +38,15 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.matCount = 1 << (this.n * this.n);
         this.mini = LinearSpace.of(2, this.n);
         this.mapGl = mapGl;
-        this.v = null; // TODO finish
-        this.invertible = null;
-        this.gl = null;
-        this.vIdxes = null;
+        this.invertible = FixBS.of(matCount, mapGl);
+        invertible.clear(0);
+        this.gl = invertible.stream().toArray();
+        this.v = Arrays.stream(gl).filter(a -> !hasEigenOne(a)).toArray();
+        this.vIdxes = new int[matCount];
+        for (int i = 0; i < v.length; i++) {
+            vIdxes[v[i]] = i;
+        }
+        System.out.println(v.length);
     }
 
     @Override

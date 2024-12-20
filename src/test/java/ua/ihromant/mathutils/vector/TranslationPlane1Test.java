@@ -7,11 +7,14 @@ import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.ProjChar;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -273,17 +276,15 @@ public class TranslationPlane1Test {
         int p = 2;
         int n = 8;
         int half = n / 2;
-        int pow = LinearSpace.pow(p, half);
-
-        int[][] orbits = readOrbits(pow);
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, half);
-        QuickFind find = orbitComponents(helper, orbits);
-        System.out.println("Components " + find.components());
-
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
         int sc = sp.cardinality();
         int mc = mini.cardinality();
+
+        int[][] orbits = readOrbits(mc);
+        ModuloMatrixHelper helper = readGl(p, half);
+        QuickFind find = orbitComponents(helper, orbits);
+        System.out.println("Components " + find.components());
 
         FixBS first = new FixBS(sc);
         first.set(0, mc);
@@ -592,5 +593,33 @@ public class TranslationPlane1Test {
                 }
             }
         }
+    }
+
+    @Test
+    public void dumpGl() throws IOException {
+        int p = 2;
+        int n = 5;
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/gl-" + p + "^" + n + ".txt");
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            for (int el : helper.gl()) {
+                ps.println(el + "=" + helper.inv(el));
+            }
+        }
+    }
+
+    private ModuloMatrixHelper readGl(int p, int n) throws IOException {
+        int matCount = LinearSpace.pow(p, n * n);
+        int[] mapGl = new int[matCount];
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/gl-" + p + "^" + n + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            br.lines().forEach(ln -> {
+                String[] sp = ln.split("=");
+                mapGl[Integer.parseInt(sp[0])] = Integer.parseInt(sp[1]);
+            });
+        }
+        return new TwoMatrixHelper(n, mapGl);
     }
 }
