@@ -418,8 +418,7 @@ public class TranslationPlane1Test {
 
     private void treeAlt(ModuloMatrixHelper helper, List<Integer> subGl, Func func, List<Integer> v, int[] partSpread, BiConsumer<int[], Func> sink) {
         int idx = func.sum();
-        int needed = partSpread.length - idx;
-        if (needed == 0) {
+        if (idx == partSpread.length) {
             sink.accept(partSpread, func);
             return;
         }
@@ -455,7 +454,11 @@ public class TranslationPlane1Test {
                         centralizer.add(el);
                     }
                 }
-                treeAlt(helper, centralizer, next, newV, newArr, sink);
+                if (centralizer.isEmpty()) {
+                    treeAltNoSubGl(helper, next, newV, newArr, sink);
+                } else {
+                    treeAlt(helper, centralizer, next, newV, newArr, sink);
+                }
             }
         }
         if (canJump) {
@@ -499,7 +502,61 @@ public class TranslationPlane1Test {
                             centralizer.add(el);
                         }
                     }
-                    treeAlt(helper, centralizer, next, newV, newArr, sink);
+                    if (centralizer.isEmpty()) {
+                        treeAltNoSubGl(helper, next, newV, newArr, sink);
+                    } else {
+                        treeAlt(helper, centralizer, next, newV, newArr, sink);
+                    }
+                }
+            }
+        }
+    }
+
+    private void treeAltNoSubGl(ModuloMatrixHelper helper, Func func, List<Integer> v, int[] partSpread, BiConsumer<int[], Func> sink) {
+        int idx = func.sum();
+        if (idx == partSpread.length) {
+            sink.accept(partSpread, func);
+            return;
+        }
+        boolean canJump = func.canJump(partSpread.length);
+        boolean canStay = func.canStay();
+        if (canStay) {
+            Func next = func.inc();
+            for (int a : v) {
+                int[] newArr = partSpread.clone();
+                newArr[idx] = a;
+                List<Integer> newV = new ArrayList<>(v.size());
+                for (int b : v) {
+                    if (b > a && helper.hasInv(helper.sub(b, a))) {
+                        newV.add(b);
+                    }
+                }
+                treeAltNoSubGl(helper, next, newV, newArr, sink);
+            }
+        }
+        if (canJump) {
+            for (int possible : func.possibleJumps()) {
+                v = new ArrayList<>();
+                ex: for (int b : func.orbits[possible]) {
+                    for (int i = 0; i < idx; i++) {
+                        int el = partSpread[i];
+                        if (!helper.hasInv(helper.sub(b, el))) {
+                            continue ex;
+                        }
+                    }
+                    v.add(b);
+                }
+                Func next = func.extendDom(possible);
+                for (int a : v) {
+                    int[] newArr = partSpread.clone();
+                    newArr[idx] = a;
+                    List<Integer> newV = new ArrayList<>(v.size());
+                    for (int b : v) {
+                        if (b > a && helper.hasInv(helper.sub(b, a))) {
+                            newV.add(b);
+                        }
+                    }
+                    treeAltNoSubGl(helper, next, newV, newArr, sink);
                 }
             }
         }
