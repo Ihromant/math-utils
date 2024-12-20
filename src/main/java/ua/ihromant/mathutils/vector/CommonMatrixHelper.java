@@ -3,52 +3,42 @@ package ua.ihromant.mathutils.vector;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-public class TableMatrixHelper implements ModuloMatrixHelper {
+public class CommonMatrixHelper implements ModuloMatrixHelper {
     private final int p;
     private final int n;
     private final int unity;
     private final int matCount;
     private final int[] gl;
-    private final int[][] mulMatrix;
-    private final int[][] addMatrix;
-    private final int[][] subMatrix;
-    private final int[][] mulVecMatrix;
-    private final int[] idxArr;
+    private final LinearSpace mini;
     private final int[] mapGl;
     private final int[] v;
     private final int[] vIdxes;
 
-    public TableMatrixHelper(int p, int n) {
+    public CommonMatrixHelper(int p, int n) {
         this.p = p;
         this.n = n;
         this.unity = calcUnity();
         this.matCount = LinearSpace.pow(p, n * n);
+        this.mini = LinearSpace.of(p, this.n);
         this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         System.out.println(gl.length);
-        this.idxArr = new int[matCount];
-        LinearSpace mini = LinearSpace.of(p, n);
-        Arrays.fill(idxArr, -1);
-        for (int i = 0; i < gl.length; i++) {
-            idxArr[gl[i]] = i;
+        this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
+        this.vIdxes = new int[matCount];
+        for (int i = 0; i < v.length; i++) {
+            vIdxes[v[i]] = i;
         }
-        this.mulMatrix = new int[gl.length][gl.length];
-        this.addMatrix = new int[gl.length][gl.length];
-        this.subMatrix = new int[gl.length][gl.length];
-        this.mulVecMatrix = new int[gl.length][mini.cardinality()];
-        IntStream.range(0, gl.length).parallel().forEach(i -> {
-            int[][] iMat = toMatrix(gl[i]);
-            for (int j = 0; j < gl.length; j++) {
-                int[][] jMat = toMatrix(gl[j]);
-                mulMatrix[i][j] = fromMatrix(multiply(iMat, jMat));
-                addMatrix[i][j] = fromMatrix(add(iMat, jMat));
-                subMatrix[i][j] = fromMatrix(subtract(iMat, jMat));
-            }
-            for (int j = 0; j < mini.cardinality(); j++) {
-                int[] vec = mini.toCrd(j);
-                mulVecMatrix[i][j] = mini.fromCrd(multiply(iMat, vec));
-            }
-        });
+        System.out.println(v.length);
+    }
+
+    public CommonMatrixHelper(int p, int n, int[] mapGl) {
+        this.p = p;
+        this.n = n;
+        this.unity = calcUnity();
+        this.matCount = LinearSpace.pow(p, n * n);
+        this.mini = LinearSpace.of(p, this.n);
+        this.mapGl = mapGl;
+        this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
         this.vIdxes = new int[matCount];
         for (int i = 0; i < v.length; i++) {
@@ -79,22 +69,22 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
 
     @Override
     public int add(int i, int j) {
-        return addMatrix[idxArr[i]][idxArr[j]];
+        return fromMatrix(add(toMatrix(i), toMatrix(j)));
     }
 
     @Override
     public int sub(int i, int j) {
-        return subMatrix[idxArr[i]][idxArr[j]];
+        return fromMatrix(subtract(toMatrix(i), toMatrix(j)));
     }
 
     @Override
     public int mul(int i, int j) {
-        return mulMatrix[idxArr[i]][idxArr[j]];
+        return fromMatrix(multiply(toMatrix(i), toMatrix(j)));
     }
 
     @Override
     public int mulVec(int a, int vec) {
-        return mulVecMatrix[idxArr[a]][vec];
+        return mini.fromCrd(multiply(toMatrix(a), mini.toCrd(vec)));
     }
 
     @Override
