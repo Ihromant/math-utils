@@ -47,7 +47,7 @@ public interface ModuloMatrixHelper {
     }
 
     static ModuloMatrixHelper of(int p, int n) {
-        if (p == 2 && n > 4) {
+        if (p == 2) {
             return new TwoMatrixHelper(n);
         }
         return new CommonMatrixHelper(p, n);

@@ -610,6 +610,9 @@ public class TranslationPlane1Test {
     }
 
     private ModuloMatrixHelper readGl(int p, int n) throws IOException {
+        if (p != 2) {
+            return ModuloMatrixHelper.of(p, n);
+        }
         int matCount = LinearSpace.pow(p, n * n);
         int[] mapGl = new int[matCount];
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/gl-" + p + "^" + n + ".txt");

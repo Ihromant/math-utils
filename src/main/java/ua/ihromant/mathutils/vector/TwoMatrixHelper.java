@@ -1,14 +1,12 @@
 package ua.ihromant.mathutils.vector;
 
-import ua.ihromant.mathutils.util.FixBS;
-
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 public class TwoMatrixHelper implements ModuloMatrixHelper {
     private final int n;
     private final int unity;
     private final int matCount;
-    private final FixBS invertible;
     private final int[] gl;
     private final LinearSpace mini;
     private final int[] mapGl;
@@ -19,12 +17,11 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.n = n;
         this.unity = calcUnity();
         this.matCount = 1 << (this.n * this.n);
-        this.invertible = generateInvertibleAlt();
-        this.gl = invertible.stream().toArray();
-        System.out.println(gl.length);
         this.mini = LinearSpace.of(2, this.n);
-        this.mapGl = generateInvertibleGlAlt(gl);
-        this.v = Arrays.stream(gl).filter(a -> !hasEigenOne(a)).toArray();
+        this.mapGl = generateInvertibleGlAlt();
+        this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
+        System.out.println(gl.length);
+        this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
         this.vIdxes = new int[matCount];
         for (int i = 0; i < v.length; i++) {
             vIdxes[v[i]] = i;
@@ -38,10 +35,8 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.matCount = 1 << (this.n * this.n);
         this.mini = LinearSpace.of(2, this.n);
         this.mapGl = mapGl;
-        this.invertible = FixBS.of(matCount, mapGl);
-        invertible.clear(0);
-        this.gl = invertible.stream().toArray();
-        this.v = Arrays.stream(gl).filter(a -> !hasEigenOne(a)).toArray();
+        this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
+        this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
         this.vIdxes = new int[matCount];
         for (int i = 0; i < v.length; i++) {
             vIdxes[v[i]] = i;
@@ -144,36 +139,18 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         return fromMatrix(result);
     }
 
-    private boolean hasEigenOne(int a) {
-        return !invertible.get(sub(a, unity));
-    }
-
-    private int[] generateInvertibleGlAlt(int[] gl) {
+    private int[] generateInvertibleGlAlt() {
         int[] result = new int[matCount];
-        for (int i : gl) {
+        for (int i = 0; i < matCount; i++) {
             if (result[i] > 0) {
                 continue;
             }
-            int[][] matrix = toMatrix(i);
             try {
+                int[][] matrix = toMatrix(i);
                 int[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix, 2);
                 int inv = fromMatrix(rev);
                 result[i] = inv;
                 result[inv] = i;
-            } catch (ArithmeticException e) {
-                // ok
-            }
-        }
-        return result;
-    }
-
-    private FixBS generateInvertibleAlt() {
-        FixBS result = new FixBS(matCount);
-        for (int i = 0; i < matCount; i++) {
-            int[][] matrix = toMatrix(i);
-            try {
-                MatrixInverseFiniteField.inverseMatrix(matrix, 2);
-                result.set(i);
             } catch (ArithmeticException e) {
                 // ok
             }
