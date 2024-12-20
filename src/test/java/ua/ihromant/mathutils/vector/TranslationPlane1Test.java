@@ -181,7 +181,7 @@ public class TranslationPlane1Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            tree(helper, orbits, tupleIdx, TranslationPlaneTest.filterGl(helper, p), Arrays.stream(orbits[tupleIdx[0]]).boxed().toList(), partSpread, 0, cons);
+            tree(helper, orbits, tupleIdx, filterGl(helper, p), Arrays.stream(orbits[tupleIdx[0]]).boxed().toList(), partSpread, 0, cons);
             System.out.println(Arrays.toString(tuple));
         }
     }
@@ -214,7 +214,7 @@ public class TranslationPlane1Test {
         return IntStream.range(0, Arrays.stream(tuple).sum()).map(i -> forIdx(i, tuple, tupleOrder)).toArray();
     }
 
-    private void tree(ModuloMatrixHelper helper, int[][] orbits, int[] tupleIdx, List<Integer> subGl, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], List<Integer>> sink) {
+    private void tree(ModuloMatrixHelper helper, int[][] orbits, int[] tupleIdx, IntList subGl, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], List<Integer>> sink) {
         int needed = partSpread.length - idx;
         if (needed == 0) {
             sink.accept(partSpread, v);
@@ -248,8 +248,9 @@ public class TranslationPlane1Test {
                     }
                 }
             }
-            List<Integer> centralizer = new ArrayList<>(subGl.size());
-            for (int el : subGl) {
+            IntList centralizer = new IntList(subGl.size());
+            for (int i = 0; i < subGl.size(); i++) {
+                int el = subGl.get(i);
                 int invEl = helper.inv(el);
                 int prod = helper.mul(helper.mul(invEl, a), el);
                 filter.set(prod);
@@ -330,7 +331,7 @@ public class TranslationPlane1Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            treeAlt(helper, TranslationPlaneTest.filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), Arrays.stream(orbits[min]).boxed().toList(), partSpread, cons);
+            treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
         }
     }
 
@@ -416,7 +417,26 @@ public class TranslationPlane1Test {
         }
     }
 
-    private void treeAlt(ModuloMatrixHelper helper, List<Integer> subGl, Func func, List<Integer> v, int[] partSpread, BiConsumer<int[], Func> sink) {
+    private static IntList filterGl(ModuloMatrixHelper helper, int p) {
+        int[] gl = helper.gl();
+        IntList result = new IntList(gl.length);
+        FixBS filter = new FixBS(helper.matCount());
+        for (int i = 1; i < p; i++) {
+            filter.set(helper.mulCff(helper.unity(), i));
+        }
+        for (int i : gl) {
+            if (filter.get(i)) {
+                continue;
+            }
+            for (int j = 2; j < p; j++) {
+                filter.set(helper.mulCff(i, j));
+            }
+            result.add(i);
+        }
+        return result;
+    }
+
+    private void treeAlt(ModuloMatrixHelper helper, IntList subGl, Func func, IntList v, int[] partSpread, BiConsumer<int[], Func> sink) {
         int idx = func.sum();
         if (idx == partSpread.length) {
             sink.accept(partSpread, func);
@@ -427,20 +447,23 @@ public class TranslationPlane1Test {
         if (canStay) {
             Func next = func.inc();
             FixBS filter = new FixBS(helper.matCount());
-            for (int a : v) {
+            for (int j = 0; j < v.size(); j++) {
+                int a = v.get(j);
                 if (filter.get(a)) {
                     continue;
                 }
                 int[] newArr = partSpread.clone();
                 newArr[idx] = a;
-                List<Integer> newV = new ArrayList<>(v.size());
-                for (int b : v) {
-                    if (b > a && helper.hasInv(helper.sub(b, a))) {
+                IntList newV = new IntList(v.size());
+                for (int i = j + 1; i < v.size(); i++) {
+                    int b = v.get(i);
+                    if (helper.hasInv(helper.sub(b, a))) {
                         newV.add(b);
                     }
                 }
-                List<Integer> centralizer = new ArrayList<>(subGl.size());
-                for (int el : subGl) {
+                IntList centralizer = new IntList(subGl.size());
+                for (int i = 0; i < subGl.size(); i++) {
+                    int el = subGl.get(i);
                     int invEl = helper.inv(el);
                     int prod = helper.mul(helper.mul(invEl, a), el);
                     filter.set(prod);
@@ -463,8 +486,9 @@ public class TranslationPlane1Test {
         }
         if (canJump) {
             for (int possible : func.possibleJumps()) {
-                v = new ArrayList<>();
-                ex: for (int b : func.orbits[possible]) {
+                int[] orbit = func.orbits[possible];
+                v = new IntList(orbit.length);
+                ex: for (int b : orbit) {
                     for (int i = 0; i < idx; i++) {
                         int el = partSpread[i];
                         if (!helper.hasInv(helper.sub(b, el))) {
@@ -475,20 +499,23 @@ public class TranslationPlane1Test {
                 }
                 Func next = func.extendDom(possible);
                 FixBS filter = new FixBS(helper.matCount());
-                for (int a : v) {
+                for (int j = 0; j < v.size(); j++) {
+                    int a = v.get(j);
                     if (filter.get(a)) {
                         continue;
                     }
                     int[] newArr = partSpread.clone();
                     newArr[idx] = a;
-                    List<Integer> newV = new ArrayList<>(v.size());
-                    for (int b : v) {
-                        if (b > a && helper.hasInv(helper.sub(b, a))) {
+                    IntList newV = new IntList(v.size());
+                    for (int i = j + 1; i < v.size(); i++) {
+                        int b = v.get(i);
+                        if (helper.hasInv(helper.sub(b, a))) {
                             newV.add(b);
                         }
                     }
-                    List<Integer> centralizer = new ArrayList<>(subGl.size());
-                    for (int el : subGl) {
+                    IntList centralizer = new IntList(subGl.size());
+                    for (int i = 0; i < subGl.size(); i++) {
+                        int el = subGl.get(i);
                         int invEl = helper.inv(el);
                         int prod = helper.mul(helper.mul(invEl, a), el);
                         filter.set(prod);
@@ -512,7 +539,7 @@ public class TranslationPlane1Test {
         }
     }
 
-    private void treeAltNoSubGl(ModuloMatrixHelper helper, Func func, List<Integer> v, int[] partSpread, BiConsumer<int[], Func> sink) {
+    private void treeAltNoSubGl(ModuloMatrixHelper helper, Func func, IntList v, int[] partSpread, BiConsumer<int[], Func> sink) {
         int idx = func.sum();
         if (idx == partSpread.length) {
             sink.accept(partSpread, func);
@@ -522,11 +549,13 @@ public class TranslationPlane1Test {
         boolean canStay = func.canStay();
         if (canStay) {
             Func next = func.inc();
-            for (int a : v) {
+            for (int j = 0; j < v.size(); j++) {
+                int a = v.get(j);
                 int[] newArr = partSpread.clone();
                 newArr[idx] = a;
-                List<Integer> newV = new ArrayList<>(v.size());
-                for (int b : v) {
+                IntList newV = new IntList(v.size());
+                for (int i = j + 1; i < v.size(); i++) {
+                    int b = v.get(i);
                     if (b > a && helper.hasInv(helper.sub(b, a))) {
                         newV.add(b);
                     }
@@ -536,8 +565,9 @@ public class TranslationPlane1Test {
         }
         if (canJump) {
             for (int possible : func.possibleJumps()) {
-                v = new ArrayList<>();
-                ex: for (int b : func.orbits[possible]) {
+                int[] orbit = func.orbits[possible];
+                v = new IntList(orbit.length);
+                ex: for (int b : orbit) {
                     for (int i = 0; i < idx; i++) {
                         int el = partSpread[i];
                         if (!helper.hasInv(helper.sub(b, el))) {
@@ -547,11 +577,13 @@ public class TranslationPlane1Test {
                     v.add(b);
                 }
                 Func next = func.extendDom(possible);
-                for (int a : v) {
+                for (int j = 0; j < v.size(); j++) {
+                    int a = v.get(j);
                     int[] newArr = partSpread.clone();
                     newArr[idx] = a;
-                    List<Integer> newV = new ArrayList<>(v.size());
-                    for (int b : v) {
+                    IntList newV = new IntList(v.size());
+                    for (int i = j + 1; i < v.size(); i++) {
+                        int b = v.get(i);
                         if (b > a && helper.hasInv(helper.sub(b, a))) {
                             newV.add(b);
                         }

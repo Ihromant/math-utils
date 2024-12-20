@@ -24,4 +24,8 @@ public class IntList {
     public int get(int idx) {
         return arr[idx];
     }
+
+    public boolean isEmpty() {
+        return size == 0;
+    }
 }

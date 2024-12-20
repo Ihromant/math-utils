@@ -438,7 +438,7 @@ public class TranslationPlaneTest {
         tree(helper, filterGl(helper, p), helper.gl(), Arrays.stream(helper.v()).boxed().toList(), partSpread, 0, cons);
     }
 
-    public static List<Integer> filterGl(ModuloMatrixHelper helper, int p) {
+    private static List<Integer> filterGl(ModuloMatrixHelper helper, int p) {
         int[] gl = helper.gl();
         List<Integer> result = new ArrayList<>();
         FixBS filter = new FixBS(helper.matCount());
