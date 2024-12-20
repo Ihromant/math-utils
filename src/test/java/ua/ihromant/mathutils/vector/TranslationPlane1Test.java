@@ -330,7 +330,7 @@ public class TranslationPlane1Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            treeAlt(helper, orbits, TranslationPlaneTest.filterGl(helper, p), new Func(new int[]{min}, new int[]{0}, 1), Arrays.stream(orbits[min]).boxed().toList(), partSpread, 0, cons);
+            treeAlt(helper, TranslationPlaneTest.filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), Arrays.stream(orbits[min]).boxed().toList(), partSpread, cons);
         }
     }
 
@@ -354,18 +354,10 @@ public class TranslationPlane1Test {
         return find;
     }
 
-    private record Func(int[] dom, int[] rng, int len) {
-        private int sum() {
-            int result = 0;
-            for (int i : rng) {
-                result = result + i;
-            }
-            return result;
-        }
-
-        private int[] possibleJumps(int orbitsLength) {
-            FixBS possible = new FixBS(orbitsLength);
-            possible.set(0, orbitsLength);
+    private record Func(int[][] orbits, int[] dom, int[] rng, int len, int sum) {
+        private int[] possibleJumps() {
+            FixBS possible = new FixBS(orbits.length);
+            possible.set(0, orbits.length);
             int last = rng[len - 1];
             for (int used : dom) {
                 possible.clear(used);
@@ -376,8 +368,8 @@ public class TranslationPlane1Test {
             return possible.stream().toArray();
         }
 
-        private boolean canJump(int orbitsLength, int needed) {
-            return rng[len - 1] * (orbitsLength - len) + sum() >= needed;
+        private boolean canJump(int needed) {
+            return rng[len - 1] * (orbits.length - len) + sum >= needed;
         }
 
         private boolean canStay() {
@@ -404,7 +396,7 @@ public class TranslationPlane1Test {
         private Func inc() {
             int[] nextRng = rng.clone();
             nextRng[len - 1]++;
-            return new Func(dom, nextRng, len);
+            return new Func(orbits, dom, nextRng, len, sum + 1);
         }
 
         private Func extendDom(int next) {
@@ -412,7 +404,7 @@ public class TranslationPlane1Test {
             nextDom[len] = next;
             int[] nextRng = Arrays.copyOf(rng, len + 1);
             nextRng[len] = 1;
-            return new Func(nextDom, nextRng, len + 1);
+            return new Func(orbits, nextDom, nextRng, len + 1, sum + 1);
         }
 
         @Override
@@ -424,13 +416,14 @@ public class TranslationPlane1Test {
         }
     }
 
-    private void treeAlt(ModuloMatrixHelper helper, int[][] orbits, List<Integer> subGl, Func func, List<Integer> v, int[] partSpread, int idx, BiConsumer<int[], Func> sink) {
+    private void treeAlt(ModuloMatrixHelper helper, List<Integer> subGl, Func func, List<Integer> v, int[] partSpread, BiConsumer<int[], Func> sink) {
+        int idx = func.sum();
         int needed = partSpread.length - idx;
         if (needed == 0) {
             sink.accept(partSpread, func);
             return;
         }
-        boolean canJump = func.canJump(orbits.length, partSpread.length);
+        boolean canJump = func.canJump(partSpread.length);
         boolean canStay = func.canStay();
         if (canStay) {
             Func next = func.inc();
@@ -462,13 +455,13 @@ public class TranslationPlane1Test {
                         centralizer.add(el);
                     }
                 }
-                treeAlt(helper, orbits, centralizer, next, newV, newArr, idx + 1, sink);
+                treeAlt(helper, centralizer, next, newV, newArr, sink);
             }
         }
         if (canJump) {
-            for (int possible : func.possibleJumps(orbits.length)) {
+            for (int possible : func.possibleJumps()) {
                 v = new ArrayList<>();
-                ex: for (int b : orbits[possible]) {
+                ex: for (int b : func.orbits[possible]) {
                     for (int i = 0; i < idx; i++) {
                         int el = partSpread[i];
                         if (!helper.hasInv(helper.sub(b, el))) {
@@ -506,7 +499,7 @@ public class TranslationPlane1Test {
                             centralizer.add(el);
                         }
                     }
-                    treeAlt(helper, orbits, centralizer, next, newV, newArr, idx + 1, sink);
+                    treeAlt(helper, centralizer, next, newV, newArr, sink);
                 }
             }
         }
