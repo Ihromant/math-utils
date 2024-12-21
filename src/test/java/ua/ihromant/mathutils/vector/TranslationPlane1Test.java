@@ -704,14 +704,14 @@ public class TranslationPlane1Test {
                     Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
             int[][][] starts = br.lines().<int[][]>mapMulti((line, sink) -> {
                 String[] split = line.substring(1, line.length() - 1).split("] \\[");
-                int[] spt = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] spr = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
-                if (processed.contains(Arrays.stream(spt).boxed().toList())) {
+                if (processed.contains(Arrays.stream(spr).boxed().toList())) {
                     return;
                 }
                 int[][] res = new int[3][];
-                res[0] = spt;
+                res[0] = spr;
                 res[1] = dom;
                 res[2] = rng;
                 sink.accept(res);
