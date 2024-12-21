@@ -647,8 +647,8 @@ public class TranslationPlane1Test {
             for (FixBS comp : find.components()) {
                 int min = comp.nextSetBit(0);
                 Callback cons = (arr, func, subGl) -> {
-                    ps.println(Arrays.toString(Arrays.copyOf(arr, 3)) + " " + Arrays.toString(func.dom)
-                            + " " + Arrays.toString(func.rng) + " " + Arrays.toString(subGl.toArray()));
+                    ps.println(Arrays.toString(Arrays.copyOf(arr, func.sum())) + " " + Arrays.toString(func.dom)
+                            + " " + Arrays.toString(func.rng));
                 };
                 int[] partSpread = new int[pow - 2];
                 treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
