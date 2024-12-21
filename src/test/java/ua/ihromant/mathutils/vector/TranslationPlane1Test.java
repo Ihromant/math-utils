@@ -9,6 +9,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -304,7 +305,7 @@ public class TranslationPlane1Test {
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
         for (FixBS comp : find.components()) {
             int min = comp.nextSetBit(0);
-            BiConsumer<int[], Func> cons = (arr, vl) -> {
+            Callback cons = (arr, func, subGl) -> {
                 FixBS[] newBase = base.clone();
                 for (int i = 0; i < arr.length; i++) {
                     FixBS ln = new FixBS(sc);
@@ -318,7 +319,7 @@ public class TranslationPlane1Test {
                 int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
                 Liner l = new Liner(lines.length, lines);
                 if (TranslationPlaneTest.isDesargues(l, mc)) {
-                    System.out.println("Desargues " + Arrays.toString(arr) + " " + vl);
+                    System.out.println("Desargues " + Arrays.toString(arr) + " " + func);
                     return;
                 }
                 ProjChar chr = TranslationPlaneTest.newTranslation(counter.toString(), l, projData);
@@ -326,9 +327,9 @@ public class TranslationPlane1Test {
                     projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
                     counter.incrementAndGet();
                     System.out.println(chr);
-                    System.out.println(Arrays.toString(arr));
+                    System.out.println(Arrays.toString(arr) + " " + func);
                 } else {
-                    System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + vl);
+                    System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + func);
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
@@ -437,10 +438,24 @@ public class TranslationPlane1Test {
         return result;
     }
 
-    private void treeAlt(ModuloMatrixHelper helper, IntList subGl, Func func, IntList v, int[] partSpread, BiConsumer<int[], Func> sink) {
+    private static IntList filterOrbit(ModuloMatrixHelper helper, int[] partSpread, int[] orbit, int idx) {
+        IntList result = new IntList(orbit.length);
+        ex: for (int b : orbit) {
+            for (int i = 0; i < idx; i++) {
+                int el = partSpread[i];
+                if (!helper.hasInv(helper.sub(b, el))) {
+                    continue ex;
+                }
+            }
+            result.add(b);
+        }
+        return result;
+    }
+
+    private void treeAlt(ModuloMatrixHelper helper, IntList subGl, Func func, IntList v, int[] partSpread, Callback sink) {
         int idx = func.sum();
         if (idx == partSpread.length) {
-            sink.accept(partSpread, func);
+            sink.accept(partSpread, func, subGl);
             return;
         }
         boolean canJump = func.canJump(partSpread.length);
@@ -531,24 +546,10 @@ public class TranslationPlane1Test {
         }
     }
 
-    private static IntList filterOrbit(ModuloMatrixHelper helper, int[] partSpread, int[] orbit, int idx) {
-        IntList result = new IntList(orbit.length);
-        ex: for (int b : orbit) {
-            for (int i = 0; i < idx; i++) {
-                int el = partSpread[i];
-                if (!helper.hasInv(helper.sub(b, el))) {
-                    continue ex;
-                }
-            }
-            result.add(b);
-        }
-        return result;
-    }
-
-    private void treeAltNoSubGl(ModuloMatrixHelper helper, Func func, IntList v, int[] partSpread, BiConsumer<int[], Func> sink) {
+    private void treeAltNoSubGl(ModuloMatrixHelper helper, Func func, IntList v, int[] partSpread, Callback sink) {
         int idx = func.sum();
         if (idx == partSpread.length) {
-            sink.accept(partSpread, func);
+            sink.accept(partSpread, func, new IntList(0));
             return;
         }
         boolean canJump = func.canJump(partSpread.length);
@@ -591,6 +592,11 @@ public class TranslationPlane1Test {
         }
     }
 
+    @FunctionalInterface
+    private interface Callback {
+        void accept(int[] spread, Func func, IntList subGl);
+    }
+
     @Test
     public void dumpGl() throws IOException {
         int p = 2;
@@ -620,5 +626,33 @@ public class TranslationPlane1Test {
             });
         }
         return new TwoMatrixHelper(n, mapGl);
+    }
+
+    @Test
+    public void generateBegins() throws IOException {
+        int p = 2;
+        int n = 8;
+        int half = n / 2;
+        int pow = LinearSpace.pow(p, half);
+
+        int[][] orbits = readOrbits(pow);
+        ModuloMatrixHelper helper = readGl(p, half);
+        QuickFind find = orbitComponents(helper, orbits);
+        System.out.println("Components " + find.components());
+
+        File f = new File("/home/ihromant/maths/trans/", "begins-" + p + "^" + n + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            for (FixBS comp : find.components()) {
+                int min = comp.nextSetBit(0);
+                Callback cons = (arr, func, subGl) -> {
+                    ps.println(Arrays.toString(Arrays.copyOf(arr, 3)) + " " + Arrays.toString(func.dom)
+                            + " " + Arrays.toString(func.rng) + " " + Arrays.toString(subGl.toArray()));
+                };
+                int[] partSpread = new int[pow - 2];
+                treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
+            }
+        }
     }
 }

@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
+import java.util.Arrays;
+
 public class IntList {
     private final int[] arr;
     private int size = 0;
@@ -27,5 +29,9 @@ public class IntList {
 
     public boolean isEmpty() {
         return size == 0;
+    }
+    
+    public int[] toArray() {
+        return Arrays.copyOf(arr, size);
     }
 }
