@@ -649,6 +649,7 @@ public class TranslationPlane1Test {
                 Callback cons = (arr, func, subGl) -> {
                     ps.println(Arrays.toString(Arrays.copyOf(arr, func.sum())) + " " + Arrays.toString(func.dom)
                             + " " + Arrays.toString(func.rng));
+                    ps.flush();
                 };
                 int[] partSpread = new int[pow - 2];
                 treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
