@@ -19,9 +19,11 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -690,12 +692,35 @@ public class TranslationPlane1Test {
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            br.lines()/*.parallel()*/.forEach(line -> {
-                String[] split = line.substring(1, line.length() - 1).split("\\] \\[");
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + "processed.txt", true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream pris = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + "processed.txt");
+             InputStreamReader prisr = new InputStreamReader(pris);
+             BufferedReader prbr = new BufferedReader(prisr)) {
+            Set<List<Integer>> processed = new HashSet<>();
+            prbr.lines().forEach(line -> processed.add(
+                    Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
+            int[][][] starts = br.lines().<int[][]>mapMulti((line, sink) -> {
+                String[] split = line.substring(1, line.length() - 1).split("] \\[");
                 int[] spt = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
+                if (processed.contains(Arrays.stream(spt).boxed().toList())) {
+                    return;
+                }
+                int[][] res = new int[3][];
+                res[0] = spt;
+                res[1] = dom;
+                res[2] = rng;
+                sink.accept(res);
+            }).toArray(int[][][]::new);
+            System.out.println("Remaining " + starts.length);
+            Arrays.stream(starts).parallel().forEach(start -> {
+                int[] spt = start[0];
+                int[] dom = start[1];
+                int[] rng = start[2];
                 Func fn = new Func(orbits, dom, rng, dom.length, Arrays.stream(rng).sum());
                 int[] partSpread = new int[mini.cardinality() - 2];
                 System.arraycopy(spt, 0, partSpread, 0, spt.length);
@@ -727,6 +752,8 @@ public class TranslationPlane1Test {
                     }
                 };
                 treeAltNoSubGl(helper, fn, filterOrbit(helper, partSpread, orbits[dom[dom.length - 1]], fn.sum(), spt[spt.length - 1]), partSpread, cons);
+                ps.println(Arrays.toString(start[0]));
+                ps.flush();
             });
         }
         for (FixBS comp : find.components()) {
