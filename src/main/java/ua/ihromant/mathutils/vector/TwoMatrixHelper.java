@@ -11,7 +11,6 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     private final int[] gl;
     private final int[] mapGl;
     private final int[] v;
-    private final int[] vIdxes;
 
     public TwoMatrixHelper(int n) {
         this.n = n;
@@ -22,10 +21,6 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         System.out.println(gl.length);
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
-        this.vIdxes = new int[matCount];
-        for (int i = 0; i < v.length; i++) {
-            vIdxes[v[i]] = i;
-        }
         System.out.println(v.length);
     }
 
@@ -37,10 +32,6 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         this.mapGl = mapGl;
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
-        this.vIdxes = new int[matCount];
-        for (int i = 0; i < v.length; i++) {
-            vIdxes[v[i]] = i;
-        }
         System.out.println(v.length);
     }
 
@@ -119,11 +110,6 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
     @Override
     public int[] v() {
         return v;
-    }
-
-    @Override
-    public int[] vIdxes() {
-        return vIdxes;
     }
 
     private int mulMagic1(int a, int b) {

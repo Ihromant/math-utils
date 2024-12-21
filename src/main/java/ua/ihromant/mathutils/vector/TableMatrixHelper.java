@@ -16,7 +16,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
     private final int[] idxArr;
     private final int[] mapGl;
     private final int[] v;
-    private final int[] vIdxes;
 
     public TableMatrixHelper(int p, int n) {
         this.p = p;
@@ -50,10 +49,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
             }
         });
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
-        this.vIdxes = new int[matCount];
-        for (int i = 0; i < v.length; i++) {
-            vIdxes[v[i]] = i;
-        }
         System.out.println(v.length);
     }
 
@@ -126,11 +121,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
     @Override
     public int[] v() {
         return v;
-    }
-
-    @Override
-    public int[] vIdxes() {
-        return vIdxes;
     }
 
     private int[][] toMatrix(int a) {

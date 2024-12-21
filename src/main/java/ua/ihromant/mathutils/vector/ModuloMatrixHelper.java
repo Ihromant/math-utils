@@ -27,8 +27,6 @@ public interface ModuloMatrixHelper {
 
     int[] v();
 
-    int[] vIdxes();
-
     default int fromVec(int[] vec) {
         int result = 0;
         for (int i = 0; i < n(); i++) {
