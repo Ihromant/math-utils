@@ -438,12 +438,12 @@ public class TranslationPlane1Test {
         return result;
     }
 
-    private static IntList filterOrbit(ModuloMatrixHelper helper, int[] partSpread, int[] orbit, int idx) {
+    private static IntList filterOrbit(ModuloMatrixHelper helper, int[] partSpread, int[] orbit, int idx, int min) {
         IntList result = new IntList(orbit.length);
         ex: for (int b : orbit) {
             for (int i = 0; i < idx; i++) {
                 int el = partSpread[i];
-                if (!helper.hasInv(helper.sub(b, el))) {
+                if (b <= min || !helper.hasInv(helper.sub(b, el))) {
                     continue ex;
                 }
             }
@@ -503,7 +503,7 @@ public class TranslationPlane1Test {
         if (canJump) {
             for (int possible : func.possibleJumps()) {
                 int[] orbit = func.orbits[possible];
-                v = filterOrbit(helper, partSpread, orbit, idx);
+                v = filterOrbit(helper, partSpread, orbit, idx, 0);
                 Func next = func.extendDom(possible);
                 FixBS filter = new FixBS(helper.matCount());
                 for (int j = 0; j < v.size(); j++) {
@@ -573,7 +573,7 @@ public class TranslationPlane1Test {
         if (canJump) {
             for (int possible : func.possibleJumps()) {
                 int[] orbit = func.orbits[possible];
-                v = filterOrbit(helper, partSpread, orbit, idx);
+                v = filterOrbit(helper, partSpread, orbit, idx, 0);
                 Func next = func.extendDom(possible);
                 for (int j = 0; j < v.size(); j++) {
                     int a = v.get(j);
@@ -654,6 +654,112 @@ public class TranslationPlane1Test {
                 int[] partSpread = new int[pow - 2];
                 treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
             }
+        }
+    }
+
+    @Test
+    public void generateByBegins() throws IOException {
+        int p = 2;
+        int n = 8;
+        int half = n / 2;
+        LinearSpace mini = LinearSpace.of(p, half);
+        LinearSpace sp = LinearSpace.of(p, n);
+        int sc = sp.cardinality();
+        int mc = mini.cardinality();
+
+        int[][] orbits = readOrbits(mc);
+        ModuloMatrixHelper helper = readGl(p, half);
+        QuickFind find = orbitComponents(helper, orbits);
+        System.out.println("Components " + find.components());
+
+        FixBS first = new FixBS(sc);
+        first.set(0, mc);
+        FixBS second = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            second.set(i * mc);
+        }
+        FixBS third = new FixBS(sc);
+        for (int i = 0; i < mc; i++) {
+            third.set(mc * i + i);
+        }
+        FixBS[] base = new FixBS[mc + 1];
+        base[0] = first;
+        base[1] = second;
+        base[2] = third;
+        AtomicInteger counter = new AtomicInteger();
+        Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            br.lines()/*.parallel()*/.forEach(line -> {
+                String[] split = line.substring(1, line.length() - 1).split("\\] \\[");
+                int[] spt = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
+                Func fn = new Func(orbits, dom, rng, dom.length, Arrays.stream(rng).sum());
+                int[] partSpread = new int[mini.cardinality() - 2];
+                System.arraycopy(spt, 0, partSpread, 0, spt.length);
+                Callback cons = (arr, func, subGl) -> {
+                    FixBS[] newBase = base.clone();
+                    for (int i = 0; i < arr.length; i++) {
+                        FixBS ln = new FixBS(sc);
+                        int a = arr[i];
+                        for (int x = 1; x < mc; x++) {
+                            int ax = helper.mulVec(a, x);
+                            ln.set(ax * mc + x);
+                        }
+                        newBase[i + 3] = ln;
+                    }
+                    int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
+                    Liner l = new Liner(lines.length, lines);
+                    if (TranslationPlaneTest.isDesargues(l, mc)) {
+                        System.out.println("Desargues " + Arrays.toString(arr) + " " + func);
+                        return;
+                    }
+                    ProjChar chr = TranslationPlaneTest.newTranslation(counter.toString(), l, projData);
+                    if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
+                        projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                        counter.incrementAndGet();
+                        System.out.println(chr);
+                        System.out.println(Arrays.toString(arr) + " " + func);
+                    } else {
+                        System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + func);
+                    }
+                };
+                treeAltNoSubGl(helper, fn, filterOrbit(helper, partSpread, orbits[dom[dom.length - 1]], fn.sum(), spt[spt.length - 1]), partSpread, cons);
+            });
+        }
+        for (FixBS comp : find.components()) {
+            int min = comp.nextSetBit(0);
+            Callback cons = (arr, func, subGl) -> {
+                FixBS[] newBase = base.clone();
+                for (int i = 0; i < arr.length; i++) {
+                    FixBS ln = new FixBS(sc);
+                    int a = arr[i];
+                    for (int x = 1; x < mc; x++) {
+                        int ax = helper.mulVec(a, x);
+                        ln.set(ax * mc + x);
+                    }
+                    newBase[i + 3] = ln;
+                }
+                int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
+                Liner l = new Liner(lines.length, lines);
+                if (TranslationPlaneTest.isDesargues(l, mc)) {
+                    System.out.println("Desargues " + Arrays.toString(arr) + " " + func);
+                    return;
+                }
+                ProjChar chr = TranslationPlaneTest.newTranslation(counter.toString(), l, projData);
+                if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
+                    projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
+                    counter.incrementAndGet();
+                    System.out.println(chr);
+                    System.out.println(Arrays.toString(arr) + " " + func);
+                } else {
+                    System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + func);
+                }
+            };
+            int[] partSpread = new int[mini.cardinality() - 2];
+            treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
         }
     }
 }
