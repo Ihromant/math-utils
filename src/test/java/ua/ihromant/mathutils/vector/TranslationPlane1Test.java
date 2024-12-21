@@ -758,37 +758,5 @@ public class TranslationPlane1Test {
                 ps.flush();
             });
         }
-        for (FixBS comp : find.components()) {
-            int min = comp.nextSetBit(0);
-            Callback cons = (arr, func, subGl) -> {
-                FixBS[] newBase = base.clone();
-                for (int i = 0; i < arr.length; i++) {
-                    FixBS ln = new FixBS(sc);
-                    int a = arr[i];
-                    for (int x = 1; x < mc; x++) {
-                        int ax = helper.mulVec(a, x);
-                        ln.set(ax * mc + x);
-                    }
-                    newBase[i + 3] = ln;
-                }
-                int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
-                Liner l = new Liner(lines.length, lines);
-                if (TranslationPlaneTest.isDesargues(l, mc)) {
-                    System.out.println("Desargues " + Arrays.toString(arr) + " " + func);
-                    return;
-                }
-                ProjChar chr = TranslationPlaneTest.newTranslation(counter.toString(), l, projData);
-                if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
-                    projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new ArrayList<>()).add(chr);
-                    counter.incrementAndGet();
-                    System.out.println(chr);
-                    System.out.println(Arrays.toString(arr) + " " + func);
-                } else {
-                    System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + func);
-                }
-            };
-            int[] partSpread = new int[mini.cardinality() - 2];
-            treeAlt(helper, filterGl(helper, p), new Func(orbits, new int[]{min}, new int[]{0}, 1, 0), new IntList(orbits[min]), partSpread, cons);
-        }
     }
 }
