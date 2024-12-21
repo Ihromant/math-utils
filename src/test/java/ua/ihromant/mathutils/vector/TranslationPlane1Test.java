@@ -721,9 +721,11 @@ public class TranslationPlane1Test {
                 int[] spt = start[0];
                 int[] dom = start[1];
                 int[] rng = start[2];
-                Func fn = new Func(orbits, dom, rng, dom.length, Arrays.stream(rng).sum());
                 int[] partSpread = new int[mini.cardinality() - 2];
-                System.arraycopy(spt, 0, partSpread, 0, spt.length);
+                int sz = spt.length;
+                System.arraycopy(spt, 0, partSpread, 0, sz);
+                Func fn = new Func(Arrays.stream(orbits).map(full -> filterOrbit(helper, partSpread, full, sz, 0)
+                        .toArray()).toArray(int[][]::new), dom, rng, dom.length, sz);
                 Callback cons = (arr, func, subGl) -> {
                     FixBS[] newBase = base.clone();
                     for (int i = 0; i < arr.length; i++) {
@@ -751,7 +753,7 @@ public class TranslationPlane1Test {
                         System.out.println("Existing " + chr.name() + " " + Arrays.toString(arr) + " " + func);
                     }
                 };
-                treeAltNoSubGl(helper, fn, filterOrbit(helper, partSpread, orbits[dom[dom.length - 1]], fn.sum(), spt[spt.length - 1]), partSpread, cons);
+                treeAltNoSubGl(helper, fn, filterOrbit(helper, partSpread, fn.orbits()[dom[dom.length - 1]], sz, partSpread[sz - 1]), partSpread, cons);
                 ps.println(Arrays.toString(start[0]));
                 ps.flush();
             });
