@@ -657,14 +657,12 @@ public class TranslationPlaneTest {
                     }
                 };
                 int[] partSpread = new int[mini.cardinality() - 2 - start.length];
-                int last = start[start.length - 1];
                 int[] v = helper.v();
-                int[] newV = new int[v.length - helper.vIdxes()[last]];
+                int[] newV = new int[v.length];
                 int newVSize = 0;
-                ex: for (int i = helper.vIdxes()[last] + 1; i < v.length; i++) {
-                    int b = v[i];
+                ex: for (int b : v) {
                     for (int a : start) {
-                        if (!helper.hasInv(helper.sub(b, a))) {
+                        if (b <= a || !helper.hasInv(helper.sub(b, a))) {
                             continue ex;
                         }
                     }
