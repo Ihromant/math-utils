@@ -474,6 +474,7 @@ public class TranslationPlane1Test {
 
     @Test
     public void generateByBegins() throws IOException {
+        String suffix = "";
         int p = 2;
         int n = 8;
         int half = n / 2;
@@ -503,13 +504,13 @@ public class TranslationPlane1Test {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
-        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + ".txt");
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + suffix + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr);
-             FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + "processed.txt", true);
+             FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + suffix + "processed.txt", true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos);
-             FileInputStream pris = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + "processed.txt");
+             FileInputStream pris = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + suffix + "processed.txt");
              InputStreamReader prisr = new InputStreamReader(pris);
              BufferedReader prbr = new BufferedReader(prisr)) {
             Set<List<Integer>> processed = new HashSet<>();
