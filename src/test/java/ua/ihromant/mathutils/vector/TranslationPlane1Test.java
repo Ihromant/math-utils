@@ -116,7 +116,8 @@ public class TranslationPlane1Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            tree(helper, filterGl(helper, p), new State(orbits, partSpread, new int[]{min}, new int[]{0}, 1, 0), cons);
+            tree(helper, filterGl(helper, p), new State(orbits, partSpread, new int[]{min}, new int[]{0}, 1, 0,
+                    Arrays.stream(orbits).mapToInt(IntList::size).sum()), cons);
         }
     }
 
@@ -155,7 +156,7 @@ public class TranslationPlane1Test {
         return find;
     }
 
-    private record State(IntList[] orbits, int[] partSpread, int[] dom, int[] rng, int len, int sum) {
+    private record State(IntList[] orbits, int[] partSpread, int[] dom, int[] rng, int len, int sum, int vCnt) {
         private int[] possibleJumps() {
             FixBS possible = new FixBS(orbits.length);
             possible.set(0, orbits.length);
@@ -167,6 +168,10 @@ public class TranslationPlane1Test {
                 possible.clear(0, dom[len - 1]);
             }
             return possible.stream().toArray();
+        }
+
+        private boolean cantContinue() {
+            return vCnt + sum < partSpread.length;
         }
 
         private boolean canJump() {
@@ -197,7 +202,7 @@ public class TranslationPlane1Test {
         private State stay() {
             int[] nextRng = rng.clone();
             nextRng[len - 1]++;
-            return new State(orbits, partSpread, dom, nextRng, len, sum);
+            return new State(orbits, partSpread, dom, nextRng, len, sum, vCnt);
         }
 
         private State jump(int next) {
@@ -207,7 +212,7 @@ public class TranslationPlane1Test {
             nextDom[len] = next;
             int[] nextRng = Arrays.copyOf(rng, len + 1);
             nextRng[len] = 1;
-            return new State(nextOrbits, partSpread, nextDom, nextRng, len + 1, sum);
+            return new State(nextOrbits, partSpread, nextDom, nextRng, len + 1, sum, vCnt - orbits[dom[len - 1]].size());
         }
 
         private IntList currV() {
@@ -220,6 +225,7 @@ public class TranslationPlane1Test {
             int[] newSpread = partSpread.clone();
             newSpread[sum] = a;
             IntList[] filteredOrbits = new IntList[orbits.length];
+            int newCnt = 0;
             for (int i = 0; i < orbits.length; i++) {
                 IntList oldOrbit = orbits[i];
                 if (oldOrbit == null) {
@@ -234,8 +240,9 @@ public class TranslationPlane1Test {
                     }
                 }
                 filteredOrbits[i] = filteredOrbit;
+                newCnt = newCnt + filteredOrbit.size();
             }
-            return new State(filteredOrbits, newSpread, dom, rng, len, sum + 1);
+            return new State(filteredOrbits, newSpread, dom, rng, len, sum + 1, newCnt);
         }
 
         private boolean isFull() {
@@ -287,6 +294,9 @@ public class TranslationPlane1Test {
 
     private void tree(ModuloMatrixHelper helper, IntList subGl, State state, Callback sink) {
         int idx = state.sum();
+        if (state.cantContinue()) {
+            return;
+        }
         if (state.isFull()) {
             sink.accept(state, subGl);
             return;
@@ -364,6 +374,9 @@ public class TranslationPlane1Test {
     }
 
     private void treeSimple(ModuloMatrixHelper helper, State state, Callback sink) {
+        if (state.cantContinue()) {
+            return;
+        }
         if (state.isFull()) {
             sink.accept(state, new IntList(0));
             return;
@@ -451,7 +464,8 @@ public class TranslationPlane1Test {
                     ps.flush();
                 };
                 int[] partSpread = new int[pow - 2];
-                tree(helper, filterGl(helper, p), new State(orbits, partSpread, new int[]{min}, new int[]{0}, 1, 0), cons);
+                tree(helper, filterGl(helper, p), new State(orbits, partSpread, new int[]{min}, new int[]{0}, 1, 0,
+                        Arrays.stream(orbits).mapToInt(IntList::size).sum()), cons);
             }
         }
     }
@@ -527,12 +541,14 @@ public class TranslationPlane1Test {
                     nulls.set(dom[i]);
                 }
                 int last = dom[li];
-                State st = new State(IntStream.range(0, orbits.length).mapToObj(idx -> {
+                IntList[] filteredOrbits = IntStream.range(0, orbits.length).mapToObj(idx -> {
                     if (nulls.get(idx)) {
                         return null;
                     }
                     return filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
-                }).toArray(IntList[]::new), partSpread, dom, rng, dom.length, sz);
+                }).toArray(IntList[]::new);
+                State st = new State(filteredOrbits, partSpread, dom, rng, dom.length, sz,
+                        Arrays.stream(filteredOrbits).filter(Objects::nonNull).mapToInt(IntList::size).sum());
                 Callback cons = (state, subGl) -> {
                     FixBS[] newBase = base.clone();
                     int[] arr = state.partSpread();
