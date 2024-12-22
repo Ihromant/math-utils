@@ -585,4 +585,69 @@ public class TranslationPlane1Test {
             });
         }
     }
+
+    @Test
+    public void breed() throws IOException {
+        int p = 2;
+        int n = 10;
+        int half = n / 2;
+        int pow = LinearSpace.pow(p, half);
+
+        IntList[] orbits = readOrbits(pow);
+        ModuloMatrixHelper helper = readGl(p, half);
+        QuickFind find = orbitComponents(helper, orbits);
+        System.out.println("Components " + find.components());
+
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + "breed.txt");
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            int[][][] starts = br.lines().<int[][]>mapMulti((line, sink) -> {
+                String[] split = line.substring(1, line.length() - 1).split("] \\[");
+                int[] spr = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
+                if (spr.length != 4) {
+                    return;
+                }
+                int[][] res = new int[3][];
+                res[0] = spr;
+                res[1] = dom;
+                res[2] = rng;
+                sink.accept(res);
+            }).toArray(int[][][]::new);
+            System.out.println("To breed " + starts.length);
+            Arrays.stream(starts).forEach(start -> {
+                int[] spt = start[0];
+                int[] dom = start[1];
+                int[] rng = start[2];
+                int[] partSpread = new int[pow - 2];
+                int sz = spt.length;
+                System.arraycopy(spt, 0, partSpread, 0, sz);
+                FixBS nulls = new FixBS(orbits.length);
+                int li = dom.length - 1;
+                for (int i = 0; i < li; i++) {
+                    nulls.set(dom[i]);
+                }
+                int last = dom[li];
+                IntList[] filteredOrbits = IntStream.range(0, orbits.length).mapToObj(idx -> {
+                    if (nulls.get(idx)) {
+                        return null;
+                    }
+                    return filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
+                }).toArray(IntList[]::new);
+                State st = new State(filteredOrbits, partSpread, dom, rng, dom.length, sz,
+                        Arrays.stream(filteredOrbits).filter(Objects::nonNull).mapToInt(IntList::size).sum());
+                Callback cons = (state, subGl) -> {
+                    int[] arr = state.partSpread();
+                    ps.println(Arrays.toString(Arrays.copyOf(arr, state.sum())) + " " + Arrays.toString(state.dom)
+                            + " " + Arrays.toString(state.rng));
+                    ps.flush();
+                };
+                treeSimple(helper, st, cons);
+            });
+        }
+    }
 }
