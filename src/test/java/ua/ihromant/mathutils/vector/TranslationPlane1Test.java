@@ -157,7 +157,7 @@ public class TranslationPlane1Test {
     }
 
     private record State(IntList[] orbits, int[] partSpread, int[] dom, int[] rng, int len, int sum, int vCnt) {
-        private int[] possibleJumps() {
+        private FixBS possibleJumps() {
             FixBS possible = new FixBS(orbits.length);
             possible.set(0, orbits.length);
             int last = rng[len - 1];
@@ -167,7 +167,7 @@ public class TranslationPlane1Test {
             if (last == 1) {
                 possible.clear(0, dom[len - 1]);
             }
-            return possible.stream().toArray();
+            return possible;
         }
 
         private boolean cantContinue() {
@@ -337,7 +337,8 @@ public class TranslationPlane1Test {
             }
         }
         if (canJump) {
-            for (int possible : state.possibleJumps()) {
+            FixBS possibleJumps = state.possibleJumps();
+            for (int possible = possibleJumps.nextSetBit(0); possible >= 0; possible = possibleJumps.nextSetBit(possible + 1)) {
                 State baseNext = state.jump(possible);
                 IntList v = baseNext.currV();
                 FixBS filter = new FixBS(helper.matCount());
@@ -392,7 +393,8 @@ public class TranslationPlane1Test {
             }
         }
         if (canJump) {
-            for (int possible : state.possibleJumps()) {
+            FixBS possibleJumps = state.possibleJumps();
+            for (int possible = possibleJumps.nextSetBit(0); possible >= 0; possible = possibleJumps.nextSetBit(possible + 1)) {
                 State baseNext = state.jump(possible);
                 IntList v = baseNext.currV();
                 for (int j = 0; j < v.size(); j++) {
