@@ -544,12 +544,13 @@ public class TranslationPlane1Test {
                     nulls.set(dom[i]);
                 }
                 int last = dom[li];
-                IntList[] filteredOrbits = IntStream.range(0, orbits.length).mapToObj(idx -> {
+                IntList[] filteredOrbits = new IntList[orbits.length];
+                for (int idx = 0; idx < filteredOrbits.length; idx++) {
                     if (nulls.get(idx)) {
-                        return null;
+                        continue;
                     }
-                    return filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
-                }).toArray(IntList[]::new);
+                    filteredOrbits[idx] = filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
+                }
                 State st = new State(filteredOrbits, partSpread, dom, rng, dom.length, sz,
                         Arrays.stream(filteredOrbits).filter(Objects::nonNull).mapToInt(IntList::size).sum());
                 Callback cons = (state, subGl) -> {
