@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
@@ -568,6 +569,26 @@ public class BatchLinerTest {
             }
         }
         return designs;
+    }
+
+    private List<Liner> cdfForGroup(Group group, int k) throws IOException {
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/diffSets/beg/" + k + "-" + group.name() + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            return br.lines().filter(l -> l.indexOf('[') >= 0).map(line -> {
+                int v = group.order();
+                String[] split = line.substring(2, line.length() - 2).split("], \\[");
+                int[][] des = Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                return Liner.byDiffFamily(group, des);
+            }).toList();
+        }
+    }
+
+    @Test
+    public void testDesigns() throws IOException {
+        Group gr = new GroupProduct(11, 11);
+        List<Liner> liners = cdfForGroup(gr, 5);
+        liners.forEach(l -> System.out.println(l.hyperbolicIndex()));
     }
 
     @Test
