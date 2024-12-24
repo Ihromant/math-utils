@@ -152,10 +152,11 @@ public class BibdFinder1CyclicTest {
             FixBS newWhiteList = whiteList.copy();
             int[] nextTuple = nextCurr.curr();
             int idx = curr.idx;
+            int invEl = group.inv(el);
             for (int i = 0; i < idx; i++) {
                 int val = nextTuple[i];
                 int diff = group.op(el, group.inv(val));
-                int outDiff = group.op(val, group.inv(el));
+                int outDiff = group.op(val, invEl);
                 for (int rt : group.squareRoots(diff)) {
                     newWhiteList.clear(group.op(val, rt));
                 }
@@ -174,7 +175,6 @@ public class BibdFinder1CyclicTest {
                 newWhiteList.clear(group.op(el, diff));
                 newWhiteList.clear(group.op(el, group.inv(diff)));
             }
-            newWhiteList.clear(0, el + 1);
             State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
             if (tupleFinished) {
                 if (nextCurr.lastBlock()) {
