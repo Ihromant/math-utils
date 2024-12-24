@@ -126,7 +126,7 @@ public class BibdFinder1CyclicTest {
                         res[i] = aut[arr[i]];
                     }
                     Arrays.sort(res);
-                    return res;
+                    return minimalTuple(res, group);
                 }).toArray(int[][]::new);
                 return new Design(transformed, k, blockIdx).initiateNew(k, blockIdx);
             }).toArray(Design[]::new);
@@ -242,7 +242,7 @@ public class BibdFinder1CyclicTest {
     public void logNotEqCycles() throws IOException {
         Group group = new GroupProduct(11, 11);
         int k = 5;
-        File f = new File("/home/ihromant/maths/diffSets/beg", k + "-" + group.name() + "beg.txt");
+        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
@@ -327,8 +327,8 @@ public class BibdFinder1CyclicTest {
         Group gr = new CyclicGroup(13);
         int v = gr.order();
         int k = 3;
-        File f = new File("/home/ihromant/maths/diffSets/beg", k + "-" + gr.name() + ".txt");
-        File beg = new File("/home/ihromant/maths/diffSets/beg", k + "-" + gr.name() + "beg.txt");
+        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
+        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos);
@@ -341,7 +341,7 @@ public class BibdFinder1CyclicTest {
             Set<FixBS> set = allBr.lines().map(l -> FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
                     .mapToInt(Integer::parseInt).toArray())).collect(Collectors.toSet());
             br.lines().forEach(l -> {
-                if (l.length() > 40) {
+                if (l.contains("[[")) {
                     System.out.println(l);
                 } else {
                     set.remove(FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
