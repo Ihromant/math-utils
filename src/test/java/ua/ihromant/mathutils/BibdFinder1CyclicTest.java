@@ -298,12 +298,10 @@ public class BibdFinder1CyclicTest {
 
     private static FixBS baseFilter(Group gr, int k) {
         int v = gr.order();
-        int sqrt = (int) Math.round(Math.sqrt(k));
-        int cbrt = (int) Math.round(Math.cbrt(k));
         FixBS filter = new FixBS(v);
         for (int i = 0; i < v; i++) {
             int ord = gr.order(i);
-            if (ord == k || (sqrt * sqrt == k && ord == sqrt) || (cbrt * cbrt * cbrt == k && ord == cbrt)) {
+            if (ord != 1 && k % ord == 0) {
                 filter.set(i);
             }
         }

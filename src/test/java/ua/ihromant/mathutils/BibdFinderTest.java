@@ -133,7 +133,7 @@ public class BibdFinderTest {
                         return unique.contains(result);
                     })) {
                         unique.add(Arrays.stream(diffs).map(BibdFinderTest::of).collect(Collectors.toSet()));
-                        ps.println(Arrays.stream(diffs).map(arr -> of(arr).toString())
+                        ps.println(Arrays.stream(diffs).sorted(Comparator.comparingInt(arr -> arr[1])).map(arr -> of(arr).toString())
                                 .collect(Collectors.joining(", ", "{", "}")));
                         counter.incrementAndGet();
                     }
