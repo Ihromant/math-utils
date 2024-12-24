@@ -25,27 +25,18 @@ import java.util.stream.IntStream;
 public class BibdFinder1CyclicTest {
     private record Design(int[][] design, int idx, int blockIdx) {
         private boolean bigger(Design candidate) {
-            int unf = candidate.blockIdx;
-            int[] cand = candidate.design[unf];
-            int[] block = design[unf];
-            int cmp = compare(cand, block, idx);
-            while (cmp == 0 && ++unf <= blockIdx) {
-                cand = candidate.design[unf];
-                block = design[unf];
-                cmp = compare(cand, block, unf == blockIdx ? idx : block.length);
-                unf++;
-            }
-            return cmp < 0;
-        }
-
-        private int compare(int[] fst, int[] snd, int cap) {
-            for (int i = 1; i < cap; i++) {
-                int dff = fst[i] - snd[i];
-                if (dff != 0) {
-                    return dff;
+            int unf = 0;
+            int cmp;
+            do {
+                int[] cnd = candidate.design[unf];
+                int[] block = design[unf];
+                boolean notFull = unf == blockIdx || unf == candidate.blockIdx;
+                cmp = compare(cnd, block, notFull ? idx : block.length);
+                if (cmp == 0 && unf == candidate.blockIdx && unf != blockIdx && idx != block.length) {
+                    cmp = 1;
                 }
-            }
-            return 0;
+            } while (cmp == 0 && unf++ < blockIdx);
+            return cmp < 0;
         }
 
         private Design simpleAdd(int el) {
@@ -56,20 +47,21 @@ public class BibdFinder1CyclicTest {
             return new Design(cloned, idx + 1, blockIdx);
         }
 
-        private Design add(int el) {
+        private Design add(int el, Group group) {
             int[][] cloned = design.clone();
             int newIdx = blockIdx;
             int[] unf = cloned[newIdx].clone();
             int pos = -Arrays.binarySearch(unf, 0, idx, el) - 1;
             System.arraycopy(unf, pos, unf, pos + 1, idx - pos);
             unf[pos] = el;
-            if (pos == 1) {
-                while (newIdx > 0 && el < cloned[newIdx - 1][1]) {
-                    newIdx--;
-                }
-                if (newIdx != blockIdx) {
-                    System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
-                }
+            if (idx + 1 == unf.length) {
+                unf = minimalTuple(unf, group);
+            }
+            while (newIdx > 0 && unf[1] < cloned[newIdx - 1][1]) {
+                newIdx--;
+            }
+            if (newIdx != blockIdx) {
+                System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
             }
             cloned[newIdx] = unf;
             return new Design(cloned, idx + 1, newIdx);
@@ -147,7 +139,7 @@ public class BibdFinder1CyclicTest {
             Design[] nextTransformations = new Design[transformations.length];
             boolean tupleFinished = nextCurr.tupleFinished();
             for (int i = 0; i < transformations.length; i++) {
-                Design nextTransformation = transformations[i].add(auth[i][el]);
+                Design nextTransformation = transformations[i].add(auth[i][el], group);
                 if (nextCurr.bigger(nextTransformation)) {
                     return null;
                 }
@@ -202,6 +194,40 @@ public class BibdFinder1CyclicTest {
         }
     }
 
+    private static int compare(int[] fst, int[] snd, int cap) {
+        for (int i = 1; i < cap; i++) {
+            int dff = fst[i] - snd[i];
+            if (dff != 0) {
+                return dff;
+            }
+        }
+        return 0;
+    }
+
+    private static int[] minimalTuple(int[] arr, Group gr) {
+        int[] min = arr;
+        int len = min.length;
+        for (int sub : arr) {
+            int inv = gr.inv(sub);
+            int[] cand = new int[len];
+            int minDiff = Integer.MAX_VALUE;
+            for (int i = 0; i < len; i++) {
+                int diff = gr.op(arr[i], inv);
+                cand[i] = diff;
+                if (diff != 0 && diff < minDiff) {
+                    minDiff = diff;
+                }
+            }
+            if (minDiff <= min[1]) {
+                Arrays.sort(cand);
+                if (compare(cand, min, len) < 0) {
+                    min = cand;
+                }
+            }
+        }
+        return min;
+    }
+
     private static void calcCycles(Group group, int[][] auth, int v, int k, State state, Consumer<State> sink) {
         FixBS whiteList = state.whiteList();
         for (int idx = whiteList.nextSetBit(state.curr.lastVal()); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
@@ -226,15 +252,15 @@ public class BibdFinder1CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new CyclicGroup(91);
-        int k = 6;
+        Group group = new GroupProduct(5, 5);
+        int k = 4;
         logFirstCycles(System.out, group, k);
     }
 
     @Test
     public void logAllCycles() {
-        Group group = new CyclicGroup(91);
-        int k = 6;
+        Group group = new GroupProduct(7, 7);
+        int k = 4;
         logAllCycles(System.out, group, k);
     }
 
