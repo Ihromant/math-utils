@@ -266,13 +266,7 @@ public class FixBS implements Comparable<FixBS> {
 
     @Override
     public String toString() {
-        final int MAX_INITIAL_CAPACITY = Integer.MAX_VALUE - 8;
-        int numBits = (words.length > 128) ?
-                cardinality() : words.length * BITS_PER_WORD;
-        // Avoid overflow in the case of a humongous numBits
-        int initialCapacity = (numBits <= (MAX_INITIAL_CAPACITY - 2) / 6) ?
-                6 * numBits + 2 : MAX_INITIAL_CAPACITY;
-        StringBuilder b = new StringBuilder(initialCapacity);
+        StringBuilder b = new StringBuilder();
         b.append('{');
 
         int i = nextSetBit(0);

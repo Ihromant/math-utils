@@ -15,155 +15,201 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BibdFinder1CyclicTest {
-    private static void calcCycles(Group group, int needed, FixBS filter, FixBS whiteList, int[] tuple, Consumer<int[]> sink) {
-        int tl = tuple.length;
-        int lastVal = tuple[tl - 1];
-        if (whiteList.cardinality() < needed) {
-            return;
+    private record Design(int[][] design, int idx, int blockIdx) {
+        private boolean bigger(Design candidate) {
+            int unf = candidate.blockIdx;
+            int[] cand = candidate.design[unf];
+            int[] block = design[unf];
+            int cmp = compare(cand, block, idx);
+            while (cmp == 0 && ++unf <= blockIdx) {
+                cand = candidate.design[unf];
+                block = design[unf];
+                cmp = compare(cand, block, unf == blockIdx ? idx : block.length);
+                unf++;
+            }
+            return cmp < 0;
         }
-        for (int idx = whiteList.nextSetBit(lastVal + 1); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
-            int[] nextTuple = Arrays.copyOf(tuple, tl + 1);
-            nextTuple[tl] = idx;
-            if (needed == 1) {
-                sink.accept(nextTuple);
-                continue;
+
+        private int compare(int[] fst, int[] snd, int cap) {
+            for (int i = 1; i < cap; i++) {
+                int dff = fst[i] - snd[i];
+                if (dff != 0) {
+                    return dff;
+                }
+            }
+            return 0;
+        }
+
+        private Design simpleAdd(int el) {
+            int[][] cloned = design.clone();
+            int[] last = cloned[blockIdx].clone();
+            last[idx] = el;
+            cloned[blockIdx] = last;
+            return new Design(cloned, idx + 1, blockIdx);
+        }
+
+        private Design add(int el) {
+            int[][] cloned = design.clone();
+            int newIdx = blockIdx;
+            int[] unf = cloned[newIdx].clone();
+            int pos = -Arrays.binarySearch(unf, 0, idx, el) - 1;
+            System.arraycopy(unf, pos, unf, pos + 1, idx - pos);
+            unf[pos] = el;
+            if (pos == 1) {
+                while (newIdx > 0 && el < cloned[newIdx - 1][1]) {
+                    newIdx--;
+                }
+                if (newIdx != blockIdx) {
+                    System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
+                }
+            }
+            cloned[newIdx] = unf;
+            return new Design(cloned, idx + 1, newIdx);
+        }
+
+        private Design initiateNew(int k, int blockIdx) {
+            int[][] newDesign = design.clone();
+            newDesign[blockIdx] = new int[k];
+            return new Design(newDesign, 1, blockIdx);
+        }
+
+        private int[] curr() {
+            return design[blockIdx];
+        }
+
+        private boolean tupleFinished() {
+            return idx == design[blockIdx].length;
+        }
+
+        private boolean lastBlock() {
+            return blockIdx + 1 == design.length;
+        }
+
+        private int lastVal() {
+            return design[blockIdx][idx - 1];
+        }
+
+        @Override
+        public String toString() {
+            return "(" + Arrays.deepToString(design) + ", " + idx + ", " + blockIdx + ")";
+        }
+    }
+
+    private record State(Design curr, FixBS filter, FixBS whiteList, Design[] transformations) {
+        private static State forDesign(Group group, int[][] auths, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
+            int v = group.order();
+            int[][] nextDesign = baseDesign.clone();
+            nextDesign[blockIdx] = new int[k];
+            FixBS filter = baseFilter.copy();
+            for (int bi = 0; bi < blockIdx; bi++) {
+                int[] block = baseDesign[bi];
+                for (int i = 0; i < k; i++) {
+                    int f = block[i];
+                    for (int j = i + 1; j < k; j++) {
+                        int s = block[j];
+                        filter.set(group.op(f, group.inv(s)));
+                        filter.set(group.op(s, group.inv(f)));
+                    }
+                }
+            }
+            FixBS whiteList = filter.copy();
+            whiteList.flip(1, v);
+            Design curr = new Design(nextDesign, k, blockIdx).initiateNew(k, blockIdx);
+            Design[] transformations = Arrays.stream(auths).map(aut -> {
+                int[][] transformed = IntStream.range(0, baseDesign.length).mapToObj(idx -> {
+                    int[] res = new int[k];
+                    if (idx > blockIdx) {
+                        return res;
+                    }
+                    int[] arr = baseDesign[idx];
+                    for (int i = 0; i < arr.length; i++) {
+                        res[i] = aut[arr[i]];
+                    }
+                    Arrays.sort(res);
+                    return res;
+                }).toArray(int[][]::new);
+                return new Design(transformed, k, blockIdx).initiateNew(k, blockIdx);
+            }).toArray(Design[]::new);
+            State state = new State(curr, filter, whiteList, transformations);
+            return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
+        }
+
+        private State acceptElem(Group group, int[][] auth, int el, int v, int k, Consumer<State> cons) {
+            Design nextCurr = curr.simpleAdd(el);
+            Design[] nextTransformations = new Design[transformations.length];
+            boolean tupleFinished = nextCurr.tupleFinished();
+            for (int i = 0; i < transformations.length; i++) {
+                Design nextTransformation = transformations[i].add(auth[i][el]);
+                if (nextCurr.bigger(nextTransformation)) {
+                    return null;
+                }
+                nextTransformations[i] = nextTransformation;
             }
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
-            for (int val : tuple) {
-                int diff = group.op(idx, group.inv(val));
-                int outDiff = group.op(val, group.inv(idx));
+            int[] nextTuple = nextCurr.curr();
+            int idx = curr.idx;
+            for (int i = 0; i < idx; i++) {
+                int val = nextTuple[i];
+                int diff = group.op(el, group.inv(val));
+                int outDiff = group.op(val, group.inv(el));
                 for (int rt : group.squareRoots(diff)) {
                     newWhiteList.clear(group.op(val, rt));
                 }
                 for (int rt : group.squareRoots(outDiff)) {
-                    newWhiteList.clear(group.op(idx, rt));
+                    newWhiteList.clear(group.op(el, rt));
                 }
                 newFilter.set(diff);
                 newFilter.set(outDiff);
-                for (int nv : nextTuple) {
+                for (int j = 0; j <= idx; j++) {
+                    int nv = nextTuple[j];
                     newWhiteList.clear(group.op(nv, diff));
                     newWhiteList.clear(group.op(nv, outDiff));
                 }
             }
             for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                newWhiteList.clear(group.op(idx, diff));
-                newWhiteList.clear(group.op(idx, group.inv(diff)));
+                newWhiteList.clear(group.op(el, diff));
+                newWhiteList.clear(group.op(el, group.inv(diff)));
             }
-            newWhiteList.clear(0, idx + 1);
-            calcCycles(group, needed - 1, newFilter, newWhiteList, nextTuple, sink);
-        }
-    }
-
-    private static void calcCycles(Group group, int v, int k, int prev, FixBS filter, Consumer<int[]> sink) {
-        FixBS whiteList = filter.copy();
-        whiteList.flip(1, v);
-        int idx = whiteList.nextSetBit(prev);
-        int[] arr = new int[]{0, idx};
-        FixBS newWhiteList = whiteList.copy();
-        FixBS newFilter = filter.copy();
-        int inv = group.inv(idx);
-        newWhiteList.clear(inv);
-        for (int rt : group.squareRoots(idx)) {
-            newWhiteList.clear(rt);
-        }
-        for (int rt : group.squareRoots(inv)) {
-            newWhiteList.clear(rt);
-        }
-        newFilter.set(idx);
-        newFilter.set(inv);
-        for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-            newWhiteList.clear(group.op(idx, diff));
-            newWhiteList.clear(group.op(idx, group.inv(diff)));
-        }
-        newWhiteList.clear(0, idx + 1);
-        calcCycles(group, k - 2, newFilter, newWhiteList, arr, sink);
-    }
-
-    private record BlockPair(FixBS bs, int[] block) {}
-
-    private static void allDifferenceSets(Group group, int[][] auths, int v, int k, BlockPair[] curr, int needed, FixBS filter, Consumer<BlockPair[]> designSink) {
-        int cl = curr.length;
-        int prev = cl == 0 ? 0 : filter.nextClearBit(curr[cl - 1].block()[1] + 1);
-        Consumer<int[]> blockSink = block -> {
-            BlockPair[] nextCurr = Arrays.copyOf(curr, cl + 1);
-            FixBS bs = FixBS.of(v, block);
-            nextCurr[cl] = new BlockPair(bs, block);
-            for (int[] auth : auths) {
-                FixBS[] multiplied = new FixBS[cl + 1];
-                for (int i = 0; i <= cl; i++) {
-                    int[] arr = new int[block.length];
-                    for (int j = 0; j < block.length; j++) {
-                        arr[j] = auth[nextCurr[i].block()[j]];
-                    }
-                    multiplied[i] = minimalTuple(arr, group, v);
+            newWhiteList.clear(0, el + 1);
+            State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
+            if (tupleFinished) {
+                if (nextCurr.lastBlock()) {
+                    cons.accept(result);
+                    return null;
                 }
-                Arrays.sort(multiplied, Comparator.comparingInt(bp -> bp.nextSetBit(1)));
-                if (less(multiplied, nextCurr)) {
-                    return;
-                }
+                result = result.initiateNextTuple(newFilter, v, k)
+                        .acceptElem(group, auth, newFilter.nextClearBit(1), v, k, st -> {});
             }
-            if (needed == 1) {
-                designSink.accept(nextCurr);
-                return;
-            }
-            FixBS nextFilter = filter.copy();
-            for (int i = 0; i < k; i++) {
-                for (int j = i + 1; j < k; j++) {
-                    int l = block[j];
-                    int s = block[i];
-                    nextFilter.set(group.op(l, group.inv(s)));
-                    nextFilter.set(group.op(s, group.inv(l)));
-                }
-            }
-            allDifferenceSets(group, auths, v, k, nextCurr, needed - 1, nextFilter, designSink);
-        };
-        calcCycles(group, v, k, prev, filter, blockSink);
+            return result;
+        }
+
+        private State initiateNextTuple(FixBS filter, int v, int k) {
+            int nextBlockIdx = curr.blockIdx + 1;
+            Design nextSet = curr.initiateNew(k, nextBlockIdx);
+            FixBS nextWhiteList = filter.copy();
+            nextWhiteList.flip(1, v);
+            Design[] nextTransformations = Arrays.stream(transformations).map(tr -> tr.initiateNew(k, nextBlockIdx)).toArray(Design[]::new);
+            return new State(nextSet, filter, nextWhiteList, nextTransformations);
+        }
     }
 
-    @Test
-    // [[0, 68, 69, 105, 135, 156, 160], [0, 75, 86, 113, 159, 183, 203], [0, 80, 95, 98, 145, 158, 201], [0, 101, 134, 141, 143, 153, 182], [0, 110, 115, 132, 138, 164, 209]]
-    public void byHint() {
-        CyclicGroup gr = new CyclicGroup(217);
-        findByHint(new BlockPair[]{toBp(gr.order(), new int[]{0, 68, 69, 105, 135, 156, 160}), toBp(gr.order(), new int[]{0, 75, 86, 113, 159, 183, 203})}, gr, 7);
-        //findByHint(new int[]{0, 34, 36, 42, 66, 71, 80}, 91, 7);
-    }
-
-    private static BlockPair toBp(int v, int[] arr) {
-        return new BlockPair(FixBS.of(v, arr), arr);
-    }
-
-    private static void findByHint(BlockPair[] hints, Group group, int k) {
-        int v = group.order();
-        System.out.println(v + " " + k + " " + Arrays.deepToString(hints));
-        FixBS filter = baseFilter(group, k);
-        int[][] auths = group.auth();
-        for (BlockPair hint : hints) {
-            for (int i = 0; i < hint.block().length; i++) {
-                int fst = hint.block()[i];
-                for (int j = i + 1; j < hint.block().length; j++) {
-                    int snd = hint.block()[j];
-                    filter.set(group.op(fst, group.inv(snd)));
-                    filter.set(group.op(snd, group.inv(fst)));
-                }
+    private static void calcCycles(Group group, int[][] auth, int v, int k, State state, Consumer<State> sink) {
+        FixBS whiteList = state.whiteList();
+        for (int idx = whiteList.nextSetBit(state.curr.lastVal()); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
+            State next = state.acceptElem(group, auth, idx, v, k, sink);
+            if (next != null) {
+                calcCycles(group, auth, v, k, next, sink);
             }
         }
-        AtomicInteger counter = new AtomicInteger();
-        long time = System.currentTimeMillis();
-        Consumer<BlockPair[]> designConsumer = design -> {
-            counter.incrementAndGet();
-            System.out.println(Arrays.deepToString(Arrays.stream(design).map(BlockPair::block).toArray(int[][]::new)));
-        };
-        allDifferenceSets(group.asTable(), auths, v, k, hints, v / k / (k - 1) - hints.length, filter, designConsumer);
-        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     @Test
@@ -180,9 +226,16 @@ public class BibdFinder1CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new GroupProduct(5, 5);
-        int k = 4;
+        Group group = new CyclicGroup(91);
+        int k = 6;
         logFirstCycles(System.out, group, k);
+    }
+
+    @Test
+    public void logAllCycles() {
+        Group group = new CyclicGroup(91);
+        int k = 6;
+        logAllCycles(System.out, group, k);
     }
 
     private static void logFirstCycles(PrintStream destination, Group group, int k) {
@@ -191,51 +244,27 @@ public class BibdFinder1CyclicTest {
         FixBS filter = baseFilter(group, k);
         int[][] auths = group.auth();
         Group table = group.asTable();
-        calcCycles(table, v, k, 0, filter, arr -> {
-            FixBS res = FixBS.of(v, arr);
-            for (int[] auth : auths) {
-                int[] multiplied = new int[arr.length];
-                for (int i = 0; i < arr.length; i++) {
-                    multiplied[i] = auth[arr[i]];
-                }
-                FixBS mulBs = minimalTuple(multiplied, table, v);
-                if (res.compareTo(mulBs) < 0) {
-                    return;
-                }
-            }
-            destination.println(res);
+        int[][] design = new int[1][k];
+        State initial = State.forDesign(table, auths, filter, design, k, 0);
+        calcCycles(table, auths, v, k, initial, cycle -> {
+            destination.println(Arrays.toString(cycle.curr.design[0]));
             destination.flush();
         });
     }
 
-    private static FixBS minimalTuple(int[] arr, Group gr, int order) {
-        FixBS min = null;
-        for (int el : arr) {
-            int inv = gr.inv(el);
-            FixBS cnd = new FixBS(order);
-            for (int i : arr) {
-                cnd.set(gr.op(i, inv));
-            }
-            if (min == null || cnd.compareTo(min) > 0) {
-                min = cnd;
-            }
-        }
-        return min;
-    }
-
-    private static boolean less(FixBS[] cnd, BlockPair[] bp) {
-        for (int i = 0; i < cnd.length; i++) {
-            FixBS ca = cnd[i];
-            FixBS aa = bp[i].bs();
-            int cmp = ca.compareTo(aa);
-            if (cmp < 0) {
-                return false;
-            }
-            if (cmp > 0) {
-                return true;
-            }
-        }
-        return false;
+    private static void logAllCycles(PrintStream destination, Group group, int k) {
+        System.out.println(group.name() + " " + k);
+        int v = group.order();
+        FixBS filter = baseFilter(group, k);
+        int blocksNeeded = v / k / (k - 1);
+        int[][] auths = group.auth();
+        Group table = group.asTable();
+        int[][] design = new int[blocksNeeded][k];
+        State initial = State.forDesign(table, auths, filter, design, k, 0);
+        calcCycles(table, auths, v, k, initial, cycle -> {
+            destination.println(Arrays.deepToString(cycle.curr.design));
+            destination.flush();
+        });
     }
 
     private static FixBS baseFilter(Group gr, int k) {
@@ -304,31 +333,23 @@ public class BibdFinder1CyclicTest {
         int[][] auths = group.auth();
         System.out.println("Initial size " + unProcessed.size());
         int blocksNeeded = v / k / (k - 1);
-        FixBS filter = baseFilter(group, k);
+        FixBS baseFilter = baseFilter(group, k);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
-        Consumer<BlockPair[]> designConsumer = design -> {
+        Consumer<State> designConsumer = design -> {
             counter.incrementAndGet();
-            destination.println(Arrays.deepToString(Arrays.stream(design).map(BlockPair::block).toArray(int[][]::new)));
+            destination.println(Arrays.deepToString(design.curr.design));
             destination.flush();
             if (destination != System.out) {
-                System.out.println(Arrays.deepToString(Arrays.stream(design).map(BlockPair::block).toArray(int[][]::new)));
+                System.out.println(Arrays.deepToString(design.curr.design));
             }
         };
         AtomicInteger cnt = new AtomicInteger();
         unProcessed.stream().parallel().forEach(init -> {
-            FixBS newFilter = filter.copy();
-            for (int i = 0; i < init.length; i++) {
-                int fst = init[i];
-                for (int j = i + 1; j < init.length; j++) {
-                    int snd = init[j];
-                    int diff = table.op(snd, table.inv(fst));
-                    int outDiff = table.op(fst, table.inv(snd));
-                    newFilter.set(diff);
-                    newFilter.set(outDiff);
-                }
-            }
-            allDifferenceSets(table, auths, v, k, new BlockPair[]{toBp(v, init)}, blocksNeeded - 1, newFilter, designConsumer);
+            int[][] design = new int[blocksNeeded][k];
+            System.arraycopy(init, 0, design[0], 0, k);
+            State initial = State.forDesign(table, auths, baseFilter, design, k, 1);
+            calcCycles(table, auths, v, k, initial, designConsumer);
             if (destination != System.out) {
                 destination.println(Arrays.toString(init));
                 destination.flush();
