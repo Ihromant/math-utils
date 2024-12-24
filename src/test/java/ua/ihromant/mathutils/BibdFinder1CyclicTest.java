@@ -51,7 +51,10 @@ public class BibdFinder1CyclicTest {
             int[][] cloned = design.clone();
             int newIdx = blockIdx;
             int[] unf = cloned[newIdx].clone();
-            int pos = -Arrays.binarySearch(unf, 0, idx, el) - 1;
+            int pos = idx;
+            while (pos > 0 && unf[pos - 1] > el) {
+                pos--;
+            }
             System.arraycopy(unf, pos, unf, pos + 1, idx - pos);
             unf[pos] = el;
             if (idx + 1 == unf.length) {
@@ -381,7 +384,7 @@ public class BibdFinder1CyclicTest {
                 destination.flush();
             }
             int val = cnt.incrementAndGet();
-            if (val % 100 == 0) {
+            if (val % 1000 == 0) {
                 System.out.println(val);
             }
         });
