@@ -474,9 +474,9 @@ public class TranslationPlane1Test {
 
     @Test
     public void generateByBegins() throws IOException {
-        String suffix = "";
+        String suffix = "breed";
         int p = 2;
-        int n = 8;
+        int n = 10;
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
