@@ -575,9 +575,8 @@ public class BatchLinerTest {
         try (InputStream is = new FileInputStream("/home/ihromant/maths/diffSets/beg/" + k + "-" + group.name() + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            return br.lines().filter(l -> l.indexOf('[') >= 0).map(line -> {
-                int v = group.order();
-                String[] split = line.substring(2, line.length() - 2).split("], \\[");
+            return br.lines().filter(l -> l.indexOf('{') >= 0 || l.indexOf('[') >= 0).map(line -> {
+                String[] split = line.substring(2, line.length() - 2).split("], \\[|}, \\{");
                 int[][] des = Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
                 return Liner.byDiffFamily(group, des);
             }).toList();
