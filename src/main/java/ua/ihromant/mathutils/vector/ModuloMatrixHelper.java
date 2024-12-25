@@ -1,5 +1,12 @@
 package ua.ihromant.mathutils.vector;
 
+import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.Objects;
+
 public interface ModuloMatrixHelper {
     int p();
 
@@ -48,6 +55,30 @@ public interface ModuloMatrixHelper {
         if (p == 2) {
             return new TwoMatrixHelper(n);
         }
+        if (p == 3 && n > 3 || p == 2 && n > 3) {
+            try {
+                return readGl(p, n);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        if (p > 3 && n > 2) {
+            return new CommonMatrixHelper(p, n);
+        }
         return new TableMatrixHelper(p, n);
+    }
+
+    private static ModuloMatrixHelper readGl(int p, int n) throws IOException {
+        int matCount = LinearSpace.pow(p, n * n);
+        int[] mapGl = new int[matCount];
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/gl-" + p + "^" + n + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            br.lines().forEach(ln -> {
+                String[] sp = ln.split("=");
+                mapGl[Integer.parseInt(sp[0])] = Integer.parseInt(sp[1]);
+            });
+        }
+        return p == 2 ? new TwoMatrixHelper(n, mapGl) : new CommonMatrixHelper(p, n, mapGl);
     }
 }
