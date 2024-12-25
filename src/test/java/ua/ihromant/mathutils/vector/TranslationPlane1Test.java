@@ -661,8 +661,8 @@ public class TranslationPlane1Test {
         int psLength = 30;
         Distr fst = new Distr(new int[]{0}, new int[]{0}, 1, 0);
         Distr snd = new Distr(new int[]{2}, new int[]{0}, 1, 0);
-        generate(fst, orbitCount, psLength, variants);
-        generate(snd, orbitCount, psLength, variants);
+        generatePaths(fst, orbitCount, psLength, variants);
+        generatePaths(snd, orbitCount, psLength, variants);
         System.out.println(variants.size());
         System.out.println(Arrays.toString(variants.get(fst)));
         System.out.println(Arrays.toString(variants.get(snd)));
@@ -674,14 +674,14 @@ public class TranslationPlane1Test {
         System.out.println(Arrays.toString(variants.get(toTest)));
     }
 
-    private static boolean generate(Distr curr, int orbitCount, int psLength, Map<Distr, int[]> variants) {
+    private static boolean generatePaths(Distr curr, int orbitCount, int psLength, Map<Distr, int[]> variants) {
         if (curr.sum == psLength) {
             return true;
         }
         FixBS possible = new FixBS(orbitCount);
         if (curr.canStay()) {
             Distr next = curr.stay();
-            if (generate(next, orbitCount, psLength, variants)) {
+            if (generatePaths(next, orbitCount, psLength, variants)) {
                 possible.set(curr.dom[curr.dom.length - 1]);
             }
         }
@@ -689,7 +689,7 @@ public class TranslationPlane1Test {
             FixBS jumps = curr.possibleJumps(orbitCount);
             for (int j = jumps.nextSetBit(0); j >= 0; j = jumps.nextSetBit(j + 1)) {
                 Distr next = curr.jump(j);
-                if (generate(next, orbitCount, psLength, variants)) {
+                if (generatePaths(next, orbitCount, psLength, variants)) {
                     possible.set(j);
                 }
             }
