@@ -87,13 +87,13 @@ public class TranslationPlane2Test {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
-        Map<Distr, int[]> paths = pathsMap(components, orbits.length, mini.cardinality() - 2);
+        Map<Func, int[]> paths = pathsMap(components, orbits.length, mini.cardinality() - 2);
         for (FixBS comp : components) {
             int min = comp.nextSetBit(0);
             Callback cons = (state, subGl) -> {
                 FixBS[] newBase = base.clone();
                 int[] arr = state.partSpread;
-                for (int i = 0; i < state.distr.sum; i++) {
+                for (int i = 0; i < state.func.sum; i++) {
                     FixBS ln = new FixBS(sc);
                     int a = arr[i];
                     for (int x = 1; x < mc; x++) {
@@ -119,7 +119,7 @@ public class TranslationPlane2Test {
                 }
             };
             int[] partSpread = new int[mini.cardinality() - 2];
-            tree(helper, paths, filterGl(helper, p), new State(orbits, partSpread, new Distr(new int[]{min}, new int[]{0}, 1, 0),
+            tree(helper, paths, filterGl(helper, p), new State(orbits, partSpread, new Func(new int[]{min}, new int[]{0}, 1, 0),
                     Arrays.stream(orbits).mapToInt(IntList::size).sum()), cons);
         }
     }
@@ -159,9 +159,9 @@ public class TranslationPlane2Test {
         return find;
     }
 
-    private record State(IntList[] orbits, int[] partSpread, Distr distr, int vCnt) {
+    private record State(IntList[] orbits, int[] partSpread, Func func, int vCnt) {
         private boolean cantContinue() {
-            return vCnt + distr.sum < partSpread.length;
+            return vCnt + func.sum < partSpread.length;
         }
 
         private IntList orbit(int orbitIdx) {
@@ -169,11 +169,11 @@ public class TranslationPlane2Test {
         }
 
         private State addOperatorToSpread(ModuloMatrixHelper helper, int orbitIdx, int elIdx) {
-            int a = orbits[orbitIdx].get(elIdx);
-            Distr nextDistr = distr.apply(orbitIdx);
+            int op = orbits[orbitIdx].get(elIdx);
+            Func nextFunc = func.apply(orbitIdx);
             int[] newSpread = partSpread.clone();
-            int prevLast = distr.last();
-            newSpread[distr.sum] = a;
+            int prevLast = func.last();
+            newSpread[func.sum] = op;
             IntList[] filteredOrbits = new IntList[orbits.length];
             boolean jumped = prevLast != orbitIdx;
             int newCnt = 0;
@@ -186,23 +186,23 @@ public class TranslationPlane2Test {
                 int begin = i == orbitIdx ? elIdx + 1 : 0;
                 for (int j = begin; j < oldOrbit.size(); j++) {
                     int b = oldOrbit.get(j);
-                    if (helper.hasInv(helper.sub(b, a))) {
+                    if (helper.hasInv(helper.sub(b, op))) {
                         filteredOrbit.add(b);
                     }
                 }
                 filteredOrbits[i] = filteredOrbit;
                 newCnt = newCnt + filteredOrbit.size();
             }
-            return new State(filteredOrbits, newSpread, nextDistr, newCnt);
+            return new State(filteredOrbits, newSpread, nextFunc, newCnt);
         }
 
         private boolean isFull() {
-            return partSpread.length == distr.sum;
+            return partSpread.length == func.sum;
         }
 
         @Override
         public String toString() {
-            return "Func{dist=" + distr + '}';
+            return "Func{dist=" + func + '}';
         }
     }
 
@@ -240,8 +240,8 @@ public class TranslationPlane2Test {
         return result;
     }
 
-    private void tree(ModuloMatrixHelper helper, Map<Distr, int[]> paths, IntList subGl, State state, Callback sink) {
-        int idx = state.distr.sum;
+    private void tree(ModuloMatrixHelper helper, Map<Func, int[]> paths, IntList subGl, State state, Callback sink) {
+        int idx = state.func.sum;
         if (state.cantContinue()) {
             return;
         }
@@ -249,7 +249,7 @@ public class TranslationPlane2Test {
             sink.accept(state, subGl);
             return;
         }
-        for (int orbitIdx : paths.get(state.distr)) {
+        for (int orbitIdx : paths.get(state.func)) {
             IntList v = state.orbit(orbitIdx);
             FixBS filter = new FixBS(helper.matCount());
             for (int j = 0; j < v.size(); j++) {
@@ -283,7 +283,7 @@ public class TranslationPlane2Test {
         }
     }
 
-    private void treeSimple(ModuloMatrixHelper helper, Map<Distr, int[]> paths, State state, Callback sink) {
+    private void treeSimple(ModuloMatrixHelper helper, Map<Func, int[]> paths, State state, Callback sink) {
         if (state.cantContinue()) {
             return;
         }
@@ -291,7 +291,7 @@ public class TranslationPlane2Test {
             sink.accept(state, new IntList(0));
             return;
         }
-        for (int orbitIdx : paths.get(state.distr)) {
+        for (int orbitIdx : paths.get(state.func)) {
             IntList v = state.orbit(orbitIdx);
             for (int j = 0; j < v.size(); j++) {
                 State next = state.addOperatorToSpread(helper, orbitIdx, j);
@@ -347,7 +347,7 @@ public class TranslationPlane2Test {
         ModuloMatrixHelper helper = readGl(p, half);
         QuickFind find = orbitComponents(helper, orbits);
         List<FixBS> components = find.components();
-        Map<Distr, int[]> paths = pathsMap(components, orbits.length, pow - 2);
+        Map<Func, int[]> paths = pathsMap(components, orbits.length, pow - 2);
         System.out.println("Components " + components + " paths " + paths.size());
 
         File f = new File("/home/ihromant/maths/trans/", "begins-" + p + "^" + n + "x.txt");
@@ -358,12 +358,12 @@ public class TranslationPlane2Test {
                 int min = comp.nextSetBit(0);
                 Callback cons = (state, subGl) -> {
                     int[] arr = state.partSpread();
-                    ps.println(Arrays.toString(Arrays.copyOf(arr, state.distr.sum)) + " " + Arrays.toString(state.distr.dom)
-                            + " " + Arrays.toString(state.distr.rng));
+                    ps.println(Arrays.toString(Arrays.copyOf(arr, state.func.sum)) + " " + Arrays.toString(state.func.dom)
+                            + " " + Arrays.toString(state.func.rng));
                     ps.flush();
                 };
                 int[] partSpread = new int[pow - 2];
-                tree(helper, paths, filterGl(helper, p), new State(orbits, partSpread, Distr.of(new int[]{min}, new int[]{0}),
+                tree(helper, paths, filterGl(helper, p), new State(orbits, partSpread, Func.of(new int[]{min}, new int[]{0}),
                         Arrays.stream(orbits).mapToInt(IntList::size).sum()), cons);
             }
         }
@@ -371,9 +371,9 @@ public class TranslationPlane2Test {
 
     @Test
     public void generateByBegins() throws IOException {
-        String suffix = "";
+        String suffix = "breed";
         int p = 2;
-        int n = 8;
+        int n = 10;
         int half = n / 2;
         LinearSpace mini = LinearSpace.of(p, half);
         LinearSpace sp = LinearSpace.of(p, n);
@@ -402,7 +402,7 @@ public class TranslationPlane2Test {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
-        Map<Distr, int[]> paths = readPaths(mini.cardinality());
+        Map<Func, int[]> paths = readPaths(mini.cardinality());
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + suffix + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr);
@@ -420,7 +420,7 @@ public class TranslationPlane2Test {
                 int[] spr = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
-                if ((Arrays.stream(rng).sum() != mini.cardinality() - 2 && !paths.containsKey(Distr.of(dom, rng))) || processed.contains(Arrays.stream(spr).boxed().toList())) {
+                if ((Arrays.stream(rng).sum() != mini.cardinality() - 2 && !paths.containsKey(Func.of(dom, rng))) || processed.contains(Arrays.stream(spr).boxed().toList())) {
                     return;
                 }
                 int[][] res = new int[3][];
@@ -450,7 +450,7 @@ public class TranslationPlane2Test {
                     }
                     filteredOrbits[idx] = filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
                 }
-                State st = new State(filteredOrbits, partSpread, Distr.of(dom, rng),
+                State st = new State(filteredOrbits, partSpread, Func.of(dom, rng),
                         Arrays.stream(filteredOrbits).filter(Objects::nonNull).mapToInt(IntList::size).sum());
                 Callback cons = (state, subGl) -> {
                     FixBS[] newBase = base.clone();
@@ -497,7 +497,7 @@ public class TranslationPlane2Test {
         IntList[] orbits = readOrbits(pow);
         ModuloMatrixHelper helper = readGl(p, half);
         QuickFind find = orbitComponents(helper, orbits);
-        Map<Distr, int[]> paths = pathsMap(find.components(), orbits.length, pow - 2);
+        Map<Func, int[]> paths = pathsMap(find.components(), orbits.length, pow - 2);
         System.out.println("Components " + find.components());
 
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + ".txt");
@@ -540,12 +540,12 @@ public class TranslationPlane2Test {
                     }
                     return filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
                 }).toArray(IntList[]::new);
-                State st = new State(filteredOrbits, partSpread, Distr.of(dom, rng),
+                State st = new State(filteredOrbits, partSpread, Func.of(dom, rng),
                         Arrays.stream(filteredOrbits).filter(Objects::nonNull).mapToInt(IntList::size).sum());
                 Callback cons = (state, subGl) -> {
                     int[] arr = state.partSpread();
-                    ps.println(Arrays.toString(Arrays.copyOf(arr, state.distr.sum)) + " " + Arrays.toString(state.distr.dom)
-                            + " " + Arrays.toString(state.distr.rng));
+                    ps.println(Arrays.toString(Arrays.copyOf(arr, state.func.sum)) + " " + Arrays.toString(state.func.dom)
+                            + " " + Arrays.toString(state.func.rng));
                     ps.flush();
                 };
                 treeSimple(helper, paths, st, cons);
@@ -555,21 +555,21 @@ public class TranslationPlane2Test {
 
     @Test
     public void testGenerate() {
-        Map<Distr, int[]> variants = new HashMap<>();
+        Map<Func, int[]> variants = new HashMap<>();
         int orbitCount = 8;
         int psLength = 30;
-        Distr fst = Distr.of(new int[]{0}, new int[]{0});
-        Distr snd = Distr.of(new int[]{2}, new int[]{0});
+        Func fst = Func.of(new int[]{0}, new int[]{0});
+        Func snd = Func.of(new int[]{2}, new int[]{0});
         generatePaths(fst, orbitCount, psLength, variants);
         generatePaths(snd, orbitCount, psLength, variants);
         System.out.println(variants.size());
         System.out.println(Arrays.toString(variants.get(fst)));
         System.out.println(Arrays.toString(variants.get(snd)));
-        Distr base = Distr.of(new int[]{2}, new int[]{4});
+        Func base = Func.of(new int[]{2}, new int[]{4});
         System.out.println(Arrays.toString(variants.get(base)));
-        Distr oBase = Distr.of(new int[]{0}, new int[]{4});
+        Func oBase = Func.of(new int[]{0}, new int[]{4});
         System.out.println(Arrays.toString(variants.get(oBase)));
-        Distr toTest = Distr.of(new int[]{2, 5}, new int[]{4, 1});
+        Func toTest = Func.of(new int[]{2, 5}, new int[]{4, 1});
         System.out.println(Arrays.toString(variants.get(toTest)));
     }
 
@@ -584,48 +584,48 @@ public class TranslationPlane2Test {
         QuickFind find = orbitComponents(helper, orbits);
         List<FixBS> components = find.components();
         System.out.println(components);
-        Map<Distr, int[]> paths = pathsMap(components, orbits.length, pow - 2);
+        Map<Func, int[]> paths = pathsMap(components, orbits.length, pow - 2);
         try (FileOutputStream fos = new FileOutputStream("/home/ihromant/maths/trans/paths" + pow + ".txt");
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            for (Map.Entry<Distr, int[]> e : paths.entrySet()) {
+            for (Map.Entry<Func, int[]> e : paths.entrySet()) {
                 ps.println(Arrays.toString(e.getKey().dom) + " " + Arrays.toString(e.getKey().rng) + " " + Arrays.toString(e.getValue()));
             }
         }
     }
 
-    private static Map<Distr, int[]> readPaths(int pow) throws IOException {
+    private static Map<Func, int[]> readPaths(int pow) throws IOException {
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/paths" + pow + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            Map<Distr, int[]> result = new HashMap<>();
+            Map<Func, int[]> result = new HashMap<>();
             br.lines().forEach(line -> {
                 String[] split = line.substring(1, line.length() - 1).split("] \\[");
                 int[] dom = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] rng = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] path = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
-                result.put(Distr.of(dom, rng), path);
+                result.put(Func.of(dom, rng), path);
             });
             return result;
         }
     }
 
-    private static Map<Distr, int[]> pathsMap(List<FixBS> components, int orbitCount, int psLength) {
-        Map<Distr, int[]> result = new HashMap<>();
+    private static Map<Func, int[]> pathsMap(List<FixBS> components, int orbitCount, int psLength) {
+        Map<Func, int[]> result = new HashMap<>();
         for (FixBS comp : components) {
             int min = comp.nextSetBit(0);
-            generatePaths(Distr.of(new int[]{min}, new int[]{0}), orbitCount, psLength, result);
+            generatePaths(Func.of(new int[]{min}, new int[]{0}), orbitCount, psLength, result);
         }
         return result;
     }
 
-    private static boolean generatePaths(Distr curr, int orbitCount, int psLength, Map<Distr, int[]> paths) {
+    private static boolean generatePaths(Func curr, int orbitCount, int psLength, Map<Func, int[]> paths) {
         if (curr.sum == psLength) {
             return true;
         }
         FixBS possible = new FixBS(orbitCount);
         if (curr.canStay()) {
-            Distr next = curr.stay();
+            Func next = curr.stay();
             if (generatePaths(next, orbitCount, psLength, paths)) {
                 possible.set(curr.dom[curr.dom.length - 1]);
             }
@@ -633,7 +633,7 @@ public class TranslationPlane2Test {
         if (curr.canJump(orbitCount, psLength)) {
             FixBS jumps = curr.possibleJumps(orbitCount);
             for (int j = jumps.nextSetBit(0); j >= 0; j = jumps.nextSetBit(j + 1)) {
-                Distr next = curr.jump(j);
+                Func next = curr.jump(j);
                 if (generatePaths(next, orbitCount, psLength, paths)) {
                     possible.set(j);
                 }
@@ -646,9 +646,9 @@ public class TranslationPlane2Test {
         return present;
     }
 
-    private record Distr(int[] dom, int[] rng, int len, int sum) {
-        private static Distr of(int[] dom, int[] rng) {
-            return new Distr(dom, rng, dom.length, Arrays.stream(rng).sum());
+    private record Func(int[] dom, int[] rng, int len, int sum) {
+        private static Func of(int[] dom, int[] rng) {
+            return new Func(dom, rng, dom.length, Arrays.stream(rng).sum());
         }
 
         private FixBS possibleJumps(int orbitCount) {
@@ -689,21 +689,21 @@ public class TranslationPlane2Test {
             return diff > 0;
         }
 
-        private Distr stay() {
+        private Func stay() {
             int[] nextRng = rng.clone();
             nextRng[len - 1]++;
-            return new Distr(dom, nextRng, len, sum + 1);
+            return new Func(dom, nextRng, len, sum + 1);
         }
 
-        private Distr jump(int next) {
+        private Func jump(int next) {
             int[] nextDom = Arrays.copyOf(dom, len + 1);
             nextDom[len] = next;
             int[] nextRng = Arrays.copyOf(rng, len + 1);
             nextRng[len] = 1;
-            return new Distr(nextDom, nextRng, len + 1, sum + 1);
+            return new Func(nextDom, nextRng, len + 1, sum + 1);
         }
 
-        private Distr apply(int where) {
+        private Func apply(int where) {
             if (where == last()) {
                 return stay();
             } else {
@@ -717,7 +717,7 @@ public class TranslationPlane2Test {
 
         @Override
         public boolean equals(Object o) {
-            if (!(o instanceof Distr(int[] dom1, int[] rng1, int len1, int sum1))) return false;
+            if (!(o instanceof Func(int[] dom1, int[] rng1, int len1, int sum1))) return false;
             return Arrays.equals(dom, dom1) && Arrays.equals(rng, rng1);
         }
 
