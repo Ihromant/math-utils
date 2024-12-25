@@ -18,6 +18,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -650,6 +651,129 @@ public class TranslationPlane1Test {
                 };
                 treeSimple(helper, st, cons);
             });
+        }
+    }
+
+    @Test
+    public void testGenerate() {
+        Map<Distr, int[]> variants = new HashMap<>();
+        int orbitCount = 8;
+        int psLength = 30;
+        Distr fst = new Distr(new int[]{0}, new int[]{0}, 1, 0);
+        Distr snd = new Distr(new int[]{2}, new int[]{0}, 1, 0);
+        generate(fst, orbitCount, psLength, variants);
+        generate(snd, orbitCount, psLength, variants);
+        System.out.println(variants.size());
+        System.out.println(Arrays.toString(variants.get(fst)));
+        System.out.println(Arrays.toString(variants.get(snd)));
+        Distr base = new Distr(new int[]{2}, new int[]{4}, 1, 4);
+        System.out.println(Arrays.toString(variants.get(base)));
+        Distr oBase = new Distr(new int[]{0}, new int[]{4}, 1, 4);
+        System.out.println(Arrays.toString(variants.get(oBase)));
+        Distr toTest = new Distr(new int[]{2, 5}, new int[]{4, 1}, 2, 5);
+        System.out.println(Arrays.toString(variants.get(toTest)));
+    }
+
+    private static boolean generate(Distr curr, int orbitCount, int psLength, Map<Distr, int[]> variants) {
+        if (curr.sum == psLength) {
+            return true;
+        }
+        FixBS possible = new FixBS(orbitCount);
+        if (curr.canStay()) {
+            Distr next = curr.stay();
+            if (generate(next, orbitCount, psLength, variants)) {
+                possible.set(curr.dom[curr.dom.length - 1]);
+            }
+        }
+        if (curr.canJump(orbitCount, psLength)) {
+            FixBS jumps = curr.possibleJumps(orbitCount);
+            for (int j = jumps.nextSetBit(0); j >= 0; j = jumps.nextSetBit(j + 1)) {
+                Distr next = curr.jump(j);
+                if (generate(next, orbitCount, psLength, variants)) {
+                    possible.set(j);
+                }
+            }
+        }
+        boolean present = !possible.isEmpty();
+        if (present) {
+            variants.put(curr, possible.stream().toArray());
+        }
+        return present;
+    }
+
+    private record Distr(int[] dom, int[] rng, int len, int sum) {
+        private FixBS possibleJumps(int orbitCount) {
+            FixBS possible = new FixBS(orbitCount);
+            possible.set(0, orbitCount);
+            int last = rng[len - 1];
+            for (int used : dom) {
+                possible.clear(used);
+            }
+            if (last == 1) {
+                possible.clear(0, dom[len - 1]);
+            }
+            return possible;
+        }
+
+        private boolean canJump(int orbitsCount, int psLength) {
+            return rng[len - 1] * (orbitsCount - len) + sum >= psLength;
+        }
+
+        private boolean canStay() {
+            if (len <= 1) {
+                return true;
+            }
+            int last = rng[len - 1];
+            int preLast = rng[len - 2];
+            int diff = preLast - last;
+            if (diff == 1) {
+                for (int i = len - 2; i >= 0; i--) {
+                    if (rng[i] != preLast) {
+                        break;
+                    }
+                    if (dom[len - 1] < dom[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return diff > 0;
+        }
+
+        private Distr stay() {
+            int[] nextRng = rng.clone();
+            nextRng[len - 1]++;
+            return new Distr(dom, nextRng, len, sum + 1);
+        }
+
+        private Distr jump(int next) {
+            int[] nextDom = Arrays.copyOf(dom, len + 1);
+            nextDom[len] = next;
+            int[] nextRng = Arrays.copyOf(rng, len + 1);
+            nextRng[len] = 1;
+            return new Distr(nextDom, nextRng, len + 1, sum + 1);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Distr(int[] dom1, int[] rng1, int len1, int sum1))) return false;
+            return Arrays.equals(dom, dom1) && Arrays.equals(rng, rng1);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = Arrays.hashCode(dom);
+            result = 31 * result + Arrays.hashCode(rng);
+            return result;
+        }
+
+        @Override
+        public String toString() {
+            return "Distr{" +
+                    "dom=" + Arrays.toString(dom) +
+                    ", rng=" + Arrays.toString(rng) +
+                    ", len=" + len +
+                    ", sum=" + sum + '}';
         }
     }
 }
