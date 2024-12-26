@@ -30,11 +30,7 @@ public class BibdFinder2CyclicTest {
             do {
                 int[] cnd = candidate.design[unf];
                 int[] block = design[unf];
-                boolean notFull = unf == blockIdx || unf == candidate.blockIdx;
-                cmp = compare(cnd, block, notFull ? idx : block.length);
-                if (cmp == 0 && unf == candidate.blockIdx && unf != blockIdx && idx != block.length) {
-                    cmp = 1;
-                }
+                cmp = compare(cnd, block);
             } while (cmp == 0 && unf++ < blockIdx);
             return cmp < 0;
         }
@@ -68,6 +64,19 @@ public class BibdFinder2CyclicTest {
             }
             cloned[newIdx] = unf;
             return new Design(cloned, idx + 1, newIdx);
+        }
+
+        private Design addBlock(int[] block, int blockIdx) {
+            int[][] cloned = design.clone();
+            int newIdx = blockIdx;
+            while (newIdx > 0 && block[1] < cloned[newIdx - 1][1]) {
+                newIdx--;
+            }
+            if (newIdx != blockIdx) {
+                System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
+            }
+            cloned[newIdx] = block;
+            return new Design(cloned, idx, newIdx);
         }
 
         private Design initiateNew(int k, int blockIdx) {
@@ -131,7 +140,7 @@ public class BibdFinder2CyclicTest {
                     Arrays.sort(res);
                     return minimalTuple(res, group);
                 }).toArray(int[][]::new);
-                return new Design(transformed, k, blockIdx).initiateNew(k, blockIdx);
+                return new Design(transformed, k, blockIdx);
             }).toArray(Design[]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
@@ -139,14 +148,26 @@ public class BibdFinder2CyclicTest {
 
         private State acceptElem(Group group, int[][] auth, int el, int v, int k, Consumer<State> cons) {
             Design nextCurr = curr.simpleAdd(el);
-            Design[] nextTransformations = new Design[transformations.length];
+            Design[] nextTransformations;
             boolean tupleFinished = nextCurr.tupleFinished();
-            for (int i = 0; i < transformations.length; i++) {
-                Design nextTransformation = transformations[i].add(auth[i][el], group);
-                if (nextCurr.bigger(nextTransformation)) {
-                    return null;
+            if (tupleFinished) {
+                int blockIdx = nextCurr.blockIdx;
+                int[] last = nextCurr.design[blockIdx];
+                nextTransformations = new Design[transformations.length];
+                for (int i = 0; i < transformations.length; i++) {
+                    int[] newTuple = new int[k];
+                    for (int j = 0; j < k; j++) {
+                        newTuple[j] = auth[i][last[j]];
+                    }
+                    Arrays.sort(newTuple);
+                    Design nextTransformation = transformations[i].addBlock(minimalTuple(newTuple, group), blockIdx);
+                    if (nextCurr.bigger(nextTransformation)) {
+                        return null;
+                    }
+                    nextTransformations[i] = nextTransformation;
                 }
-                nextTransformations[i] = nextTransformation;
+            } else {
+                nextTransformations = transformations;
             }
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
@@ -192,13 +213,12 @@ public class BibdFinder2CyclicTest {
             Design nextSet = curr.initiateNew(k, nextBlockIdx);
             FixBS nextWhiteList = filter.copy();
             nextWhiteList.flip(1, v);
-            Design[] nextTransformations = Arrays.stream(transformations).map(tr -> tr.initiateNew(k, nextBlockIdx)).toArray(Design[]::new);
-            return new State(nextSet, filter, nextWhiteList, nextTransformations);
+            return new State(nextSet, filter, nextWhiteList, transformations);
         }
     }
 
-    private static int compare(int[] fst, int[] snd, int cap) {
-        for (int i = 1; i < cap; i++) {
+    private static int compare(int[] fst, int[] snd) {
+        for (int i = 1; i < fst.length; i++) {
             int dff = fst[i] - snd[i];
             if (dff != 0) {
                 return dff;
@@ -223,7 +243,7 @@ public class BibdFinder2CyclicTest {
             }
             if (minDiff <= min[1]) {
                 Arrays.sort(cand);
-                if (compare(cand, min, len) < 0) {
+                if (compare(cand, min) < 0) {
                     min = cand;
                 }
             }
