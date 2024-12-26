@@ -25,13 +25,13 @@ import java.util.stream.IntStream;
 public class BibdFinder2CyclicTest {
     private record Design(int[][] design, int idx, int blockIdx) {
         private boolean bigger(int[][] candidate) {
-            int unf = 0;
+            int i = 0;
             int cmp;
             do {
-                int[] cnd = candidate[unf];
-                int[] block = design[unf];
+                int[] cnd = candidate[i];
+                int[] block = design[i];
                 cmp = compare(cnd, block);
-            } while (cmp == 0 && unf++ < blockIdx);
+            } while (cmp == 0 && i++ < blockIdx);
             return cmp < 0;
         }
 
@@ -86,16 +86,10 @@ public class BibdFinder2CyclicTest {
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, 1, blockIdx);
             int[][][] transformations = Arrays.stream(auths).map(aut -> IntStream.range(0, baseDesign.length).mapToObj(idx -> {
-                int[] res = new int[k];
                 if (idx > blockIdx) {
-                    return res;
+                    return new int[k];
                 }
-                int[] arr = baseDesign[idx];
-                for (int i = 0; i < arr.length; i++) {
-                    res[i] = aut[arr[i]];
-                }
-                Arrays.sort(res);
-                return minimalTuple(res, group);
+                return minimalTuple(baseDesign[idx], aut, group);
             }).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
@@ -110,12 +104,7 @@ public class BibdFinder2CyclicTest {
                 int[] last = nextCurr.design[blockIdx];
                 nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
-                    int[] newTuple = new int[k];
-                    for (int j = 1; j < k; j++) {
-                        newTuple[j] = auth[i][last[j]];
-                    }
-                    Arrays.sort(newTuple);
-                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(newTuple, group), blockIdx);
+                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group), blockIdx);
                     if (nextCurr.bigger(nextTransformation)) {
                         return null;
                     }
@@ -193,10 +182,16 @@ public class BibdFinder2CyclicTest {
         return 0;
     }
 
-    private static int[] minimalTuple(int[] arr, Group gr) {
+    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
+        int[] arr = new int[tuple.length];
+        for (int j = 1; j < tuple.length; j++) {
+            arr[j] = auth[tuple[j]];
+        }
+        Arrays.sort(arr);
         int[] min = arr;
         int len = min.length;
-        for (int sub : arr) {
+        for (int j = 1; j < arr.length; j++) {
+            int sub = arr[j];
             int inv = gr.inv(sub);
             int[] cand = new int[len];
             int minDiff = Integer.MAX_VALUE;
