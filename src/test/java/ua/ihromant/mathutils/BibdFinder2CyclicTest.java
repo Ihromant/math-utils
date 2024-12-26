@@ -24,11 +24,11 @@ import java.util.stream.IntStream;
 
 public class BibdFinder2CyclicTest {
     private record Design(int[][] design, int idx, int blockIdx) {
-        private boolean bigger(Design candidate) {
+        private boolean bigger(int[][] candidate) {
             int unf = 0;
             int cmp;
             do {
-                int[] cnd = candidate.design[unf];
+                int[] cnd = candidate[unf];
                 int[] block = design[unf];
                 cmp = compare(cnd, block);
             } while (cmp == 0 && unf++ < blockIdx);
@@ -41,42 +41,6 @@ public class BibdFinder2CyclicTest {
             last[idx] = el;
             cloned[blockIdx] = last;
             return new Design(cloned, idx + 1, blockIdx);
-        }
-
-        private Design add(int el, Group group) {
-            int[][] cloned = design.clone();
-            int newIdx = blockIdx;
-            int[] unf = cloned[newIdx].clone();
-            int pos = idx;
-            while (pos > 0 && unf[pos - 1] > el) {
-                pos--;
-            }
-            System.arraycopy(unf, pos, unf, pos + 1, idx - pos);
-            unf[pos] = el;
-            if (idx + 1 == unf.length) {
-                unf = minimalTuple(unf, group);
-            }
-            while (newIdx > 0 && unf[1] < cloned[newIdx - 1][1]) {
-                newIdx--;
-            }
-            if (newIdx != blockIdx) {
-                System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
-            }
-            cloned[newIdx] = unf;
-            return new Design(cloned, idx + 1, newIdx);
-        }
-
-        private Design addBlock(int[] block, int blockIdx) {
-            int[][] cloned = design.clone();
-            int newIdx = blockIdx;
-            while (newIdx > 0 && block[1] < cloned[newIdx - 1][1]) {
-                newIdx--;
-            }
-            if (newIdx != blockIdx) {
-                System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
-            }
-            cloned[newIdx] = block;
-            return new Design(cloned, idx, newIdx);
         }
 
         private Design initiateNew(int k, int blockIdx) {
@@ -107,7 +71,7 @@ public class BibdFinder2CyclicTest {
         }
     }
 
-    private record State(Design curr, FixBS filter, FixBS whiteList, Design[] transformations) {
+    private record State(Design curr, FixBS filter, FixBS whiteList, int[][][] transformations) {
         private static State forDesign(Group group, int[][] auths, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
             int v = group.order();
             int[][] nextDesign = baseDesign.clone();
@@ -127,40 +91,37 @@ public class BibdFinder2CyclicTest {
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, k, blockIdx).initiateNew(k, blockIdx);
-            Design[] transformations = Arrays.stream(auths).map(aut -> {
-                int[][] transformed = IntStream.range(0, baseDesign.length).mapToObj(idx -> {
-                    int[] res = new int[k];
-                    if (idx > blockIdx) {
-                        return res;
-                    }
-                    int[] arr = baseDesign[idx];
-                    for (int i = 0; i < arr.length; i++) {
-                        res[i] = aut[arr[i]];
-                    }
-                    Arrays.sort(res);
-                    return minimalTuple(res, group);
-                }).toArray(int[][]::new);
-                return new Design(transformed, k, blockIdx);
-            }).toArray(Design[]::new);
+            int[][][] transformations = Arrays.stream(auths).map(aut -> IntStream.range(0, baseDesign.length).mapToObj(idx -> {
+                int[] res = new int[k];
+                if (idx > blockIdx) {
+                    return res;
+                }
+                int[] arr = baseDesign[idx];
+                for (int i = 0; i < arr.length; i++) {
+                    res[i] = aut[arr[i]];
+                }
+                Arrays.sort(res);
+                return minimalTuple(res, group);
+            }).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
         }
 
         private State acceptElem(Group group, int[][] auth, int el, int v, int k, Consumer<State> cons) {
             Design nextCurr = curr.simpleAdd(el);
-            Design[] nextTransformations;
+            int[][][] nextTransformations;
             boolean tupleFinished = nextCurr.tupleFinished();
             if (tupleFinished) {
                 int blockIdx = nextCurr.blockIdx;
                 int[] last = nextCurr.design[blockIdx];
-                nextTransformations = new Design[transformations.length];
+                nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
                     int[] newTuple = new int[k];
                     for (int j = 0; j < k; j++) {
                         newTuple[j] = auth[i][last[j]];
                     }
                     Arrays.sort(newTuple);
-                    Design nextTransformation = transformations[i].addBlock(minimalTuple(newTuple, group), blockIdx);
+                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(newTuple, group), blockIdx);
                     if (nextCurr.bigger(nextTransformation)) {
                         return null;
                     }
@@ -215,6 +176,19 @@ public class BibdFinder2CyclicTest {
             nextWhiteList.flip(1, v);
             return new State(nextSet, filter, nextWhiteList, transformations);
         }
+    }
+
+    private static int[][] addBlock(int[][] design, int[] block, int blockIdx) {
+        int[][] cloned = design.clone();
+        int newIdx = blockIdx;
+        while (newIdx > 0 && block[1] < cloned[newIdx - 1][1]) {
+            newIdx--;
+        }
+        if (newIdx != blockIdx) {
+            System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
+        }
+        cloned[newIdx] = block;
+        return cloned;
     }
 
     private static int compare(int[] fst, int[] snd) {
