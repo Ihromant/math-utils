@@ -279,7 +279,7 @@ public class BibdFinder2CyclicTest {
         Group gr = new GroupProduct(11, 11);
         int v = gr.order();
         int k = 5;
-        File beg = new File("/home/ihromant/maths/diffSets/beg", k + "-" + gr.name() + "beg.txt");
+        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
         try (FileInputStream allFis = new FileInputStream(beg);
              InputStreamReader allIsr = new InputStreamReader(allFis);
              BufferedReader allBr = new BufferedReader(allIsr)) {
