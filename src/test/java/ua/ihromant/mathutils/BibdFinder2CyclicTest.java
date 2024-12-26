@@ -43,12 +43,6 @@ public class BibdFinder2CyclicTest {
             return new Design(cloned, idx + 1, blockIdx);
         }
 
-        private Design initiateNew(int k, int blockIdx) {
-            int[][] newDesign = design.clone();
-            newDesign[blockIdx] = new int[k];
-            return new Design(newDesign, 1, blockIdx);
-        }
-
         private int[] curr() {
             return design[blockIdx];
         }
@@ -90,7 +84,7 @@ public class BibdFinder2CyclicTest {
             }
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
-            Design curr = new Design(nextDesign, k, blockIdx).initiateNew(k, blockIdx);
+            Design curr = new Design(nextDesign, 1, blockIdx);
             int[][][] transformations = Arrays.stream(auths).map(aut -> IntStream.range(0, baseDesign.length).mapToObj(idx -> {
                 int[] res = new int[k];
                 if (idx > blockIdx) {
@@ -117,7 +111,7 @@ public class BibdFinder2CyclicTest {
                 nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
                     int[] newTuple = new int[k];
-                    for (int j = 0; j < k; j++) {
+                    for (int j = 1; j < k; j++) {
                         newTuple[j] = auth[i][last[j]];
                     }
                     Arrays.sort(newTuple);
@@ -163,18 +157,16 @@ public class BibdFinder2CyclicTest {
                     cons.accept(result);
                     return null;
                 }
-                result = result.initiateNextTuple(newFilter, v, k)
+                result = result.initiateNextTuple(newFilter, v)
                         .acceptElem(group, auth, newFilter.nextClearBit(1), v, k, st -> {});
             }
             return result;
         }
 
-        private State initiateNextTuple(FixBS filter, int v, int k) {
-            int nextBlockIdx = curr.blockIdx + 1;
-            Design nextSet = curr.initiateNew(k, nextBlockIdx);
+        private State initiateNextTuple(FixBS filter, int v) {
             FixBS nextWhiteList = filter.copy();
             nextWhiteList.flip(1, v);
-            return new State(nextSet, filter, nextWhiteList, transformations);
+            return new State(new Design(curr.design, 1, curr.blockIdx + 1), filter, nextWhiteList, transformations);
         }
     }
 
