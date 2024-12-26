@@ -89,7 +89,7 @@ public class BibdFinder2CyclicTest {
                 if (idx > blockIdx) {
                     return new int[k];
                 }
-                return minimalTuple(baseDesign[idx], aut, group);
+                return minimalTuple(baseDesign[idx], aut, group, k);
             }).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
@@ -104,7 +104,7 @@ public class BibdFinder2CyclicTest {
                 int[] last = nextCurr.design[blockIdx];
                 nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
-                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group), blockIdx);
+                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group, k), blockIdx);
                     if (nextCurr.bigger(nextTransformation)) {
                         return null;
                     }
@@ -182,33 +182,73 @@ public class BibdFinder2CyclicTest {
         return 0;
     }
 
-    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
-        int[] arr = new int[tuple.length];
-        for (int j = 1; j < tuple.length; j++) {
-            arr[j] = auth[tuple[j]];
+    private static int[] minimalTupleAlt(int[] tuple, int[] auth, Group gr, int k) {
+        int[][] arrays = new int[k][k];
+        int[] fst = arrays[0];
+        for (int i = 1; i < k; i++) {
+            int mapped = auth[tuple[i]];
+            int newIdx = i;
+            while (newIdx > 1 && mapped < fst[newIdx - 1]) {
+                newIdx--;
+            }
+            if (newIdx != i) {
+                System.arraycopy(fst, newIdx, fst, newIdx + 1, i - newIdx);
+            }
+            fst[newIdx] = mapped;
         }
-        Arrays.sort(arr);
+        int min = 0;
+        for (int i = 1; i < k; i++) {
+            int inv = gr.inv(fst[i]);
+            int[] cArr = arrays[i];
+            for (int j = 0; j < k; j++) {
+                if (i == j) {
+                    continue;
+                }
+                int diff = gr.op(fst[j], inv);
+                int base = j < i ? j + 1 : j;
+                int newIdx = base;
+                while (newIdx > 1 && diff < cArr[newIdx - 1]) {
+                    newIdx--;
+                }
+                if (newIdx != base) {
+                    System.arraycopy(cArr, newIdx, cArr, newIdx + 1, base - newIdx);
+                }
+                cArr[newIdx] = diff;
+            }
+            if (cArr[1] < arrays[min][1]) {
+                min = i;
+            }
+        }
+        return arrays[min];
+    }
+
+    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr, int k) {
+        int[] arr = new int[k];
+        int minDiff = Integer.MAX_VALUE;
+        for (int j = 1; j < k; j++) {
+            int mapped = auth[tuple[j]];
+            arr[j] = mapped;
+            if (mapped < minDiff) {
+                minDiff = mapped;
+            }
+        }
         int[] min = arr;
-        int len = min.length;
-        for (int j = 1; j < arr.length; j++) {
-            int sub = arr[j];
-            int inv = gr.inv(sub);
-            int[] cand = new int[len];
-            int minDiff = Integer.MAX_VALUE;
-            for (int i = 0; i < len; i++) {
-                int diff = gr.op(arr[i], inv);
-                cand[i] = diff;
-                if (diff != 0 && diff < minDiff) {
-                    minDiff = diff;
+        for (int j = 1; j < k; j++) {
+            int inv = gr.inv(arr[j]);
+            int[] cnd = new int[k];
+            for (int i = 0; i < k; i++) {
+                if (i == j) {
+                    continue;
                 }
-            }
-            if (minDiff <= min[1]) {
-                Arrays.sort(cand);
-                if (compare(cand, min) < 0) {
-                    min = cand;
+                int diff = gr.op(arr[i], inv);
+                cnd[i] = diff;
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    min = cnd;
                 }
             }
         }
+        Arrays.sort(min);
         return min;
     }
 
