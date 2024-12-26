@@ -122,23 +122,28 @@ public class BibdFinder2CyclicTest {
                 int val = nextTuple[i];
                 int diff = group.op(el, group.inv(val));
                 int outDiff = group.op(val, invEl);
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+                if (tupleFinished) {
+                    continue;
+                }
                 for (int rt : group.squareRoots(diff)) {
                     newWhiteList.clear(group.op(val, rt));
                 }
                 for (int rt : group.squareRoots(outDiff)) {
                     newWhiteList.clear(group.op(el, rt));
                 }
-                newFilter.set(diff);
-                newFilter.set(outDiff);
                 for (int j = 0; j <= idx; j++) {
                     int nv = nextTuple[j];
                     newWhiteList.clear(group.op(nv, diff));
                     newWhiteList.clear(group.op(nv, outDiff));
                 }
             }
-            for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                newWhiteList.clear(group.op(el, diff));
-                newWhiteList.clear(group.op(el, group.inv(diff)));
+            if (!tupleFinished) {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear(group.op(el, diff));
+                    newWhiteList.clear(group.op(el, group.inv(diff)));
+                }
             }
             State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
             if (tupleFinished) {
