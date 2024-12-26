@@ -227,61 +227,6 @@ public class BibdFinder2CyclicTest {
         }
     }
 
-    @Test
-    public void logNotEqCycles() throws IOException {
-        Group group = new GroupProduct(11, 11);
-        int k = 5;
-        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "beg.txt");
-        try (FileOutputStream fos = new FileOutputStream(f);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            logFirstCycles(ps, group, k);
-        }
-    }
-
-    @Test
-    public void logConsoleCycles() {
-        Group group = new GroupProduct(5, 5);
-        int k = 4;
-        logFirstCycles(System.out, group, k);
-    }
-
-    @Test
-    public void logAllCycles() {
-        Group group = new GroupProduct(7, 7);
-        int k = 4;
-        logAllCycles(System.out, group, k);
-    }
-
-    private static void logFirstCycles(PrintStream destination, Group group, int k) {
-        System.out.println(group.name() + " " + k);
-        int v = group.order();
-        FixBS filter = baseFilter(group, k);
-        int[][] auths = group.auth();
-        Group table = group.asTable();
-        int[][] design = new int[1][k];
-        State initial = State.forDesign(table, auths, filter, design, k, 0);
-        calcCycles(table, auths, v, k, initial, cycle -> {
-            destination.println(Arrays.toString(cycle.curr.design[0]));
-            destination.flush();
-        });
-    }
-
-    private static void logAllCycles(PrintStream destination, Group group, int k) {
-        System.out.println(group.name() + " " + k);
-        int v = group.order();
-        FixBS filter = baseFilter(group, k);
-        int blocksNeeded = v / k / (k - 1);
-        int[][] auths = group.auth();
-        Group table = group.asTable();
-        int[][] design = new int[blocksNeeded][k];
-        State initial = State.forDesign(table, auths, filter, design, k, 0);
-        calcCycles(table, auths, v, k, initial, cycle -> {
-            destination.println(Arrays.deepToString(cycle.curr.design));
-            destination.flush();
-        });
-    }
-
     private static FixBS baseFilter(Group gr, int k) {
         int v = gr.order();
         FixBS filter = new FixBS(v);
