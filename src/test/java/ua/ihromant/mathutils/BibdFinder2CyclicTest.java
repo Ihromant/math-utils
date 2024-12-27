@@ -97,8 +97,8 @@ public class BibdFinder2CyclicTest {
 
         private State acceptElem(Group group, int[][] auth, int el, int v, int k, Consumer<State> cons) {
             Design nextCurr = curr.simpleAdd(el);
-            int[][][] nextTransformations;
             boolean tupleFinished = nextCurr.tupleFinished();
+            int[][][] nextTransformations;
             if (tupleFinished) {
                 int blockIdx = nextCurr.blockIdx;
                 int[] last = nextCurr.design[blockIdx];

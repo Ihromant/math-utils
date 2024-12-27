@@ -210,24 +210,23 @@ public class BibdFinder1CyclicTest {
     private static int[] minimalTuple(int[] arr, Group gr) {
         int[] min = arr;
         int len = min.length;
-        for (int sub : arr) {
-            int inv = gr.inv(sub);
-            int[] cand = new int[len];
-            int minDiff = Integer.MAX_VALUE;
+        int minDiff = arr[1];
+        for (int j = 1; j < len; j++) {
+            int inv = gr.inv(arr[j]);
+            int[] cnd = new int[len];
             for (int i = 0; i < len; i++) {
-                int diff = gr.op(arr[i], inv);
-                cand[i] = diff;
-                if (diff != 0 && diff < minDiff) {
-                    minDiff = diff;
+                if (i == j) {
+                    continue;
                 }
-            }
-            if (minDiff <= min[1]) {
-                Arrays.sort(cand);
-                if (compare(cand, min, len) < 0) {
-                    min = cand;
+                int diff = gr.op(arr[i], inv);
+                cnd[i] = diff;
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    min = cnd;
                 }
             }
         }
+        Arrays.sort(min);
         return min;
     }
 
