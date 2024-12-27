@@ -33,8 +33,9 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     public void set(int fromIndex, int toIndex) {
-        if (fromIndex == toIndex)
+        if (fromIndex == toIndex) {
             return;
+        }
 
         // Increase capacity if necessary
         int startWordIndex = wordIndex(fromIndex);
@@ -147,15 +148,21 @@ public class FixBS implements Comparable<FixBS> {
         }
     }
 
+    public void xor(FixBS set) {
+        for (int i = 0; i < words.length; i++) {
+            words[i] ^= set.words[i];
+        }
+    }
+
     public void and(FixBS set) {
         for (int i = 0; i < words.length; i++) {
             words[i] &= set.words[i];
         }
     }
 
-    public void xor(FixBS set) {
+    public void andNot(FixBS set) {
         for (int i = 0; i < words.length; i++) {
-            words[i] ^= set.words[i];
+            words[i] &= ~set.words[i];
         }
     }
 
@@ -227,11 +234,15 @@ public class FixBS implements Comparable<FixBS> {
         int wiu = words.length;
         while (wiu > 0 && words[--wiu] == 0) {
         }
-        if (wiu == 0) {
-            return 0;
-        }
-
         return BITS_PER_WORD * wiu + (BITS_PER_WORD - Long.numberOfLeadingZeros(words[wiu]));
+    }
+
+    public int size() {
+        return words.length * BITS_PER_WORD;
+    }
+
+    public void clear() {
+        Arrays.fill(words, 0);
     }
 
     @Override
