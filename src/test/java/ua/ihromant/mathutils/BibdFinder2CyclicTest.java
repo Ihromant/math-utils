@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -90,7 +91,7 @@ public class BibdFinder2CyclicTest {
                     return new int[k];
                 }
                 return minimalTuple(baseDesign[idx], aut, group, k);
-            }).toArray(int[][]::new)).toArray(int[][][]::new);
+            }).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
         }
@@ -288,9 +289,9 @@ public class BibdFinder2CyclicTest {
         try (FileInputStream allFis = new FileInputStream(beg);
              InputStreamReader allIsr = new InputStreamReader(allFis);
              BufferedReader allBr = new BufferedReader(allIsr)) {
-            Set<FixBS> set = allBr.lines().map(l -> FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
-                    .mapToInt(Integer::parseInt).toArray())).collect(Collectors.toSet());
-            logResultsDepth(System.out, gr, k, set.stream().map(bs -> bs.stream().toArray()).toList());
+            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
+            logResultsDepth(System.out, gr, k, set.stream().map(st -> st.stream()
+                    .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
         }
     }
 
@@ -310,21 +311,25 @@ public class BibdFinder2CyclicTest {
              FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
-            Set<FixBS> set = allBr.lines().map(l -> FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
-                    .mapToInt(Integer::parseInt).toArray())).collect(Collectors.toSet());
+            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
             br.lines().forEach(l -> {
                 if (l.contains("[[")) {
                     System.out.println(l);
                 } else {
-                    set.remove(FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", "))
-                            .mapToInt(Integer::parseInt).toArray()));
+                    set.remove(readPartial(l, v));
                 }
             });
-            logResultsDepth(ps, gr, k, set.stream().map(bs -> bs.stream().toArray()).toList());
+            logResultsDepth(ps, gr, k, set.stream().map(st -> st.stream()
+                    .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
         }
     }
 
-    private static void logResultsDepth(PrintStream destination, Group group, int k, List<int[]> unProcessed) {
+    private static List<FixBS> readPartial(String line, int v) {
+        String[] sp = line.substring(1, line.length() - 1).split("] \\[");
+        return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
+    }
+
+    private static void logResultsDepth(PrintStream destination, Group group, int k, List<int[][]> unProcessed) {
         System.out.println(group.name() + " " + k);
         int v = group.order();
         Group table = group.asTable();
@@ -345,11 +350,13 @@ public class BibdFinder2CyclicTest {
         AtomicInteger cnt = new AtomicInteger();
         unProcessed.stream().parallel().forEach(init -> {
             int[][] design = new int[blocksNeeded][k];
-            System.arraycopy(init, 0, design[0], 0, k);
-            State initial = State.forDesign(table, auths, baseFilter, design, k, 1);
+            for (int i = 0; i < init.length; i++) {
+                System.arraycopy(init[i], 0, design[i], 0, k);
+            }
+            State initial = State.forDesign(table, auths, baseFilter, design, k, init.length);
             calcCycles(table, auths, v, k, initial, designConsumer);
             if (destination != System.out) {
-                destination.println(Arrays.toString(init));
+                destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
             }
             int val = cnt.incrementAndGet();
