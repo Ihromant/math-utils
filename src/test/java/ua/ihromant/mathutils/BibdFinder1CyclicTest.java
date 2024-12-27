@@ -248,7 +248,7 @@ public class BibdFinder1CyclicTest {
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logFirstCycles(ps, group, k);
+            logFirstCycles(ps, group, k, 2);
         }
     }
 
@@ -256,7 +256,7 @@ public class BibdFinder1CyclicTest {
     public void logConsoleCycles() {
         Group group = new GroupProduct(5, 5);
         int k = 4;
-        logFirstCycles(System.out, group, k);
+        logFirstCycles(System.out, group, k, 1);
     }
 
     @Test
@@ -266,16 +266,16 @@ public class BibdFinder1CyclicTest {
         logAllCycles(System.out, group, k);
     }
 
-    private static void logFirstCycles(PrintStream destination, Group group, int k) {
+    private static void logFirstCycles(PrintStream destination, Group group, int k, int blockCount) {
         System.out.println(group.name() + " " + k);
         int v = group.order();
         FixBS filter = baseFilter(group, k);
         int[][] auths = group.auth();
         Group table = group.asTable();
-        int[][] design = new int[1][k];
+        int[][] design = new int[blockCount][k];
         State initial = State.forDesign(table, auths, filter, design, k, 0);
         calcCycles(table, auths, v, k, initial, cycle -> {
-            destination.println(Arrays.toString(cycle.curr.design[0]));
+            destination.println(Arrays.stream(cycle.curr.design).map(Arrays::toString).collect(Collectors.joining(" ")));
             destination.flush();
         });
     }
