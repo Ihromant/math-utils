@@ -87,7 +87,7 @@ public class BibdFinder2CyclicTest {
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, 1, blockIdx);
             int[][][] transformations = Arrays.stream(auths).map(aut -> IntStream.range(0, baseDesign.length).mapToObj(idx -> {
-                if (idx > blockIdx) {
+                if (idx >= blockIdx) {
                     return new int[k];
                 }
                 return minimalTuple(baseDesign[idx], aut, group, k);
