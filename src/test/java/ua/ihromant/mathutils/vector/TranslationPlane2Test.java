@@ -490,6 +490,68 @@ public class TranslationPlane2Test {
     }
 
     @Test
+    public void spreadsByBegins() throws IOException {
+        String suffix = "";
+        int p = 2;
+        int n = 8;
+        int half = n / 2;
+        int mc = LinearSpace.pow(p, half);
+
+        IntList[] orbits = readOrbits(mc);
+        ModuloMatrixHelper helper = readGl(p, half);
+        QuickFind find = orbitComponents(helper, orbits);
+        List<FixBS> components = find.components();
+        System.out.println("Components " + components);
+
+        Map<Func, int[]> paths = readPaths(mc);
+        try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + suffix + "xx.txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            int[][][] starts = br.lines().<int[][]>mapMulti((line, sink) -> {
+                String[] split = line.substring(1, line.length() - 1).split("] \\[");
+                int[] spr = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
+                int[][] res = new int[3][];
+                res[0] = spr;
+                res[1] = dom;
+                res[2] = rng;
+                sink.accept(res);
+            }).toArray(int[][][]::new);
+            System.out.println("Remaining " + starts.length);
+            Arrays.stream(starts).parallel().forEach(start -> {
+                int[] spt = start[0];
+                int[] dom = start[1];
+                int[] rng = start[2];
+                int[] partSpread = new int[mc - 2];
+                int sz = spt.length;
+                System.arraycopy(spt, 0, partSpread, 0, sz);
+                FixBS nulls = new FixBS(orbits.length);
+                int li = dom.length - 1;
+                for (int i = 0; i < li; i++) {
+                    nulls.set(dom[i]);
+                }
+                int last = dom[li];
+                IntList[] filteredOrbits = new IntList[orbits.length];
+                for (int idx = 0; idx < filteredOrbits.length; idx++) {
+                    if (nulls.get(idx)) {
+                        continue;
+                    }
+                    filteredOrbits[idx] = filterOrbit(helper, partSpread, orbits[idx], sz, idx == last ? spt[sz - 1] : 0);
+                }
+                State st = new State(filteredOrbits, partSpread, Func.of(dom, rng),
+                        Arrays.stream(filteredOrbits).filter(Objects::nonNull).mapToInt(IntList::size).sum());
+                Callback cons = (state, subGl) -> {
+                    int[] arr = state.partSpread();
+                    System.out.println(Arrays.toString(Arrays.copyOf(arr, state.func.sum)) + " " + Arrays.toString(state.func.dom)
+                            + " " + Arrays.toString(state.func.rng));
+                };
+                treeSimple(helper, paths, st, cons);
+            });
+        }
+    }
+
+    @Test
     public void breed() throws IOException {
         int p = 2;
         int n = 10;
