@@ -11,6 +11,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.IntStream;
 
@@ -87,7 +89,7 @@ public class TranslationPlane2Test {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(mc);
-        Map<Func, int[]> paths = pathsMap(components, orbits.length, mini.cardinality() - 2);
+        Map<Func, int[]> paths = readPaths(mini.cardinality());
         for (FixBS comp : components) {
             int min = comp.nextSetBit(0);
             Callback cons = (state, subGl) -> {
@@ -249,7 +251,7 @@ public class TranslationPlane2Test {
             sink.accept(state, subGl);
             return;
         }
-        for (int orbitIdx : paths.get(state.func)) {
+        for (int orbitIdx : paths.computeIfAbsent(state.func, k -> k.getPossible(state.orbits.length, state.partSpread.length))) {
             IntList v = state.orbit(orbitIdx);
             FixBS filter = new FixBS(helper.matCount());
             for (int j = 0; j < v.size(); j++) {
@@ -291,7 +293,7 @@ public class TranslationPlane2Test {
             sink.accept(state, new IntList(0));
             return;
         }
-        for (int orbitIdx : paths.get(state.func)) {
+        for (int orbitIdx : paths.computeIfAbsent(state.func, k -> k.getPossible(state.orbits.length, state.partSpread.length))) {
             IntList v = state.orbit(orbitIdx);
             for (int j = 0; j < v.size(); j++) {
                 State next = state.addOperatorToSpread(helper, orbitIdx, j);
@@ -347,7 +349,7 @@ public class TranslationPlane2Test {
         ModuloMatrixHelper helper = readGl(p, half);
         QuickFind find = orbitComponents(helper, orbits);
         List<FixBS> components = find.components();
-        Map<Func, int[]> paths = pathsMap(components, orbits.length, pow - 2);
+        Map<Func, int[]> paths = readPaths(pow);
         System.out.println("Components " + components + " paths " + paths.size());
 
         File f = new File("/home/ihromant/maths/trans/", "begins-" + p + "^" + n + "x.txt");
@@ -497,7 +499,7 @@ public class TranslationPlane2Test {
         IntList[] orbits = readOrbits(pow);
         ModuloMatrixHelper helper = readGl(p, half);
         QuickFind find = orbitComponents(helper, orbits);
-        Map<Func, int[]> paths = pathsMap(find.components(), orbits.length, pow - 2);
+        Map<Func, int[]> paths = readPaths(pow);
         System.out.println("Components " + find.components());
 
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/begins-" + p + "^" + n + ".txt");
@@ -594,7 +596,7 @@ public class TranslationPlane2Test {
         }
     }
 
-    private static Map<Func, int[]> readPaths(int pow) throws IOException {
+    private static Map<Func, int[]> readPaths(int pow) {
         try (InputStream is = new FileInputStream("/home/ihromant/maths/trans/paths" + pow + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
@@ -607,6 +609,10 @@ public class TranslationPlane2Test {
                 result.put(Func.of(dom, rng), path);
             });
             return result;
+        } catch (FileNotFoundException e) {
+            return new ConcurrentHashMap<>();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -649,6 +655,48 @@ public class TranslationPlane2Test {
     private record Func(int[] dom, int[] rng, int len, int sum) {
         private static Func of(int[] dom, int[] rng) {
             return new Func(dom, rng, dom.length, Arrays.stream(rng).sum());
+        }
+
+        private boolean hasPath(int orbitCount, int psLength) {
+            if (sum == psLength) {
+                return true;
+            }
+            if (canStay()) {
+                Func next = stay();
+                if (next.hasPath(orbitCount, psLength)) {
+                    return true;
+                }
+            }
+            if (canJump(orbitCount, psLength)) {
+                FixBS jumps = possibleJumps(orbitCount);
+                for (int j = jumps.nextSetBit(0); j >= 0; j = jumps.nextSetBit(j + 1)) {
+                    Func next = jump(j);
+                    if (next.hasPath(orbitCount, psLength)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        private int[] getPossible(int orbitCount, int psLength) {
+            FixBS possible = new FixBS(orbitCount);
+            if (canStay()) {
+                Func next = stay();
+                if (next.hasPath(orbitCount, psLength)) {
+                    possible.set(dom[dom.length - 1]);
+                }
+            }
+            if (canJump(orbitCount, psLength)) {
+                FixBS jumps = possibleJumps(orbitCount);
+                for (int j = jumps.nextSetBit(0); j >= 0; j = jumps.nextSetBit(j + 1)) {
+                    Func next = jump(j);
+                    if (next.hasPath(orbitCount, psLength)) {
+                        possible.set(j);
+                    }
+                }
+            }
+            return possible.stream().toArray();
         }
 
         private FixBS possibleJumps(int orbitCount) {
