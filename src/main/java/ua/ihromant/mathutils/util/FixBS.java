@@ -355,6 +355,14 @@ public class FixBS implements Comparable<FixBS> {
         return new FixBS(wds);
     }
 
+    public FixBS diff(FixBS other) {
+        long[] wds = new long[words.length];
+        for (int i = 0; i < words.length; i++) {
+            wds[i] = this.words[i] & ~other.words[i];
+        }
+        return new FixBS(wds);
+    }
+
     @Override
     public int compareTo(FixBS o) {
         for (int i = 0; i < words.length; i++) {

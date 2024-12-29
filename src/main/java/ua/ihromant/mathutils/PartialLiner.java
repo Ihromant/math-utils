@@ -1390,4 +1390,33 @@ public class PartialLiner {
         }
         return true;
     }
+
+    public List<int[]> possibleBlocks() {
+        List<int[]> res = new ArrayList<>();
+        int k = lines[0].length;
+        for (int i = 0; i < pointCount; i++) {
+            int[] bl = new int[k];
+            bl[0] = i;
+            possibleBlocks(bl, k - 1, res::add);
+        }
+        return res;
+    }
+
+    private void possibleBlocks(int[] curr, int needed, Consumer<int[]> cons) {
+        if (needed == 0) {
+            cons.accept(curr.clone());
+            return;
+        }
+        int sz = curr.length - needed;
+        int last = curr[sz - 1];
+        ex: for (int p = last + 1; p < pointCount; p++) {
+            for (int i = 0; i < sz; i++) {
+                if (line(curr[i], p) >= 0) {
+                    continue ex;
+                }
+            }
+            curr[sz] = p;
+            possibleBlocks(curr, needed - 1, cons);
+        }
+    }
 }

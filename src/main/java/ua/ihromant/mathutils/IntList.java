@@ -1,4 +1,4 @@
-package ua.ihromant.mathutils.vector;
+package ua.ihromant.mathutils;
 
 import java.util.Arrays;
 
@@ -13,6 +13,11 @@ public class IntList {
     public IntList(int[] arr) {
         this.arr = arr;
         this.size = arr.length;
+    }
+
+    private IntList(int[] arr, int size) {
+        this.arr = arr.clone();
+        this.size = size;
     }
 
     public int size() {
@@ -33,5 +38,14 @@ public class IntList {
     
     public int[] toArray() {
         return Arrays.copyOf(arr, size);
+    }
+
+    public IntList copy() {
+        return new IntList(arr, size);
+    }
+
+    @Override
+    public String toString() {
+        return Arrays.toString(Arrays.copyOf(arr, size));
     }
 }
