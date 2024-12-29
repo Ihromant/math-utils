@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.plane.Characteristic;
