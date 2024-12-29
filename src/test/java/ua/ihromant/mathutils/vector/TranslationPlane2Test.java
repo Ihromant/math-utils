@@ -419,11 +419,14 @@ public class TranslationPlane2Test {
             prbr.lines().forEach(line -> processed.add(
                     Arrays.stream(line.substring(1, line.length() - 1).split(", ")).map(Integer::parseInt).toList()));
             int[][][] starts = br.lines().<int[][]>mapMulti((line, sink) -> {
+                if (!line.contains("[") || line.contains("[{")) {
+                    return;
+                }
                 String[] split = line.substring(1, line.length() - 1).split("] \\[");
                 int[] spr = Arrays.stream(split[0].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] dom = Arrays.stream(split[1].split(", ")).mapToInt(Integer::parseInt).toArray();
                 int[] rng = Arrays.stream(split[2].split(", ")).mapToInt(Integer::parseInt).toArray();
-                if ((Arrays.stream(rng).sum() != mini.cardinality() - 2 && !paths.containsKey(Func.of(dom, rng))) || processed.contains(Arrays.stream(spr).boxed().toList())) {
+                if (processed.contains(Arrays.stream(spr).boxed().toList())) {
                     return;
                 }
                 int[][] res = new int[3][];
