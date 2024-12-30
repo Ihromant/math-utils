@@ -173,7 +173,6 @@ public class BibdFinder1CyclicTest {
             }
             for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
                 newWhiteList.clear(group.op(el, diff));
-                newWhiteList.clear(group.op(el, group.inv(diff)));
             }
             State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
             if (tupleFinished) {

@@ -365,4 +365,26 @@ public class BibdFinder2CyclicTest {
         });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
+
+    @Test
+    public void logAllCycles() {
+        Group group = new GroupProduct(5, 5, 13);
+        int k = 13;
+        logAllCycles(System.out, group, k);
+    }
+
+    private static void logAllCycles(PrintStream destination, Group group, int k) {
+        System.out.println(group.name() + " " + k);
+        int v = group.order();
+        FixBS filter = baseFilter(group, k);
+        int blocksNeeded = v / k / (k - 1);
+        int[][] auths = group.auth();
+        Group table = group.asTable();
+        int[][] design = new int[blocksNeeded][k];
+        State initial = State.forDesign(table, auths, filter, design, k, 0);
+        calcCycles(table, auths, v, k, initial, cycle -> {
+            destination.println(Arrays.deepToString(cycle.curr.design));
+            destination.flush();
+        });
+    }
 }
