@@ -126,7 +126,7 @@ public class BibdFinder5Test {
                     continue;
                 }
                 if (outDiff % 2 == 0) {
-                    newWhiteList.clear((idx + outDiff / 2) % v);
+                    newWhiteList.clear((el + outDiff / 2) % v);
                 }
                 for (int j = 0; j <= idx; j++) {
                     int nv = nextTuple[j];
@@ -302,7 +302,7 @@ public class BibdFinder5Test {
             }
         };
         AtomicInteger cnt = new AtomicInteger();
-        unProcessed.stream()/*.parallel()*/.forEach(init -> {
+        unProcessed.stream().parallel().forEach(init -> {
             int[][] design = new int[blocksNeeded][k];
             for (int i = 0; i < init.length; i++) {
                 System.arraycopy(init[i], 0, design[i], 0, k);
@@ -319,5 +319,26 @@ public class BibdFinder5Test {
             }
         });
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
+    }
+
+    @Test
+    public void logAllCycles() {
+        Group group = new CyclicGroup(91);
+        int k = 6;
+        logAllCycles(System.out, group, k);
+    }
+
+    private static void logAllCycles(PrintStream destination, Group group, int k) {
+        System.out.println(group.name() + " " + k);
+        int v = group.order();
+        FixBS filter = baseFilter(v, k);
+        int blocksNeeded = v / k / (k - 1);
+        int[][] design = new int[blocksNeeded][k];
+        int[] multipliers = multipliers(v);
+        State initial = State.forDesign(v, multipliers, filter, design, k, 0);
+        calcCycles(multipliers, v, k, initial, cycle -> {
+            destination.println(Arrays.deepToString(cycle.curr.design));
+            destination.flush();
+        });
     }
 }
