@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -571,25 +572,24 @@ public class BatchLinerTest {
         return designs;
     }
 
-    private List<Liner> cdfForGroup(Group group, int k) throws IOException {
+    private void cdfForGroup(Group group, int k, Consumer<Liner> cons) throws IOException {
         int v = group.order();
         try (InputStream is = new FileInputStream("/home/ihromant/maths/diffSets/beg/" + k + "-" + group.name() + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            return br.lines().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
+            br.lines().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
                 String[] split = line.substring(2, line.length() - 2).split("], \\[|}, \\{");
                 int[][] des = Stream.concat(Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()),
                         v % k == 0 ? Stream.of(group.elements().filter(e -> k % group.order(e) == 0).toArray()) : Stream.empty()).toArray(int[][]::new);
                 return Liner.byDiffFamily(group, des);
-            }).toList();
+            }).forEach(cons);
         }
     }
 
     @Test
     public void testDesigns() throws IOException {
         Group gr = new GroupProduct(2, 2, 13);
-        List<Liner> liners = cdfForGroup(gr, 4);
-        liners.forEach(l -> System.out.println(l.hyperbolicIndex()));
+        cdfForGroup(gr, 4, l -> System.out.println(l.hyperbolicIndex()));
     }
 
     @Test
