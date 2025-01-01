@@ -62,7 +62,7 @@ public interface ModuloMatrixHelper {
                 throw new RuntimeException(e);
             }
         }
-        if (p > 3 && n > 2) {
+        if (p > 3 && n > 2 || p > 13 && n > 1) {
             return new CommonMatrixHelper(p, n);
         }
         return new TableMatrixHelper(p, n);
