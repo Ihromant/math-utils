@@ -50,7 +50,7 @@ public class D3P2Test {
                 {1, 4, 8}
         };
         FuzzyLiner base = FuzzyLiner.of(p31, new Triple[]{new Triple(0, 1, 4)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP3S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of());// TODO ContradictionUtil::processP3S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -82,7 +82,7 @@ public class D3P2Test {
                 {3, 5, 8}
         };
         FuzzyLiner base = FuzzyLiner.of(p21, new Triple[]{new Triple(0, 1, 4)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP2S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of());// TODO ContradictionUtil::processP2S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();

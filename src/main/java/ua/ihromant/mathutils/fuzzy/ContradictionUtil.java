@@ -4,7 +4,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -16,156 +15,156 @@ public class ContradictionUtil {
             try {
                 FuzzyLiner next = op.apply(l);
                 sink.accept(next);
-            } catch (IllegalArgumentException e) {
+            } catch (ContradictionException e) {
                 // ok
             }
         });
     }
 
     public static void recur(FuzzyLiner base, boolean onlyDist, Consumer<FuzzyLiner> sink) {
-        Pair p = base.undefinedPair();
-        if (p != null) {
-            try {
-                Queue<Rel> rels = new ArrayDeque<>();
-                rels.add(new Same(p.f(), p.s()));
-                FuzzyLiner copy = base.copy();
-                copy.update(rels);
-                recur(copy, onlyDist, sink);
-            } catch (IllegalArgumentException e) {
-                // ok
-            }
-            try {
-                Queue<Rel> rels = new ArrayDeque<>();
-                rels.add(new Dist(p.f(), p.s()));
-                FuzzyLiner copy = base.copy();
-                copy.update(rels);
-                recur(copy, onlyDist, sink);
-            } catch (IllegalArgumentException e) {
-                // ok
-            }
-            return;
-        }
-        if (onlyDist) {
-            sink.accept(base);
-            return;
-        }
-        Triple tr = base.undefinedTriple();
-        if (tr == null) {
-            sink.accept(base);
-            return;
-        }
-        try {
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
-            FuzzyLiner copy = base.copy();
-            copy.update(rels);
-            recur(copy, onlyDist, sink);
-        } catch (IllegalArgumentException e) {
-            // ok
-        }
-        try {
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Col(tr.f(), tr.s(), tr.t()));
-            FuzzyLiner copy = base.copy();
-            copy.update(rels);
-            recur(copy, onlyDist, sink);
-        } catch (IllegalArgumentException e) {
-            // ok
-        }
+//        Pair p = base.undefinedPair();
+//        if (p != null) {
+//            try {
+//                Queue<Rel> rels = new ArrayDeque<>();
+//                rels.add(new Same(p.f(), p.s()));
+//                FuzzyLiner copy = base.copy();
+//                copy.update(rels);
+//                recur(copy, onlyDist, sink);
+//            } catch (ContradictionException e) {
+//                // ok
+//            }
+//            try {
+//                Queue<Rel> rels = new ArrayDeque<>();
+//                rels.add(new Dist(p.f(), p.s()));
+//                FuzzyLiner copy = base.copy();
+//                copy.update(rels);
+//                recur(copy, onlyDist, sink);
+//            } catch (ContradictionException e) {
+//                // ok
+//            }
+//            return;
+//        }
+//        if (onlyDist) {
+//            sink.accept(base);
+//            return;
+//        }
+//        Triple tr = base.undefinedTriple();
+//        if (tr == null) {
+//            sink.accept(base);
+//            return;
+//        }
+//        try {
+//            Queue<Rel> rels = new ArrayDeque<>();
+//            rels.add(new Trg(tr.f(), tr.s(), tr.t()));
+//            FuzzyLiner copy = base.copy();
+//            copy.update(rels);
+//            recur(copy, onlyDist, sink);
+//        } catch (ContradictionException e) {
+//            // ok
+//        }
+//        try {
+//            Queue<Rel> rels = new ArrayDeque<>();
+//            rels.add(new Col(tr.f(), tr.s(), tr.t()));
+//            FuzzyLiner copy = base.copy();
+//            copy.update(rels);
+//            recur(copy, onlyDist, sink);
+//        } catch (ContradictionException e) {
+//            // ok
+//        }
     }
 
     public static FuzzyLiner singleByContradiction(FuzzyLiner ln, boolean onlyDist, UnaryOperator<FuzzyLiner> op) {
-        List<Pair> pairs = ln.undefinedPairs();
-        Queue<Rel> q = new ConcurrentLinkedDeque<>();
-        pairs.stream().parallel().forEach(p -> {
-            Boolean dist = identifyDistinction(ln, p, op);
-            if (dist == null) {
-                return;
-            }
-            if (dist) {
-                q.add(new Dist(p.f(), p.s()));
-            } else {
-                q.add(new Same(p.f(), p.s()));
-            }
-        });
-        ln.update(q);
+        List<Pair> pairs = ln.undefinedPairs(); // TODO
+//        Queue<Rel> q = new ConcurrentLinkedDeque<>();
+//        pairs.stream().parallel().forEach(p -> {
+//            Boolean dist = identifyDistinction(ln, p, op);
+//            if (dist == null) {
+//                return;
+//            }
+//            if (dist) {
+//                q.add(new Dist(p.f(), p.s()));
+//            } else {
+//                q.add(new Same(p.f(), p.s()));
+//            }
+//        });
+//        ln.update(q);
         FuzzyLiner afterDist = op.apply(ln);
-        if (onlyDist) {
-            return afterDist;
-        }
-        List<Triple> triples = afterDist.undefinedTriples();
-        Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
-        triples.stream().parallel().forEach(tr -> {
-            Boolean coll = identifyCollinearity(afterDist, tr, op);
-            if (coll == null) {
-                return;
-            }
-            if (coll) {
-                q1.add(new Col(tr.f(), tr.s(), tr.t()));
-            } else {
-                q1.add(new Trg(tr.f(), tr.s(), tr.t()));
-            }
-        });
-        afterDist.update(q1);
+//        if (onlyDist) {
+//            return afterDist;
+//        }
+//        List<Triple> triples = afterDist.undefinedTriples();
+//        Queue<Rel> q1 = new ConcurrentLinkedDeque<>();
+//        triples.stream().parallel().forEach(tr -> {
+//            Boolean coll = identifyCollinearity(afterDist, tr, op);
+//            if (coll == null) {
+//                return;
+//            }
+//            if (coll) {
+//                q1.add(new Col(tr.f(), tr.s(), tr.t()));
+//            } else {
+//                q1.add(new Trg(tr.f(), tr.s(), tr.t()));
+//            }
+//        });
+//        afterDist.update(q1);
         return op.apply(afterDist);
     }
 
     public static Boolean identifyDistinction(FuzzyLiner l, Pair p, UnaryOperator<FuzzyLiner> op) {
-        Boolean result = null;
-        try {
-            FuzzyLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Same(p.f(), p.s()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            result = true;
-        }
-        try {
-            FuzzyLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Dist(p.f(), p.s()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            if (result != null) {
-                throw new IllegalArgumentException("Total impossibility");
-            }
-            result = false;
-        }
+        Boolean result = null; // TODO
+//        try {
+//            FuzzyLiner copy = l.copy();
+//            Queue<Rel> rels = new ArrayDeque<>();
+//            rels.add(new Same(p.f(), p.s()));
+//            copy.update(rels);
+//            op.apply(copy);
+//        } catch (ContradictionException e) {
+//            result = true;
+//        }
+//        try {
+//            FuzzyLiner copy = l.copy();
+//            Queue<Rel> rels = new ArrayDeque<>();
+//            rels.add(new Dist(p.f(), p.s()));
+//            copy.update(rels);
+//            op.apply(copy);
+//        } catch (ContradictionException e) {
+//            if (result != null) {
+//                throw new IllegalArgumentException("Total impossibility");
+//            }
+//            result = false;
+//        }
         return result;
     }
 
     public static Boolean identifyCollinearity(FuzzyLiner l, Triple t, UnaryOperator<FuzzyLiner> op) {
-        Boolean result = null;
-        try {
-            FuzzyLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Col(t.f(), t.s(), t.t()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            result = false;
-        }
-        try {
-            FuzzyLiner copy = l.copy();
-            Queue<Rel> rels = new ArrayDeque<>();
-            rels.add(new Trg(t.f(), t.s(), t.t()));
-            copy.update(rels);
-            op.apply(copy);
-        } catch (IllegalArgumentException e) {
-            if (result != null) {
-                throw new IllegalArgumentException("Total impossibility");
-            }
-            result = true;
-        }
+        Boolean result = null; // TODO
+//        try {
+//            FuzzyLiner copy = l.copy();
+//            Queue<Rel> rels = new ArrayDeque<>();
+//            rels.add(new Col(t.f(), t.s(), t.t()));
+//            copy.update(rels);
+//            op.apply(copy);
+//        } catch (ContradictionException e) {
+//            result = false;
+//        }
+//        try {
+//            FuzzyLiner copy = l.copy();
+//            Queue<Rel> rels = new ArrayDeque<>();
+//            rels.add(new Trg(t.f(), t.s(), t.t()));
+//            copy.update(rels);
+//            op.apply(copy);
+//        } catch (ContradictionException e) {
+//            if (result != null) {
+//                throw new IllegalArgumentException("Total impossibility");
+//            }
+//            result = true;
+//        }
         return result;
     }
 
-    public static FuzzyLiner process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Rel>>> processors) {
+    public static FuzzyLiner process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Update>>> processors) {
         while (true) {
             FuzzyLiner lnr = liner;
-            Queue<Rel> queue = processors.stream().parallel().flatMap(p -> p.apply(lnr).stream())
+            Queue<Update> queue = processors.stream().parallel().flatMap(p -> p.apply(lnr).stream())
                     .collect(Collectors.toCollection(ArrayDeque::new));
             if (queue.isEmpty()) {
                 return liner;
@@ -175,63 +174,58 @@ public class ContradictionUtil {
         }
     }
 
-    public static List<Rel> processP(FuzzyLiner liner) {
+    public static List<Update> processP(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
-        for (int o = 0; o < pc; o++) {
-            for (int a = 0; a < pc; a++) {
-                if (!liner.distinct(o, a)) {
+        List<Update> res = new ArrayList<>(liner.getPc());
+        for (int a = 0; a < pc; a++) {
+            for (int b = a + 1; b < pc; b++) {
+                if (!liner.distinct(a, b)) {
                     continue;
                 }
-                for (int b = a + 1; b < pc; b++) {
-                    if (!liner.collinear(o, a, b)) {
+                for (int c = b + 1; c < pc; c++) {
+                    if (!liner.collinear(a, b, c)) {
                         continue;
                     }
-                    for (int c = b + 1; c < pc; c++) {
-                        if (!liner.collinear(o, a, c) || !liner.collinear(a, b, c)) {
+                    for (int a1 = 0; a1 < pc; a1++) {
+                        if (!liner.triangle(a, b, a1)) {
                             continue;
                         }
-                        for (int a1 = 0; a1 < pc; a1++) {
-                            if (!liner.triangle(o, a, a1)) {
+                        for (int b1 = 0; b1 < pc; b1++) {
+                            if (!liner.triangle(a, b, b1) || !liner.triangle(a1, b1, a) || !liner.triangle(a1, b1, b) || !liner.triangle(a1, b1, c)) {
                                 continue;
                             }
-                            for (int b1 = 0; b1 < pc; b1++) {
-                                if (!liner.collinear(o, a1, b1)) {
+                            for (int c1 = 0; c1 < pc; c1++) {
+                                if (!liner.collinear(a1, b1, c1) || !liner.triangle(a, b, c1)) {
                                     continue;
                                 }
-                                for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(o, a1, c1) || !liner.collinear(a1, b1, c1)) {
-                                        continue;
-                                    }
-                                    int ab1a1b = -1;
-                                    int ac1a1c = -1;
-                                    int bc1b1c = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
-                                        if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
-                                            if (ab1a1b < 0) {
-                                                ab1a1b = i;
-                                            }
-                                            if (bc1b1c >= 0 && ac1a1c >= 0 && !liner.collinear(bc1b1c, ac1a1c, i)) {
-                                                res.add(new Col(bc1b1c, ac1a1c, i));
-                                            }
-                                        }
-                                        if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
-                                            if (bc1b1c < 0) {
-                                                bc1b1c = i;
-                                            }
-                                            if (ab1a1b >= 0 && ac1a1c >= 0 && !liner.collinear(ac1a1c, ab1a1b, i)) {
-                                                res.add(new Col(ac1a1c, ab1a1b, i));
-                                            }
-                                        }
-                                        if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
-                                            if (ac1a1c < 0) {
-                                                ac1a1c = i;
-                                            }
-                                            if (ab1a1b >= 0 && bc1b1c >= 0 && !liner.collinear(ab1a1b, bc1b1c, i)) {
-                                                res.add(new Col(ab1a1b, bc1b1c, i));
-                                            }
+                                int ab1a1b = -1;
+                                int ac1a1c = -1;
+                                int bc1b1c = -1;
+                                for (int i = 0; i < liner.getPc(); i++) {
+                                    if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
+                                        if (ab1a1b < 0) {
+                                            ab1a1b = i;
                                         }
                                     }
+                                    if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
+                                        if (bc1b1c < 0) {
+                                            bc1b1c = i;
+                                        }
+                                    }
+                                    if (liner.collinear(a, c1, i) && liner.collinear(a1, c, i)) {
+                                        if (ac1a1c < 0) {
+                                            ac1a1c = i;
+                                        }
+                                    }
+                                }
+                                if (ab1a1b < 0 || ac1a1c < 0 || bc1b1c < 0) {
+                                    continue;
+                                }
+                                if (!liner.collinear(bc1b1c, ac1a1c, ab1a1b)) {
+                                    res.add(new Update(new Col(bc1b1c, ac1a1c, ab1a1b), "P", new Col(a, b, c), new Col(a1, b1, c1),
+                                            new Trg(a, b, a1), new Trg(a, b, b1), new Trg(a, b, c1), new Trg(a1, b1, a), new Trg(a1, b1, b), new Trg(a1, b1, c),
+                                            new Col(a, b1, ab1a1b), new Col(a1, b, ab1a1b), new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c),
+                                            new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c)));
                                 }
                             }
                         }
@@ -242,9 +236,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processP1(FuzzyLiner liner) {
+    public static List<Update> processP1(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int a = 0; a < pc; a++) {
             for (int b = 0; b < pc; b++) {
                 if (!liner.distinct(a, b)) {
@@ -255,11 +249,11 @@ public class ContradictionUtil {
                         continue;
                     }
                     for (int a1 = 0; a1 < pc; a1++) {
-                        if (!liner.triangle(a, b, a1) || !liner.triangle(a, c, a1) || !liner.triangle(b, c, a1)) {
+                        if (!liner.triangle(a, b, a1)) {
                             continue;
                         }
                         for (int b1 = 0; b1 < pc; b1++) {
-                            if (!liner.triangle(a, a1, b1) || !liner.triangle(b, a1, b1) || !liner.triangle(c, a1, b1)) {
+                            if (!liner.triangle(a, a1, b1) || !liner.triangle(b, a1, b1) || !liner.triangle(c, a1, b1) || !liner.triangle(a, b, b1)) {
                                 continue;
                             }
                             int c1 = -1;
@@ -281,7 +275,7 @@ public class ContradictionUtil {
                                     break;
                                 }
                             }
-                            if (c1 < 0) {
+                            if (c1 < 0 || !liner.triangle(a, b, c1)) {
                                 continue;
                             }
                             for (int i = 0; i < liner.getPc(); i++) {
@@ -296,7 +290,10 @@ public class ContradictionUtil {
                                 continue;
                             }
                             if (!liner.collinear(ac1a1c, ab1a1b, bc1b1c)) {
-                                res.add(new Col(ac1a1c, ab1a1b, bc1b1c));
+                                res.add(new Update(new Col(ac1a1c, ab1a1b, bc1b1c), "P1", new Col(a, b, c), new Col(a1, b1, c1),
+                                        new Trg(a, b, a1), new Trg(a, b, b1), new Trg(a, b, c1), new Trg(a1, b1, a), new Trg(a1, b1, b), new Trg(a1, b1, c),
+                                        new Col(a, b1, ab1a1b), new Col(a, b1, ab1a1b), new Col(c, c1, ab1a1b),
+                                        new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c), new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c)));
                             }
                         }
                     }
@@ -306,9 +303,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processPS(FuzzyLiner liner) {
+    public static List<Update> processPS(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -358,7 +355,9 @@ public class ContradictionUtil {
                                 continue;
                             }
                             if (!liner.collinear(ab1a1b, ac1a1c, bc1b1c)) {
-                                res.add(new Col(ab1a1b, ac1a1c, bc1b1c));
+                                res.add(new Update(new Col(ab1a1b, ac1a1c, bc1b1c), "PS", new Trg(o, a, a1), new Col(a, b, c), new Col(a1, b1, c1),
+                                        new Col(a, b1, ab1a1b), new Col(a1, b, ab1a1b), new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c),
+                                        new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c), new Col(o, ab1a1b, ac1a1c)));
                             }
                         }
                     }
@@ -368,9 +367,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processP1S(FuzzyLiner liner) {
+    public static List<Update> processP1S(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -431,7 +430,10 @@ public class ContradictionUtil {
                             continue;
                         }
                         if (!liner.collinear(ab1a1b, ac1a1c, bc1b1c)) {
-                            res.add(new Col(ab1a1b, ac1a1c, bc1b1c));
+                            res.add(new Update(new Col(ab1a1b, ac1a1c, bc1b1c), "P1S", new Trg(o, a, a1), new Col(o, a, b), new Col(a, b, c),
+                                    new Col(o, a1, b1), new Col(a1, b1, c1), new Col(a, b1, ab1a1b), new Col(a1, b, ab1a1b),
+                                    new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c), new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c),
+                                    new Col(o, ab1a1b, ac1a1c)));
                         }
                     }
                 }
@@ -600,9 +602,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD3(FuzzyLiner liner) {
+    public static List<Update> processD3(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -647,24 +649,33 @@ public class ContradictionUtil {
                                 if (aba1b1 < 0) {
                                     aba1b1 = i;
                                 }
-                                if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, i)) {
-                                    res.add(new Col(bcb1c1, aca1c1, i));
+                                if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, aba1b1)) {
+                                    res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D3", new Trg(o, a, b), new Trg(o, b, c), new Trg(o, a, c),
+                                            new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                            new Col(a, b, c1), new Col(a, c, b1), new Col(b, c, a1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1),
+                                            new Col(a, c, aca1c1), new Col(a1, c1, aca1c1), new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1)));
                                 }
                             }
                             if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
                                 if (aca1c1 < 0) {
                                     aca1c1 = i;
                                 }
-                                if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, i)) {
-                                    res.add(new Col(aba1b1, bcb1c1, i));
+                                if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, aca1c1)) {
+                                    res.add(new Update(new Col(aba1b1, bcb1c1, aca1c1), "D3", new Trg(o, a, b), new Trg(o, b, c), new Trg(o, a, c),
+                                            new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                            new Col(a, b, c1), new Col(a, c, b1), new Col(b, c, a1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1),
+                                            new Col(a, c, aca1c1), new Col(a1, c1, aca1c1), new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1)));
                                 }
                             }
                             if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
                                 if (bcb1c1 < 0) {
                                     bcb1c1 = i;
                                 }
-                                if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, i)) {
-                                    res.add(new Col(aba1b1, aca1c1, i));
+                                if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                    res.add(new Update(new Col(aba1b1, aca1c1, bcb1c1), "D3", new Trg(o, a, b), new Trg(o, b, c), new Trg(o, a, c),
+                                            new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                            new Col(a, b, c1), new Col(a, c, b1), new Col(b, c, a1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1),
+                                            new Col(a, c, aca1c1), new Col(a1, c1, aca1c1), new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1)));
                                 }
                             }
                         }
@@ -675,9 +686,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD2(FuzzyLiner liner) {
+    public static List<Update> processD2(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -704,15 +715,11 @@ public class ContradictionUtil {
                                 if (liner.collinear(o, b, i) && liner.collinear(a, c, i)) {
                                     if (b1 < 0) {
                                         b1 = i;
-                                    } else {
-                                        res.add(new Same(b1, i));
                                     }
                                 }
                                 if (liner.collinear(o, c, i) && liner.collinear(a, b, i)) {
                                     if (c1 < 0) {
                                         c1 = i;
-                                    } else {
-                                        res.add(new Same(c1, i));
                                     }
                                 }
                             }
@@ -723,31 +730,34 @@ public class ContradictionUtil {
                                 if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
                                     if (aba1b1 < 0) {
                                         aba1b1 = i;
-                                    } else {
-                                        res.add(new Same(aba1b1, i));
                                     }
-                                    if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, i)) {
-                                        res.add(new Col(bcb1c1, aca1c1, i));
+                                    if (bcb1c1 >= 0 && aca1c1 >= 0 && !liner.collinear(bcb1c1, aca1c1, aba1b1)) {
+                                        res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D2", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(a, b, c1), new Col(a, c, b1), new Col(o, a, a1), new Col(o, b, b1),
+                                                new Col(o, c, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                                new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1)));
                                     }
                                 }
                                 if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
                                     if (aca1c1 < 0) {
                                         aca1c1 = i;
-                                    } else {
-                                        res.add(new Same(aca1c1, i));
                                     }
-                                    if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, i)) {
-                                        res.add(new Col(aba1b1, bcb1c1, i));
+                                    if (aba1b1 >= 0 && bcb1c1 >= 0 && !liner.collinear(aba1b1, bcb1c1, aca1c1)) {
+                                        res.add(new Update(new Col(aba1b1, bcb1c1, aca1c1), "D2", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(a, b, c1), new Col(a, c, b1), new Col(o, a, a1), new Col(o, b, b1),
+                                                new Col(o, c, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                                new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1)));
                                     }
                                 }
                                 if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
                                     if (bcb1c1 < 0) {
                                         bcb1c1 = i;
-                                    } else {
-                                        res.add(new Same(bcb1c1, i));
                                     }
-                                    if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, i)) {
-                                        res.add(new Col(aba1b1, aca1c1, i));
+                                    if (aba1b1 >= 0 && aca1c1 >= 0 && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                        res.add(new Update(new Col(aba1b1, aca1c1, bcb1c1), "D2", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(a, b, c1), new Col(a, c, b1), new Col(o, a, a1), new Col(o, b, b1),
+                                                new Col(o, c, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                                new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1)));
                                     }
                                 }
                             }
@@ -759,9 +769,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD2S(FuzzyLiner liner) {
+    public static List<Update> processD2S(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -804,11 +814,8 @@ public class ContradictionUtil {
                             if (liner.collinear(o, aca1c1, i) && liner.collinear(a, b, i)) {
                                 aba1b1 = i;
                             }
-                            if (liner.collinear(o, aca1c1, i) && liner.collinear(b, c, i)) {
-                                bcb1c1 = i;
-                            }
                         }
-                        if (aba1b1 < 0 || bcb1c1 < 0) {
+                        if (aba1b1 < 0) {
                             continue;
                         }
                         for (int i = 0; i < pc; i++) {
@@ -816,11 +823,23 @@ public class ContradictionUtil {
                                 b1 = i;
                             }
                         }
-                        if (b1 < 0) {
+                        if (b1 < 0 || !liner.triangle(a1, b1, c1)) {
                             continue;
                         }
-                        if (!liner.collinear(b1, c1, bcb1c1)) {
-                            res.add(new Col(b1, c1, bcb1c1));
+                        for (int i = 0; i < pc; i++) {
+                            if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
+                                bcb1c1 = i;
+                            }
+                        }
+                        if (bcb1c1 < 0) {
+                            continue;
+                        }
+                        if (!liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                            res.add(new Update(new Col(aba1b1, aca1c1, bcb1c1), "D2S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                    new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                    new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                    new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1),
+                                    new Col(b, c, a1), new Col(a, b, c1), new Col(o, aba1b1, aca1c1)));
                         }
                     }
                 }
@@ -829,9 +848,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD1S(FuzzyLiner liner) {
+    public static List<Update> processD1S(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -855,7 +874,7 @@ public class ContradictionUtil {
                                     continue;
                                 }
                                 for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(o, c, c1)) {
+                                    if (!liner.collinear(o, c, c1) || !liner.triangle(a1, b1, c1)) {
                                         continue;
                                     }
                                     int aba1b1 = -1;
@@ -865,33 +884,39 @@ public class ContradictionUtil {
                                         if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
                                             if (aba1b1 < 0) {
                                                 aba1b1 = i;
-                                            } else {
-                                                res.add(new Same(aba1b1, i));
-                                            }
-                                            if (bcb1c1 >= 0 && aca1c1 >= 0 && liner.collinear(o, bcb1c1, aca1c1) && !liner.collinear(bcb1c1, aca1c1, i)) {
-                                                res.add(new Col(bcb1c1, aca1c1, i));
                                             }
                                         }
                                         if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
                                             if (aca1c1 < 0) {
                                                 aca1c1 = i;
-                                            } else {
-                                                res.add(new Same(aca1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && bcb1c1 >= 0 && liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, bcb1c1, i)) {
-                                                res.add(new Col(aba1b1, bcb1c1, i));
                                             }
                                         }
                                         if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
                                             if (bcb1c1 < 0) {
                                                 bcb1c1 = i;
-                                            } else {
-                                                res.add(new Same(bcb1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && aca1c1 >= 0 && liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, i)) {
-                                                res.add(new Col(aba1b1, aca1c1, i));
                                             }
                                         }
+                                    }
+                                    if (aba1b1 < 0 || aca1c1 < 0 || bcb1c1 < 0) {
+                                        continue;
+                                    }
+                                    if (liner.collinear(o, bcb1c1, aca1c1) && !liner.collinear(bcb1c1, aca1c1, aba1b1)) {
+                                        res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D1S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                                new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                                new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1), new Col(o, bcb1c1, aca1c1)));
+                                    }
+                                    if (liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, bcb1c1, aca1c1)) {
+                                        res.add(new Update(new Col(aba1b1, bcb1c1, aca1c1), "D1S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                                new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                                new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1), new Col(o, aba1b1, bcb1c1)));
+                                    }
+                                    if (liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                        res.add(new Update(new Col(aba1b1, aca1c1, bcb1c1), "D1S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                                new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                                new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1), new Col(o, aba1b1, aca1c1)));
                                     }
                                 }
                             }
@@ -903,9 +928,9 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD3S(FuzzyLiner liner) {
+    public static List<Update> processD3S(FuzzyLiner liner) {
         int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -929,8 +954,7 @@ public class ContradictionUtil {
                                     continue;
                                 }
                                 for (int c1 = 0; c1 < pc; c1++) {
-                                    if (!liner.collinear(o, c, c1)
-                                            || !liner.collinear(a, b, c1)) {
+                                    if (!liner.collinear(o, c, c1) || !liner.collinear(a, b, c1) || !liner.triangle(a1, b1, c1)) {
                                         continue;
                                     }
                                     int aba1b1 = -1;
@@ -940,33 +964,42 @@ public class ContradictionUtil {
                                         if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
                                             if (aba1b1 < 0) {
                                                 aba1b1 = i;
-                                            } else {
-                                                res.add(new Same(aba1b1, i));
-                                            }
-                                            if (bcb1c1 >= 0 && aca1c1 >= 0 && liner.collinear(o, bcb1c1, aca1c1) && !liner.collinear(bcb1c1, aca1c1, i)) {
-                                                res.add(new Col(bcb1c1, aca1c1, i));
                                             }
                                         }
                                         if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
                                             if (aca1c1 < 0) {
                                                 aca1c1 = i;
-                                            } else {
-                                                res.add(new Same(aca1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && bcb1c1 >= 0 && liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, bcb1c1, i)) {
-                                                res.add(new Col(aba1b1, bcb1c1, i));
                                             }
                                         }
                                         if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
                                             if (bcb1c1 < 0) {
                                                 bcb1c1 = i;
-                                            } else {
-                                                res.add(new Same(bcb1c1, i));
-                                            }
-                                            if (aba1b1 >= 0 && aca1c1 >= 0 && liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, i)) {
-                                                res.add(new Col(aba1b1, aca1c1, i));
                                             }
                                         }
+                                    }
+                                    if (aba1b1 < 0 || aca1c1 < 0 || bcb1c1 < 0) {
+                                        continue;
+                                    }
+                                    if (liner.collinear(o, bcb1c1, aca1c1) && !liner.collinear(bcb1c1, aca1c1, aba1b1)) {
+                                        res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D3S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                                new Col(b, c, a1), new Col(a, c, b1), new Col(a, b, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1),
+                                                new Col(a, c, aca1c1), new Col(a1, c1, aca1c1), new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1),
+                                                new Col(o, bcb1c1, aca1c1)));
+                                    }
+                                    if (liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, bcb1c1, aca1c1)) {
+                                        res.add(new Update(new Col(aba1b1, bcb1c1, aca1c1), "D3S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                                new Col(b, c, a1), new Col(a, c, b1), new Col(a, b, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1),
+                                                new Col(a, c, aca1c1), new Col(a1, c1, aca1c1), new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1),
+                                                new Col(o, aba1b1, bcb1c1)));
+                                    }
+                                    if (liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                        res.add(new Update(new Col(aba1b1, aca1c1, bcb1c1), "D3S", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                                new Trg(a, b, c), new Trg(a1, b1, c1), new Col(o, a, a1), new Col(o, b, b1), new Col(o, c, c1),
+                                                new Col(b, c, a1), new Col(a, c, b1), new Col(a, b, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1),
+                                                new Col(a, c, aca1c1), new Col(a1, c1, aca1c1), new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1),
+                                                new Col(o, aba1b1, aca1c1)));
                                     }
                                 }
                             }
@@ -978,8 +1011,8 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processFullFano(FuzzyLiner liner) {
-        List<Rel> res = new ArrayList<>(liner.getPc());
+    public static List<Update> processFullFano(FuzzyLiner liner) {
+        List<Update> res = new ArrayList<>(liner.getPc());
         for (int a = 0; a < liner.getPc(); a++) {
             for (int b = a + 1; b < liner.getPc(); b++) {
                 if (!liner.distinct(a, b)) {
@@ -1000,33 +1033,25 @@ public class ContradictionUtil {
                             if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
                                 if (abcd < 0) {
                                     abcd = i;
-                                } else {
-                                    res.add(new Same(abcd, i));
-                                }
-                                if (acbd >= 0 && adbc >= 0 && !liner.collinear(acbd, adbc, i)) {
-                                    res.add(new Col(acbd, adbc, i));
                                 }
                             }
                             if (liner.collinear(a, c, i) && liner.collinear(b, d, i)) {
                                 if (acbd < 0) {
                                     acbd = i;
-                                } else {
-                                    res.add(new Same(acbd, i));
-                                }
-                                if (abcd >= 0 && adbc >= 0 && !liner.collinear(abcd, adbc, i)) {
-                                    res.add(new Col(abcd, adbc, i));
                                 }
                             }
                             if (liner.collinear(a, d, i) && liner.collinear(b, c, i)) {
                                 if (adbc < 0) {
                                     adbc = i;
-                                } else {
-                                    res.add(new Same(adbc, i));
-                                }
-                                if (abcd >= 0 && acbd >= 0 && !liner.collinear(abcd, acbd, i)) {
-                                    res.add(new Col(abcd, acbd, i));
                                 }
                             }
+                        }
+                        if (abcd < 0 || acbd < 0 || adbc < 0) {
+                            continue;
+                        }
+                        if (!liner.collinear(abcd, acbd, adbc)) {
+                            res.add(new Update(new Col(abcd, acbd, adbc), "F", new Trg(a, b, c), new Trg(a, c, d), new Trg(a, b, d), new Trg(b, c, d),
+                                    new Col(a, b, abcd), new Col(c, d, abcd), new Col(a, c, acbd), new Col(b, d, acbd), new Col(a, d, adbc), new Col(b, c, adbc)));
                         }
                     }
                 }
