@@ -47,7 +47,7 @@ public class FuzzyLiner {
         for (Triple t : triangles) {
             queue.add(new Update(new Trg(t.f(), t.s(), t.t()), "Initial"));
         }
-        Map<Rel, Update> updates = res.update(queue);
+        Map<Rel, Update> updates = res.update(queue, new HashMap<>());
         return new LinerHistory(res, updates);
     }
 
@@ -154,8 +154,7 @@ public class FuzzyLiner {
         return t[a][b][c];
     }
 
-    public Map<Rel, Update> update(Queue<Update> queue) {
-        Map<Rel, Update> result = new HashMap<>();
+    public Map<Rel, Update> update(Queue<Update> queue, Map<Rel, Update> result) {
         while (!queue.isEmpty()) {
             Update u = queue.poll();
             switch (u.base()) {
@@ -577,7 +576,7 @@ public class FuzzyLiner {
             }
         }
         FuzzyLiner res = addPoints(pt - pc);
-        Map<Rel, Update> history = res.update(queue);
+        Map<Rel, Update> history = res.update(queue, new HashMap<>());
         return new LinerHistory(res, history);
     }
 

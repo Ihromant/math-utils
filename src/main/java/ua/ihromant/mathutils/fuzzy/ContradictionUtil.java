@@ -171,7 +171,7 @@ public class ContradictionUtil {
             if (queue.isEmpty()) {
                 return new LinerHistory(liner, result);
             }
-            result.putAll(liner.update(queue));
+            liner.update(queue, result);
             // TODO liner = liner.quotient();
         }
     }
