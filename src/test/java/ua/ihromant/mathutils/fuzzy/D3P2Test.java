@@ -21,9 +21,9 @@ public class D3P2Test {
                 {4, 6, 9},
                 {0, 7, 8, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(d31, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d31, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -49,14 +49,14 @@ public class D3P2Test {
                 {3, 5, 8},
                 {1, 4, 8}
         };
-        FuzzySLiner base = FuzzySLiner.of(p31, new Triple[]{new Triple(0, 1, 4)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP3S));
+        FuzzyLiner base = FuzzyLiner.of(p31, new Triple[]{new Triple(0, 1, 4)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP3S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
         base = op.apply(base);
         base.printChars();
-        List<FuzzySLiner> liners = new ArrayList<>();
+        List<FuzzyLiner> liners = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
         if (liners.size() == 1) {
             base = liners.getFirst();
@@ -81,8 +81,8 @@ public class D3P2Test {
                 {2, 6, 8},
                 {3, 5, 8}
         };
-        FuzzySLiner base = FuzzySLiner.of(p21, new Triple[]{new Triple(0, 1, 4)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP2S));
+        FuzzyLiner base = FuzzyLiner.of(p21, new Triple[]{new Triple(0, 1, 4)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP2S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -90,7 +90,7 @@ public class D3P2Test {
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        List<FuzzySLiner> liners = new ArrayList<>();
+        List<FuzzyLiner> liners = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
         if (liners.size() == 1) {
             base = liners.getFirst();
@@ -114,25 +114,25 @@ public class D3P2Test {
                 {3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(nearMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(nearMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
         base.printChars();
-        List<FuzzySLiner> liners = new ArrayList<>();
+        List<FuzzyLiner> liners = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
-        List<FuzzySLiner> lnrs = new ArrayList<>();
-        for (FuzzySLiner l : liners) {
+        List<FuzzyLiner> lnrs = new ArrayList<>();
+        for (FuzzyLiner l : liners) {
             try {
                 l = l.intersectLines();
                 l.printChars();
                 l = op.apply(l);
                 l.printChars();
-                List<FuzzySLiner> list = new ArrayList<>();
+                List<FuzzyLiner> list = new ArrayList<>();
                 ContradictionUtil.multipleByContradiction(l, true, op, list::add);
                 System.out.println("List " + list.size());
-                List<FuzzySLiner> after = new ArrayList<>();
-                for (FuzzySLiner l1 : list) {
+                List<FuzzyLiner> after = new ArrayList<>();
+                for (FuzzyLiner l1 : list) {
                     l1.printChars();
                     ContradictionUtil.multipleByContradiction(l1, false, op, after::add);
                     System.out.println(after.size());
@@ -163,15 +163,15 @@ public class D3P2Test {
                 {2, 3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
         base.printChars();
-        List<FuzzySLiner> lnrs = new ArrayList<>();
+        List<FuzzyLiner> lnrs = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, lnrs::add);
         System.out.println(lnrs.size());
-        for (FuzzySLiner test : lnrs) {
+        for (FuzzyLiner test : lnrs) {
             try {
                 test = test.intersectLines();
                 test.printChars();
@@ -207,10 +207,10 @@ public class D3P2Test {
                 {2, 3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -232,10 +232,10 @@ public class D3P2Test {
                 {4, 6, 9},
                 {0, 7, 8}
         };
-        FuzzySLiner base = FuzzySLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -257,10 +257,10 @@ public class D3P2Test {
                 {4, 6, 9},
                 {0, 7, 8, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 3, 4)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -281,10 +281,10 @@ public class D3P2Test {
                 {2, 3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S));
         base.printChars();
         base = base.intersectLines();
         base.printChars();
@@ -306,8 +306,8 @@ public class D3P2Test {
                 {3, 5, 9},
                 {0, 7, 8}
         };
-        FuzzySLiner base = FuzzySLiner.of(p1s, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
+        FuzzyLiner base = FuzzyLiner.of(p1s, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
         base.printChars();
         base = base.intersectLines();
         base.printChars();

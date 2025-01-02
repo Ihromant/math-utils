@@ -1,201 +1,390 @@
 package ua.ihromant.mathutils.fuzzy;
 
 import lombok.Getter;
-import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Getter
 public class FuzzyLiner {
     private final int pc;
-    private final Set<Pair> d;
-    private final Set<Triple> l;
-    private final Set<Triple> t;
+    private final boolean[][] s;
+    private final boolean[][] d;
+    private final boolean[][][] l;
+    private final boolean[][][] t;
 
-    public FuzzyLiner(int pc, Set<Pair> d, Set<Triple> s, Set<Triple> t) {
+    public FuzzyLiner(int pc) {
         this.pc = pc;
-        this.d = new HashSet<>(d);
-        this.l = new HashSet<>(s);
-        this.t = new HashSet<>(t);
+        this.s = new boolean[pc][pc];
+        this.d = new boolean[pc][pc];
+        this.l = new boolean[pc][pc][pc];
+        this.t = new boolean[pc][pc][pc];
     }
 
-    public FuzzyLiner(int[][] lines, Triple[] triangles) {
-        this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, Set.of(), Set.of(), Set.of());
+    public static FuzzyLiner of(int[][] lines, Triple[] triangles) {
+        int pc = Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1;
+        FuzzyLiner res = new FuzzyLiner(pc);
+        ArrayDeque<Rel> queue = new ArrayDeque<>(pc * pc);
         for (int[] line : lines) {
             for (int i = 0; i < line.length; i++) {
                 int p1 = line[i];
                 for (int j = i + 1; j < line.length; j++) {
                     int p2 = line[j];
                     for (int k = j + 1; k < line.length; k++) {
-                        colline(p1, p2, line[k]);
+                        queue.add(new Col(p1, p2, line[k]));
                     }
                 }
             }
         }
         for (Triple t : triangles) {
-            triangule(t.f(), t.s(), t.t());
+            queue.add(new Trg(t.f(), t.s(), t.t()));
         }
-        update();
+        res.update(queue);
+        return res;
     }
 
-    public FuzzyLiner addPoint() {
-        return new FuzzyLiner(pc + 1, d, l, t);
+    public FuzzyLiner addPoints(int cnt) {
+        FuzzyLiner res = new FuzzyLiner(pc + cnt);
+        for (int i = 0; i < pc; i++) {
+            System.arraycopy(this.s[i], 0, res.s[i], 0, pc);
+            System.arraycopy(this.d[i], 0, res.d[i], 0, pc);
+            for (int j = 0; j < pc; j++) {
+                System.arraycopy(this.l[i][j], 0, res.l[i][j], 0, pc);
+                System.arraycopy(this.t[i][j], 0, res.t[i][j], 0, pc);
+            }
+        }
+        return res;
     }
 
     public FuzzyLiner copy() {
-        return new FuzzyLiner(pc, d, l, t);
+        return addPoints(0);
     }
 
-    public boolean distinguish(int i, int j) {
-        if (i == j) {
+    private boolean merge(int i, int j) {
+        if (d[i][j]) {
             throw new IllegalArgumentException(i + " " + j);
         }
-        return d.add(new Pair(i, j));
+        if (s[i][j]) {
+            return false;
+        }
+        s[i][j] = true;
+        s[j][i] = true;
+        return true;
     }
 
-    public boolean colline(int a, int b, int c) {
-        if (a == b || a == c || b == c || triangle(a, b, c)) {
-            throw new IllegalArgumentException(a + " " + b + " " + c);
+    private boolean distinguish(int i, int j) {
+        if (i == j || s[i][j]) {
+            throw new IllegalArgumentException(i + " " + j);
         }
-        return l.add(new Triple(a, b, c));
+        if (d[i][j]) {
+            return false;
+        }
+        d[i][j] = true;
+        d[j][i] = true;
+        return true;
     }
 
-    public boolean triangule(int a, int b, int c) {
-        if (a == b || a == c || b == c || collinear(a, b, c)) {
+    private boolean colline(int a, int b, int c) {
+        if (a == b || a == c || b == c || t[a][b][c]) {
             throw new IllegalArgumentException(a + " " + b + " " + c);
         }
-        return t.add(new Triple(a, b, c));
+        if (l[a][b][c]) {
+            return false;
+        }
+        l[a][b][c] = true;
+        l[a][c][b] = true;
+        l[b][a][c] = true;
+        l[b][c][a] = true;
+        l[c][a][b] = true;
+        l[c][b][a] = true;
+        return true;
+    }
+
+    private boolean triangule(int a, int b, int c) {
+        if (a == b || a == c || b == c || l[a][b][c]) {
+            throw new IllegalArgumentException(a + " " + b + " " + c);
+        }
+        if (t[a][b][c]) {
+            return false;
+        }
+        t[a][b][c] = true;
+        t[a][c][b] = true;
+        t[b][a][c] = true;
+        t[b][c][a] = true;
+        t[c][a][b] = true;
+        t[c][b][a] = true;
+        return true;
+    }
+
+    private boolean same(int a, int b) {
+        return s[a][b];
     }
 
     public boolean distinct(int a, int b) {
-        return d.contains(new Pair(a, b));
+        return d[a][b];
     }
 
     public boolean collinear(int a, int b, int c) {
-        return l.contains(new Triple(a, b, c));
+        return l[a][b][c];
     }
 
     public boolean triangle(int a, int b, int c) {
-        return t.contains(new Triple(a, b, c));
+        return t[a][b][c];
     }
 
-    public int intersection(Pair fst, Pair snd) {
-        for (int i = 0; i < pc; i++) {
-            if (collinear(fst.f(), fst.s(), i) && collinear(snd.f(), snd.s(), i)) {
-                return i;
+    public void update(Queue<Rel> queue) {
+        while (!queue.isEmpty()) {
+            switch (queue.poll()) {
+                case Same sm -> checkSame(queue, sm);
+                case Dist dt -> checkDist(queue, dt);
+                case Col cl -> checkCol(queue, cl);
+                case Trg tr -> checkTrg(queue, tr);
             }
         }
-        return -1;
     }
 
-    public void update() {
-        //int counter = 0;
-        while (updateStep()) {
-            //System.out.println("Updating... " + counter++);
+    private void checkDist(Queue<Rel> queue, Dist d) {
+        int x = d.f();
+        int y = d.s();
+        if (!distinguish(x, y)) {
+            return;
         }
-    }
-
-    private boolean updateStep() {
-        boolean result = false;
-        for (int x = 0; x < pc; x++) {
-            for (int y = 0; y < pc; y++) {
-                for (int z = 0; z < pc; z++) {
-                    boolean cxyz = collinear(x, y, z);
-                    if (triangle(x, y, z)) {
-                        result = result | distinguish(x, y) | distinguish(y, z) | distinguish(x, z);
-                    }
-                    if (!cxyz) {
-                        continue;
-                    }
-                    result = result | distinguish(x, y) | distinguish(y, z) | distinguish(x, z);
-                    for (int w = 0; w < pc; w++) {
-                        if (distinct(z, w) && collinear(x, y, w)) {
-                            result = result | colline(z, w, x) | colline(z, w, y);
-                        }
-                        if (triangle(x, y, w)) {
-                            result = result | triangule(x, z, w) | triangule(y, z, w);
-                        }
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    public Quad quad(int desiredCount) {
         for (int a = 0; a < pc; a++) {
-            for (int b = a + 1; b < pc; b++) {
-                if (!distinct(a, b)) {
-                    continue;
-                }
-                for (int c = b + 1; c < pc; c++) {
-                    if (!triangle(a, b, c)) {
-                        continue;
-                    }
-                    for (int d = c + 1; d < pc; d++) {
-                        if (!triangle(a, c, d) || !triangle(a, b, d) || !triangle(b, c, d)) {
-                            continue;
-                        }
-                        int cnt = 0;
-                        if (intersection(new Pair(a, b), new Pair(c, d)) >= 0) {
-                            cnt++;
-                        }
-                        if (intersection(new Pair(a, c), new Pair(b, d)) >= 0) {
-                            cnt++;
-                        }
-                        if (intersection(new Pair(a, d), new Pair(b, c)) >= 0) {
-                            cnt++;
-                        }
-                        if (cnt == desiredCount) {
-                            return new Quad(a, b, c, d);
-                        }
-                    }
+            if (same(a, x)) {
+                queue.add(new Dist(a, y));
+            }
+            if (same(a, y)) {
+                queue.add(new Dist(a, x));
+            }
+            for (int b = 0; b < pc; b++) {
+                if (collinear(a, x, b) && collinear(a, y, b)) {
+                    queue.add(new Col(x, a, y));
+                    queue.add(new Col(x, b, y));
                 }
             }
         }
-        return null;
     }
 
-    public List<Quad> quads(int desiredCount) {
-        List<Quad> result = new ArrayList<>();
+    private void checkSame(Queue<Rel> queue, Same s) {
+        int x = s.f();
+        int y = s.s();
+        if (!merge(x, y)) {
+            return;
+        }
         for (int a = 0; a < pc; a++) {
-            for (int b = a + 1; b < pc; b++) {
-                if (!distinct(a, b)) {
-                    continue;
+            if (same(x, a)) {
+                queue.add(new Same(a, y));
+            }
+            if (same(y, a)) {
+                queue.add(new Same(a, x));
+            }
+            if (distinct(x, a)) {
+                queue.add(new Dist(a, y));
+            }
+            if (distinct(y, a)) {
+                queue.add(new Dist(a, x));
+            }
+            for (int b = 0; b < pc; b++) {
+                if (collinear(x, a, b)) {
+                    queue.add(new Col(y, a, b));
                 }
-                for (int c = b + 1; c < pc; c++) {
-                    if (!triangle(a, b, c)) {
-                        continue;
+                if (collinear(y, a, b)) {
+                    queue.add(new Col(x, a, b));
+                }
+                if (triangle(x, a, b)) {
+                    queue.add(new Trg(y, a, b));
+                }
+                if (triangle(y, a, b)) {
+                    queue.add(new Trg(x, a, b));
+                }
+            }
+        }
+    }
+
+    private void checkCol(Queue<Rel> queue, Col c) {
+        int x = c.f();
+        int y = c.s();
+        int z = c.t();
+        if (!colline(x, y, z)) {
+            return;
+        }
+        queue.add(new Dist(x, y));
+        queue.add(new Dist(y, z));
+        queue.add(new Dist(x, z));
+        for (int w = 0; w < pc; w++) {
+            if (same(w, x)) {
+                queue.add(new Col(w, y, z));
+            }
+            if (same(w, y)) {
+                queue.add(new Col(w, x, z));
+            }
+            if (same(w, z)) {
+                queue.add(new Col(w, x, y));
+            }
+            if (distinct(w, x) && collinear(w, y, z)) {
+                queue.add(new Col(w, x, y));
+                queue.add(new Col(w, x, z));
+            }
+            if (distinct(w, y) && collinear(w, x, z)) {
+                queue.add(new Col(w, y, x));
+                queue.add(new Col(w, y, z));
+            }
+            if (distinct(w, z) && collinear(w, x, y)) {
+                queue.add(new Col(w, z, x));
+                queue.add(new Col(w, z, y));
+            }
+            if (triangle(x, y, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(x, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, y, z)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
                     }
-                    for (int d = c + 1; d < pc; d++) {
-                        if (!triangle(a, c, d) || !triangle(a, b, d) || !triangle(b, c, d)) {
-                            continue;
+                    if (collinear(y, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, z)) {
+                                queue.add(new Same(y, v));
+                            }
                         }
-                        int cnt = 0;
-                        if (intersection(new Pair(a, b), new Pair(c, d)) >= 0) {
-                            cnt++;
+                    }
+                }
+            }
+            if (triangle(x, z, w)) {
+                queue.add(new Trg(x, y, w));
+                queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(x, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, y, z)) {
+                                queue.add(new Same(x, v));
+                            }
                         }
-                        if (intersection(new Pair(a, c), new Pair(b, d)) >= 0) {
-                            cnt++;
+                    }
+                    if (collinear(z, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, y)) {
+                                queue.add(new Same(z, v));
+                            }
                         }
-                        if (intersection(new Pair(a, d), new Pair(b, c)) >= 0) {
-                            cnt++;
+                    }
+                }
+            }
+            if (triangle(y, z, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(x, y, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(y, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, z)) {
+                                queue.add(new Same(y, v));
+                            }
                         }
-                        if (cnt == desiredCount) {
-                            result.add(new Quad(a, b, c, d));
+                    }
+                    if (collinear(z, u, w)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, u, w) && collinear(v, x, y)) {
+                                queue.add(new Same(z, v));
+                            }
                         }
                     }
                 }
             }
         }
-        return result;
+    }
+
+    private void checkTrg(Queue<Rel> queue, Trg t) {
+        int x = t.f();
+        int y = t.s();
+        int z = t.t();
+        if (!triangule(x, y, z)) {
+            return;
+        }
+        queue.add(new Dist(x, y));
+        queue.add(new Dist(y, z));
+        queue.add(new Dist(x, z));
+        for (int w = 0; w < pc; w++) {
+            if (same(w, x)) {
+                queue.add(new Trg(w, y, z));
+            }
+            if (same(w, y)) {
+                queue.add(new Trg(w, x, z));
+            }
+            if (same(w, z)) {
+                queue.add(new Trg(w, x, y));
+            }
+            if (collinear(x, y, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(y, u, z)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, x, w) && collinear(v, u, z)) {
+                                queue.add(new Same(y, v));
+                            }
+                        }
+                    }
+                    if (collinear(x, u, z)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, y, w) && collinear(v, u, z)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
+                    }
+                }
+            }
+            if (collinear(x, z, w)) {
+                queue.add(new Trg(x, y, w));
+                queue.add(new Trg(y, z, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(x, u, y)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, z, w) && collinear(v, u, y)) {
+                                queue.add(new Same(x, v));
+                            }
+                        }
+                    }
+                    if (collinear(z, u, y)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, x, w) && collinear(v, u, y)) {
+                                queue.add(new Same(z, v));
+                            }
+                        }
+                    }
+                }
+            }
+            if (collinear(y, z, w)) {
+                queue.add(new Trg(x, z, w));
+                queue.add(new Trg(x, y, w));
+                for (int u = 0; u < pc; u++) {
+                    if (collinear(y, u, x)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, z, w) && collinear(v, u, x)) {
+                                queue.add(new Same(y, v));
+                            }
+                        }
+                    }
+                    if (collinear(z, u, x)) {
+                        for (int v = 0; v < pc; v++) {
+                            if (collinear(v, y, w) && collinear(v, u, x)) {
+                                queue.add(new Same(z, v));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     public List<Triple> undefinedTriples() {
@@ -203,7 +392,7 @@ public class FuzzyLiner {
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
                 for (int k = j + 1; k < pc; k++) {
-                    if (!collinear(i, j, k) && !triangle(i, j, k)) {
+                    if (distinct(i, j) && distinct(j, k) && distinct(i, k) && !collinear(i, j, k) && !triangle(i, j, k)) {
                         result.add(new Triple(i, j, k));
                     }
                 }
@@ -212,17 +401,50 @@ public class FuzzyLiner {
         return result;
     }
 
-    public boolean isFull() {
-        return d.size() == pc * (pc - 1) / 2 && l.size() + t.size() == pc * (pc - 1) * (pc - 2) / 6;
+    public List<Pair> undefinedPairs() {
+        List<Pair> result = new ArrayList<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j) && !same(i, j)) {
+                    result.add(new Pair(i, j));
+                }
+            }
+        }
+        return result;
     }
 
-    public Liner toLiner() {
-        if (!isFull()) {
-            throw new IllegalStateException();
+    public Triple undefinedTriple() {
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                for (int k = j + 1; k < pc; k++) {
+                    if (distinct(i, j) && distinct(j, k) && distinct(i, k) && !collinear(i, j, k) && !triangle(i, j, k)) {
+                        return new Triple(i, j, k);
+                    }
+                }
+            }
         }
+        return null;
+    }
+
+    public Pair undefinedPair() {
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j) && !same(i, j)) {
+                    return new Pair(i, j);
+                }
+            }
+        }
+        return null;
+    }
+
+
+    public Set<FixBS> lines() {
         Set<FixBS> lines = new HashSet<>();
         for (int i = 0; i < pc; i++) {
             for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j)) {
+                    continue;
+                }
                 FixBS res = new FixBS(pc);
                 res.set(i);
                 res.set(j);
@@ -234,45 +456,83 @@ public class FuzzyLiner {
                 lines.add(res);
             }
         }
-        int[][] lns = lines.stream().map(l -> l.stream().toArray()).toArray(int[][]::new);
-        return new Liner(Arrays.stream(lns).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, lns);
-    }
-
-    public Set<FixBS> lines() {
-        Set<FixBS> lines = new HashSet<>();
-        for (int i = 0; i < pc; i++) {
-            for (int j = i + 1; j < pc; j++) {
-                FixBS res = new FixBS(pc);
-                res.set(i);
-                res.set(j);
-                for (int k = 0; k < pc; k++) {
-                    if (collinear(i, j, k)) {
-                        res.set(k);
-                    }
-                }
-                //if (res.cardinality() > 2) {
-                    lines.add(res);
-                //}
-            }
-        }
         return lines;
     }
 
-    public FixBS line(int a, int b) {
-        FixBS res = new FixBS(pc);
-        res.set(a);
-        res.set(b);
+    public FuzzyLiner quotient() {
+        int[] newMap = new int[pc];
+        int newPc = 0;
+        ex: for (int i = 0; i < pc; i++) {
+            for (int j = 0; j < i; j++) {
+                if (same(i, j)) {
+                    newMap[i] = newMap[j];
+                    continue ex;
+                }
+            }
+            newMap[i] = newPc++;
+        }
+        if (newPc == pc) {
+            return this;
+        }
+        FuzzyLiner result = new FuzzyLiner(newPc);
         for (int i = 0; i < pc; i++) {
-            if (collinear(a, b, i)) {
-                res.set(i);
+            for (int j = 0; j < pc; j++) {
+                if (s[i][j]) {
+                    result.s[newMap[i]][newMap[j]] = true;
+                }
+                if (d[i][j]) {
+                    result.d[newMap[i]][newMap[j]] = true;
+                }
+                for (int k = 0; k < pc; k++) {
+                    if (l[i][j][k]) {
+                        result.l[newMap[i]][newMap[j]][newMap[k]] = true;
+                    }
+                    if (t[i][j][k]) {
+                        result.t[newMap[i]][newMap[j]][newMap[k]] = true;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public FuzzyLiner subLiner(int cap) {
+        FuzzyLiner res = new FuzzyLiner(cap);
+        for (int i = 0; i < cap; i++) {
+            System.arraycopy(s[i], 0, res.s[i], 0, cap);
+            System.arraycopy(d[i], 0, res.d[i], 0, cap);
+            for (int j = 0; j < cap; j++) {
+                System.arraycopy(l[i][j], 0, res.l[i][j], 0, cap);
+                System.arraycopy(t[i][j], 0, res.t[i][j], 0, cap);
+            }
+        }
+        return res;
+    }
+
+    public FuzzyLiner subLiner(FixBS pts) {
+        Map<Integer, Integer> idxes = new HashMap<>();
+        int counter = 0;
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
+            idxes.put(i, counter++);
+        }
+        FuzzyLiner res = new FuzzyLiner(idxes.size());
+        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
+            for (int j = pts.nextSetBit(0); j >= 0; j = pts.nextSetBit(j + 1)) {
+                res.s[idxes.get(i)][idxes.get(j)] = s[i][j];
+                res.d[idxes.get(i)][idxes.get(j)] = d[i][j];
+                for (int k = pts.nextSetBit(0); k >= 0; k = pts.nextSetBit(k + 1)) {
+                    res.l[idxes.get(i)][idxes.get(j)][idxes.get(k)] = l[i][j][k];
+                    res.t[idxes.get(i)][idxes.get(j)][idxes.get(k)] = t[i][j][k];
+                }
             }
         }
         return res;
     }
 
     public FuzzyLiner intersectLines() {
-        FuzzyLiner base = copy();
-        List<FixBS> lines = new ArrayList<>(base.lines());
+        Queue<Rel> queue = new ArrayDeque<>(2 * pc * pc);
+        List<FixBS> lines = new ArrayList<>(lines());
+        int pt = pc;
         for (int i = 0; i < lines.size(); i++) {
             FixBS l1 = lines.get(i);
             int a = l1.nextSetBit(0);
@@ -284,20 +544,87 @@ public class FuzzyLiner {
                 }
                 int c = l2.nextSetBit(0);
                 int d = l2.nextSetBit(c + 1);
-                int pt = base.pc;
-                base = base.addPoint();
-                base.colline(a, b, pt);
-                base.colline(c, d, pt);
+                queue.add(new Col(a, b, pt));
+                queue.add(new Col(c, d, pt));
+                pt++;
             }
         }
-        base.update();
-        System.out.println(base.pc);
-        return base;
+        FuzzyLiner res = addPoints(pt - pc);
+        res.update(queue);
+        return res;
     }
 
-    public FuzzyLiner subLiner(int cap) {
-        return new FuzzyLiner(cap, d.stream().filter(p -> p.s() < cap).collect(Collectors.toSet()),
-                l.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()),
-                t.stream().filter(tr -> tr.t() < cap).collect(Collectors.toSet()));
+    public void printChars() {
+        int s = 0;
+        int d = 0;
+        int c = 0;
+        int t = 0;
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (distinct(i, j)) {
+                    d++;
+                }
+                if (same(i, j)) {
+                    s++;
+                }
+                for (int k = j + 1; k < pc; k++) {
+                    if (collinear(i, j, k)) {
+                        c++;
+                    }
+                    if (triangle(i, j, k)) {
+                        t++;
+                    }
+                }
+            }
+        }
+        System.out.println(pc + " " + s + " " + d + " " + (pc * (pc - 1) / 2 - s - d) + " " + c + " " + t
+                + " " + (pc * (pc - 1) * (pc - 2) / 6 - c - t));
+    }
+
+    public int intersection(int a, int b, int c, int d) {
+        for (int i = 0; i < pc; i++) {
+            if (collinear(a, b, i) && collinear(c, d, i)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    public Set<FixBS> determinedLines(FixBS determined) {
+        Set<FixBS> lines = new HashSet<>();
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!distinct(i, j)) {
+                    continue;
+                }
+                FixBS res = new FixBS(pc);
+                res.set(i);
+                res.set(j);
+                for (int k = 0; k < pc; k++) {
+                    if (collinear(i, j, k)) {
+                        res.set(k);
+                    }
+                }
+                if ((!determined.get(i) || !determined.get(j)) && res.intersection(determined).cardinality() > 1) {
+                    continue;
+                }
+                lines.add(res);
+            }
+        }
+        return lines;
+    }
+
+    public FixBS determinedSet() {
+        FixBS res = new FixBS(pc);
+        for (int i = 0; i < pc; i++) {
+            for (int j = i + 1; j < pc; j++) {
+                if (!same(i, j) && !distinct(i, j)) {
+                    res.set(i);
+                    res.set(j);
+                }
+            }
+        }
+        res.flip(0, pc);
+        return res;
     }
 }

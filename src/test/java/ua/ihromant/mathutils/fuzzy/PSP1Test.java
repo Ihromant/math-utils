@@ -21,8 +21,8 @@ public class PSP1Test {
                 {2, 4, 9},
                 //{3, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S, ContradictionUtil::processD3));
+        FuzzyLiner base = FuzzyLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S, ContradictionUtil::processD3));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
@@ -45,8 +45,8 @@ public class PSP1Test {
                 {3, 4, 9},
                 {0, 7, 8}
         };
-        FuzzySLiner base = FuzzySLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
+        FuzzyLiner base = FuzzyLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
@@ -87,8 +87,8 @@ public class PSP1Test {
                 {3, 4, 9},
                 {2, 5, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
+        FuzzyLiner base = FuzzyLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);

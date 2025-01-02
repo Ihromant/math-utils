@@ -11,10 +11,10 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ContradictionUtil {
-    public static void multipleByContradiction(FuzzySLiner base, boolean onlyDist, UnaryOperator<FuzzySLiner> op, Consumer<FuzzySLiner> sink) {
+    public static void multipleByContradiction(FuzzyLiner base, boolean onlyDist, UnaryOperator<FuzzyLiner> op, Consumer<FuzzyLiner> sink) {
         recur(base, onlyDist, l -> {
             try {
-                FuzzySLiner next = op.apply(l);
+                FuzzyLiner next = op.apply(l);
                 sink.accept(next);
             } catch (IllegalArgumentException e) {
                 // ok
@@ -22,13 +22,13 @@ public class ContradictionUtil {
         });
     }
 
-    public static void recur(FuzzySLiner base, boolean onlyDist, Consumer<FuzzySLiner> sink) {
+    public static void recur(FuzzyLiner base, boolean onlyDist, Consumer<FuzzyLiner> sink) {
         Pair p = base.undefinedPair();
         if (p != null) {
             try {
                 Queue<Rel> rels = new ArrayDeque<>();
                 rels.add(new Same(p.f(), p.s()));
-                FuzzySLiner copy = base.copy();
+                FuzzyLiner copy = base.copy();
                 copy.update(rels);
                 recur(copy, onlyDist, sink);
             } catch (IllegalArgumentException e) {
@@ -37,7 +37,7 @@ public class ContradictionUtil {
             try {
                 Queue<Rel> rels = new ArrayDeque<>();
                 rels.add(new Dist(p.f(), p.s()));
-                FuzzySLiner copy = base.copy();
+                FuzzyLiner copy = base.copy();
                 copy.update(rels);
                 recur(copy, onlyDist, sink);
             } catch (IllegalArgumentException e) {
@@ -57,7 +57,7 @@ public class ContradictionUtil {
         try {
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Trg(tr.f(), tr.s(), tr.t()));
-            FuzzySLiner copy = base.copy();
+            FuzzyLiner copy = base.copy();
             copy.update(rels);
             recur(copy, onlyDist, sink);
         } catch (IllegalArgumentException e) {
@@ -66,7 +66,7 @@ public class ContradictionUtil {
         try {
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Col(tr.f(), tr.s(), tr.t()));
-            FuzzySLiner copy = base.copy();
+            FuzzyLiner copy = base.copy();
             copy.update(rels);
             recur(copy, onlyDist, sink);
         } catch (IllegalArgumentException e) {
@@ -74,7 +74,7 @@ public class ContradictionUtil {
         }
     }
 
-    public static FuzzySLiner singleByContradiction(FuzzySLiner ln, boolean onlyDist, UnaryOperator<FuzzySLiner> op) {
+    public static FuzzyLiner singleByContradiction(FuzzyLiner ln, boolean onlyDist, UnaryOperator<FuzzyLiner> op) {
         List<Pair> pairs = ln.undefinedPairs();
         Queue<Rel> q = new ConcurrentLinkedDeque<>();
         pairs.stream().parallel().forEach(p -> {
@@ -89,7 +89,7 @@ public class ContradictionUtil {
             }
         });
         ln.update(q);
-        FuzzySLiner afterDist = op.apply(ln);
+        FuzzyLiner afterDist = op.apply(ln);
         if (onlyDist) {
             return afterDist;
         }
@@ -110,10 +110,10 @@ public class ContradictionUtil {
         return op.apply(afterDist);
     }
 
-    public static Boolean identifyDistinction(FuzzySLiner l, Pair p, UnaryOperator<FuzzySLiner> op) {
+    public static Boolean identifyDistinction(FuzzyLiner l, Pair p, UnaryOperator<FuzzyLiner> op) {
         Boolean result = null;
         try {
-            FuzzySLiner copy = l.copy();
+            FuzzyLiner copy = l.copy();
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Same(p.f(), p.s()));
             copy.update(rels);
@@ -122,7 +122,7 @@ public class ContradictionUtil {
             result = true;
         }
         try {
-            FuzzySLiner copy = l.copy();
+            FuzzyLiner copy = l.copy();
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Dist(p.f(), p.s()));
             copy.update(rels);
@@ -136,10 +136,10 @@ public class ContradictionUtil {
         return result;
     }
 
-    public static Boolean identifyCollinearity(FuzzySLiner l, Triple t, UnaryOperator<FuzzySLiner> op) {
+    public static Boolean identifyCollinearity(FuzzyLiner l, Triple t, UnaryOperator<FuzzyLiner> op) {
         Boolean result = null;
         try {
-            FuzzySLiner copy = l.copy();
+            FuzzyLiner copy = l.copy();
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Col(t.f(), t.s(), t.t()));
             copy.update(rels);
@@ -148,7 +148,7 @@ public class ContradictionUtil {
             result = false;
         }
         try {
-            FuzzySLiner copy = l.copy();
+            FuzzyLiner copy = l.copy();
             Queue<Rel> rels = new ArrayDeque<>();
             rels.add(new Trg(t.f(), t.s(), t.t()));
             copy.update(rels);
@@ -162,9 +162,9 @@ public class ContradictionUtil {
         return result;
     }
 
-    public static FuzzySLiner process(FuzzySLiner liner, List<Function<FuzzySLiner, List<Rel>>> processors) {
+    public static FuzzyLiner process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Rel>>> processors) {
         while (true) {
-            FuzzySLiner lnr = liner;
+            FuzzyLiner lnr = liner;
             Queue<Rel> queue = processors.stream().parallel().flatMap(p -> p.apply(lnr).stream())
                     .collect(Collectors.toCollection(ArrayDeque::new));
             if (queue.isEmpty()) {
@@ -175,7 +175,7 @@ public class ContradictionUtil {
         }
     }
 
-    public static List<Rel> processP(FuzzySLiner liner) {
+    public static List<Rel> processP(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -242,7 +242,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processP1(FuzzySLiner liner) {
+    public static List<Rel> processP1(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int a = 0; a < pc; a++) {
@@ -306,7 +306,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processPS(FuzzySLiner liner) {
+    public static List<Rel> processPS(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -368,7 +368,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processP1S(FuzzySLiner liner) {
+    public static List<Rel> processP1S(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -440,7 +440,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processP2S(FuzzySLiner liner) {
+    public static List<Rel> processP2S(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -512,7 +512,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processP3S(FuzzySLiner liner) {
+    public static List<Rel> processP3S(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -600,7 +600,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD3(FuzzySLiner liner) {
+    public static List<Rel> processD3(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -675,7 +675,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD2(FuzzySLiner liner) {
+    public static List<Rel> processD2(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -759,7 +759,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD2S(FuzzySLiner liner) {
+    public static List<Rel> processD2S(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -829,7 +829,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD1S(FuzzySLiner liner) {
+    public static List<Rel> processD1S(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -903,7 +903,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processD3S(FuzzySLiner liner) {
+    public static List<Rel> processD3S(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int o = 0; o < pc; o++) {
@@ -978,7 +978,7 @@ public class ContradictionUtil {
         return res;
     }
 
-    public static List<Rel> processFullFano(FuzzySLiner liner) {
+    public static List<Rel> processFullFano(FuzzyLiner liner) {
         List<Rel> res = new ArrayList<>(liner.getPc());
         for (int a = 0; a < liner.getPc(); a++) {
             for (int b = a + 1; b < liner.getPc(); b++) {

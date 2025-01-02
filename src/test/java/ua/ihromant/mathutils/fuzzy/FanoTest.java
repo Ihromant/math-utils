@@ -20,10 +20,10 @@ public class FanoTest {
                 {3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 7, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
                 ContradictionUtil::processP1, ContradictionUtil::processPS, ContradictionUtil::processD2, ContradictionUtil::processD1S));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
@@ -64,10 +64,10 @@ public class FanoTest {
                 {3, 5, 9},
                 {4, 6, 9}
         };
-        FuzzySLiner base = FuzzySLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        UnaryOperator<FuzzySLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
                 ContradictionUtil::processP1, ContradictionUtil::processPS, ContradictionUtil::processD2, ContradictionUtil::processD1S));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
