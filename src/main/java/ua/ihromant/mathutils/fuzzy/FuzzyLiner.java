@@ -68,11 +68,12 @@ public class FuzzyLiner {
         return addPoints(0);
     }
 
-    private boolean merge(Same same) {
+    private boolean merge(Same same, Update u, Map<Rel, Update> updates) {
         int i = same.f();
         int j = same.s();
+        updates.putIfAbsent(same, u);
         if (d[i][j]) {
-            throw new ContradictionException(same);
+            throw new ContradictionException(same, updates);
         }
         if (s[i][j]) {
             return false;
@@ -82,11 +83,12 @@ public class FuzzyLiner {
         return true;
     }
 
-    private boolean distinguish(Dist dist) {
+    private boolean distinguish(Dist dist, Update u, Map<Rel, Update> updates) {
         int i = dist.f();
         int j = dist.s();
+        updates.putIfAbsent(dist, u);
         if (i == j || s[i][j]) {
-            throw new ContradictionException(dist);
+            throw new ContradictionException(dist, updates);
         }
         if (d[i][j]) {
             return false;
@@ -96,12 +98,13 @@ public class FuzzyLiner {
         return true;
     }
 
-    private boolean colline(Col col) {
+    private boolean colline(Col col, Update u, Map<Rel, Update> updates) {
         int a = col.f();
         int b = col.s();
         int c = col.t();
+        updates.putIfAbsent(col, u);
         if (a == b || a == c || b == c || t[a][b][c]) {
-            throw new ContradictionException(col);
+            throw new ContradictionException(col, updates);
         }
         if (l[a][b][c]) {
             return false;
@@ -115,12 +118,13 @@ public class FuzzyLiner {
         return true;
     }
 
-    private boolean triangule(Trg trg) {
+    private boolean triangule(Trg trg, Update u, Map<Rel, Update> updates) {
         int a = trg.f();
         int b = trg.s();
         int c = trg.t();
+        updates.putIfAbsent(trg, u);
         if (a == b || a == c || b == c || l[a][b][c]) {
-            throw new ContradictionException(trg);
+            throw new ContradictionException(trg, updates);
         }
         if (t[a][b][c]) {
             return false;
@@ -156,26 +160,22 @@ public class FuzzyLiner {
             Update u = queue.poll();
             switch (u.base()) {
                 case Same sm -> {
-                    if (merge(sm)) {
-                        result.put(sm, u);
+                    if (merge(sm, u, result)) {
                         updateForSame(queue, sm);
                     }
                 }
                 case Dist dt -> {
-                    if (distinguish(dt)) {
-                        result.put(dt, u);
+                    if (distinguish(dt, u, result)) {
                         updateForDist(queue, dt);
                     }
                 }
                 case Col cl -> {
-                    if (colline(cl)) {
-                        result.put(cl, u);
+                    if (colline(cl, u, result)) {
                         updateForCol(queue, cl);
                     }
                 }
                 case Trg tr -> {
-                    if (triangule(tr)) {
-                        result.put(tr, u);
+                    if (triangule(tr, u, result)) {
                         updateForTrg(queue, tr);
                     }
                 }
