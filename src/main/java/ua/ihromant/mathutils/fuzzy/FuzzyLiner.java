@@ -71,7 +71,7 @@ public class FuzzyLiner {
     private boolean merge(Same same, Update u, Map<Rel, Update> updates) {
         int i = same.f();
         int j = same.s();
-        updates.putIfAbsent(same, u);
+        updates.putIfAbsent(same.ordered(), u);
         if (d[i][j]) {
             throw new ContradictionException(same, updates);
         }
@@ -86,7 +86,7 @@ public class FuzzyLiner {
     private boolean distinguish(Dist dist, Update u, Map<Rel, Update> updates) {
         int i = dist.f();
         int j = dist.s();
-        updates.putIfAbsent(dist, u);
+        updates.putIfAbsent(dist.ordered(), u);
         if (i == j || s[i][j]) {
             throw new ContradictionException(dist, updates);
         }
@@ -102,7 +102,7 @@ public class FuzzyLiner {
         int a = col.f();
         int b = col.s();
         int c = col.t();
-        updates.putIfAbsent(col, u);
+        updates.putIfAbsent(col.ordered(), u);
         if (a == b || a == c || b == c || t[a][b][c]) {
             throw new ContradictionException(col, updates);
         }
@@ -122,7 +122,7 @@ public class FuzzyLiner {
         int a = trg.f();
         int b = trg.s();
         int c = trg.t();
-        updates.putIfAbsent(trg, u);
+        updates.putIfAbsent(trg.ordered(), u);
         if (a == b || a == c || b == c || l[a][b][c]) {
             throw new ContradictionException(trg, updates);
         }

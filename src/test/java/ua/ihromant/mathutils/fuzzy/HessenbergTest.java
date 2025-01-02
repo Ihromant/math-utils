@@ -2,10 +2,14 @@ package ua.ihromant.mathutils.fuzzy;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.SequencedMap;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 public class HessenbergTest {
     @Test
@@ -29,11 +33,47 @@ public class HessenbergTest {
         Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP));
         base.printChars();
         LinerHistory afterIntersect = base.intersectLines();
-        updates.putAll(afterIntersect.updates());
+        afterIntersect.updates().forEach(updates::putIfAbsent);
         base = afterIntersect.liner();
         base.printChars();
-        LinerHistory afterPappus = op.apply(base);
-        base = afterPappus.liner();
-        base.printChars();
+        try {
+            op.apply(base);
+        } catch (ContradictionException e) {
+            e.updates().forEach(updates::putIfAbsent);
+            Rel rel = e.rel();
+            Rel opposite = switch (rel) {
+                case Dist(int a, int b) -> new Same(a, b);
+                case Same(int a, int b) -> new Dist(a, b);
+                case Col(int a, int b, int c) -> new Trg(a, b, c);
+                case Trg(int a, int b, int c) -> new Col(a, b, c);
+            };
+            System.out.println("From one side: ");
+            SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
+            reconstruct(rel, updates, stack);
+            for (Update u : stack.reversed().values()) {
+                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
+                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
+            }
+            System.out.println("But from the other side: ");
+            stack = new LinkedHashMap<>();
+            reconstruct(opposite, updates, stack);
+            for (Update u : stack.reversed().values()) {
+                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
+                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
+            }
+            System.out.println("Contradiction");
+        }
+    }
+
+    private static void reconstruct(Rel rel, Map<Rel, Update> updates, SequencedMap<Rel, Update> stack) {
+        rel = rel.ordered();
+        if (stack.containsKey(rel)) {
+            return;
+        }
+        Update u = updates.get(rel);
+        stack.put(rel, u);
+        for (Rel r : u.reasons()) {
+            reconstruct(r, updates, stack);
+        }
     }
 }
