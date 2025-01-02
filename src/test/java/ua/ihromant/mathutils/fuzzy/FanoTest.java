@@ -3,7 +3,7 @@ package ua.ihromant.mathutils.fuzzy;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 public class FanoTest {
     @Test
@@ -22,15 +22,15 @@ public class FanoTest {
         };
         FuzzyLiner base = FuzzyLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(0, 7, 9)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
+                new Triple(0, 7, 9)}).liner();
+        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
                 ContradictionUtil::processP1, ContradictionUtil::processPS, ContradictionUtil::processD2, ContradictionUtil::processD1S));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        base = base.intersectLines();
+        base = base.intersectLines().liner();
         base.printChars();
-        base = op.apply(base);
+        base = op.apply(base).liner();
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, true, op);
         base.printChars();
@@ -66,15 +66,15 @@ public class FanoTest {
         };
         FuzzyLiner base = FuzzyLiner.of(antiMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(7, 8, 9)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
+                new Triple(7, 8, 9)}).liner();
+        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano,
                 ContradictionUtil::processP1, ContradictionUtil::processPS, ContradictionUtil::processD2, ContradictionUtil::processD1S));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        base = base.intersectLines();
+        base = base.intersectLines().liner();
         base.printChars();
-        base = op.apply(base);
+        base = op.apply(base).liner();
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, true, op);
         base.printChars();

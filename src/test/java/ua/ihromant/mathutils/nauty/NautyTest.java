@@ -1,10 +1,10 @@
 package ua.ihromant.mathutils.nauty;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.plane.AffinePlane;
 
 import java.util.Arrays;
 import java.util.BitSet;

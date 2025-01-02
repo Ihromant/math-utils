@@ -29,7 +29,7 @@ public class FuzzyLiner {
         this.t = new boolean[pc][pc][pc];
     }
 
-    public static FuzzyLiner of(int[][] lines, Triple[] triangles) {
+    public static LinerHistory of(int[][] lines, Triple[] triangles) {
         int pc = Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1;
         FuzzyLiner res = new FuzzyLiner(pc);
         ArrayDeque<Update> queue = new ArrayDeque<>(pc * pc);
@@ -47,8 +47,8 @@ public class FuzzyLiner {
         for (Triple t : triangles) {
             queue.add(new Update(new Trg(t.f(), t.s(), t.t()), "Initial"));
         }
-        res.update(queue);
-        return res;
+        Map<Rel, Update> updates = res.update(queue);
+        return new LinerHistory(res, updates);
     }
 
     public FuzzyLiner addPoints(int cnt) {
@@ -556,7 +556,7 @@ public class FuzzyLiner {
         return res;
     }
 
-    public FuzzyLiner intersectLines() {
+    public LinerHistory intersectLines() {
         Queue<Update> queue = new ArrayDeque<>(2 * pc * pc);
         List<FixBS> lines = new ArrayList<>(lines());
         int pt = pc;
@@ -577,8 +577,8 @@ public class FuzzyLiner {
             }
         }
         FuzzyLiner res = addPoints(pt - pc);
-        res.update(queue);
-        return res;
+        Map<Rel, Update> history = res.update(queue);
+        return new LinerHistory(res, history);
     }
 
     public void printChars() {

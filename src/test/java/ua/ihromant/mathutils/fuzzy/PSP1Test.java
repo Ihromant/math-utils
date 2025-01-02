@@ -3,7 +3,7 @@ package ua.ihromant.mathutils.fuzzy;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.function.UnaryOperator;
+import java.util.function.Function;
 
 public class PSP1Test {
     @Test
@@ -21,12 +21,12 @@ public class PSP1Test {
                 {2, 4, 9},
                 //{3, 6, 9}
         };
-        FuzzyLiner base = FuzzyLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S, ContradictionUtil::processD3));
+        FuzzyLiner base = FuzzyLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)}).liner();
+        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S, ContradictionUtil::processD3));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        base = base.intersectLines();
+        base = base.intersectLines().liner();
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, true, op);
         base.printChars();
@@ -45,15 +45,15 @@ public class PSP1Test {
                 {3, 4, 9},
                 {0, 7, 8}
         };
-        FuzzyLiner base = FuzzyLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
+        FuzzyLiner base = FuzzyLiner.of(ps, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)}).liner();
+        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        base = base.intersectLines();
+        base = base.intersectLines().liner();
         base.printChars();
-        base = op.apply(base);
+        base = op.apply(base).liner();
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, true, op);
         base.printChars();
@@ -87,15 +87,15 @@ public class PSP1Test {
                 {3, 4, 9},
                 {2, 5, 9}
         };
-        FuzzyLiner base = FuzzyLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
+        FuzzyLiner base = FuzzyLiner.of(p1, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)}).liner();
+        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processPS,
                 ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
-        base = base.intersectLines();
+        base = base.intersectLines().liner();
         base.printChars();
-        base = op.apply(base);
+        base = op.apply(base).liner();
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, true, op);
         base.printChars();

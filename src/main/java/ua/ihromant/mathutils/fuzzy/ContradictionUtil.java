@@ -2,7 +2,9 @@ package ua.ihromant.mathutils.fuzzy;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -10,10 +12,10 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ContradictionUtil {
-    public static void multipleByContradiction(FuzzyLiner base, boolean onlyDist, UnaryOperator<FuzzyLiner> op, Consumer<FuzzyLiner> sink) {
+    public static void multipleByContradiction(FuzzyLiner base, boolean onlyDist, Function<FuzzyLiner, LinerHistory> op, Consumer<FuzzyLiner> sink) {
         recur(base, onlyDist, l -> {
             try {
-                FuzzyLiner next = op.apply(l);
+                FuzzyLiner next = op.apply(l).liner();
                 sink.accept(next);
             } catch (ContradictionException e) {
                 // ok
@@ -73,7 +75,7 @@ public class ContradictionUtil {
 //        }
     }
 
-    public static FuzzyLiner singleByContradiction(FuzzyLiner ln, boolean onlyDist, UnaryOperator<FuzzyLiner> op) {
+    public static FuzzyLiner singleByContradiction(FuzzyLiner ln, boolean onlyDist, Function<FuzzyLiner, LinerHistory> op) {
         List<Pair> pairs = ln.undefinedPairs(); // TODO
 //        Queue<Rel> q = new ConcurrentLinkedDeque<>();
 //        pairs.stream().parallel().forEach(p -> {
@@ -88,7 +90,7 @@ public class ContradictionUtil {
 //            }
 //        });
 //        ln.update(q);
-        FuzzyLiner afterDist = op.apply(ln);
+        LinerHistory afterDist = op.apply(ln);
 //        if (onlyDist) {
 //            return afterDist;
 //        }
@@ -106,7 +108,7 @@ public class ContradictionUtil {
 //            }
 //        });
 //        afterDist.update(q1);
-        return op.apply(afterDist);
+        return op.apply(afterDist.liner()).liner();
     }
 
     public static Boolean identifyDistinction(FuzzyLiner l, Pair p, UnaryOperator<FuzzyLiner> op) {
@@ -161,16 +163,16 @@ public class ContradictionUtil {
         return result;
     }
 
-    public static FuzzyLiner process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Update>>> processors) {
+    public static LinerHistory process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Update>>> processors) {
+        Map<Rel, Update> result = new HashMap<>();
         while (true) {
-            FuzzyLiner lnr = liner;
-            Queue<Update> queue = processors.stream().parallel().flatMap(p -> p.apply(lnr).stream())
+            Queue<Update> queue = processors.stream().parallel().flatMap(p -> p.apply(liner).stream())
                     .collect(Collectors.toCollection(ArrayDeque::new));
             if (queue.isEmpty()) {
-                return liner;
+                return new LinerHistory(liner, result);
             }
-            liner.update(queue);
-            liner = liner.quotient();
+            result.putAll(liner.update(queue));
+            // TODO liner = liner.quotient();
         }
     }
 
