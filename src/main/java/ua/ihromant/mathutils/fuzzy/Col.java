@@ -1,31 +1,50 @@
 package ua.ihromant.mathutils.fuzzy;
 
 public record Col(int f, int s, int t) implements Rel {
-    public static Col ordered(int f, int s, int t) {
+    public Col {
+        int min;
+        int av;
+        int max;
         if (f > s) {
             if (s > t) {
-                return new Col(t, s, f);
-            } else { // t > s
-                if (t > f) {
-                    return new Col(s, f, t);
-                } else { // f > t
-                    return new Col(s, t, f);
+                min = t;
+                av = s;
+                max = f;
+            } else { // s <= t
+                if (f > t) {
+                    min = s;
+                    av = t;
+                    max = f;
+                } else {
+                    min = s;
+                    av = f;
+                    max = t;
                 }
             }
-        } else { // s > f
-            if (f > t) {
-                return new Col(t, f, s);
-            } else { // t > f
-                if (s > t) {
-                    return new Col(f, t, s);
-                } else { // t > s
-                    return new Col(f, s, t);
+        } else { // f <= s
+            if (s > t) {
+                if (f < t) {
+                    min = f;
+                    av = t;
+                    max = s;
+                } else {
+                    min = t;
+                    av = f;
+                    max = s;
                 }
+            } else { // s <= t
+                min = f;
+                av = s;
+                max = t;
             }
         }
+        f = min;
+        s = av;
+        t = max;
     }
 
-    public Col ordered() {
-        return ordered(f, s, t);
+    @Override
+    public Rel opposite() {
+        return new Trg(f, s, t);
     }
 }

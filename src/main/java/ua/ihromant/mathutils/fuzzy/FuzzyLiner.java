@@ -16,20 +16,19 @@ import java.util.Set;
 @Getter
 public class FuzzyLiner {
     private final int pc;
-    private final boolean[][] s;
-    private final boolean[][] d;
-    private final boolean[][][] l;
-    private final boolean[][][] t;
+    private final Map<Rel, Update> relations;
 
     public FuzzyLiner(int pc) {
         this.pc = pc;
-        this.s = new boolean[pc][pc];
-        this.d = new boolean[pc][pc];
-        this.l = new boolean[pc][pc][pc];
-        this.t = new boolean[pc][pc][pc];
+        this.relations = new HashMap<>();
     }
 
-    public static LinerHistory of(int[][] lines, Triple[] triangles) {
+    private FuzzyLiner(int pc, Map<Rel, Update> relations) {
+        this.pc = pc;
+        this.relations = relations;
+    }
+
+    public static FuzzyLiner of(int[][] lines, Triple[] triangles) {
         int pc = Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1;
         FuzzyLiner res = new FuzzyLiner(pc);
         ArrayDeque<Update> queue = new ArrayDeque<>(pc * pc);
@@ -47,140 +46,116 @@ public class FuzzyLiner {
         for (Triple t : triangles) {
             queue.add(new Update(new Trg(t.f(), t.s(), t.t()), "Initial"));
         }
-        Map<Rel, Update> updates = res.update(queue, new HashMap<>());
-        return new LinerHistory(res, updates);
+        res.update(queue);
+        return res;
     }
 
     public FuzzyLiner addPoints(int cnt) {
-        FuzzyLiner res = new FuzzyLiner(pc + cnt);
-        for (int i = 0; i < pc; i++) {
-            System.arraycopy(this.s[i], 0, res.s[i], 0, pc);
-            System.arraycopy(this.d[i], 0, res.d[i], 0, pc);
-            for (int j = 0; j < pc; j++) {
-                System.arraycopy(this.l[i][j], 0, res.l[i][j], 0, pc);
-                System.arraycopy(this.t[i][j], 0, res.t[i][j], 0, pc);
-            }
-        }
-        return res;
+        return new FuzzyLiner(pc + cnt, new HashMap<>(relations));
     }
 
     public FuzzyLiner copy() {
         return addPoints(0);
     }
 
-    private boolean merge(Same same, Update u, Map<Rel, Update> updates) {
-        int i = same.f();
-        int j = same.s();
-        updates.putIfAbsent(same.ordered(), u);
-        if (d[i][j]) {
-            throw new ContradictionException(same, updates);
+    private boolean merge(Same same, Update u) {
+        Update old = relations.putIfAbsent(same, u);
+        if (relations.containsKey(same.opposite())) {
+            throw new ContradictionException(same, relations);
         }
-        if (s[i][j]) {
-            return false;
-        }
-        s[i][j] = true;
-        s[j][i] = true;
-        return true;
+        return old == null;
     }
 
-    private boolean distinguish(Dist dist, Update u, Map<Rel, Update> updates) {
+    private boolean distinguish(Dist dist, Update u) {
         int i = dist.f();
         int j = dist.s();
-        updates.putIfAbsent(dist.ordered(), u);
-        if (i == j || s[i][j]) {
-            throw new ContradictionException(dist, updates);
+        Update old = relations.putIfAbsent(dist, u);
+        if (i == j || relations.containsKey(new Same(i, j))) {
+            throw new ContradictionException(dist, relations);
         }
-        if (d[i][j]) {
-            return false;
-        }
-        d[i][j] = true;
-        d[j][i] = true;
-        return true;
+        return old == null;
     }
 
-    private boolean colline(Col col, Update u, Map<Rel, Update> updates) {
+    private boolean colline(Col col, Update u) {
         int a = col.f();
         int b = col.s();
         int c = col.t();
-        updates.putIfAbsent(col.ordered(), u);
-        if (a == b || a == c || b == c || t[a][b][c]) {
-            throw new ContradictionException(col, updates);
+        Update old = relations.putIfAbsent(col, u);
+        if (a == b || a == c || b == c || relations.containsKey(new Trg(a, b, c))) {
+            throw new ContradictionException(col, relations);
         }
-        if (l[a][b][c]) {
-            return false;
-        }
-        l[a][b][c] = true;
-        l[a][c][b] = true;
-        l[b][a][c] = true;
-        l[b][c][a] = true;
-        l[c][a][b] = true;
-        l[c][b][a] = true;
-        return true;
+        return old == null;
     }
 
-    private boolean triangule(Trg trg, Update u, Map<Rel, Update> updates) {
+    private boolean triangule(Trg trg, Update u) {
         int a = trg.f();
         int b = trg.s();
         int c = trg.t();
-        updates.putIfAbsent(trg.ordered(), u);
-        if (a == b || a == c || b == c || l[a][b][c]) {
-            throw new ContradictionException(trg, updates);
+        Update old = relations.putIfAbsent(trg, u);
+        if (a == b || a == c || b == c || relations.containsKey(new Col(a, b, c))) {
+            throw new ContradictionException(trg, relations);
         }
-        if (t[a][b][c]) {
-            return false;
-        }
-        t[a][b][c] = true;
-        t[a][c][b] = true;
-        t[b][a][c] = true;
-        t[b][c][a] = true;
-        t[c][a][b] = true;
-        t[c][b][a] = true;
-        return true;
+        return old == null;
     }
 
     private boolean same(int a, int b) {
-        return s[a][b];
+        return same(new Same(a, b));
+    }
+
+    private boolean same(Same s) {
+        return relations.containsKey(s);
     }
 
     public boolean distinct(int a, int b) {
-        return d[a][b];
+        return distinct(new Dist(a, b));
+    }
+
+    private boolean distinct(Dist d) {
+        return relations.containsKey(d);
     }
 
     public boolean collinear(int a, int b, int c) {
-        return l[a][b][c];
+        return collinear(new Col(a, b, c));
+    }
+
+    private boolean collinear(Col col) {
+        return relations.containsKey(col);
     }
 
     public boolean triangle(int a, int b, int c) {
-        return t[a][b][c];
+        return triangle(new Trg(a, b, c));
     }
 
-    public Map<Rel, Update> update(Queue<Update> queue, Map<Rel, Update> result) {
+    private boolean triangle(Trg t) {
+        return relations.containsKey(t);
+    }
+
+    public void update(Queue<Update> queue) {
         while (!queue.isEmpty()) {
             Update u = queue.poll();
             switch (u.base()) {
                 case Same sm -> {
-                    if (merge(sm, u, result)) {
+                    if (merge(sm, u)) {
                         updateForSame(queue, sm);
                     }
                 }
                 case Dist dt -> {
-                    if (distinguish(dt, u, result)) {
+                    if (distinguish(dt, u)) {
                         updateForDist(queue, dt);
                     }
                 }
                 case Col cl -> {
-                    if (colline(cl, u, result)) {
+                    if (colline(cl, u)) {
                         updateForCol(queue, cl);
                     }
                 }
                 case Trg tr -> {
-                    if (triangule(tr, u, result)) {
+                    if (triangule(tr, u)) {
                         updateForTrg(queue, tr);
                     }
                 }
             }
         }
-        return result;
     }
 
     private void updateForDist(Queue<Update> queue, Dist d) {
@@ -485,77 +460,7 @@ public class FuzzyLiner {
         return lines;
     }
 
-    public FuzzyLiner quotient() {
-        int[] newMap = new int[pc];
-        int newPc = 0;
-        ex: for (int i = 0; i < pc; i++) {
-            for (int j = 0; j < i; j++) {
-                if (same(i, j)) {
-                    newMap[i] = newMap[j];
-                    continue ex;
-                }
-            }
-            newMap[i] = newPc++;
-        }
-        if (newPc == pc) {
-            return this;
-        }
-        FuzzyLiner result = new FuzzyLiner(newPc);
-        for (int i = 0; i < pc; i++) {
-            for (int j = 0; j < pc; j++) {
-                if (s[i][j]) {
-                    result.s[newMap[i]][newMap[j]] = true;
-                }
-                if (d[i][j]) {
-                    result.d[newMap[i]][newMap[j]] = true;
-                }
-                for (int k = 0; k < pc; k++) {
-                    if (l[i][j][k]) {
-                        result.l[newMap[i]][newMap[j]][newMap[k]] = true;
-                    }
-                    if (t[i][j][k]) {
-                        result.t[newMap[i]][newMap[j]][newMap[k]] = true;
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    public FuzzyLiner subLiner(int cap) {
-        FuzzyLiner res = new FuzzyLiner(cap);
-        for (int i = 0; i < cap; i++) {
-            System.arraycopy(s[i], 0, res.s[i], 0, cap);
-            System.arraycopy(d[i], 0, res.d[i], 0, cap);
-            for (int j = 0; j < cap; j++) {
-                System.arraycopy(l[i][j], 0, res.l[i][j], 0, cap);
-                System.arraycopy(t[i][j], 0, res.t[i][j], 0, cap);
-            }
-        }
-        return res;
-    }
-
-    public FuzzyLiner subLiner(FixBS pts) {
-        Map<Integer, Integer> idxes = new HashMap<>();
-        int counter = 0;
-        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
-            idxes.put(i, counter++);
-        }
-        FuzzyLiner res = new FuzzyLiner(idxes.size());
-        for (int i = pts.nextSetBit(0); i >= 0; i = pts.nextSetBit(i + 1)) {
-            for (int j = pts.nextSetBit(0); j >= 0; j = pts.nextSetBit(j + 1)) {
-                res.s[idxes.get(i)][idxes.get(j)] = s[i][j];
-                res.d[idxes.get(i)][idxes.get(j)] = d[i][j];
-                for (int k = pts.nextSetBit(0); k >= 0; k = pts.nextSetBit(k + 1)) {
-                    res.l[idxes.get(i)][idxes.get(j)][idxes.get(k)] = l[i][j][k];
-                    res.t[idxes.get(i)][idxes.get(j)][idxes.get(k)] = t[i][j][k];
-                }
-            }
-        }
-        return res;
-    }
-
-    public LinerHistory intersectLines() {
+    public FuzzyLiner intersectLines() {
         Queue<Update> queue = new ArrayDeque<>(2 * pc * pc);
         List<FixBS> lines = new ArrayList<>(lines());
         int pt = pc;
@@ -576,8 +481,8 @@ public class FuzzyLiner {
             }
         }
         FuzzyLiner res = addPoints(pt - pc);
-        Map<Rel, Update> history = res.update(queue, new HashMap<>());
-        return new LinerHistory(res, history);
+        res.update(queue);
+        return res;
     }
 
     public void printChars() {

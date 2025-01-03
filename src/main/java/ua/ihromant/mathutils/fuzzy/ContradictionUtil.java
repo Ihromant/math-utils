@@ -2,20 +2,62 @@ package ua.ihromant.mathutils.fuzzy;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.SequencedMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
 public class ContradictionUtil {
-    public static void multipleByContradiction(FuzzyLiner base, boolean onlyDist, Function<FuzzyLiner, LinerHistory> op, Consumer<FuzzyLiner> sink) {
+    public static void printContradiction(FuzzyLiner base, UnaryOperator<FuzzyLiner> op) {
+        try {
+            op.apply(base);
+        } catch (ContradictionException e) {
+            Rel rel = e.rel();
+            Rel opposite = switch (rel) {
+                case Dist(int a, int b) -> new Same(a, b);
+                case Same(int a, int b) -> new Dist(a, b);
+                case Col(int a, int b, int c) -> new Trg(a, b, c);
+                case Trg(int a, int b, int c) -> new Col(a, b, c);
+            };
+            System.out.println("From one side: ");
+            SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
+            reconstruct(rel, base.getRelations(), stack);
+            for (Update u : stack.reversed().values()) {
+                System.out.println(u.base() + " follows from " + u.reasonName() + " due to "
+                        + Arrays.stream(u.reasons()).map(Object::toString).collect(Collectors.joining(" ")));
+            }
+            System.out.println("But from the other side: ");
+            stack = new LinkedHashMap<>();
+            reconstruct(opposite, base.getRelations(), stack);
+            for (Update u : stack.reversed().values()) {
+                System.out.println(u.base() + " follows from " + u.reasonName() + " due to "
+                        + Arrays.stream(u.reasons()).map(Object::toString).collect(Collectors.joining(" ")));
+            }
+            System.out.println("Contradiction");
+        }
+    }
+
+    private static void reconstruct(Rel rel, Map<Rel, Update> updates, SequencedMap<Rel, Update> stack) {
+        if (stack.containsKey(rel)) {
+            return;
+        }
+        Update u = updates.get(rel);
+        stack.put(rel, u);
+        for (Rel r : u.reasons()) {
+            reconstruct(r, updates, stack);
+        }
+    }
+
+    public static void multipleByContradiction(FuzzyLiner base, boolean onlyDist, UnaryOperator<FuzzyLiner> op, Consumer<FuzzyLiner> sink) {
         recur(base, onlyDist, l -> {
             try {
-                FuzzyLiner next = op.apply(l).liner();
+                FuzzyLiner next = op.apply(l);
                 sink.accept(next);
             } catch (ContradictionException e) {
                 // ok
@@ -75,7 +117,7 @@ public class ContradictionUtil {
 //        }
     }
 
-    public static FuzzyLiner singleByContradiction(FuzzyLiner ln, boolean onlyDist, Function<FuzzyLiner, LinerHistory> op) {
+    public static FuzzyLiner singleByContradiction(FuzzyLiner ln, boolean onlyDist, UnaryOperator<FuzzyLiner> op) {
         List<Pair> pairs = ln.undefinedPairs(); // TODO
 //        Queue<Rel> q = new ConcurrentLinkedDeque<>();
 //        pairs.stream().parallel().forEach(p -> {
@@ -90,7 +132,7 @@ public class ContradictionUtil {
 //            }
 //        });
 //        ln.update(q);
-        LinerHistory afterDist = op.apply(ln);
+        FuzzyLiner afterDist = op.apply(ln);
 //        if (onlyDist) {
 //            return afterDist;
 //        }
@@ -108,7 +150,7 @@ public class ContradictionUtil {
 //            }
 //        });
 //        afterDist.update(q1);
-        return op.apply(afterDist.liner()).liner();
+        return op.apply(afterDist);
     }
 
     public static Boolean identifyDistinction(FuzzyLiner l, Pair p, UnaryOperator<FuzzyLiner> op) {
@@ -163,15 +205,14 @@ public class ContradictionUtil {
         return result;
     }
 
-    public static LinerHistory process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Update>>> processors) {
-        Map<Rel, Update> result = new HashMap<>();
+    public static FuzzyLiner process(FuzzyLiner liner, List<Function<FuzzyLiner, List<Update>>> processors) {
         while (true) {
             Queue<Update> queue = processors.stream().parallel().flatMap(p -> p.apply(liner).stream())
                     .collect(Collectors.toCollection(ArrayDeque::new));
             if (queue.isEmpty()) {
-                return new LinerHistory(liner, result);
+                return liner;
             }
-            liner.update(queue, result);
+            liner.update(queue);
             // TODO liner = liner.quotient();
         }
     }

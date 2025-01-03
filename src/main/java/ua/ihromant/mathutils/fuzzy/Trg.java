@@ -1,31 +1,50 @@
 package ua.ihromant.mathutils.fuzzy;
 
 public record Trg(int f, int s, int t) implements Rel {
-    public static Trg ordered(int f, int s, int t) {
+    public Trg {
+        int min;
+        int av;
+        int max;
         if (f > s) {
             if (s > t) {
-                return new Trg(t, s, f);
-            } else { // t > s
-                if (t > f) {
-                    return new Trg(s, f, t);
-                } else { // f > t
-                    return new Trg(s, t, f);
+                min = t;
+                av = s;
+                max = f;
+            } else { // s <= t
+                if (f > t) {
+                    min = s;
+                    av = t;
+                    max = f;
+                } else {
+                    min = s;
+                    av = f;
+                    max = t;
                 }
             }
-        } else { // s > f
-            if (f > t) {
-                return new Trg(t, f, s);
-            } else { // t > f
-                if (s > t) {
-                    return new Trg(f, t, s);
-                } else { // t > s
-                    return new Trg(f, s, t);
+        } else { // f <= s
+            if (s > t) {
+                if (f < t) {
+                    min = f;
+                    av = t;
+                    max = s;
+                } else {
+                    min = t;
+                    av = f;
+                    max = s;
                 }
+            } else { // s <= t
+                min = f;
+                av = s;
+                max = t;
             }
         }
+        f = min;
+        s = av;
+        t = max;
     }
 
-    public Trg ordered() {
-        return ordered(f, s, t);
+    @Override
+    public Rel opposite() {
+        return new Col(f, s, t);
     }
 }

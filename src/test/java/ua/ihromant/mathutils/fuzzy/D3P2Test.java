@@ -3,14 +3,8 @@ package ua.ihromant.mathutils.fuzzy;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.SequencedMap;
-import java.util.function.Function;
-import java.util.stream.Collectors;
+import java.util.function.UnaryOperator;
 
 public class D3P2Test {
     @Test
@@ -28,12 +22,12 @@ public class D3P2Test {
                 {0, 7, 8, 9}
         };
         FuzzyLiner base = FuzzyLiner.of(d31, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
-                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
         base.printChars();
-        base = base.intersectLines().liner();
+        base = base.intersectLines();
         base.printChars();
-        base = op.apply(base).liner();
+        base = op.apply(base);
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
@@ -55,12 +49,12 @@ public class D3P2Test {
                 {3, 5, 8},
                 {1, 4, 8}
         };
-        FuzzyLiner base = FuzzyLiner.of(p31, new Triple[]{new Triple(0, 1, 4)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of());// TODO ContradictionUtil::processP3S));
+        FuzzyLiner base = FuzzyLiner.of(p31, new Triple[]{new Triple(0, 1, 4)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of());// TODO ContradictionUtil::processP3S));
         base.printChars();
-        base = base.intersectLines().liner();
+        base = base.intersectLines();
         base.printChars();
-        base = op.apply(base).liner();
+        base = op.apply(base);
         base.printChars();
         List<FuzzyLiner> liners = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
@@ -87,12 +81,12 @@ public class D3P2Test {
                 {2, 6, 8},
                 {3, 5, 8}
         };
-        FuzzyLiner base = FuzzyLiner.of(p21, new Triple[]{new Triple(0, 1, 4)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of());// TODO ContradictionUtil::processP2S));
+        FuzzyLiner base = FuzzyLiner.of(p21, new Triple[]{new Triple(0, 1, 4)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of());// TODO ContradictionUtil::processP2S));
         base.printChars();
-        base = base.intersectLines().liner();
+        base = base.intersectLines();
         base.printChars();
-        base = op.apply(base).liner();
+        base = op.apply(base);
         base.printChars();
         base = ContradictionUtil.singleByContradiction(base, false, op);
         base.printChars();
@@ -122,17 +116,17 @@ public class D3P2Test {
         };
         FuzzyLiner base = FuzzyLiner.of(nearMoufang, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(0, 7, 9)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
+                new Triple(0, 7, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
         base.printChars();
         List<FuzzyLiner> liners = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, liners::add);
         List<FuzzyLiner> lnrs = new ArrayList<>();
         for (FuzzyLiner l : liners) {
             try {
-                l = l.intersectLines().liner();
+                l = l.intersectLines();
                 l.printChars();
-                l = op.apply(l).liner();
+                l = op.apply(l);
                 l.printChars();
                 List<FuzzyLiner> list = new ArrayList<>();
                 ContradictionUtil.multipleByContradiction(l, true, op, list::add);
@@ -171,17 +165,17 @@ public class D3P2Test {
         };
         FuzzyLiner base = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(7, 8, 9)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
+                new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3S));
         base.printChars();
         List<FuzzyLiner> lnrs = new ArrayList<>();
         ContradictionUtil.multipleByContradiction(base, false, op, lnrs::add);
         System.out.println(lnrs.size());
         for (FuzzyLiner test : lnrs) {
             try {
-                test = test.intersectLines().liner();
+                test = test.intersectLines();
                 test.printChars();
-                test = op.apply(test).liner();
+                test = op.apply(test);
                 test.printChars();
                 test = ContradictionUtil.singleByContradiction(test, true, op);
                 test.printChars();
@@ -215,12 +209,12 @@ public class D3P2Test {
         };
         FuzzyLiner base = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(7, 8, 9)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
+                new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
         base.printChars();
-        base = base.intersectLines().liner();
+        base = base.intersectLines();
         base.printChars();
-        base = op.apply(base).liner();
+        base = op.apply(base);
         base.printChars();
     }
 
@@ -240,12 +234,12 @@ public class D3P2Test {
         };
         FuzzyLiner base = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
-                new Triple(7, 8, 9)}).liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
+                new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
         base.printChars();
-        base = base.intersectLines().liner();
+        base = base.intersectLines();
         base.printChars();
-        base = op.apply(base).liner();
+        base = op.apply(base);
         base.printChars();
     }
 
@@ -263,56 +257,14 @@ public class D3P2Test {
                 {4, 6, 9},
                 {0, 7, 8, 9}
         };
-        LinerHistory initial = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(0, 3, 4)});
-        Map<Rel, Update> updates = new HashMap<>(initial.updates());
-        FuzzyLiner base = initial.liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD2S));
         base.printChars();
-        LinerHistory afterIntersect = base.intersectLines();
-        afterIntersect.updates().forEach(updates::putIfAbsent);
-        base = afterIntersect.liner();
+        base = base.intersectLines();
         base.printChars();
-        try {
-            op.apply(base);
-        } catch (ContradictionException e) {
-            e.updates().forEach(updates::putIfAbsent);
-            Rel rel = e.rel();
-            Rel opposite = switch (rel) {
-                case Dist(int a, int b) -> new Same(a, b);
-                case Same(int a, int b) -> new Dist(a, b);
-                case Col(int a, int b, int c) -> new Trg(a, b, c);
-                case Trg(int a, int b, int c) -> new Col(a, b, c);
-            };
-            System.out.println("From one side: ");
-            SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
-            reconstruct(rel, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("But from the other side: ");
-            stack = new LinkedHashMap<>();
-            reconstruct(opposite, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("Contradiction");
-        }
-    }
-
-    private static void reconstruct(Rel rel, Map<Rel, Update> updates, SequencedMap<Rel, Update> stack) {
-        rel = rel.ordered();
-        if (stack.containsKey(rel)) {
-            return;
-        }
-        Update u = updates.get(rel);
-        stack.put(rel, u);
-        for (Rel r : u.reasons()) {
-            reconstruct(r, updates, stack);
-        }
+        ContradictionUtil.printContradiction(base, op);
     }
 
     @Test
@@ -328,44 +280,14 @@ public class D3P2Test {
                 {2, 3, 5, 9},
                 {4, 6, 9}
         };
-        LinerHistory initial = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d3, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        Map<Rel, Update> updates = new HashMap<>(initial.updates());
-        FuzzyLiner base = initial.liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S));
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1S));
         base.printChars();
-        LinerHistory afterIntersect = base.intersectLines();
-        afterIntersect.updates().forEach(updates::putIfAbsent);
-        base = afterIntersect.liner();
+        base = base.intersectLines();
         base.printChars();
-        try {
-            op.apply(base);
-        } catch (ContradictionException e) {
-            e.updates().forEach(updates::putIfAbsent);
-            Rel rel = e.rel();
-            Rel opposite = switch (rel) {
-                case Dist(int a, int b) -> new Same(a, b);
-                case Same(int a, int b) -> new Dist(a, b);
-                case Col(int a, int b, int c) -> new Trg(a, b, c);
-                case Trg(int a, int b, int c) -> new Col(a, b, c);
-            };
-            System.out.println("From one side: ");
-            SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
-            reconstruct(rel, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("But from the other side: ");
-            stack = new LinkedHashMap<>();
-            reconstruct(opposite, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("Contradiction");
-        }
+        ContradictionUtil.printContradiction(base, op);
     }
 
     @Test
@@ -382,42 +304,12 @@ public class D3P2Test {
                 {3, 5, 9},
                 {0, 7, 8}
         };
-        LinerHistory initial =  FuzzyLiner.of(p1s, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
-        Map<Rel, Update> updates = new HashMap<>(initial.updates());
-        FuzzyLiner base = initial.liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
+        FuzzyLiner base = FuzzyLiner.of(p1s, new Triple[]{new Triple(0, 1, 4), new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processD3));
         base.printChars();
-        LinerHistory afterIntersect = base.intersectLines();
-        afterIntersect.updates().forEach(updates::putIfAbsent);
-        base = afterIntersect.liner();
+        base = base.intersectLines();
         base.printChars();
-        try {
-            op.apply(base);
-        } catch (ContradictionException e) {
-            e.updates().forEach(updates::putIfAbsent);
-            Rel rel = e.rel();
-            Rel opposite = switch (rel) {
-                case Dist(int a, int b) -> new Same(a, b);
-                case Same(int a, int b) -> new Dist(a, b);
-                case Col(int a, int b, int c) -> new Trg(a, b, c);
-                case Trg(int a, int b, int c) -> new Col(a, b, c);
-            };
-            System.out.println("From one side: ");
-            SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
-            reconstruct(rel, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("But from the other side: ");
-            stack = new LinkedHashMap<>();
-            reconstruct(opposite, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("Contradiction");
-        }
+        ContradictionUtil.printContradiction(base, op);
     }
 
     @Test
@@ -434,44 +326,14 @@ public class D3P2Test {
                 {2, 4, 5, 9},
                 {0, 7, 8}
         };
-        LinerHistory initial = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+        FuzzyLiner base = FuzzyLiner.of(d2s, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
                 new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
                 new Triple(7, 8, 9)});
-        Map<Rel, Update> updates = new HashMap<>(initial.updates());
-        FuzzyLiner base = initial.liner();
-        Function<FuzzyLiner, LinerHistory> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processP1,
                 ContradictionUtil::processPS, ContradictionUtil::processP1S, ContradictionUtil::processD2S, ContradictionUtil::processD3));
         base.printChars();
-        LinerHistory afterIntersect = base.intersectLines();
-        afterIntersect.updates().forEach(updates::putIfAbsent);
-        base = afterIntersect.liner();
+        base = base.intersectLines();
         base.printChars();
-        try {
-            op.apply(base);
-        } catch (ContradictionException e) {
-            e.updates().forEach(updates::putIfAbsent);
-            Rel rel = e.rel();
-            Rel opposite = switch (rel) {
-                case Dist(int a, int b) -> new Same(a, b);
-                case Same(int a, int b) -> new Dist(a, b);
-                case Col(int a, int b, int c) -> new Trg(a, b, c);
-                case Trg(int a, int b, int c) -> new Col(a, b, c);
-            };
-            System.out.println("From one side: ");
-            SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
-            reconstruct(rel, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("But from the other side: ");
-            stack = new LinkedHashMap<>();
-            reconstruct(opposite, updates, stack);
-            for (Update u : stack.reversed().values()) {
-                System.out.println(u.base().ordered() + " follows from " + u.reasonName() + " due to "
-                        + Arrays.stream(u.reasons()).map(r -> r.ordered().toString()).collect(Collectors.joining(" ")));
-            }
-            System.out.println("Contradiction");
-        }
+        ContradictionUtil.printContradiction(base, op);
     }
 }
