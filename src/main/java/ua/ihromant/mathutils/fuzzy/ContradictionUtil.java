@@ -217,6 +217,77 @@ public class ContradictionUtil {
         }
     }
 
+    public static List<Update> processPAlt(FuzzyLiner liner) {
+        int pc = liner.getPc();
+        List<Update> res = new ArrayList<>(liner.getPc());
+        for (int a = 0; a < pc; a++) {
+            for (int c = a + 1; c < pc; c++) {
+                for (int ab1a1b = 0; ab1a1b < pc; ab1a1b++) {
+                    if (!liner.triangle(a, c, ab1a1b)) {
+                        continue;
+                    }
+                    for (int bc1b1c = 0; bc1b1c < pc; bc1b1c++) {
+                        if (!liner.triangle(a, c, bc1b1c) || !liner.triangle(a, ab1a1b, bc1b1c) || !liner.triangle(c, ab1a1b, bc1b1c)) {
+                            continue;
+                        }
+                        for (int a1 = 0; a1 < pc; a1++) {
+                            if (!liner.triangle(a, c, a1) || !liner.triangle(a1, ab1a1b, bc1b1c) || !liner.triangle(a1, ab1a1b, a)
+                                    || !liner.triangle(a1, bc1b1c, c) || !liner.triangle(c, ab1a1b, a1)) {
+                                continue;
+                            }
+                            int b = -1;
+                            int b1 = -1;
+                            int c1 = -1;
+                            int ac1a1c = -1;
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a1, ab1a1b, i) && liner.collinear(a, c, i)) {
+                                    if (b < 0) {
+                                        b = i;
+                                    }
+                                }
+                                if (liner.collinear(a, ab1a1b, i) && liner.collinear(c, bc1b1c, i)) {
+                                    if (b1 < 0) {
+                                        b1 = i;
+                                    }
+                                }
+                            }
+                            if (b1 < 0 || b < 0 || !liner.triangle(a1, b1, a) || !liner.triangle(a1, b1, b) || !liner.triangle(a1, b1, c) || !liner.triangle(a, c, b1)) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a1, b1, i) && liner.collinear(b, bc1b1c, i)) {
+                                    if (c1 < 0) {
+                                        c1 = i;
+                                    }
+                                }
+                            }
+                            if (c1 < 0 || !liner.triangle(a, b, c1)) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a1, c, i) && liner.collinear(a, c1, i)) {
+                                    if (ac1a1c < 0) {
+                                        ac1a1c = i;
+                                    }
+                                }
+                            }
+                            if (ac1a1c < 0) {
+                                continue;
+                            }
+                            if (!liner.collinear(bc1b1c, ac1a1c, ab1a1b)) {
+                                res.add(new Update(new Col(bc1b1c, ac1a1c, ab1a1b), "P", new Col(a, b, c), new Col(a1, b1, c1),
+                                        new Trg(a, b, a1), new Trg(a, b, b1), new Trg(a, b, c1), new Trg(a1, b1, a), new Trg(a1, b1, b), new Trg(a1, b1, c),
+                                        new Col(a, b1, ab1a1b), new Col(a1, b, ab1a1b), new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c),
+                                        new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
     public static List<Update> processP(FuzzyLiner liner) {
         int pc = liner.getPc();
         List<Update> res = new ArrayList<>(liner.getPc());
