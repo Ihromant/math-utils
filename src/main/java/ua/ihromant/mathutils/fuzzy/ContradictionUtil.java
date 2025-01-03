@@ -1061,4 +1061,278 @@ public class ContradictionUtil {
         }
         return res;
     }
+
+    public static List<Update> processInversivePlus(FuzzyLiner liner) {
+        List<Update> res = new ArrayList<>(liner.getPc());
+        for (int a = 0; a < liner.getPc(); a++) {
+            for (int b = 0; b < liner.getPc(); b++) {
+                if (!liner.distinct(a, b)) {
+                    continue;
+                }
+                for (int c = 0; c < liner.getPc(); c++) {
+                    if (!liner.triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = 0; d < liner.getPc(); d++) {
+                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
+                            continue;
+                        }
+                        for (int a1 = 0; a1 < liner.getPc(); a1++) {
+                            if (!liner.collinear(a, d, a1)) {
+                                continue;
+                            }
+                            int h = -1;
+                            int v = -1;
+                            int o = -1;
+                            int b1 = -1;
+                            int c1 = -1;
+                            int d1 = -1;
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
+                                    if (h < 0) {
+                                        h = i;
+                                    }
+                                }
+                                if (liner.collinear(a, c, i) && liner.collinear(b, d, i)) {
+                                    if (o < 0) {
+                                        o = i;
+                                    }
+                                }
+                            }
+                            if (h < 0 || o < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(h, o, i) && liner.collinear(a, d, i)) {
+                                    if (v < 0) {
+                                        v = i;
+                                    }
+                                }
+                            }
+                            if (v < 0 || !liner.distinct(a1, v)) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(o, a1, i) && liner.collinear(v, c, i)) {
+                                    if (c1 < 0) {
+                                        c1 = i;
+                                    }
+                                }
+                            }
+                            if (c1 < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(v, a1, i) && liner.collinear(h, c1, i)) {
+                                    if (d1 < 0) {
+                                        d1 = i;
+                                    }
+                                }
+                            }
+                            if (d1 < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(h, a1, i) && liner.collinear(o, d1, i)) {
+                                    if (b1 < 0) {
+                                        b1 = i;
+                                    }
+                                }
+                            }
+                            if (b1 < 0) {
+                                continue;
+                            }
+                            if (!liner.collinear(v, b, b1)) {
+                                res.add(new Update(new Col(v, b, b1), "InvPl", new Trg(a, b, c), new Trg(b, c, d), new Trg(a, b, d), new Trg(a, c, d),
+                                        new Col(a, d, a1), new Col(a, c, o), new Col(b, d, o), new Col(a, b, h), new Col(c, d, h),
+                                        new Col(a, d, v), new Col(o, h, v), new Dist(a1, v), new Col(o, a1, c1), new Col(v, c, c1),
+                                        new Col(v, a1, d1), new Col(h, c1, d1), new Col(h, a1, b1), new Col(o, d1, b1)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    public static List<Update> processAssocPlus(FuzzyLiner liner) {
+        List<Update> res = new ArrayList<>(liner.getPc());
+        for (int a = 0; a < liner.getPc(); a++) {
+            for (int b = 0; b < liner.getPc(); b++) {
+                if (!liner.distinct(a, b)) {
+                    continue;
+                }
+                for (int c = 0; c < liner.getPc(); c++) {
+                    if (!liner.triangle(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = 0; d < liner.getPc(); d++) {
+                        if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
+                            continue;
+                        }
+                        for (int a1 = 0; a1 < liner.getPc(); a1++) {
+                            if (!liner.triangle(a, c, a1) || !liner.triangle(a, b, a1)) {
+                                continue;
+                            }
+                            int h = -1;
+                            int v = -1;
+                            int o = -1;
+                            int b1 = -1;
+                            int c1 = -1;
+                            int d1 = -1;
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
+                                    if (h < 0) {
+                                        h = i;
+                                    }
+                                }
+                                if (liner.collinear(a, c, i) && liner.collinear(b, d, i)) {
+                                    if (v < 0) {
+                                        v = i;
+                                    }
+                                }
+                            }
+                            if (h < 0 || v < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(h, v, i) && liner.collinear(a, a1, i)) {
+                                    if (o < 0) {
+                                        o = i;
+                                    }
+                                }
+                            }
+                            if (o < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(v, a1, i) && liner.collinear(o, c, i)) {
+                                    if (c1 < 0) {
+                                        c1 = i;
+                                    }
+                                }
+                            }
+                            if (c1 < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(o, d, i) && liner.collinear(h, c1, i)) {
+                                    if (d1 < 0) {
+                                        d1 = i;
+                                    }
+                                }
+                            }
+                            if (d1 < 0) {
+                                continue;
+                            }
+                            for (int i = 0; i < liner.getPc(); i++) {
+                                if (liner.collinear(h, a1, i) && liner.collinear(v, d1, i)) {
+                                    if (b1 < 0) {
+                                        b1 = i;
+                                    }
+                                }
+                            }
+                            if (b1 < 0) {
+                                continue;
+                            }
+                            if (!liner.collinear(o, b, b1)) {
+                                res.add(new Update(new Col(o, b, b1), "AssocPl", new Trg(a, b, c), new Trg(b, c, d), new Trg(a, b, d), new Trg(a, c, d),
+                                        new Trg(a, b, a1), new Trg(a, c, a1), new Col(a, c, v), new Col(b, d, v), new Col(a, b, h), new Col(c, d, h),
+                                        new Col(o, h, v), new Col(a, a1, o), new Col(v, a1, c1), new Col(o, c, c1),
+                                        new Col(o, d, d1), new Col(h, c1, d1), new Col(h, a1, b1), new Col(v, b1, d1)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
+
+    public static List<Update> processD11S(FuzzyLiner liner) {
+        int pc = liner.getPc();
+        List<Update> res = new ArrayList<>(liner.getPc());
+        for (int o = 0; o < pc; o++) {
+            for (int a = 0; a < pc; a++) {
+                if (!liner.distinct(o, a)) {
+                    continue;
+                }
+                for (int b = 0; b < pc; b++) {
+                    if (!liner.triangle(o, a, b)) {
+                        continue;
+                    }
+                    for (int c = 0; c < pc; c++) {
+                        if (!liner.triangle(o, a, c) || !liner.triangle(o, b, c) || !liner.triangle(a, b, c)) {
+                            continue;
+                        }
+                        for (int a1 = 0; a1 < pc; a1++) {
+                            if (!liner.collinear(o, a, a1)) {
+                                continue;
+                            }
+                            int aba1b1 = -1;
+                            int bcb1c1 = -1;
+                            int aca1c1 = -1;
+                            int b1 = -1;
+                            int c1 = -1;
+                            for (int i = 0; i < pc; i++) {
+                                if (liner.collinear(a, b, i) && liner.collinear(a1, c, i)) {
+                                    if (aba1b1 < 0) {
+                                        aba1b1 = i;
+                                    }
+                                }
+                                if (liner.collinear(o, c, i) && liner.collinear(a, b, i)) {
+                                    if (c1 < 0) {
+                                        c1 = i;
+                                    }
+                                }
+                                if (liner.collinear(o, b, i) && liner.collinear(a1, c, i)) {
+                                    if (b1 < 0) {
+                                        b1 = i;
+                                    }
+                                }
+                            }
+                            if (aba1b1 < 0 || c1 < 0 || b1 < 0 || !liner.triangle(a1, b1, c1)) {
+                                continue;
+                            }
+                            for (int i = 0; i < pc; i++) {
+                                if (liner.collinear(a, c, i) && liner.collinear(a1, c1, i)) {
+                                    if (aca1c1 < 0) {
+                                        aca1c1 = i;
+                                    }
+                                }
+                                if (liner.collinear(b, c, i) && liner.collinear(b1, c1, i)) {
+                                    if (bcb1c1 < 0) {
+                                        bcb1c1 = i;
+                                    }
+                                }
+                            }
+                            if (aca1c1 < 0 || bcb1c1 < 0) {
+                                continue;
+                            }
+                            if (liner.collinear(o, aba1b1, aca1c1) && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D11", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                        new Trg(a, b, c), new Trg(a1, b1, c1), new Col(a, b, c1), new Col(a1, b1, c), new Col(o, a, a1), new Col(o, b, b1),
+                                        new Col(o, c, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                        new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1), new Col(o, aba1b1, aca1c1)));
+                            }
+                            if (liner.collinear(o, aba1b1, bcb1c1) && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D11", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                        new Trg(a, b, c), new Trg(a1, b1, c1), new Col(a, b, c1), new Col(a1, b1, c), new Col(o, a, a1), new Col(o, b, b1),
+                                        new Col(o, c, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                        new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1), new Col(o, aba1b1, bcb1c1)));
+                            }
+                            if (liner.collinear(o, aca1c1, bcb1c1) && !liner.collinear(aba1b1, aca1c1, bcb1c1)) {
+                                res.add(new Update(new Col(bcb1c1, aca1c1, aba1b1), "D11", new Trg(o, a, b), new Trg(o, a, c), new Trg(o, b, c),
+                                        new Trg(a, b, c), new Trg(a1, b1, c1), new Col(a, b, c1), new Col(a1, b1, c), new Col(o, a, a1), new Col(o, b, b1),
+                                        new Col(o, c, c1), new Col(a, b, aba1b1), new Col(a1, b1, aba1b1), new Col(a, c, aca1c1), new Col(a1, c1, aca1c1),
+                                        new Col(b, c, bcb1c1), new Col(b1, c1, bcb1c1), new Col(o, aca1c1, bcb1c1)));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return res;
+    }
 }
