@@ -14,27 +14,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-public class BibdFinder5Test {
+public class BibdFinder6Test {
     private record Design(int[][] design, int idx, int blockIdx) {
-        private boolean bigger(int[][] candidate) {
-            int i = 0;
-            int cmp;
-            do {
-                int[] cnd = candidate[i];
-                int[] block = design[i];
-                cmp = compare(cnd, block);
-            } while (cmp == 0 && i++ < blockIdx);
-            return cmp < 0;
-        }
-
         private Design simpleAdd(int el) {
             int[][] cloned = design.clone();
             int[] last = cloned[blockIdx].clone();
@@ -65,8 +52,8 @@ public class BibdFinder5Test {
         }
     }
 
-    private record State(Design curr, FixBS filter, FixBS whiteList, int[][][] transformations) {
-        private static State forDesign(int v, int[] multipliers, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
+    private record State(Design curr, FixBS filter, FixBS whiteList) {
+        private static State forDesign(int v, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
             int[][] nextDesign = baseDesign.clone();
             nextDesign[blockIdx] = new int[k];
             FixBS filter = baseFilter.copy();
@@ -84,34 +71,13 @@ public class BibdFinder5Test {
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, 1, blockIdx);
-            int[][][] transformations = Arrays.stream(multipliers).mapToObj(m -> IntStream.range(0, baseDesign.length).mapToObj(idx -> {
-                if (idx >= blockIdx) {
-                    return new int[k];
-                }
-                return minimalTuple(baseDesign[idx], m, v, k);
-            }).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
-            State state = new State(curr, filter, whiteList, transformations);
-            return state.acceptElem(multipliers, whiteList.nextSetBit(0), v, k, st -> {});
+            State state = new State(curr, filter, whiteList);
+            return state.acceptElem(whiteList.nextSetBit(0), v, st -> {});
         }
 
-        private State acceptElem(int[] multipliers, int el, int v, int k, Consumer<State> cons) {
+        private State acceptElem(int el, int v, Consumer<State> cons) {
             Design nextCurr = curr.simpleAdd(el);
             boolean tupleFinished = nextCurr.tupleFinished();
-            int[][][] nextTransformations;
-            if (tupleFinished) {
-                int blockIdx = nextCurr.blockIdx;
-                int[] last = nextCurr.design[blockIdx];
-                nextTransformations = new int[transformations.length][][];
-                for (int i = 0; i < transformations.length; i++) {
-                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, multipliers[i], v, k), blockIdx);
-                    if (nextCurr.bigger(nextTransformation)) {
-                        return null;
-                    }
-                    nextTransformations[i] = nextTransformation;
-                }
-            } else {
-                nextTransformations = transformations;
-            }
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
             int[] nextTuple = nextCurr.curr();
@@ -139,14 +105,14 @@ public class BibdFinder5Test {
                     newWhiteList.clear((el + diff) % v);
                 }
             }
-            State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
+            State result = new State(nextCurr, newFilter, newWhiteList);
             if (tupleFinished) {
                 if (nextCurr.lastBlock()) {
                     cons.accept(result);
                     return null;
                 }
                 result = result.initiateNextTuple(newFilter, v)
-                        .acceptElem(multipliers, newFilter.nextClearBit(1), v, k, st -> {});
+                        .acceptElem(newFilter.nextClearBit(1), v, st -> {});
             }
             return result;
         }
@@ -154,70 +120,16 @@ public class BibdFinder5Test {
         private State initiateNextTuple(FixBS filter, int v) {
             FixBS nextWhiteList = filter.copy();
             nextWhiteList.flip(1, v);
-            return new State(new Design(curr.design, 1, curr.blockIdx + 1), filter, nextWhiteList, transformations);
+            return new State(new Design(curr.design, 1, curr.blockIdx + 1), filter, nextWhiteList);
         }
     }
 
-    private static int[][] addBlock(int[][] design, int[] block, int blockIdx) {
-        int[][] cloned = design.clone();
-        int newIdx = blockIdx;
-        while (newIdx > 0 && block[1] < cloned[newIdx - 1][1]) {
-            newIdx--;
-        }
-        if (newIdx != blockIdx) {
-            System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
-        }
-        cloned[newIdx] = block;
-        return cloned;
-    }
-
-    private static int compare(int[] fst, int[] snd) {
-        for (int i = 1; i < fst.length; i++) {
-            int dff = fst[i] - snd[i];
-            if (dff != 0) {
-                return dff;
-            }
-        }
-        return 0;
-    }
-
-    private static int[] minimalTuple(int[] tuple, int multiplier, int v, int k) {
-        int[] arr = new int[k];
-        int minDiff = Integer.MAX_VALUE;
-        for (int j = 1; j < k; j++) {
-            int mapped = (multiplier * tuple[j]) % v;
-            arr[j] = mapped;
-            if (mapped < minDiff) {
-                minDiff = mapped;
-            }
-        }
-        int[] min = arr;
-        for (int j = 1; j < k; j++) {
-            int el = arr[j];
-            int[] cnd = new int[k];
-            for (int i = 0; i < k; i++) {
-                if (i == j) {
-                    continue;
-                }
-                int iEl = arr[i];
-                int diff = el < iEl ? iEl - el : v + iEl - el;
-                cnd[i] = diff;
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    min = cnd;
-                }
-            }
-        }
-        Arrays.sort(min);
-        return min;
-    }
-
-    private static void calcCycles(int[] multipliers, int v, int k, State state, Consumer<State> sink) {
+    private static void calcCycles(int v, State state, Consumer<State> sink) {
         FixBS whiteList = state.whiteList();
         for (int idx = whiteList.nextSetBit(state.curr.lastVal()); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
-            State next = state.acceptElem(multipliers, idx, v, k, sink);
+            State next = state.acceptElem(idx, v, sink);
             if (next != null) {
-                calcCycles(multipliers, v, k, next, sink);
+                calcCycles(v, next, sink);
             }
         }
     }
@@ -249,9 +161,9 @@ public class BibdFinder5Test {
 
     @Test
     public void toFile() throws IOException {
-        Group gr = new CyclicGroup(13);
+        Group gr = new CyclicGroup(156);
         int v = gr.order();
-        int k = 3;
+        int k = 6;
         File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
         File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
@@ -281,13 +193,8 @@ public class BibdFinder5Test {
         return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
 
-    private static int[] multipliers(int v) {
-        return IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
-    }
-
     private static void logResultsDepth(PrintStream destination, int v, int k, List<int[][]> unProcessed) {
         System.out.println(v + " " + k);
-        int[] multipliers = multipliers(v);
         System.out.println("Initial size " + unProcessed.size());
         int blocksNeeded = v / k / (k - 1);
         FixBS baseFilter = baseFilter(v, k);
@@ -307,8 +214,8 @@ public class BibdFinder5Test {
             for (int i = 0; i < init.length; i++) {
                 System.arraycopy(init[i], 0, design[i], 0, k);
             }
-            State initial = State.forDesign(v, multipliers, baseFilter, design, k, init.length);
-            calcCycles(multipliers, v, k, initial, designConsumer);
+            State initial = State.forDesign(v, baseFilter, design, k, init.length);
+            calcCycles(v, initial, designConsumer);
             if (destination != System.out) {
                 destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
@@ -325,20 +232,19 @@ public class BibdFinder5Test {
     public void logAllCycles() {
         Group group = new CyclicGroup(91);
         int k = 6;
-        logAllCycles(System.out, group, k);
+        logAllCycles(group, k);
     }
 
-    private static void logAllCycles(PrintStream destination, Group group, int k) {
+    private static void logAllCycles(Group group, int k) {
         System.out.println(group.name() + " " + k);
         int v = group.order();
         FixBS filter = baseFilter(v, k);
         int blocksNeeded = v / k / (k - 1);
         int[][] design = new int[blocksNeeded][k];
-        int[] multipliers = multipliers(v);
-        State initial = State.forDesign(v, multipliers, filter, design, k, 0);
-        calcCycles(multipliers, v, k, initial, cycle -> {
-            destination.println(Arrays.deepToString(cycle.curr.design));
-            destination.flush();
+        State initial = State.forDesign(v, filter, design, k, 0);
+        calcCycles(v, initial, cycle -> {
+            System.out.println(Arrays.deepToString(cycle.curr.design));
+            System.out.flush();
         });
     }
 }
