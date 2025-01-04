@@ -42,10 +42,6 @@ public class BibdFinder6Test {
             return blockIdx + 1 == design.length;
         }
 
-        private int lastVal() {
-            return design[blockIdx][idx - 1];
-        }
-
         @Override
         public String toString() {
             return "(" + Arrays.deepToString(design) + ", " + idx + ", " + blockIdx + ")";
@@ -124,12 +120,20 @@ public class BibdFinder6Test {
         }
     }
 
-    private static void calcCycles(int v, State state, Consumer<State> sink) {
+    private static void calcCycles(int v, int k, State state, Consumer<State> sink) {
         FixBS whiteList = state.whiteList();
-        for (int idx = whiteList.nextSetBit(state.curr.lastVal()); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
-            State next = state.acceptElem(idx, v, sink);
+        int[] currBlock = state.curr.curr();
+        int idx = state.curr.idx;
+        int lastVal = currBlock[idx - 1];
+        boolean first = idx == 2;
+        int min = state.filter().nextClearBit(1);
+        int midCnt = k - idx - 1;
+        int minMidSpace = midCnt * min + midCnt * (midCnt - 1) / 2;
+        int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
+        for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
+            State next = state.acceptElem(el, v, sink);
             if (next != null) {
-                calcCycles(v, next, sink);
+                calcCycles(v, k, next, sink);
             }
         }
     }
@@ -153,7 +157,7 @@ public class BibdFinder6Test {
         try (FileInputStream allFis = new FileInputStream(beg);
              InputStreamReader allIsr = new InputStreamReader(allFis);
              BufferedReader allBr = new BufferedReader(allIsr)) {
-            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
+            List<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).toList();
             logResultsDepth(System.out, v, k, set.stream().map(st -> st.stream()
                     .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
         }
@@ -215,7 +219,7 @@ public class BibdFinder6Test {
                 System.arraycopy(init[i], 0, design[i], 0, k);
             }
             State initial = State.forDesign(v, baseFilter, design, k, init.length);
-            calcCycles(v, initial, designConsumer);
+            calcCycles(v, k, initial, designConsumer);
             if (destination != System.out) {
                 destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
@@ -242,7 +246,7 @@ public class BibdFinder6Test {
         int blocksNeeded = v / k / (k - 1);
         int[][] design = new int[blocksNeeded][k];
         State initial = State.forDesign(v, filter, design, k, 0);
-        calcCycles(v, initial, cycle -> {
+        calcCycles(v, k, initial, cycle -> {
             System.out.println(Arrays.deepToString(cycle.curr.design));
             System.out.flush();
         });
