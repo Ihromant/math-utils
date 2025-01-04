@@ -177,6 +177,17 @@ public class BibdFinder2CyclicTest {
         return cloned;
     }
 
+    private boolean bigger(int[][] design, int[][] candidate, int blockIdx) {
+        int i = 0;
+        int cmp;
+        do {
+            int[] cnd = candidate[i];
+            int[] block = design[i];
+            cmp = compare(cnd, block);
+        } while (cmp == 0 && i++ < blockIdx);
+        return cmp < 0;
+    }
+
     private static int compare(int[] fst, int[] snd) {
         for (int i = 1; i < fst.length; i++) {
             int dff = fst[i] - snd[i];
@@ -386,5 +397,41 @@ public class BibdFinder2CyclicTest {
             destination.println(Arrays.deepToString(cycle.curr.design));
             destination.flush();
         });
+    }
+
+    @Test
+    public void filter() throws IOException {
+        Group gr = new GroupProduct(13, 13);
+        int k = 7;
+        int[][] auths = gr.auth();
+        File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
+        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "nf.txt");
+        try (FileInputStream fis = new FileInputStream(unrefined);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream(refined);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            br.lines().forEach(l -> {
+                if (!l.contains("[[")) {
+                    return;
+                }
+                String[] sp = l.substring(2, l.length() - 2).split("], \\[");
+                int[][] des = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                int cnt = 0;
+                for (int[] auth : auths) {
+                    int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, auth, gr, k)).toArray(int[][]::new);
+                    Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
+                    if (bigger(des, mapped, des.length - 1)) {
+                        return;
+                    }
+                    if (Arrays.deepEquals(mapped, des)) {
+                        cnt++;
+                    }
+                }
+                System.out.println(cnt + " " + l);
+                ps.println(l);
+            });
+        }
     }
 }
