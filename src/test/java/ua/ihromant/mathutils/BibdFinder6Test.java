@@ -14,11 +14,13 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BibdFinder6Test {
     private record Design(int[][] design, int idx, int blockIdx) {
@@ -250,5 +252,113 @@ public class BibdFinder6Test {
             System.out.println(Arrays.deepToString(cycle.curr.design));
             System.out.flush();
         });
+    }
+
+    private static int compare(int[] fst, int[] snd) {
+        for (int i = 1; i < fst.length; i++) {
+            int dff = fst[i] - snd[i];
+            if (dff != 0) {
+                return dff;
+            }
+        }
+        return 0;
+    }
+
+    private int compare(int[][] design, int[][] candidate) {
+        for (int i = 0; i < design.length; i++) {
+            int cmp = compare(design[i], candidate[i]);
+            if (cmp != 0) {
+                return cmp;
+            }
+        }
+        return 0;
+    }
+
+    private static int[] multipliers(int v) {
+        return IntStream.range(1, v).filter(m -> Group.gcd(m, v) == 1).toArray();
+    }
+
+    private static int[] minimalTuple(int[] tuple, int multiplier, Group gr, int v, int k) {
+        int[] arr = new int[k];
+        int minDiff = Integer.MAX_VALUE;
+        for (int j = 1; j < k; j++) {
+            int mapped = (tuple[j] * multiplier) % v;
+            arr[j] = mapped;
+            if (mapped < minDiff) {
+                minDiff = mapped;
+            }
+        }
+        int[] min = arr;
+        for (int j = 1; j < k; j++) {
+            int inv = gr.inv(arr[j]);
+            int[] cnd = new int[k];
+            for (int i = 0; i < k; i++) {
+                if (i == j) {
+                    continue;
+                }
+                int diff = gr.op(arr[i], inv);
+                cnd[i] = diff;
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    min = cnd;
+                }
+            }
+        }
+        Arrays.sort(min);
+        return min;
+    }
+
+    @Test
+    public void refine() throws IOException {
+        Group gr = new CyclicGroup(126);
+        int v = gr.order();
+        int k = 6;
+        int[] multipliers = multipliers(v);
+        File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
+        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "nf.txt");
+        try (FileInputStream fis = new FileInputStream(unrefined);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr);
+             FileOutputStream fos = new FileOutputStream(refined);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            br.lines().forEach(l -> {
+                if (!l.contains("[[")) {
+                    return;
+                }
+                String[] sp = l.substring(2, l.length() - 2).split("], \\[");
+                int[][] bDes = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                int pow = 1 << bDes.length;
+                IntStream.range(0, pow).forEach(i -> {
+                    int[][] des = IntStream.range(0, bDes.length).mapToObj(j -> {
+                        boolean keep = (i & (1 << j)) == 0;
+                        int[] base = bDes[j];
+                        if (keep) {
+                            return base;
+                        }
+                        int[] res = new int[k];
+                        res[1] = base[1];
+                        for (int idx = 2; idx < k; idx++) {
+                            res[k - idx + 1] = base[1] + v - base[idx];
+                        }
+                        return res;
+                    }).toArray(int[][]::new);
+                    int cnt = 0;
+                    for (int m : multipliers) {
+                        int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, gr, v, k)).toArray(int[][]::new);
+                        Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
+                        int cmp = compare(des, mapped);
+                        if (cmp > 0) {
+                            return;
+                        }
+                        if (cmp == 0) {
+                            cnt++;
+                        }
+                    }
+                    System.out.println(cnt + " " + Arrays.deepToString(des));
+                    ps.println(Arrays.deepToString(des));
+                });
+            });
+        }
     }
 }
