@@ -278,7 +278,7 @@ public class BibdFinder6Test {
         return IntStream.range(1, v).filter(m -> Group.gcd(m, v) == 1).toArray();
     }
 
-    private static int[] minimalTuple(int[] tuple, int multiplier, Group gr, int v, int k) {
+    private static int[] minimalTuple(int[] tuple, int multiplier, int v, int k) {
         int[] arr = new int[k];
         int minDiff = Integer.MAX_VALUE;
         for (int j = 1; j < k; j++) {
@@ -290,13 +290,13 @@ public class BibdFinder6Test {
         }
         int[] min = arr;
         for (int j = 1; j < k; j++) {
-            int inv = gr.inv(arr[j]);
             int[] cnd = new int[k];
             for (int i = 0; i < k; i++) {
                 if (i == j) {
                     continue;
                 }
-                int diff = gr.op(arr[i], inv);
+                int diff = arr[i] - arr[j];
+                diff = diff < 0 ? v + diff : diff;
                 cnd[i] = diff;
                 if (diff < minDiff) {
                     minDiff = diff;
@@ -345,7 +345,7 @@ public class BibdFinder6Test {
                     }).toArray(int[][]::new);
                     int cnt = 0;
                     for (int m : multipliers) {
-                        int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, gr, v, k)).toArray(int[][]::new);
+                        int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, v, k)).toArray(int[][]::new);
                         Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
                         int cmp = compare(des, mapped);
                         if (cmp > 0) {
