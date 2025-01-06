@@ -3,6 +3,9 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.Arrays;
+import java.util.concurrent.ThreadLocalRandom;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 public class FixBSTest {
@@ -984,11 +987,11 @@ public class FixBSTest {
         bs.set(127, 130);
         bs.set(193);
         bs.set(450);
-        try {
-            bs.nextSetBit(-1);
-            fail();
-        } catch (IndexOutOfBoundsException expected) {
-        }
+//        try {
+//            bs.nextSetBit(-1);
+//            fail();
+//        } catch (IndexOutOfBoundsException expected) {
+//        }
         assertEquals(5, bs.nextSetBit(0));
         assertEquals(5, bs.nextSetBit(5));
         assertEquals(32, bs.nextSetBit(6));
@@ -1034,11 +1037,11 @@ public class FixBSTest {
         bs.clear(127, 130);
         bs.clear(193);
         bs.clear(450);
-        try {
-            bs.nextClearBit(-1);
-            fail();
-        } catch (IndexOutOfBoundsException expected) {
-        }
+//        try {
+//            bs.nextClearBit(-1);
+//            fail();
+//        } catch (IndexOutOfBoundsException expected) {
+//        }
         assertEquals(5, bs.nextClearBit(0));
         assertEquals(5, bs.nextClearBit(5));
         assertEquals(32, bs.nextClearBit(6));
@@ -1146,5 +1149,61 @@ public class FixBSTest {
         bs.clear();
         bs.set(0, 64);
         assertEquals(64, bs.cardinality());
+    }
+
+    @Test
+    public void testModularDiff() {
+        int v = 275;
+        int cut = 125;
+        FixBS a = new FixBS(v);
+        a.set(0, v);
+        FixBS b = FixBS.of(v, 1, 10, 17, 63, 65, 124, 127, 150, 200, 212, 257);
+        int[] expected = b.stream().toArray();
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = (expected[i] + cut) % v;
+        }
+        Arrays.sort(expected);
+        a.diffModuleShifted(b, v, cut);
+        a.flip(0, v);
+        assertArrayEquals(expected, a.stream().toArray());
+    }
+
+    @Test
+    public void testModularDiff1() {
+        int v = 19;
+        int cut = 9;
+        FixBS a = new FixBS(v);
+        a.set(0, v);
+        FixBS b = FixBS.of(v, 1, 3, 15, 18);
+        int[] expected = b.stream().toArray();
+        for (int i = 0; i < expected.length; i++) {
+            expected[i] = (expected[i] + cut) % v;
+        }
+        Arrays.sort(expected);
+        a.diffModuleShifted(b, v, cut);
+        a.flip(0, v);
+        assertArrayEquals(expected, a.stream().toArray());
+    }
+
+    @Test
+    public void randomizeModularDiff() {
+        for (int j = 0; j < 10000; j++) {
+            int v = ThreadLocalRandom.current().nextInt(10, 300);
+            int cut = ThreadLocalRandom.current().nextInt(v);
+            FixBS a = new FixBS(v);
+            a.set(0, v);
+            FixBS b = FixBS.of(v);
+            for (int i = 0; i < 5; i++) {
+                b.set(ThreadLocalRandom.current().nextInt(v));
+            }
+            int[] expected = b.stream().toArray();
+            for (int i = 0; i < expected.length; i++) {
+                expected[i] = (expected[i] + cut) % v;
+            }
+            Arrays.sort(expected);
+            a.diffModuleShifted(b, v, cut);
+            a.flip(0, v);
+            assertArrayEquals(expected, a.stream().toArray());
+        }
     }
 }

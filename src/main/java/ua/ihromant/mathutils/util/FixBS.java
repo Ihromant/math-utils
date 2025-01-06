@@ -29,7 +29,7 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     private static int wordIndex(int bitIndex) {
-        return bitIndex >> ADDRESS_BITS_PER_WORD;
+        return bitIndex >>> ADDRESS_BITS_PER_WORD;
     }
 
     public void set(int fromIndex, int toIndex) {
@@ -62,8 +62,9 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     public void clear(int fromIndex, int toIndex) {
-        if (fromIndex == toIndex)
+        if (fromIndex == toIndex) {
             return;
+        }
 
         int startWordIndex = wordIndex(fromIndex);
         int endWordIndex = wordIndex(toIndex - 1);
@@ -117,8 +118,9 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     public void flip(int fromIndex, int toIndex) {
-        if (fromIndex == toIndex)
+        if (fromIndex == toIndex) {
             return;
+        }
 
         int startWordIndex = wordIndex(fromIndex);
         int endWordIndex   = wordIndex(toIndex - 1);
@@ -378,6 +380,51 @@ public class FixBS implements Comparable<FixBS> {
         boolean tmp = get(a);
         set(a, get(b));
         set(b, tmp);
+    }
+
+    public void diffModuleShifted(FixBS that, int v, int cut) {
+        int diff = v - cut;
+        int diffIdx = wordIndex(diff);
+
+        int diffLeft = diff & 63;
+        int diffInv = 64 - diffLeft;
+        long diffMask = (1L << diffLeft) - 1;
+
+        int cutLeft = cut & 63;
+        int cutInv = 64 - cutLeft;
+        long cutMask = (1L << cutInv) - 1;
+
+        for (int i = 1; i < words.length; i++) {
+            int shift = diffIdx + i;
+            boolean overflow = shift >= words.length;
+            shift = overflow ? shift - words.length : shift;
+            long base = that.words[shift] & (overflow ? cutMask : diffMask);
+            long rest = that.words[shift] >>> (overflow ? cutInv : diffLeft);
+            words[i - (overflow ? 1 : 0)] &= ~rest;
+            words[i - (overflow ? 2 : 1)] &= ~(base << (overflow ? cutLeft : diffInv));
+        }
+
+        words[0] &= ~(that.words[diffIdx] >>> diffLeft);
+//        for (int i = diffIdx + 1; i < words.length; i++) {
+//            long base = that.words[i] & diffMask;
+//            long rest = that.words[i] >>> diffLeft;
+//            words[i - diffIdx] &= ~rest;
+//            words[i - diffIdx - 1] &= ~(base << diffInv);
+//        }
+//        int done = words.length - diffIdx - 1;
+//        for (int i = 0; i < diffIdx; i++) {
+//            long base = that.words[i] & cutMask;
+//            long rest = that.words[i] >>> cutInv;
+//            words[done + i] &= ~rest;
+//            words[done + i - 1] &= ~(base << cutLeft);
+//        }
+        long fin = that.words[diffIdx] & diffMask;
+        long finRest = fin >>> cutInv;
+        words[words.length - 1] &= ~finRest;
+        if (words.length > 1) {
+            long finBase = fin & cutMask;
+            words[words.length - 2] &= ~(finBase << cutLeft);
+        }
     }
 
     public static Stream<FixBS> choices(int n, int k) {
