@@ -140,11 +140,6 @@ public class BibdFinder2CyclicTest {
                     newWhiteList.clear(group.op(nv, outDiff));
                 }
             }
-            if (!tupleFinished) {
-                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                    newWhiteList.clear(group.op(el, diff));
-                }
-            }
             State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
             if (tupleFinished) {
                 if (nextCurr.lastBlock()) {
@@ -153,6 +148,10 @@ public class BibdFinder2CyclicTest {
                 }
                 result = result.initiateNextTuple(newFilter, v)
                         .acceptElem(group, auth, newFilter.nextClearBit(1), v, k, st -> {});
+            } else {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear(group.op(el, diff));
+                }
             }
             return result;
         }

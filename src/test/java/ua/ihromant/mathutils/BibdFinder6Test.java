@@ -98,11 +98,6 @@ public class BibdFinder6Test {
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
-            if (!tupleFinished) {
-                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                    newWhiteList.clear((el + diff) % v);
-                }
-            }
             State result = new State(nextCurr, newFilter, newWhiteList);
             if (tupleFinished) {
                 if (nextCurr.lastBlock()) {
@@ -111,6 +106,10 @@ public class BibdFinder6Test {
                 }
                 result = result.initiateNextTuple(newFilter, v)
                         .acceptElem(newFilter.nextClearBit(1), v, st -> {});
+            } else {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear((el + diff) % v);
+                }
             }
             return result;
         }
