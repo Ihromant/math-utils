@@ -88,11 +88,11 @@ public class GroupTest {
     public void testAuth() {
         assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}}, new CyclicGroup(3).auth());
         assertArrayEquals(new int[][]{{0, 1, 2, 3}, {0, 3, 2, 1}}, new CyclicGroup(4).auth());
-        Group simple = new GroupProduct(7);
-        int[][] auths = simple.auth();
+        Group product = new CyclicGroup(7);
+        int[][] auths = product.auth();
         assertEquals(6, auths.length);
-        checkAuth(auths, simple);
-        Group product = new GroupProduct(2, 2, 3, 3);
+        checkAuth(auths, product);
+        product = new GroupProduct(2, 2, 3, 3);
         auths = product.auth();
         assertEquals(288, auths.length);
         checkAuth(auths, product);
@@ -102,7 +102,19 @@ public class GroupTest {
         checkAuth(auths, product);
         product = new GroupProduct(2, 4);
         auths = product.auth();
-        assertEquals(24, auths.length);
+        assertEquals(8, auths.length);
+        checkAuth(auths, product);
+        product = new GroupProduct(3, 9);
+        auths = product.auth();
+        assertEquals(108, auths.length);
+        checkAuth(auths, product);
+        product = new GroupProduct(2, 4, 3, 9);
+        auths = product.auth();
+        assertEquals(864, auths.length);
+        checkAuth(auths, product);
+        product = new GroupProduct(3, 3, 9);
+        auths = product.auth();
+        assertEquals(23328, auths.length);
         checkAuth(auths, product);
     }
 

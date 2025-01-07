@@ -15,6 +15,7 @@ public class GroupMatrixHelper {
     private final int[] sequence;
     private final int n;
     private final int mod;
+    private final int p;
     private final int matCount;
     private final int[] mapGl;
     private final int[] gl;
@@ -25,6 +26,7 @@ public class GroupMatrixHelper {
         }
         this.mod = sequence[0];
         this.n = sequence.length;
+        this.p = Group.factorize(mod)[0];
         for (int i = 1; i < n; i++) {
             if (sequence[i] % mod != 0) {
                 throw new IllegalArgumentException("Not multipliers");
@@ -37,26 +39,7 @@ public class GroupMatrixHelper {
         System.out.println(gl.length);
     }
 
-    private Rational[][] toMatrix(int a) {
-        Rational[][] result = new Rational[n][n];
-        for (int i = 0; i < n * n; i++) {
-            int row = i / n;
-            result[row][i % n] = Rational.of(a % sequence[row]);
-            a = a / sequence[row];
-        }
-        return result;
-    }
-
-    private int fromMatrix(int[][] matrix) {
-        int result = 0;
-        for (int i = n * n - 1; i >= 0; i--) {
-            int row = i / n;
-            result = result * sequence[row] + matrix[row][i % n];
-        }
-        return result;
-    }
-
-    private int[][] toIntMatrix(int a) {
+    private int[][] toMatrix(int a) {
         int[][] result = new int[n][n];
         for (int i = 0; i < n * n; i++) {
             int row = i / n;
@@ -84,7 +67,7 @@ public class GroupMatrixHelper {
     }
 
     public int mulVec(int a, int vec) {
-        return fromVec(multiply(toIntMatrix(a), toVec(vec)));
+        return fromVec(multiply(toMatrix(a), toVec(vec)));
     }
 
     private int[] multiply(int[][] first, int[] arr) {
@@ -99,43 +82,31 @@ public class GroupMatrixHelper {
         return result;
     }
 
-    private int[] multiplierInverses() {
-        int last = sequence[sequence.length - 1];
-        int[] result = new int[last];
-        for (int i = 0; i < last; i++) {
-            for (int j = 0; j < last; j++) {
-                if (i * j % last == 1) {
-                    result[i] = j;
-                }
-            }
-        }
-        return result;
-    }
-
     private int[] generateMapGl() {
         int[] result = new int[matCount];
-        int[] inverses = multiplierInverses();
         for (int i = 0; i < matCount; i++) {
-            if (result[i] > 0) {
-                continue;
-            }
             try {
-                Rational[][] matrix = toMatrix(i);
-                Rational[][] rev = MatrixInverseFiniteField.inverseMatrix(matrix);
-                int[][] intRev = new int[n][n];
-                for (int row = 0; row < n; row++) {
-                    for (int col = 0; col < n; col++) {
-                        Rational r = rev[row][col];
-                        int denom = (int) r.denom();
-                        if (inverses[Math.floorMod(denom, inverses.length)] == 0) {
+                int[][] matrix = toMatrix(i);
+                int[][] conjMatrix = new int[n][n];
+                for (int j = 0; j < n; j++) {
+                    conjMatrix[j][j] = sequence[j] / p;
+                }
+                int[][] multiplied = multiply(matrix, conjMatrix);
+                int[][] divided = new int[n][n];
+                for (int j = 0; j < n; j++) {
+                    int rowMultiplier = sequence[j] / p;
+                    for (int k = 0; k < n; k++) {
+                        if (multiplied[j][k] % rowMultiplier != 0) {
                             throw new ArithmeticException();
                         }
-                        intRev[row][col] = Math.floorMod(r.numer() * inverses[denom % inverses.length], sequence[row]);
+                        divided[j][k] = multiplied[j][k] / rowMultiplier;
                     }
                 }
-                int inv = fromMatrix(intRev);
-                result[i] = inv;
-                result[inv] = i;
+                int det = determinant(divided);
+                if (det % p == 0) {
+                    throw new ArithmeticException();
+                }
+                result[i] = i;
             } catch (ArithmeticException e) {
                 // ok
             }
@@ -143,8 +114,8 @@ public class GroupMatrixHelper {
         return result;
     }
 
-    // TODO this mutates matrix, avoid that
-    private static int determinant(Rational[][] matrix) {
+    private static int determinant(int[][] intMatrix) {
+        Rational[][] matrix = Arrays.stream(intMatrix).map(arr -> Arrays.stream(arr).mapToObj(Rational::of).toArray(Rational[]::new)).toArray(Rational[][]::new);
         int n = matrix.length;
         Rational det = Rational.of(1);
         boolean sign = true;
@@ -189,20 +160,20 @@ public class GroupMatrixHelper {
     }
 
     public static void main(String[] args) {
-        Rational[][] matrix = {
-                {Rational.of(4), Rational.of(3), Rational.of(2)},
-                {Rational.of(3), Rational.of(5), Rational.of(1)},
-                {Rational.of(2), Rational.of(1), Rational.of(3)}
+        int[][] matrix = {
+                {4, 3, 2},
+                {3, 5, 1},
+                {2, 1, 3}
         };
 
         System.out.println(Arrays.deepToString(MatrixInverseFiniteField.inverseMatrix(matrix)));
         int det = determinant(matrix);
         System.out.println("Determinant: " + det);
 
-        Rational[][] matrix1 = {
-                {Rational.of(4), Rational.of(3), Rational.of(2)},
-                {Rational.of(3), Rational.of(5), Rational.of(1)},
-                {Rational.of(2), Rational.of(1), Rational.of(2)}
+        int[][] matrix1 = {
+                {4, 3, 2},
+                {3, 5, 1},
+                {2, 1, 2}
         };
 
         System.out.println(Arrays.deepToString(MatrixInverseFiniteField.inverseMatrix(matrix1)));
@@ -210,8 +181,20 @@ public class GroupMatrixHelper {
         System.out.println("Determinant: " + det1);
 
         GroupMatrixHelper helper = new GroupMatrixHelper(3, 3, 9);
-        System.out.println(Arrays.toString(helper.multiplierInverses()));
         Arrays.stream(helper.gl).forEach(i -> System.out.println(i + "=" + helper.mapGl[i]));
-        //System.out.println(Arrays.deepToString(helper.toIntMatrix(398853)));
+    }
+
+    private int[][] multiply(int[][] first, int[][] second) {
+        int[][] result = new int[first.length][first.length];
+        for (int i = 0; i < first.length; i++) {
+            for (int j = 0; j < first.length; j++) {
+                int sum = 0;
+                for (int k = 0; k < first.length; k++) {
+                    sum = sum + first[i][k] * second[k][j];
+                }
+                result[i][j] = sum % sequence[i];
+            }
+        }
+        return result;
     }
 }

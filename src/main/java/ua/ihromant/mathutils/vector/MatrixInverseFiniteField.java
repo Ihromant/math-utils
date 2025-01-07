@@ -75,14 +75,14 @@ public class MatrixInverseFiniteField {
         return inverse;
     }
 
-    public static Rational[][] inverseMatrix(Rational[][] matrix) {
+    public static Rational[][] inverseMatrix(int[][] matrix) {
         int n = matrix.length;
         Rational[][] augmented = new Rational[n][2 * n];
 
         // Create the augmented matrix [A | I]
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                augmented[i][j] = matrix[i][j];
+                augmented[i][j] = Rational.of(matrix[i][j]);
                 augmented[i][j + n] = i == j ? Rational.ONE : Rational.ZERO;
             }
         }
