@@ -1,7 +1,8 @@
 package ua.ihromant.mathutils.vector;
 
-public class MatrixInverseFiniteField {
+import ua.ihromant.mathutils.Rational;
 
+public class MatrixInverseFiniteField {
     // Method to compute the modular multiplicative inverse of a number modulo p
     private static int modInverse(int a, int p) {
         a = a % p;
@@ -67,6 +68,65 @@ public class MatrixInverseFiniteField {
 
         // Extract the inverse matrix from the augmented matrix
         int[][] inverse = new int[n][n];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(augmented[i], n, inverse[i], 0, n);
+        }
+
+        return inverse;
+    }
+
+    public static Rational[][] inverseMatrix(Rational[][] matrix) {
+        int n = matrix.length;
+        Rational[][] augmented = new Rational[n][2 * n];
+
+        // Create the augmented matrix [A | I]
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                augmented[i][j] = matrix[i][j];
+                augmented[i][j + n] = i == j ? Rational.ONE : Rational.ZERO;
+            }
+        }
+
+        // Perform Gaussian elimination
+        for (int i = 0; i < n; i++) {
+            // Find the pivot element
+            if (augmented[i][i].isZero()) {
+                // Swap with a row below if pivot is zero
+                boolean swapped = false;
+                for (int k = i + 1; k < n; k++) {
+                    if (!augmented[k][i].isZero()) {
+                        Rational[] temp = augmented[i];
+                        augmented[i] = augmented[k];
+                        augmented[k] = temp;
+                        swapped = true;
+                        break;
+                    }
+                }
+                if (!swapped) {
+                    throw new ArithmeticException();
+                }
+            }
+
+            // Normalize the pivot row
+            Rational pivot = augmented[i][i];
+            Rational pivotInverse = pivot.inv();
+            for (int j = 0; j < 2 * n; j++) {
+                augmented[i][j] = augmented[i][j].mul(pivotInverse);
+            }
+
+            // Eliminate other rows
+            for (int k = 0; k < n; k++) {
+                if (k != i) {
+                    Rational factor = augmented[k][i];
+                    for (int j = 0; j < 2 * n; j++) {
+                        augmented[k][j] = augmented[k][j].sub(factor.mul(augmented[i][j]));
+                    }
+                }
+            }
+        }
+
+        // Extract the inverse matrix from the augmented matrix
+        Rational[][] inverse = new Rational[n][n];
         for (int i = 0; i < n; i++) {
             System.arraycopy(augmented[i], n, inverse[i], 0, n);
         }

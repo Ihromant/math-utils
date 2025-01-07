@@ -5,6 +5,7 @@ import java.util.stream.Stream;
 
 public record Rational(long numer, long denom) implements Comparable<Rational> {
     public static final Rational ZERO = new Rational(0, 1);
+    public static final Rational ONE = new Rational(1, 1);
 
     public static long gcd(long a, long b) {
         return b == 0 ? a : gcd(b, a % b);
@@ -24,6 +25,10 @@ public record Rational(long numer, long denom) implements Comparable<Rational> {
         }
         long gcd = gcd(numer, denom);
         return new Rational((neg ? -numer : numer) / gcd, denom / gcd);
+    }
+
+    public boolean isZero() {
+        return numer == 0;
     }
 
     public Rational neg() {
@@ -61,6 +66,13 @@ public record Rational(long numer, long denom) implements Comparable<Rational> {
 
     public boolean isInt() {
         return denom == 1;
+    }
+
+    public int asInt() {
+        if (denom != 1) {
+            throw new IllegalStateException();
+        }
+        return (int) numer;
     }
 
     @Override
