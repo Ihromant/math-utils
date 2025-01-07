@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.group;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import ua.ihromant.mathutils.Rational;
 import ua.ihromant.mathutils.vector.LinearSpace;
 import ua.ihromant.mathutils.vector.MatrixInverseFiniteField;
@@ -7,6 +9,8 @@ import ua.ihromant.mathutils.vector.MatrixInverseFiniteField;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
+@Getter
+@Accessors(fluent = true)
 public class GroupMatrixHelper {
     private final int[] sequence;
     private final int n;
@@ -62,7 +66,7 @@ public class GroupMatrixHelper {
         return result;
     }
 
-    private int[] toVec(int a) {
+    public int[] toVec(int a) {
         int[] result = new int[n];
         for (int i = 0; i < n; i++) {
             result[i] = a % sequence[i];
@@ -71,7 +75,7 @@ public class GroupMatrixHelper {
         return result;
     }
 
-    private int fromVec(int[] crd) {
+    public int fromVec(int[] crd) {
         int result = 0;
         for (int i = crd.length - 1; i >= 0; i--) {
             result = result * sequence[i] + crd[i];

@@ -96,6 +96,14 @@ public class GroupTest {
         auths = product.auth();
         assertEquals(288, auths.length);
         checkAuth(auths, product);
+        product = new GroupProduct(4, 4);
+        auths = product.auth();
+        assertEquals(96, auths.length);
+        checkAuth(auths, product);
+        product = new GroupProduct(2, 4);
+        auths = product.auth();
+        assertEquals(24, auths.length);
+        checkAuth(auths, product);
     }
 
     private static void checkAuth(int[][] auths, Group simple) {

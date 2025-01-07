@@ -1,10 +1,11 @@
 package ua.ihromant.mathutils.group;
 
-import ua.ihromant.mathutils.vector.ModuloMatrixHelper;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -68,52 +69,76 @@ public record GroupProduct(int... base) implements Group {
         return IntStream.range(0, base.length).mapToObj(i -> String.valueOf(arr[i])).collect(Collectors.joining(", ", "(", ")"));
     }
 
+    private class HelperInfo {
+        private final int bs;
+        private final List<Integer> elems;
+        private final FixBS idx;
+        private GroupMatrixHelper helper;
+
+        public HelperInfo(int bs, int len) {
+            this.bs = bs;
+            this.elems = new ArrayList<>(len);
+            this.idx = new FixBS(len);
+        }
+    }
+
     @Override
     public int[][] auth() {
-        if (!Arrays.equals(base, Arrays.stream(base).sorted().toArray())) {
-            throw new UnsupportedOperationException();
+        int[][] factors = Arrays.stream(base).mapToObj(Group::factorize).toArray(int[][]::new);
+        if (Arrays.stream(factors).anyMatch(arr -> arr.length == 0 || arr[0] != arr[arr.length - 1])) {
+            throw new IllegalArgumentException("Only prime powers are allowed"); // TODO also require to be sorted
+        }
+        List<HelperInfo> helpers = new ArrayList<>();
+        for (int i = 0; i < base.length; i++) {
+            int b = factors[i][0];
+            Optional<HelperInfo> opt = helpers.stream().filter(h -> h.bs == b).findFirst();
+            HelperInfo info;
+            if (opt.isPresent()) {
+                info = opt.get();
+            } else {
+                info = new HelperInfo(b, base.length);
+                helpers.add(info);
+            }
+            info.elems.add(base[i]);
+            info.idx.set(i);
+        }
+        for (HelperInfo info : helpers) {
+            info.helper = new GroupMatrixHelper(info.elems.stream().mapToInt(Integer::intValue).toArray());
         }
         int order = order();
-        List<ModuloMatrixHelper> helpers = new ArrayList<>();
-        int from = 0;
-        int p = base[0];
-        for (int i = 1; i < base.length; i++) {
-            if (base[i] != p) {
-                helpers.add(ModuloMatrixHelper.of(p, i - from));
-                from = i;
-                p = base[i];
-            }
-        }
-        helpers.add(ModuloMatrixHelper.of(p, base.length - from));
-        int[][] result = new int[helpers.stream().mapToInt(h -> h.gl().length).reduce(1, (a, b) -> a * b)][order];
-        int[] idxes = new int[helpers.size()];
-        calculateAuth(result, idxes, 0, 0, helpers);
+        int[][] result = new int[helpers.stream().mapToInt(h -> h.helper.gl().length).reduce(1, (a, b) -> a * b)][order];
+        calculateAuth(result, helpers);
         return result;
     }
 
-    private void calculateAuth(int[][] result, int[] idxes, int hi, int ri, List<ModuloMatrixHelper> helpers) {
-        if (hi == helpers.size()) {
+    private void calculateAuth(int[][] result, List<HelperInfo> helpers) {
+        for (int i = 0; i < result.length; i++) {
+            int[] cff = new int[helpers.size()];
+            int autIdx = i;
+            for (int j = 0; j < helpers.size(); j++) {
+                int len = helpers.get(j).helper.gl().length;
+                cff[j] = autIdx % len;
+                autIdx = autIdx / len;
+            }
             for (int el = 0; el < order(); el++) {
                 int[] arr = toArr(el);
                 int[] mapped = new int[arr.length];
-                int shift = 0;
-                for (int i = 0; i < helpers.size(); i++) {
-                    ModuloMatrixHelper helper = helpers.get(i);
-                    int[] vec = new int[helper.n()];
-                    System.arraycopy(arr, shift, vec, 0, helper.n());
-                    int[] vecMapped = helper.toVec(helper.mulVec(helper.gl()[idxes[i]], helper.fromVec(vec)));
-                    System.arraycopy(vecMapped, 0, mapped, shift, helper.n());
-                    shift = shift + helper.n();
+                for (int j = 0; j < helpers.size(); j++) {
+                    HelperInfo info = helpers.get(j);
+                    GroupMatrixHelper helper = info.helper;
+                    int[] vec = new int[info.elems.size()];
+                    int cnt = 0;
+                    for (int k = info.idx.nextSetBit(0); k >= 0; k = info.idx.nextSetBit(k + 1)) {
+                        vec[cnt++] = arr[k];
+                    }
+                    int[] vecMapped = helper.toVec(helper.mulVec(helper.gl()[cff[j]], helper.fromVec(vec)));
+                    int cf = -1;
+                    for (int k = 0; k < vec.length; k++) {
+                        mapped[(cf = info.idx.nextSetBit(cf + 1))] = vecMapped[k];
+                    }
                 }
-                result[ri][el] = fromArr(mapped);
+                result[i][el] = fromArr(mapped);
             }
-            return;
-        }
-        ModuloMatrixHelper helper = helpers.get(hi);
-        int gl = helper.gl().length;
-        for (int i = 0; i < gl; i++) {
-            idxes[hi] = i;
-            calculateAuth(result, idxes, hi + 1, ri * gl + i, helpers);
         }
     }
 }
