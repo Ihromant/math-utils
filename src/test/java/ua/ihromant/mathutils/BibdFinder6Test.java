@@ -80,10 +80,11 @@ public class BibdFinder6Test {
             FixBS newWhiteList = whiteList.copy();
             int[] nextTuple = nextCurr.curr();
             int idx = curr.idx;
+            int invEl = v - el;
             for (int i = 0; i < idx; i++) {
                 int val = nextTuple[i];
                 int diff = el - val;
-                int outDiff = v + val - el;
+                int outDiff = invEl + val;
                 newFilter.set(diff);
                 newFilter.set(outDiff);
                 if (tupleFinished) {
@@ -107,9 +108,7 @@ public class BibdFinder6Test {
                 result = result.initiateNextTuple(newFilter, v)
                         .acceptElem(newFilter.nextClearBit(1), v, st -> {});
             } else {
-                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                    newWhiteList.clear((el + diff) % v);
-                }
+                newWhiteList.diffModuleShifted(newFilter, v, invEl);
             }
             return result;
         }
