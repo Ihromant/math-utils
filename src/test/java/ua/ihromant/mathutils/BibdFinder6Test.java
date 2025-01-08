@@ -126,9 +126,13 @@ public class BibdFinder6Test {
         int idx = state.curr.idx;
         int lastVal = currBlock[idx - 1];
         boolean first = idx == 2;
-        int min = state.filter().nextClearBit(1);
         int midCnt = k - idx - 1;
-        int minMidSpace = midCnt * min + midCnt * (midCnt - 1) / 2;
+        int from = 0;
+        int minMidSpace = 0;
+        while (--midCnt >= 0) {
+            from = state.filter.nextClearBit(from + 1);
+            minMidSpace = minMidSpace + from;
+        }
         int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
         for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
             State next = state.acceptElem(el, v, sink);
