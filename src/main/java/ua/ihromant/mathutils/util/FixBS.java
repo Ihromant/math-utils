@@ -383,47 +383,37 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     public void diffModuleShifted(FixBS that, int v, int cut) {
-        int diff = v - cut;
-        int diffIdx = wordIndex(diff);
-
-        int diffLeft = diff & 63;
-        int diffInv = 64 - diffLeft;
-        long diffMask = (1L << diffLeft) - 1;
-
-        int cutLeft = cut & 63;
-        int cutInv = 64 - cutLeft;
-        long cutMask = (1L << cutInv) - 1;
-
-        for (int i = 1; i < words.length; i++) {
-            int shift = diffIdx + i;
-            boolean overflow = shift >= words.length;
-            shift = overflow ? shift - words.length : shift;
-            long base = that.words[shift] & (overflow ? cutMask : diffMask);
-            long rest = that.words[shift] >>> (overflow ? cutInv : diffLeft);
-            words[i - (overflow ? 1 : 0)] &= ~rest;
-            words[i - (overflow ? 2 : 1)] &= ~(base << (overflow ? cutLeft : diffInv));
+        if (cut == 0) {
+            andNot(that);
+            return;
         }
-
-        words[0] &= ~(that.words[diffIdx] >>> diffLeft);
-//        for (int i = diffIdx + 1; i < words.length; i++) {
-//            long base = that.words[i] & diffMask;
-//            long rest = that.words[i] >>> diffLeft;
-//            words[i - diffIdx] &= ~rest;
-//            words[i - diffIdx - 1] &= ~(base << diffInv);
-//        }
-//        int done = words.length - diffIdx - 1;
-//        for (int i = 0; i < diffIdx; i++) {
-//            long base = that.words[i] & cutMask;
-//            long rest = that.words[i] >>> cutInv;
-//            words[done + i] &= ~rest;
-//            words[done + i - 1] &= ~(base << cutLeft);
-//        }
-        long fin = that.words[diffIdx] & diffMask;
-        long finRest = fin >>> cutInv;
-        words[words.length - 1] &= ~finRest;
-        if (words.length > 1) {
-            long finBase = fin & cutMask;
-            words[words.length - 2] &= ~(finBase << cutLeft);
+        int vm = (cut & 63) > 0 ? cut & 63 : 64;
+        int nm = (v & 63) > 0 ? v & 63 : 64;
+        int k = words.length;
+        int i = k - 1;
+        int j = ((cut - 1) >>> 6);
+        int need = nm;
+        int have = j != k - 1 ? vm : Math.min(vm, nm);
+        long x = 0;
+        for (int a = 0; a < 2; a++) {
+            while (i >= 0 && j >= 0) {
+                int take = Math.min(need, have);
+                x = (x << take) | (that.words[j] << (64 - have) >>> (64 - take));
+                need -= take;
+                have -= take;
+                if (need == 0) {
+                    words[i] &= ~x;
+                    x = 0;
+                    need = 64;
+                    --i;
+                }
+                if (have == 0) {
+                    have = 64;
+                    --j;
+                }
+            }
+            j = k - 1;
+            have = nm;
         }
     }
 

@@ -1163,7 +1163,7 @@ public class FixBSTest {
             expected[i] = (expected[i] + cut) % v;
         }
         Arrays.sort(expected);
-        a.diffModuleShifted(b, v, cut);
+        a.diffModuleShifted(b, v, v - cut);
         a.flip(0, v);
         assertArrayEquals(expected, a.stream().toArray());
     }
@@ -1180,14 +1180,14 @@ public class FixBSTest {
             expected[i] = (expected[i] + cut) % v;
         }
         Arrays.sort(expected);
-        a.diffModuleShifted(b, v, cut);
+        a.diffModuleShifted(b, v, v - cut);
         a.flip(0, v);
         assertArrayEquals(expected, a.stream().toArray());
     }
 
     @Test
     public void randomizeModularDiff() {
-        for (int j = 0; j < 10000; j++) {
+        for (int j = 0; j < 1000000; j++) {
             int v = ThreadLocalRandom.current().nextInt(10, 300);
             int cut = ThreadLocalRandom.current().nextInt(v);
             FixBS a = new FixBS(v);
@@ -1201,7 +1201,7 @@ public class FixBSTest {
                 expected[i] = (expected[i] + cut) % v;
             }
             Arrays.sort(expected);
-            a.diffModuleShifted(b, v, cut);
+            a.diffModuleShifted(b, v, v - cut);
             a.flip(0, v);
             assertArrayEquals(expected, a.stream().toArray());
         }
