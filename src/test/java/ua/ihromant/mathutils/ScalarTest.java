@@ -215,4 +215,51 @@ public class ScalarTest {
             }
         }
     }
+
+    @Test
+    public void testPentagon() throws IOException {
+        String name = "hall9";
+        int order = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            for (int l = 0; l < proj.lineCount(); l++) {
+                NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
+                int all = 0;
+                int pentagon = 0;
+                for (int a = 0; a < aff.pointCount(); a++) {
+                    for (int b = a + 1; b < aff.pointCount(); b++) {
+                        int ab = aff.line(a, b);
+                        for (int c = 0; c < aff.pointCount(); c++) {
+                            if (c == a || c == b) {
+                                continue;
+                            }
+                            int ac = aff.line(a, c);
+                            if (ab == ac) {
+                                continue;
+                            }
+                            for (int d : aff.line(aff.parallel(ab, c))) {
+                                if (c == d) {
+                                    continue;
+                                }
+                                int e = aff.intersection(aff.parallel(ac, b), aff.parallel(aff.line(b, d), a));
+                                if (e < 0) {
+                                    continue;
+                                }
+                                if (aff.intersection(aff.line(a, d), aff.line(c, e)) >= 0) {
+                                    continue;
+                                }
+                                all++;
+                                if (aff.intersection(aff.line(b, c), aff.line(d, e)) < 0) {
+                                    pentagon++;
+                                }
+                            }
+                        }
+                    }
+                }
+                System.out.println(l + " all " + all + " pentagon " + pentagon);
+            }
+        }
+    }
 }
