@@ -23,17 +23,21 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class BibdFinder6Test {
-    private record Design(FixBS[] design, int idx, int blockIdx) {
+    private record Design(int[][] design, int idx, int blockIdx) {
         private Design simpleAdd(int el) {
-            FixBS[] cloned = design.clone();
-            FixBS last = cloned[blockIdx].copy();
-            last.set(el);
+            int[][] cloned = design.clone();
+            int[] last = cloned[blockIdx].clone();
+            last[idx] = el;
             cloned[blockIdx] = last;
             return new Design(cloned, idx + 1, blockIdx);
         }
 
-        private FixBS curr() {
+        private int[] curr() {
             return design[blockIdx];
+        }
+
+        private boolean tupleFinished() {
+            return idx == design[blockIdx].length;
         }
 
         private boolean lastBlock() {
@@ -47,14 +51,16 @@ public class BibdFinder6Test {
     }
 
     private record State(Design curr, FixBS filter, FixBS whiteList) {
-        private static State forDesign(int v, FixBS baseFilter, FixBS[] baseDesign, int k, int blockIdx) {
-            FixBS[] nextDesign = baseDesign.clone();
-            nextDesign[blockIdx] = FixBS.of(v, 0);
+        private static State forDesign(int v, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
+            int[][] nextDesign = baseDesign.clone();
+            nextDesign[blockIdx] = new int[k];
             FixBS filter = baseFilter.copy();
             for (int bi = 0; bi < blockIdx; bi++) {
-                FixBS block = baseDesign[bi];
-                for (int f = block.nextSetBit(0); f >= 0; f = block.nextSetBit(f + 1)) {
-                    for (int s = block.nextSetBit(f + 1); s >= 0; s = block.nextSetBit(s + 1)) {
+                int[] block = baseDesign[bi];
+                for (int i = 0; i < k; i++) {
+                    int f = block[i];
+                    for (int j = i + 1; j < k; j++) {
+                        int s = block[j];
                         filter.set(v + f - s);
                         filter.set(s - f);
                     }
@@ -64,18 +70,19 @@ public class BibdFinder6Test {
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, 1, blockIdx);
             State state = new State(curr, filter, whiteList);
-            return state.acceptElem(whiteList.nextSetBit(0), v, k, st -> {});
+            return state.acceptElem(whiteList.nextSetBit(0), v, st -> {});
         }
 
-        private State acceptElem(int el, int v, int k, Consumer<State> cons) {
+        private State acceptElem(int el, int v, Consumer<State> cons) {
             Design nextCurr = curr.simpleAdd(el);
-            boolean tupleFinished = nextCurr.idx == k;
+            boolean tupleFinished = nextCurr.tupleFinished();
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
-            FixBS currTuple = curr.curr();
-            FixBS nextTuple = nextCurr.curr();
+            int[] nextTuple = nextCurr.curr();
+            int idx = curr.idx;
             int invEl = v - el;
-            for (int val = currTuple.nextSetBit(0); val >= 0; val = currTuple.nextSetBit(val + 1)) {
+            for (int i = 0; i < idx; i++) {
+                int val = nextTuple[i];
                 int diff = el - val;
                 int outDiff = invEl + val;
                 newFilter.set(diff);
@@ -86,8 +93,11 @@ public class BibdFinder6Test {
                 if (outDiff % 2 == 0) {
                     newWhiteList.clear((el + outDiff / 2) % v);
                 }
-                newWhiteList.diffModuleShifted(nextTuple, v, outDiff);
-                newWhiteList.diffModuleShifted(nextTuple, v, diff);
+                for (int j = 0; j <= idx; j++) {
+                    int nv = nextTuple[j];
+                    newWhiteList.clear((nv + diff) % v);
+                    newWhiteList.clear((nv + outDiff) % v);
+                }
             }
             State result = new State(nextCurr, newFilter, newWhiteList);
             if (tupleFinished) {
@@ -96,7 +106,7 @@ public class BibdFinder6Test {
                     return null;
                 }
                 result = result.initiateNextTuple(newFilter, v)
-                        .acceptElem(newFilter.nextClearBit(1), v, k, st -> {});
+                        .acceptElem(newFilter.nextClearBit(1), v, st -> {});
             } else {
                 newWhiteList.diffModuleShifted(newFilter, v, invEl);
             }
@@ -104,7 +114,6 @@ public class BibdFinder6Test {
         }
 
         private State initiateNextTuple(FixBS filter, int v) {
-            curr.design[curr.blockIdx + 1] = FixBS.of(v, 0);
             FixBS nextWhiteList = filter.copy();
             nextWhiteList.flip(1, v);
             return new State(new Design(curr.design, 1, curr.blockIdx + 1), filter, nextWhiteList);
@@ -113,23 +122,16 @@ public class BibdFinder6Test {
 
     private static void calcCycles(int v, int k, State state, Consumer<State> sink) {
         FixBS whiteList = state.whiteList();
-        FixBS currBlock = state.curr.curr();
+        int[] currBlock = state.curr.curr();
         int idx = state.curr.idx;
-        int lastVal = currBlock.previousSetBit(v);
+        int lastVal = currBlock[idx - 1];
         boolean first = idx == 2;
         int min = state.filter().nextClearBit(1);
         int midCnt = k - idx - 1;
         int minMidSpace = midCnt * min + midCnt * (midCnt - 1) / 2;
-        int max;
-        if (first) {
-            max = (v + lastVal - minMidSpace + 1) / 2;
-        } else {
-            int snd = currBlock.nextSetBit(1);
-            int trd = currBlock.nextSetBit(snd + 1);
-            max = v - trd + snd - minMidSpace;
-        }
+        int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
         for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
-            State next = state.acceptElem(el, v, k, sink);
+            State next = state.acceptElem(el, v, sink);
             if (next != null) {
                 calcCycles(v, k, next, sink);
             }
@@ -212,9 +214,9 @@ public class BibdFinder6Test {
         };
         AtomicInteger cnt = new AtomicInteger();
         unProcessed.stream().parallel().forEach(init -> {
-            FixBS[] design = new FixBS[blocksNeeded];
+            int[][] design = new int[blocksNeeded][k];
             for (int i = 0; i < init.length; i++) {
-                design[i] = FixBS.of(v, init[i]);
+                System.arraycopy(init[i], 0, design[i], 0, k);
             }
             State initial = State.forDesign(v, baseFilter, design, k, init.length);
             calcCycles(v, k, initial, designConsumer);
@@ -242,7 +244,7 @@ public class BibdFinder6Test {
         int v = group.order();
         FixBS filter = baseFilter(v, k);
         int blocksNeeded = v / k / (k - 1);
-        FixBS[] design = new FixBS[blocksNeeded];
+        int[][] design = new int[blocksNeeded][k];
         State initial = State.forDesign(v, filter, design, k, 0);
         calcCycles(v, k, initial, cycle -> {
             System.out.println(Arrays.deepToString(cycle.curr.design));
