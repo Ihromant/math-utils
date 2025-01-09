@@ -313,4 +313,45 @@ public class ScalarTest {
             }
         }
     }
+
+    @Test
+    public void testWindow() throws IOException {
+        String name = "dhall";
+        int order = 16;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            for (int l : dropped.getOrDefault(name, IntStream.range(0, proj.lineCount()).toArray())) {
+                NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
+                int all = 0;
+                int window = 0;
+                for (int a = 0; a < aff.pointCount(); a++) {
+                    for (int b = a + 1; b < aff.pointCount(); b++) {
+                        int ab = aff.line(a, b);
+                        for (int c = 0; c < aff.pointCount(); c++) {
+                            if (aff.flag(ab, c)) {
+                                continue;
+                            }
+                            int bo = aff.parallel(aff.line(a, c), b);
+                            int co = aff.parallel(ab, c);
+                            int o = aff.intersection(bo, co);
+                            int ao = aff.line(a, o);
+                            int a1c = aff.parallel(ao, c);
+                            int b1 = aff.intersection(a1c, bo);
+                            int b1a1 = aff.parallel(co, b1);
+                            int a1 = aff.intersection(b1a1, ao);
+                            int a1c1 = aff.parallel(bo, a1);
+                            int c1 = aff.intersection(a1c1, co);
+                            if (aff.intersection(aff.line(b, c1), ao) < 0) {
+                                window++;
+                            }
+                            all++;
+                        }
+                    }
+                }
+                System.out.println(l + " all " + all + " window " + window);
+            }
+        }
+    }
 }
