@@ -232,13 +232,10 @@ public class ScalarTest {
                     for (int b = a + 1; b < aff.pointCount(); b++) {
                         int ab = aff.line(a, b);
                         for (int c = 0; c < aff.pointCount(); c++) {
-                            if (c == a || c == b) {
+                            if (aff.flag(ab, c)) {
                                 continue;
                             }
                             int ac = aff.line(a, c);
-                            if (ab == ac) {
-                                continue;
-                            }
                             for (int d : aff.line(aff.parallel(ab, c))) {
                                 if (c == d) {
                                     continue;
@@ -259,6 +256,40 @@ public class ScalarTest {
                     }
                 }
                 System.out.println(l + " all " + all + " pentagon " + pentagon);
+            }
+        }
+    }
+
+    @Test
+    public void testBoolean() throws IOException {
+        String name = "dhall9";
+        int order = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            for (int l = 0; l < proj.lineCount(); l++) {
+                NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
+                int all = 0;
+                int bool = 0;
+                for (int a = 0; a < aff.pointCount(); a++) {
+                    for (int b = a + 1; b < aff.pointCount(); b++) {
+                        int ab = aff.line(a, b);
+                        for (int c = 0; c < aff.pointCount(); c++) {
+                            if (aff.flag(ab, c)) {
+                                continue;
+                            }
+                            int bd = aff.parallel(aff.line(a, c), b);
+                            int cd = aff.parallel(ab, c);
+                            int d = aff.intersection(bd, cd);
+                            all++;
+                            if (aff.intersection(aff.line(b, c), aff.line(a, d)) < 0) {
+                                bool++;
+                            }
+                        }
+                    }
+                }
+                System.out.println(l + " all " + all + " boolean " + bool);
             }
         }
     }

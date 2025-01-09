@@ -91,6 +91,10 @@ public class NumeratedAffinePlane {
         return ptRev[inter];
     }
 
+    public boolean flag(int l, int p) {
+        return proj.flag(lnMap[l], ptMap[p]);
+    }
+
     public int line(int p1, int p2) {
         return lnRev[proj.line(ptMap[p1], ptMap[p2])];
     }
