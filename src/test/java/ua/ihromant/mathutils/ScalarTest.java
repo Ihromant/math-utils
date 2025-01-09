@@ -227,6 +227,10 @@ public class ScalarTest {
             Map.entry("dbbh2", new int[]{0, 1, 21, 41, 233}),
             //"bbs4", new int[]{0, 108, 270},
             //"dbbs4", new int[]{0, 228, 241}
+            Map.entry("semi2", new int[]{0, 256, 272}),
+            Map.entry("semi4", new int[]{0, 256, 272}),
+            Map.entry("math", new int[]{0, 1, 17}),
+            Map.entry("dmath", new int[]{0, 16, 272}),
             Map.entry("hall", new int[]{0, 5, 17}),
             Map.entry("dhall", new int[]{0, 80, 81}),
             Map.entry("", new int[]{})
