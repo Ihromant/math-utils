@@ -233,6 +233,7 @@ public class ScalarTest {
             Map.entry("dmath", new int[]{0, 16, 272}),
             Map.entry("hall", new int[]{0, 5, 17}),
             Map.entry("dhall", new int[]{0, 80, 81}),
+            Map.entry("twisted", new int[]{0, 1, 28}),
             Map.entry("", new int[]{})
     );
 
@@ -351,6 +352,55 @@ public class ScalarTest {
                     }
                 }
                 System.out.println(l + " all " + all + " window " + window);
+            }
+        }
+    }
+
+    @Test
+    public void testHexagon() throws IOException {
+        String name = "semi4";
+        int order = 16;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            for (int l : dropped.getOrDefault(name, IntStream.range(0, proj.lineCount()).toArray())) {
+                NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
+                int all = 0;
+                int hexagon = 0;
+                for (int a = 0; a < aff.pointCount(); a++) {
+                    for (int b = a + 1; b < aff.pointCount(); b++) {
+                        int ab = aff.line(a, b);
+                        for (int c = 0; c < aff.pointCount(); c++) {
+                            if (aff.flag(ab, c)) {
+                                continue;
+                            }
+                            int ac = aff.line(a, c);
+                            int bc = aff.line(b, c);
+                            for (int d = 0; d < aff.pointCount(); d++) {
+                                if (aff.flag(ac, d) || aff.flag(bc, d) || aff.flag(ab, d)) {
+                                    continue;
+                                }
+                                int cd = aff.line(c, d);
+                                if (aff.intersection(ab, cd) < 0) {
+                                    continue;
+                                }
+                                int bd = aff.line(b, d);
+                                int f = aff.intersection(aff.parallel(cd, a), aff.parallel(ac, d));
+                                int e = aff.intersection(aff.parallel(bd, a), aff.parallel(ab, d));
+                                int ef = aff.line(e, f);
+                                if (e < 0 || f < 0 || f == e || bc == ef || aff.intersection(bc, ef) >= 0) {
+                                    continue;
+                                }
+                                if (aff.intersection(aff.line(c, e), aff.line(b, f)) < 0) {
+                                    hexagon++;
+                                }
+                                all++;
+                            }
+                        }
+                    }
+                }
+                System.out.println(l + " all " + all + " hexagon " + hexagon);
             }
         }
     }
