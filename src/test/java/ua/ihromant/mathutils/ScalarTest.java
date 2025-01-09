@@ -11,6 +11,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
@@ -216,6 +217,21 @@ public class ScalarTest {
         }
     }
 
+    private static final Map<String, int[]> dropped = Map.ofEntries(
+            Map.entry("pg29", new int[]{0}),
+            Map.entry("dhall9", new int[]{0, 1}),
+            Map.entry("hall9", new int[]{0, 81}),
+            Map.entry("hughes9", new int[]{0, 3}),
+            Map.entry("bbh1", new int[]{0, 192, 193, 205, 269}), // TODO test
+             //"bbh2", new int[]{0, 28},
+            Map.entry("dbbh2", new int[]{0, 1, 21, 41, 233}),
+            //"bbs4", new int[]{0, 108, 270},
+            //"dbbs4", new int[]{0, 228, 241}
+            Map.entry("hall", new int[]{0, 5, 17}),
+            Map.entry("dhall", new int[]{0, 80, 81}),
+            Map.entry("", new int[]{})
+    );
+
     @Test
     public void testPentagon() throws IOException {
         String name = "hall9";
@@ -224,7 +240,7 @@ public class ScalarTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            for (int l = 0; l < proj.lineCount(); l++) {
+            for (int l : dropped.getOrDefault(name, IntStream.range(0, proj.lineCount()).toArray())) {
                 NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
                 int all = 0;
                 int pentagon = 0;
@@ -268,7 +284,7 @@ public class ScalarTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            for (int l = 0; l < proj.lineCount(); l++) {
+            for (int l : dropped.getOrDefault(name, IntStream.range(0, proj.lineCount()).toArray())) {
                 NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
                 int all = 0;
                 int bool = 0;
