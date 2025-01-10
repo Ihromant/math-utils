@@ -39,18 +39,17 @@ public class BibdFinder6Test {
             }
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
-            State state = new State(new int[k], filter, whiteList);
+            State state = new State(baseDesign[blockIdx], filter, whiteList);
             return state.acceptElem(whiteList.nextSetBit(0), v, 1);
         }
 
         private State acceptElem(int el, int v, int idx) {
-            int[] nextBlock = block.clone();
-            nextBlock[idx] = el;
+            block[idx] = el;
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
             int invEl = v - el;
             for (int i = 0; i < idx; i++) {
-                int val = nextBlock[i];
+                int val = block[i];
                 int diff = el - val;
                 int outDiff = invEl + val;
                 newFilter.set(diff);
@@ -59,40 +58,32 @@ public class BibdFinder6Test {
                     newWhiteList.clear((el + outDiff / 2) % v);
                 }
                 for (int j = 0; j <= idx; j++) {
-                    int nv = nextBlock[j];
+                    int nv = block[j];
                     newWhiteList.clear((nv + diff) % v);
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
-            return new State(nextBlock, newFilter, newWhiteList);
+            return new State(block, newFilter, newWhiteList);
         }
 
-        private State acceptLast(int el, int v, int idx, boolean lastBlock) {
-            int[] nextBlock = block.clone();
-            nextBlock[idx] = el;
-            if (lastBlock) {
-                return new State(nextBlock, filter, whiteList);
-            }
+        private FixBS acceptLast(int el, int v, int idx) {
             FixBS newFilter = filter.copy();
             int invEl = v - el;
             for (int i = 0; i < idx; i++) {
-                int val = nextBlock[i];
+                int val = block[i];
                 int diff = el - val;
                 int outDiff = invEl + val;
                 newFilter.set(diff);
                 newFilter.set(outDiff);
             }
-            FixBS newWhiteList = newFilter.copy();
-            newWhiteList.flip(1, v);
-            return new State(nextBlock, newFilter, newWhiteList)
-                    .acceptElem(newFilter.nextClearBit(1), v, 1);
+            return newFilter;
         }
     }
 
     private static void calcCycles(int v, int k, int[][] design, State state, int idx, int blockIdx, Consumer<int[][]> sink) {
         FixBS whiteList = state.whiteList();
-        int[] currBlock = state.block;
+        int[] currBlock = design[blockIdx];
         int lastVal = currBlock[idx - 1];
         boolean first = idx == 2;
         boolean last = idx + 1 == k;
@@ -107,13 +98,16 @@ public class BibdFinder6Test {
         for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
             if (last) {
                 boolean lastBlock = blockIdx + 1 == design.length;
-                State next = state.acceptLast(el, v, idx, lastBlock);
-                int[][] nextDesign = design.clone();
-                nextDesign[blockIdx] = next.block;
+                currBlock[idx] = el;
                 if (lastBlock) {
-                    sink.accept(nextDesign);
+                    sink.accept(Arrays.stream(design).map(int[]::clone).toArray(int[][]::new));
                 } else {
-                    calcCycles(v, k, nextDesign, next, 2, blockIdx + 1, sink);
+                    FixBS newFilter = state.acceptLast(el, v, idx);
+                    FixBS newWhiteList = newFilter.copy();
+                    newWhiteList.flip(1, v);
+                    State next = new State(design[blockIdx + 1], newFilter, newWhiteList)
+                            .acceptElem(newFilter.nextClearBit(1), v, 1);
+                    calcCycles(v, k, design, next, 2, blockIdx + 1, sink);
                 }
             } else {
                 State next = state.acceptElem(el, v, idx);
