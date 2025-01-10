@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class BibdFinder6Test {
-    private record State(int[][] design, FixBS filter, FixBS whiteList) {
+    private record State(int[] block, FixBS filter, FixBS whiteList) {
         private static State forDesign(int v, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
             FixBS filter = baseFilter.copy();
             for (int bi = 0; bi < blockIdx; bi++) {
@@ -39,20 +39,18 @@ public class BibdFinder6Test {
             }
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
-            State state = new State(baseDesign, filter, whiteList);
-            return state.acceptElem(whiteList.nextSetBit(0), v, 1, blockIdx);
+            State state = new State(new int[k], filter, whiteList);
+            return state.acceptElem(whiteList.nextSetBit(0), v, 1);
         }
 
-        private State acceptElem(int el, int v, int idx, int blockIdx) {
-            int[][] cloned = design.clone();
-            int[] nextTuple = cloned[blockIdx].clone();
-            nextTuple[idx] = el;
-            cloned[blockIdx] = nextTuple;
+        private State acceptElem(int el, int v, int idx) {
+            int[] nextBlock = block.clone();
+            nextBlock[idx] = el;
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
             int invEl = v - el;
             for (int i = 0; i < idx; i++) {
-                int val = nextTuple[i];
+                int val = nextBlock[i];
                 int diff = el - val;
                 int outDiff = invEl + val;
                 newFilter.set(diff);
@@ -61,44 +59,40 @@ public class BibdFinder6Test {
                     newWhiteList.clear((el + outDiff / 2) % v);
                 }
                 for (int j = 0; j <= idx; j++) {
-                    int nv = nextTuple[j];
+                    int nv = nextBlock[j];
                     newWhiteList.clear((nv + diff) % v);
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
-            return new State(cloned, newFilter, newWhiteList);
+            return new State(nextBlock, newFilter, newWhiteList);
         }
 
-        private State acceptLast(int el, int v, int idx, int blockIdx, Consumer<int[][]> cons) {
-            int[][] cloned = design.clone();
-            int[] nextTuple = cloned[blockIdx].clone();
-            nextTuple[idx] = el;
-            cloned[blockIdx] = nextTuple;
+        private State acceptLast(int el, int v, int idx, boolean lastBlock) {
+            int[] nextBlock = block.clone();
+            nextBlock[idx] = el;
+            if (lastBlock) {
+                return new State(nextBlock, filter, whiteList);
+            }
             FixBS newFilter = filter.copy();
             int invEl = v - el;
             for (int i = 0; i < idx; i++) {
-                int val = nextTuple[i];
+                int val = nextBlock[i];
                 int diff = el - val;
                 int outDiff = invEl + val;
                 newFilter.set(diff);
                 newFilter.set(outDiff);
             }
-            int nextBlockIdx = blockIdx + 1;
-            if (nextBlockIdx == cloned.length) {
-                cons.accept(cloned);
-                return null;
-            }
             FixBS newWhiteList = newFilter.copy();
             newWhiteList.flip(1, v);
-            return new State(cloned, newFilter, newWhiteList)
-                    .acceptElem(newFilter.nextClearBit(1), v, 1, nextBlockIdx);
+            return new State(nextBlock, newFilter, newWhiteList)
+                    .acceptElem(newFilter.nextClearBit(1), v, 1);
         }
     }
 
-    private static void calcCycles(int v, int k, State state, int idx, int blockIdx, Consumer<int[][]> sink) {
+    private static void calcCycles(int v, int k, int[][] design, State state, int idx, int blockIdx, Consumer<int[][]> sink) {
         FixBS whiteList = state.whiteList();
-        int[] currBlock = state.design[blockIdx];
+        int[] currBlock = state.block;
         int lastVal = currBlock[idx - 1];
         boolean first = idx == 2;
         boolean last = idx + 1 == k;
@@ -111,9 +105,19 @@ public class BibdFinder6Test {
         }
         int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
         for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
-            State next = last ? state.acceptLast(el, v, idx, blockIdx, sink) : state.acceptElem(el, v, idx, blockIdx);
-            if (next != null) {
-                calcCycles(v, k, next, last ? 2 : idx + 1, last ? blockIdx + 1 : blockIdx, sink);
+            if (last) {
+                boolean lastBlock = blockIdx + 1 == design.length;
+                State next = state.acceptLast(el, v, idx, lastBlock);
+                int[][] nextDesign = design.clone();
+                nextDesign[blockIdx] = next.block;
+                if (lastBlock) {
+                    sink.accept(nextDesign);
+                } else {
+                    calcCycles(v, k, nextDesign, next, 2, blockIdx + 1, sink);
+                }
+            } else {
+                State next = state.acceptElem(el, v, idx);
+                calcCycles(v, k, design, next, idx + 1, blockIdx, sink);
             }
         }
     }
@@ -199,7 +203,7 @@ public class BibdFinder6Test {
                 System.arraycopy(init[i], 0, design[i], 0, k);
             }
             State initial = State.forDesign(v, baseFilter, design, k, init.length);
-            calcCycles(v, k, initial, 2, init.length, designConsumer);
+            calcCycles(v, k, design, initial, 2, init.length, designConsumer);
             if (destination != System.out) {
                 destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
@@ -226,7 +230,7 @@ public class BibdFinder6Test {
         int blocksNeeded = v / k / (k - 1);
         int[][] base = new int[blocksNeeded][k];
         State initial = State.forDesign(v, filter, base, k, 0);
-        calcCycles(v, k, initial, 2, 0, design -> {
+        calcCycles(v, k, base, initial, 2, 0, design -> {
             System.out.println(Arrays.deepToString(design));
             System.out.flush();
         });
