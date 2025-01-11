@@ -546,7 +546,7 @@ public class ContradictionUtil {
                         if (!liner.collinear(ab1a1b, ac1a1c, bc1b1c)) {
                             res.add(new Update(new Col(ab1a1b, ac1a1c, bc1b1c), "P1S", new Trg(o, a, a1), new Col(o, a, b), new Col(a, b, c),
                                     new Col(o, a1, b1), new Col(a1, b1, c1), new Col(a, b1, ab1a1b), new Col(a1, b, ab1a1b),
-                                    new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c), new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c),
+                                    new Col(a, c1, ac1a1c), new Col(a1, c, ac1a1c), new Col(b, b1, ac1a1c), new Col(b, c1, bc1b1c), new Col(b1, c, bc1b1c),
                                     new Col(o, ab1a1b, ac1a1c)));
                         }
                     }
