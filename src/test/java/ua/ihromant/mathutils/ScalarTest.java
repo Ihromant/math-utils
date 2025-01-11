@@ -452,4 +452,54 @@ public class ScalarTest {
             }
         }
     }
+
+    @Test
+    public void testStrongK3() throws IOException {
+        String name = "dhall";
+        int order = 16;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            for (int l : dropped.getOrDefault(name, IntStream.range(0, proj.lineCount()).toArray())) {
+                NumeratedAffinePlane aff = new NumeratedAffinePlane(proj, l);
+                int all = 0;
+                int k3 = 0;
+                for (int a = 0; a < aff.pointCount(); a++) {
+                    for (int b = a + 1; b < aff.pointCount(); b++) {
+                        int ab = aff.line(a, b);
+                        for (int c = 0; c < aff.pointCount(); c++) {
+                            if (aff.flag(ab, c)) {
+                                continue;
+                            }
+                            int ac = aff.line(a, c);
+                            int bc = aff.line(b, c);
+                            int cd = aff.parallel(ab, c);
+                            int bd = aff.parallel(ac, b);
+                            int d = aff.intersection(cd, bd);
+                            int ad = aff.line(a, d);
+                            if (aff.intersection(ad, bc) < 0) {
+                                continue;
+                            }
+                            int be = aff.parallel(ad, b);
+                            int de = aff.parallel(bc, d);
+                            int af = aff.parallel(bc, a);
+                            int cf = aff.parallel(ad, c);
+                            int e = aff.intersection(be, de);
+                            int f = aff.intersection(af, cf);
+                            if (e < 0 || f < 0 || e == f || aff.line(c, e) != ac || aff.line(d, f) != bd) {
+                                continue;
+                            }
+                            int ef = aff.line(e, f);
+                            if (aff.intersection(cd, ef) < 0) {
+                                k3++;
+                            }
+                            all++;
+                        }
+                    }
+                }
+                System.out.println(l + " all " + all + " k3 " + k3);
+            }
+        }
+    }
 }
