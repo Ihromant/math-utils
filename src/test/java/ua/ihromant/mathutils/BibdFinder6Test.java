@@ -116,6 +116,50 @@ public class BibdFinder6Test {
         }
     }
 
+    private static int calcCyclesDepth(int v, int k, int[][] design, State state, int idx, int blockIdx, Consumer<int[][]> sink) {
+        FixBS whiteList = state.whiteList();
+        int[] currBlock = design[blockIdx];
+        int lastVal = currBlock[idx - 1];
+        boolean first = idx == 2;
+        boolean last = idx + 1 == k;
+        int midCnt = k - idx - 1;
+        int from = 0;
+        int minMidSpace = 0;
+        while (--midCnt >= 0) {
+            from = state.filter.nextClearBit(from + 1);
+            minMidSpace = minMidSpace + from;
+        }
+        int result = k * blockIdx + idx;
+        int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
+        for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
+            if (last) {
+                boolean lastBlock = blockIdx + 1 == design.length;
+                currBlock[idx] = el;
+                if (lastBlock) {
+                    sink.accept(Arrays.stream(design).map(int[]::clone).toArray(int[][]::new));
+                    result = k * design.length;
+                } else {
+                    FixBS newFilter = state.acceptLast(el, v, idx);
+                    FixBS newWhiteList = newFilter.copy();
+                    newWhiteList.flip(1, v);
+                    State next = new State(design[blockIdx + 1], newFilter, newWhiteList)
+                            .acceptElem(newFilter.nextClearBit(1), v, 1);
+                    int dpt = calcCyclesDepth(v, k, design, next, 2, blockIdx + 1, sink);
+                    if (dpt > result) {
+                        result = dpt;
+                    }
+                }
+            } else {
+                State next = state.acceptElem(el, v, idx);
+                int dpt = calcCyclesDepth(v, k, design, next, idx + 1, blockIdx, sink);
+                if (dpt > result) {
+                    result = dpt;
+                }
+            }
+        }
+        return result;
+    }
+
     private static FixBS baseFilter(int v, int k) {
         FixBS filter = new FixBS(v);
         for (int i = 1; i < v; i++) {
