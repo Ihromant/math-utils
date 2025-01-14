@@ -15,6 +15,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -342,6 +343,7 @@ public class BibdFinder6Test {
              FileOutputStream fos = new FileOutputStream(refined);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
+            Set<List<FixBS>> unique = new HashSet<>();
             br.lines().forEach(l -> {
                 if (!l.contains("[[")) {
                     return;
@@ -364,19 +366,24 @@ public class BibdFinder6Test {
                         return res;
                     }).toArray(int[][]::new);
                     int cnt = 0;
+                    int[][] minimal = des;
                     for (int m : multipliers) {
                         int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, v, k)).toArray(int[][]::new);
                         Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
-                        int cmp = compare(des, mapped);
-                        if (cmp > 0) {
-                            return;
+                        int cmp = compare(mapped, minimal);
+                        if (cmp < 0) {
+                            minimal = mapped;
+                            cnt = 1;
                         }
                         if (cmp == 0) {
                             cnt++;
                         }
                     }
-                    System.out.println(cnt + " " + Arrays.deepToString(des));
-                    ps.println(Arrays.deepToString(des));
+                    if (!unique.add(Arrays.stream(minimal).map(arr -> FixBS.of(v, arr)).toList())) {
+                        return;
+                    }
+                    System.out.println(cnt + " " + Arrays.deepToString(minimal));
+                    ps.println(Arrays.deepToString(minimal));
                 });
             });
         }
