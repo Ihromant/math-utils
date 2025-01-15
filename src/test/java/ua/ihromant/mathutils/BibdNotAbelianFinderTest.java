@@ -24,6 +24,7 @@ public class BibdNotAbelianFinderTest {
         Group g = new SemiDirectProduct(new GroupProduct(9), new CyclicGroup(3)).asTable();
         int v = g.order();
         int k = 3;
+        System.out.println(g.name() + " " + v + " " + k);
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
@@ -90,6 +91,7 @@ public class BibdNotAbelianFinderTest {
         Group g = new SemiDirectProduct(new GroupProduct(3, 3), new CyclicGroup(3)).asTable();
         int v = g.order();
         int k = 3;
+        System.out.println(g.name() + " " + v + " " + k);
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
