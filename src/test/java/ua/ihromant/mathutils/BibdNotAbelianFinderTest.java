@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 public class BibdNotAbelianFinderTest {
     @Test
     public void testLeft() {
-        Group g = new GroupProduct(3, 3).asTable();//new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(2)).asTable();
+        Group g = new GroupProduct(3, 3, 3).asTable();//new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(2)).asTable();
         int v = g.order();
         int k = 3;
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
@@ -62,10 +62,16 @@ public class BibdNotAbelianFinderTest {
             return new Comp(res, card);
         }).toArray(Comp[]::new);
         System.out.println(components.length);
+        Map<FixBS, Liner> unique = new HashMap<>();
         calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
             int[][] ars = fbs.stream().boxed().flatMap(i -> prs.get(i).stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
             Liner l = new Liner(v, ars);
-            System.out.println(fbs + " " + l.autCountOld());
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(fbs + " " + Arrays.deepToString(l.lines()));
+            } else {
+                System.out.println(fbs + " same");
+            }
         });
     }
 
