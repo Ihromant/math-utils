@@ -24,18 +24,6 @@ public class SemiDirectProduct implements Group {
         }
     }
 
-    @Deprecated
-    public SemiDirectProduct(CyclicGroup h, CyclicGroup k, int i) {
-        this.h = h;
-        this.k = k;
-        int ord = h.expOrder(i);
-        if (ord != k.order()) {
-            throw new IllegalArgumentException(i + " " + h + " " + k);
-        }
-        this.gr = null;
-        this.psi = null;
-    }
-
     private static int compare(int[] fst, int[] snd) {
         for (int i = 1; i < fst.length; i++) {
             int dff = fst[i] - snd[i];
