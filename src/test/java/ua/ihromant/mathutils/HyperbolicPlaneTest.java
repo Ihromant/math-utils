@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 
 import java.util.ArrayList;
@@ -107,7 +107,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testLarge() {
-        GroupProduct c1 = new GroupProduct(43, 7);
+        CyclicProduct c1 = new CyclicProduct(43, 7);
         Liner p1 = Liner.byDiffFamily(c1, new int[][]{
                 {0, c1.fromArr(1, 1), c1.fromArr(37, 2), c1.fromArr(36, 4), c1.fromArr(42, 1), c1.fromArr(6, 2), c1.fromArr(7, 4)},
                 {0, c1.fromArr(3, 2), c1.fromArr(25, 4), c1.fromArr(22, 1), c1.fromArr(40, 2), c1.fromArr(18, 4), c1.fromArr(21, 1)},
@@ -120,7 +120,7 @@ public class HyperbolicPlaneTest {
         });
         assertEquals(of(2, 3, 4, 5), p1.hyperbolicIndex());
 
-        GroupProduct cg = new GroupProduct(31, 7);
+        CyclicProduct cg = new CyclicProduct(31, 7);
         Liner p = Liner.byDiffFamily(cg, new int[][]{
                 {0, cg.fromArr(1, 1), cg.fromArr(26, 4), cg.fromArr(25, 2), cg.fromArr(30, 1), cg.fromArr(5, 4), cg.fromArr(6, 2)},
                 {0, cg.fromArr(3, 2), cg.fromArr(16, 1), cg.fromArr(13, 4), cg.fromArr(28, 2), cg.fromArr(15, 1), cg.fromArr(18, 4)},
@@ -260,7 +260,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testCyclic() {
-        GroupProduct cg3 = new GroupProduct(5, 5);
+        CyclicProduct cg3 = new CyclicProduct(5, 5);
 
         Liner p3 = Liner.byDiffFamily(cg3, new int[][]{{0, 9, 23, 24}, {0, 12, 14, 17}});
         assertEquals(25, p3.pointCount());
@@ -268,7 +268,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(4), p3.playfairIndex());
         assertEquals(of(0, 1, 2), p3.hyperbolicIndex());
 
-        GroupProduct cg1 = new GroupProduct(11, 11);
+        CyclicProduct cg1 = new CyclicProduct(11, 11);
         int[][] cycles = new int[][]{
                 {cg1.fromArr(0, 0), cg1.fromArr(0, 3), cg1.fromArr(0, 4), cg1.fromArr(1, 1), cg1.fromArr(1, 7), cg1.fromArr(4, 6)},
                 {cg1.fromArr(0, 0), cg1.fromArr(0, 2), cg1.fromArr(2, 5), cg1.fromArr(4, 7), cg1.fromArr(6, 4), cg1.fromArr(8, 0)},
@@ -281,7 +281,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(18), p1.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p1.hyperbolicIndex());
 
-        GroupProduct cg2 = new GroupProduct(7, 5, 5);
+        CyclicProduct cg2 = new CyclicProduct(7, 5, 5);
         int[][] cycles1 = new int[][] {
                 {0, cg2.fromArr(1, 1, 3), cg2.fromArr(1, 4, 2), cg2.fromArr(2, 2, 2), cg2.fromArr(2, 3, 3), cg2.fromArr(4, 2, 0), cg2.fromArr(4, 3, 0)},
                 {0, cg2.fromArr(1, 3, 4), cg2.fromArr(1, 2, 1), cg2.fromArr(2, 2, 3), cg2.fromArr(2, 3, 2), cg2.fromArr(4, 0, 2), cg2.fromArr(4, 0, 3)},
@@ -298,7 +298,7 @@ public class HyperbolicPlaneTest {
 
         CyclicGroup left = new CyclicGroup(7);
         CyclicGroup right = new CyclicGroup(41);
-        GroupProduct cg = new GroupProduct(7, 41);
+        CyclicProduct cg = new CyclicProduct(7, 41);
         int[][] bases = new int[][]{{0, 9}, {0, 32}, {1, 3}, {1, 38}, {2, 1}, {2, 40}, {4, 14}, {4, 27}};
         BitSet[] lines = Stream.concat(IntStream.of(1, 37, 16, 18, 10).boxed().flatMap(t -> {
             int[][] shifted = Arrays.stream(bases).map(pair -> {
@@ -409,7 +409,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void nonStandard() {
-        GroupProduct cg = new GroupProduct(13, 5);
+        CyclicProduct cg = new CyclicProduct(13, 5);
         Liner p7 = new Liner(Stream.concat(Stream.of(
                         new int[]{cg.fromArr(2, 0), cg.fromArr(5, 0), cg.fromArr(4, 1), cg.fromArr(9, 1), cg.fromArr(0, 3), cg.fromArr(6, 3)},
                         new int[]{cg.fromArr(6, 1), cg.fromArr(2, 1), cg.fromArr(12, 2), cg.fromArr(1, 2), cg.fromArr(0, 3), cg.fromArr(5, 3)},
@@ -440,7 +440,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(7), p7.playfairIndex());
         assertEquals(of(0, 1, 2, 3, 4), p7.hyperbolicIndex());
 
-        GroupProduct cg1 = new GroupProduct(19, 4);
+        CyclicProduct cg1 = new CyclicProduct(19, 4);
         Liner p9 = new Liner(Stream.of(
                         new int[]{cg1.fromArr(0, 0), cg1.fromArr(0, 1), cg1.fromArr(1, 1), cg1.fromArr(3, 1), cg1.fromArr(14, 1), cg1.fromArr(10, 3)},
                         new int[]{cg1.fromArr(0, 0), cg1.fromArr(0, 2), cg1.fromArr(7, 2), cg1.fromArr(2, 2), cg1.fromArr(3, 2), cg1.fromArr(13, 1)},
@@ -523,7 +523,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(16), p2.playfairIndex());
         assertEquals(of(1, 2, 3, 4), p2.hyperbolicIndex());
 
-        GroupProduct gp = new GroupProduct(5, 5, 5);
+        CyclicProduct gp = new CyclicProduct(5, 5, 5);
         int[][] bs = new int[][] {
                 {gp.fromArr(0, 0, 1), gp.fromArr(0, 0, 4), gp.fromArr(1, 2, 2), gp.fromArr(1, 3, 3), gp.fromArr(4, 2, 1), gp.fromArr(4, 3, 4)},
                 {gp.fromArr(0, 0, 2), gp.fromArr(0, 0, 3), gp.fromArr(1, 4, 4), gp.fromArr(1, 1, 1), gp.fromArr(4, 4, 2), gp.fromArr(4, 1, 3)},
@@ -549,7 +549,7 @@ public class HyperbolicPlaneTest {
 
         CyclicGroup c3 = new CyclicGroup(3);
         CyclicGroup c45 = new CyclicGroup(45);
-        GroupProduct pr135 = new GroupProduct(3, 45);
+        CyclicProduct pr135 = new CyclicProduct(3, 45);
         int[][][] base1 = new int[][][] {
                 {{0, 0}, {0, 3}, {0, 15}, {0, 35}, {2, 6}, {2, 10}},
                 {{0, 0}, {0, 22}, {1, 11}, {1, 30}, {2, 1}, {2, 18}},
@@ -580,7 +580,7 @@ public class HyperbolicPlaneTest {
 
         CyclicGroup c4 = new CyclicGroup(4);
         CyclicGroup c35 = new CyclicGroup(35);
-        GroupProduct pr140 = new GroupProduct(4, 35);
+        CyclicProduct pr140 = new CyclicProduct(4, 35);
         int[][][] base4 = new int[][][]{
                 {{0, 0}, {0, 16}, {0, 24}, {1, 24}, {2, 15}, {2, 25}},
                 {{0, 0}, {0, 3}, {0, 26}, {1, 13}, {1, 33}, {3, 34}},
@@ -638,7 +638,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(1, 2, 3, 4), p3.hyperbolicIndex());
 
         CyclicGroup c49 = new CyclicGroup(49);
-        GroupProduct pr196 = new GroupProduct(4, 49);
+        CyclicProduct pr196 = new CyclicProduct(4, 49);
         int[][][] base6 = new int[][][]{
                 {{0, 0}, {0, 1}, {1, 0}, {1, 30}, {2, 0}, {2, 18}},
                 {{0, 8}, {0, 19}, {1, 44}, {1, 31}, {2, 46}, {2, 48}},
@@ -665,7 +665,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(0, 1, 2, 3, 4), p8.hyperbolicIndex());
 
         CyclicGroup c67 = new CyclicGroup(67);
-        GroupProduct pr201 = new GroupProduct(3, 67);
+        CyclicProduct pr201 = new CyclicProduct(3, 67);
         int[][][] base3 = new int[][][] {
                 {{1, 3}, {1, 20}, {1, 44}, {2, 36}, {2, 39}, {2, 59}},
                 {{0, 0}, {1, 0}, {1, 30}, {1, 38}, {1, 66}, {2, 0}},
@@ -690,7 +690,7 @@ public class HyperbolicPlaneTest {
         assertEquals(of(1, 2, 3, 4), p5.hyperbolicIndex());
 
         CyclicGroup c97 = new CyclicGroup(97);
-        GroupProduct pr291 = new GroupProduct(3, 97);
+        CyclicProduct pr291 = new CyclicProduct(3, 97);
         int[][][] base7 = new int[][][] {
                 {{0, 1}, {0, 35}, {0, 61}, {1, 38}, {1, 69}, {1, 87}},
                 {{0, 0}, {1, 0}, {2, 0}, {2, 1}, {2, 35}, {2, 61}},
@@ -720,7 +720,7 @@ public class HyperbolicPlaneTest {
 
     @Test
     public void testRotational() {
-        GroupProduct gp = new GroupProduct(3, 6);
+        CyclicProduct gp = new CyclicProduct(3, 6);
         int[][][] base19 = new int[][][] {
                 {{0, 0}, {1, 0}, {2, 0}},
                 {{0, 0}, {1, 2}, {2, 4}},

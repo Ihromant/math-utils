@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicProduct;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -219,7 +219,7 @@ public class BibdFinderTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
              BufferedReader br = new BufferedReader(isr)) {
             String l = br.readLine();
-            Group g = new GroupProduct(3, 3, 3, 3);
+            Group g = new CyclicProduct(3, 3, 3, 3);
             String[] chunks = l.split(" ");
             int k = Integer.parseInt(chunks[1]);
             int[] degenerate = chunks.length <= 3 ? new int[0] : Arrays.stream(chunks, 3, chunks.length)

@@ -16,7 +16,7 @@ public enum NearField {
             {MI_K, PL_I, PL_J, MI_J, MI_1, MI_I, PL_1, ZERO, PL_K}  // -k
     };
 
-    private static final NearField[][] MULTIPLICATION_TABLE = {
+    public static final NearField[][] MULTIPLICATION_TABLE = {
             // 0     1    -1     i    -i     j    -j     k    -k
             {ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO, ZERO}, // 0
             {ZERO, PL_1, MI_1, PL_I, MI_I, PL_J, MI_J, PL_K, MI_K}, // 1
@@ -32,7 +32,7 @@ public enum NearField {
     private static final NearField[] NEGATIONS =
             {ZERO, MI_1, PL_1, MI_I, PL_I, MI_J, PL_J, MI_K, PL_K};
 
-    private static final NearField[] INVERSIONS =
+    public static final NearField[] INVERSIONS =
             {ZERO, PL_1, MI_1, MI_I, PL_I, MI_J, PL_J, MI_K, PL_K};
 
     public NearField add(NearField that) {

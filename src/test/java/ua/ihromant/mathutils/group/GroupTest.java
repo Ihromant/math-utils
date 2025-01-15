@@ -14,25 +14,26 @@ public class GroupTest {
     @Test
     public void testGroups() {
         testCorrectness(new CyclicGroup(15), true);
-        testCorrectness(new GroupProduct(3, 3, 5), true);
+        testCorrectness(new CyclicProduct(3, 3, 5), true);
+        testCorrectness(new QuaternionGroup(), false);
         testCorrectness(new DihedralGroup(7), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(4)), false);
-        testCorrectness(new SemiDirectProduct(new GroupProduct(2, 2, 3), new CyclicGroup(2)), false);
+        testCorrectness(new SemiDirectProduct(new CyclicProduct(2, 2, 3), new CyclicGroup(2)), false);
         testCorrectness(new BurnsideGroup(), false);
         testCorrectness(new Liner(new GaloisField(2).generatePlane()).automorphisms(), false);
     }
 
     @Test
     public void testEquivalent() {
-        GroupProduct cp = new GroupProduct(3, 3, 5);
+        CyclicProduct cp = new CyclicProduct(3, 3, 5);
         cp.elements().forEach(i -> assertEquals(i, cp.fromArr(cp.toArr(i))));
     }
 
     @Test
     public void testSpecific() {
-        GroupProduct cp = new GroupProduct(7, 5, 5);
+        CyclicProduct cp = new CyclicProduct(7, 5, 5);
         assertArrayEquals(new int[]{0, 25, 50, 75, 100, 125, 150}, IntStream.range(0, cp.base()[0]).map(i -> cp.fromArr(i, 0, 0)).toArray());
     }
 
@@ -55,7 +56,7 @@ public class GroupTest {
     public void testOrder() {
         CyclicGroup cg = new CyclicGroup(113);
         cg.elements().forEach(i -> assertEquals(i == 0 ? 1 : 113, cg.order(i)));
-        GroupProduct gp = new GroupProduct(2, 2, 2, 2, 2, 2);
+        CyclicProduct gp = new CyclicProduct(2, 2, 2, 2, 2, 2);
         gp.elements().forEach(i -> assertEquals(i == 0 ? 1 : 2, gp.order(i)));
     }
 
@@ -86,27 +87,27 @@ public class GroupTest {
         int[][] auths = product.auth();
         assertEquals(6, auths.length);
         checkAuth(auths, product);
-        product = new GroupProduct(2, 2, 3, 3);
+        product = new CyclicProduct(2, 2, 3, 3);
         auths = product.auth();
         assertEquals(288, auths.length);
         checkAuth(auths, product);
-        product = new GroupProduct(4, 4);
+        product = new CyclicProduct(4, 4);
         auths = product.auth();
         assertEquals(96, auths.length);
         checkAuth(auths, product);
-        product = new GroupProduct(2, 4);
+        product = new CyclicProduct(2, 4);
         auths = product.auth();
         assertEquals(8, auths.length);
         checkAuth(auths, product);
-        product = new GroupProduct(3, 9);
+        product = new CyclicProduct(3, 9);
         auths = product.auth();
         assertEquals(108, auths.length);
         checkAuth(auths, product);
-        product = new GroupProduct(2, 4, 3, 9);
+        product = new CyclicProduct(2, 4, 3, 9);
         auths = product.auth();
         assertEquals(864, auths.length);
         checkAuth(auths, product);
-        product = new GroupProduct(3, 3, 9);
+        product = new CyclicProduct(3, 3, 9);
         auths = product.auth();
         assertEquals(23328, auths.length);
         checkAuth(auths, product);

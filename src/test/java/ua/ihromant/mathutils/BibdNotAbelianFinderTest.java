@@ -2,8 +2,8 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -21,15 +21,16 @@ import java.util.function.Consumer;
 public class BibdNotAbelianFinderTest {
     @Test
     public void testLeft() {
-        Group g = new SemiDirectProduct(new GroupProduct(9), new CyclicGroup(3)).asTable();
+        Group g = new SemiDirectProduct(new CyclicGroup(9), new CyclicGroup(3)).asTable();
         int v = g.order();
         int k = 3;
         System.out.println(g.name() + " " + v + " " + k);
+        Group tg = g.asTable();
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
             for (int mul = 0; mul < v; mul++) {
-                int[] applied = applyLeft(arr, mul, g);
+                int[] applied = applyLeft(arr, mul, tg);
                 int[] pairs = pairs(applied, v);
                 FixBS bs = FixBS.of(v * v, pairs);
                 for (int pr : pairs) {
@@ -88,16 +89,17 @@ public class BibdNotAbelianFinderTest {
 
     @Test
     public void testConjugation() {
-        Group g = new SemiDirectProduct(new GroupProduct(3, 3), new CyclicGroup(3)).asTable();
+        Group g = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3)).asTable();
         int v = g.order();
         int k = 3;
         System.out.println(g.name() + " " + v + " " + k);
+        Group tg = g.asTable();
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
             for (int mul = 0; mul < v; mul++) {
                 for (int mul1 = 0; mul1 < v; mul1++) {
-                    int[] applied = applyConjugation(arr, mul, mul1, g);
+                    int[] applied = applyConjugation(arr, mul, mul1, tg);
                     int[] pairs = pairs(applied, v);
                     FixBS bs = FixBS.of(v * v, pairs);
                     for (int pr : pairs) {

@@ -5,7 +5,7 @@ import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
@@ -588,7 +588,7 @@ public class BatchLinerTest {
 
     @Test
     public void testDesigns() throws IOException {
-        Group gr = new GroupProduct(2, 2, 13);
+        Group gr = new CyclicProduct(2, 2, 13);
         cdfForGroup(gr, 4, l -> System.out.println(l.hyperbolicIndex()));
     }
 

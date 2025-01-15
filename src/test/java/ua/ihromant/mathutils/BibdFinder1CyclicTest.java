@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -241,7 +241,7 @@ public class BibdFinder1CyclicTest {
 
     @Test
     public void logNotEqCycles() throws IOException {
-        Group group = new GroupProduct(11, 11);
+        Group group = new CyclicProduct(11, 11);
         int k = 5;
         File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
@@ -253,14 +253,14 @@ public class BibdFinder1CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new GroupProduct(5, 5);
+        Group group = new CyclicProduct(5, 5);
         int k = 4;
         logFirstCycles(System.out, group, k, 1);
     }
 
     @Test
     public void logAllCycles() {
-        Group group = new GroupProduct(7, 7);
+        Group group = new CyclicProduct(7, 7);
         int k = 4;
         logAllCycles(System.out, group, k);
     }
@@ -308,7 +308,7 @@ public class BibdFinder1CyclicTest {
 
     @Test
     public void toConsole() throws IOException {
-        Group gr = new GroupProduct(11, 11);
+        Group gr = new CyclicProduct(11, 11);
         int v = gr.order();
         int k = 5;
         File beg = new File("/home/ihromant/maths/diffSets/beg", k + "-" + gr.name() + "beg.txt");

@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
@@ -460,7 +460,7 @@ public class Liner {
             throw new IllegalArgumentException("Not all lines of length " + length);
         }
         Liner aff = new Liner(new GaloisField(length).generatePlane()).subPlane(IntStream.range(0, length * length).toArray());
-        GroupProduct cg = new GroupProduct(this.pointCount(), that.pointCount());
+        CyclicProduct cg = new CyclicProduct(this.pointCount(), that.pointCount());
         BitSet[] lines = Stream.of(IntStream.range(0, this.lineCount()).boxed().flatMap(l1 -> IntStream.range(0, that.pointCount()).mapToObj(p2 -> {
                     BitSet result = new BitSet();
                     for (int p1 : this.points(l1)) {

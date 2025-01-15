@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupProduct;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -291,7 +291,7 @@ public class BibdFinder2CyclicTest {
 
     @Test
     public void toConsole() throws IOException {
-        Group gr = new GroupProduct(11, 11);
+        Group gr = new CyclicProduct(11, 11);
         int v = gr.order();
         int k = 5;
         File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
@@ -378,7 +378,7 @@ public class BibdFinder2CyclicTest {
 
     @Test
     public void logAllCycles() {
-        Group group = new GroupProduct(5, 5, 13);
+        Group group = new CyclicProduct(5, 5, 13);
         int k = 13;
         logAllCycles(System.out, group, k);
     }
@@ -400,7 +400,7 @@ public class BibdFinder2CyclicTest {
 
     @Test
     public void filter() throws IOException {
-        Group gr = new GroupProduct(13, 13);
+        Group gr = new CyclicProduct(13, 13);
         int k = 7;
         int[][] auths = gr.auth();
         File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
