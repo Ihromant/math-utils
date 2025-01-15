@@ -17,7 +17,7 @@ import java.util.function.Consumer;
 
 public class BibdNotAbelianFinderTest {
     @Test
-    public void test() {
+    public void testLeft() {
         Group g = new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(2)).asTable();
         int v = g.order();
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
@@ -40,6 +40,61 @@ public class BibdNotAbelianFinderTest {
                             ArrPairs res = new ArrPairs(FixBS.of(v, applied), bs);
                             for (int pr : pairs) {
                                 components.put(pr, res);
+                            }
+                        }
+                        Set<ArrPairs> aps = new HashSet<>(components.values());
+                        if (map.containsKey(aps.iterator().next().arr)) {
+                            continue;
+                        }
+                        for (ArrPairs ap : components.values()) {
+                            map.put(ap.arr, aps);
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println(map.size());
+        List<Set<ArrPairs>> prs = new ArrayList<>(new HashSet<>(map.values()));
+        System.out.println(prs.size());
+        Comp[] components = prs.stream().map(sap -> {
+            FixBS res = new FixBS(v * v);
+            int card = 0;
+            for (ArrPairs ap : sap) {
+                res.or(ap.pairs);
+                card = card + ap.pairs.cardinality();
+            }
+            return new Comp(res, card);
+        }).toArray(Comp[]::new);
+        System.out.println(components.length);
+        calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> System.out.println(fbs));
+    }
+
+    @Test
+    public void testConjugation() {
+        Group g = new SemiDirectProduct(new CyclicGroup(10), new CyclicGroup(4)).asTable();
+        int v = g.order();
+        Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                for (int k = j + 1; k < v; k++) {
+                    ex: for (int l = k + 1; l < v; l++) {
+                        int[] arr = new int[]{i, j, k, l};
+                        Map<Integer, ArrPairs> components = new HashMap<>();
+                        for (int mul = 0; mul < v; mul++) {
+                            for (int mul1 = 0; mul1 < v; mul1++) {
+                                int[] applied = applyConjugation(arr, mul, mul1, g);
+                                int[] pairs = pairs(applied, v);
+                                FixBS bs = FixBS.of(v * v, pairs);
+                                for (int pr : pairs) {
+                                    ArrPairs prs = components.get(pr);
+                                    if (prs != null && !prs.pairs.equals(bs)) {
+                                        continue ex;
+                                    }
+                                }
+                                ArrPairs res = new ArrPairs(FixBS.of(v, applied), bs);
+                                for (int pr : pairs) {
+                                    components.put(pr, res);
+                                }
                             }
                         }
                         Set<ArrPairs> aps = new HashSet<>(components.values());
