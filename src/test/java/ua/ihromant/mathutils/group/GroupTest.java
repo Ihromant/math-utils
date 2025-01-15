@@ -4,14 +4,8 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
