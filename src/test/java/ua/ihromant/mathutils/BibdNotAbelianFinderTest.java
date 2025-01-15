@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -18,9 +19,9 @@ import java.util.function.Consumer;
 public class BibdNotAbelianFinderTest {
     @Test
     public void testLeft() {
-        Group g = new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(2)).asTable();
+        Group g = new GroupProduct(3, 3).asTable();//new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(2)).asTable();
         int v = g.order();
-        int k = 4;
+        int k = 3;
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
@@ -61,7 +62,11 @@ public class BibdNotAbelianFinderTest {
             return new Comp(res, card);
         }).toArray(Comp[]::new);
         System.out.println(components.length);
-        calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> System.out.println(fbs));
+        calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
+            int[][] ars = fbs.stream().boxed().flatMap(i -> prs.get(i).stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+            Liner l = new Liner(v, ars);
+            System.out.println(fbs + " " + l.autCountOld());
+        });
     }
 
     @Test
