@@ -1,66 +1,87 @@
 package ua.ihromant.mathutils.group;
 
+import java.util.Arrays;
 import java.util.stream.IntStream;
 
 public class SemiDirectProduct implements Group {
-    private final CyclicGroup left;
-    private final CyclicGroup right;
-    private final int i;
+    private final Group h;
+    private final CyclicGroup k;
+    private final PermutationGroup gr;
+    private final int[] psi;
 
-    public SemiDirectProduct(CyclicGroup left, CyclicGroup right) {
-        this.left = left;
-        this.right = right;
-        int[] orders = left.elements().map(left::expOrder).toArray();
-        this.i = IntStream.range(0, left.order()).filter(i -> Group.gcd(i, left.order()) == 1 && orders[i] == right.order())
-                .findAny().orElseThrow(() -> new IllegalArgumentException(left + " " + right));
+    public SemiDirectProduct(Group h, CyclicGroup k) {
+        this.h = h;
+        this.k = k;
+        int[][] auth = h.auth();
+        Arrays.sort(auth, SemiDirectProduct::compare);
+        this.gr = new PermutationGroup(auth);
+        this.psi = new int[k.order()];
+        psi[0] = 0;
+        int elem = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).findAny()
+                .orElseGet(() -> IntStream.range(1, gr.order()).filter(e -> k.order() % gr.order(e) == 0).findAny().orElseThrow());
+        for (int i = 1; i < k.order(); i++) {
+            psi[i] = gr.mul(elem, i);
+        }
     }
 
-    public SemiDirectProduct(CyclicGroup left, CyclicGroup right, int i) {
-        this.left = left;
-        this.right = right;
-        int ord = left.expOrder(i);
-        if (ord != right.order()) {
-            throw new IllegalArgumentException(i + " " + left + " " + right);
+    @Deprecated
+    public SemiDirectProduct(CyclicGroup h, CyclicGroup k, int i) {
+        this.h = h;
+        this.k = k;
+        int ord = h.expOrder(i);
+        if (ord != k.order()) {
+            throw new IllegalArgumentException(i + " " + h + " " + k);
         }
-        this.i = i;
+        this.gr = null;
+        this.psi = null;
+    }
+
+    private static int compare(int[] fst, int[] snd) {
+        for (int i = 1; i < fst.length; i++) {
+            int dff = fst[i] - snd[i];
+            if (dff != 0) {
+                return dff;
+            }
+        }
+        return 0;
     }
 
     public int fromAB(int alpha, int beta) {
-        return beta * left.order() + alpha;
+        return beta * h.order() + alpha;
     }
 
     @Override
     public int op(int a, int b) {
-        int alpha1 = a % left.order();
-        int beta1 = a / left.order();
-        int alpha2 = b % left.order();
-        int beta2 = b / left.order();
-        return fromAB(left.op(alpha1, left.mul(left.exponent(i, beta1), alpha2)), right.op(beta1, beta2));
+        int alpha1 = a % h.order();
+        int beta1 = a / h.order();
+        int alpha2 = b % h.order();
+        int beta2 = b / h.order();
+        return fromAB(h.op(alpha1, gr.permutation(psi[beta1])[alpha2]), k.op(beta1, beta2));
     }
 
     @Override
     public int inv(int a) {
-        int alpha = a % left.order();
-        int beta = a / left.order();
-        int ia = left.inv(alpha);
-        int ib = right.inv(beta);
-        return fromAB(left.mul(left.exponent(i, ib), ia), ib);
+        int alpha = a % h.order();
+        int beta = a / h.order();
+        int ia = h.inv(alpha);
+        int ib = k.inv(beta);
+        return fromAB(gr.permutation(psi[ib])[ia], ib);
     }
 
     @Override
     public int order() {
-        return left.order() * right.order();
+        return h.order() * k.order();
     }
 
     @Override
     public String name() {
-        return left.name() + "⋊" + right.name();
+        return h.name() + "⋊" + k.name();
     }
 
     @Override
     public String elementName(int a) {
-        int alpha = a % left.order();
-        int beta = a / left.order();
+        int alpha = a % h.order();
+        int beta = a / h.order();
         return "a" + alpha + "b" + beta;
     }
 

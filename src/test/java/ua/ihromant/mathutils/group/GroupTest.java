@@ -24,8 +24,8 @@ public class GroupTest {
         testCorrectness(new DihedralGroup(7), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3)), false);
-        testCorrectness(new SemiDirectProduct(new CyclicGroup(11), new CyclicGroup(5)), false);
-        testCorrectness(new SemiDirectProduct(new CyclicGroup(12), new CyclicGroup(2)), false);
+        testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(4)), false);
+        testCorrectness(new SemiDirectProduct(new GroupProduct(2, 2, 3), new CyclicGroup(2)), false);
         testCorrectness(new BurnsideGroup(), false);
         testCorrectness(new Liner(new GaloisField(2).generatePlane()).automorphisms(), false);
     }
@@ -126,51 +126,6 @@ public class GroupTest {
                 }
             }
         }
-    }
-
-    @Test
-    public void findHints() {
-        IntStream.range(6, 11).forEach(k -> {
-            int mul = k * (k + 1);
-            for (int t : (Iterable<Integer>) () -> IntStream.range(1, 4).iterator()) {
-                for (int dff : List.of(1, k + 1)) {
-                    int v = t * mul + dff;
-                    CyclicGroup cg = new CyclicGroup(v);
-                    Set<BitSet> dedup = new HashSet<>();
-                    BitSet filter = dff == 1 ? new BitSet() : IntStream.range(0, k + 1).map(i -> i * v / (k + 1)).collect(BitSet::new, BitSet::set, BitSet::or);
-                    BitSet[] sets = cg.elements().filter(el -> Group.gcd(el, cg.order()) == 1)
-                            .boxed().flatMap(el -> Stream.concat(IntStream.range(0, cg.expOrder(el))
-                            .mapToObj(st -> {
-                                BitSet result = new BitSet();
-                                result.set(0);
-                                IntStream.range(st, st + k).map(pow -> cg.exponent(el, pow)).forEach(result::set);
-                                return result;
-                            }), IntStream.range(0, cg.expOrder(el))
-                                    .mapToObj(st -> {
-                                        BitSet result = new BitSet();
-                                        IntStream.range(st, st + k + 1).map(pow -> cg.exponent(el, pow)).forEach(result::set);
-                                        return result;
-                                    })).filter(bs -> {
-                                BitSet res = new BitSet();
-                                bs.stream().forEach(a -> bs.stream().filter(b -> a < b)
-                                        .map(b -> diff(a, b, cg.order())).filter(d -> !filter.get(d)).forEach(res::set));
-                                return res.cardinality() == mul / 2 && dedup.add(res);
-                            })
-                            )
-                            .toArray(BitSet[]::new);
-                    if (sets.length > 0) {
-                        System.out.println((k + 1) + " " + t + " " + dff + " " + cg.order());
-                        Arrays.stream(sets).forEach(System.out::println);
-                        System.out.println();
-                    }
-                }
-            }
-        });
-    }
-
-    private static int diff(int a, int b, int size) {
-        int d = Math.abs(a - b);
-        return Math.min(d, size - d);
     }
 
     @Test
