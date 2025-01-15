@@ -21,7 +21,7 @@ import java.util.function.Consumer;
 public class BibdNotAbelianFinderTest {
     @Test
     public void testLeft() {
-        Group g = new GroupProduct(3, 3, 3).asTable();//new SemiDirectProduct(new CyclicGroup(14), new CyclicGroup(2)).asTable();
+        Group g = new SemiDirectProduct(new GroupProduct(9), new CyclicGroup(3)).asTable();
         int v = g.order();
         int k = 3;
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
@@ -87,9 +87,9 @@ public class BibdNotAbelianFinderTest {
 
     @Test
     public void testConjugation() {
-        Group g = new SemiDirectProduct(new CyclicGroup(10), new CyclicGroup(4)).asTable();
+        Group g = new SemiDirectProduct(new GroupProduct(3, 3), new CyclicGroup(3)).asTable();
         int v = g.order();
-        int k = 4;
+        int k = 3;
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
@@ -132,7 +132,25 @@ public class BibdNotAbelianFinderTest {
             return new Comp(res, card);
         }).toArray(Comp[]::new);
         System.out.println(components.length);
-        calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> System.out.println(fbs));
+        List<Liner> liners = new ArrayList<>();
+        calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
+            int[][] ars = fbs.stream().boxed().flatMap(i -> prs.get(i).stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+            liners.add(new Liner(v, ars));
+        });
+        System.out.println("Non processed liners " + liners.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        AtomicInteger ai = new AtomicInteger();
+        liners.stream().parallel().forEach(l -> {
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(Arrays.deepToString(l.lines()));
+            }
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
+        });
+        System.out.println(unique.size());
     }
 
     private static void blocks(int[] curr, int v, int from, int idx, Consumer<int[]> cons) {
