@@ -14,6 +14,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 public class BibdNotAbelianFinderTest {
@@ -62,17 +64,25 @@ public class BibdNotAbelianFinderTest {
             return new Comp(res, card);
         }).toArray(Comp[]::new);
         System.out.println(components.length);
-        Map<FixBS, Liner> unique = new HashMap<>();
+        List<Liner> liners = new ArrayList<>();
         calculate(components, v, 0, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
             int[][] ars = fbs.stream().boxed().flatMap(i -> prs.get(i).stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-            Liner l = new Liner(v, ars);
+            liners.add(new Liner(v, ars));
+        });
+        System.out.println("Non processed liners " + liners.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        AtomicInteger ai = new AtomicInteger();
+        liners.stream().parallel().forEach(l -> {
             FixBS canon = l.getCanonicalOld();
             if (unique.putIfAbsent(canon, l) == null) {
-                System.out.println(fbs + " " + Arrays.deepToString(l.lines()));
-            } else {
-                System.out.println(fbs + " same");
+                System.out.println(Arrays.deepToString(l.lines()));
+            }
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
             }
         });
+        System.out.println(unique.size());
     }
 
     @Test
