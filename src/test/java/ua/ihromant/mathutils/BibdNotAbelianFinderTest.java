@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.DihedralGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
@@ -21,9 +22,9 @@ import java.util.function.Consumer;
 public class BibdNotAbelianFinderTest {
     @Test
     public void testLeft() {
-        Group g = new SemiDirectProduct(new CyclicGroup(9), new CyclicGroup(3)).asTable();
+        Group g = new DihedralGroup(20);
         int v = g.order();
-        int k = 3;
+        int k = 4;
         System.out.println(g.name() + " " + v + " " + k);
         Group tg = g.asTable();
         Map<FixBS, Set<ArrPairs>> map = new HashMap<>();
@@ -52,7 +53,7 @@ public class BibdNotAbelianFinderTest {
                 map.put(ap.arr, aps);
             }
         };
-        blocks(new int[k], v, 0, 0, cons);
+        blocks(new int[k], v, 1, 1, cons);
         System.out.println(map.size());
         List<Set<ArrPairs>> prs = new ArrayList<>(new HashSet<>(map.values()));
         System.out.println(prs.size());
@@ -71,6 +72,10 @@ public class BibdNotAbelianFinderTest {
             int[][] ars = fbs.stream().boxed().flatMap(i -> prs.get(i).stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
             liners.add(new Liner(v, ars));
         });
+        processUniqueLiners(liners);
+    }
+
+    private static void processUniqueLiners(List<Liner> liners) {
         System.out.println("Non processed liners " + liners.size());
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
@@ -89,7 +94,7 @@ public class BibdNotAbelianFinderTest {
 
     @Test
     public void testConjugation() {
-        Group g = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3)).asTable();
+        Group g = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
         int v = g.order();
         int k = 3;
         System.out.println(g.name() + " " + v + " " + k);
@@ -141,20 +146,7 @@ public class BibdNotAbelianFinderTest {
             int[][] ars = fbs.stream().boxed().flatMap(i -> prs.get(i).stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
             liners.add(new Liner(v, ars));
         });
-        System.out.println("Non processed liners " + liners.size());
-        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
-        AtomicInteger ai = new AtomicInteger();
-        liners.stream().parallel().forEach(l -> {
-            FixBS canon = l.getCanonicalOld();
-            if (unique.putIfAbsent(canon, l) == null) {
-                System.out.println(Arrays.deepToString(l.lines()));
-            }
-            int val = ai.incrementAndGet();
-            if (val % 100 == 0) {
-                System.out.println(val);
-            }
-        });
-        System.out.println(unique.size());
+        processUniqueLiners(liners);
     }
 
     private static void blocks(int[] curr, int v, int from, int idx, Consumer<int[]> cons) {

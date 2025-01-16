@@ -24,6 +24,23 @@ public class SemiDirectProduct implements Group {
         }
     }
 
+    public SemiDirectProduct(Group h, CyclicGroup k, int mul) {
+        if (k.order() % mul != 0) {
+            throw new IllegalArgumentException();
+        }
+        this.h = h;
+        this.k = k;
+        int[][] auth = h.auth();
+        Arrays.sort(auth, SemiDirectProduct::compare);
+        this.gr = new PermutationGroup(auth);
+        this.psi = new int[k.order()];
+        psi[0] = 0;
+        int elem = IntStream.range(1, gr.order()).filter(e -> k.order() / mul == gr.order(e)).findAny().orElseThrow();
+        for (int i = 1; i < k.order(); i++) {
+            psi[i] = gr.mul(elem, i);
+        }
+    }
+
     private static int compare(int[] fst, int[] snd) {
         for (int i = 1; i < fst.length; i++) {
             int dff = fst[i] - snd[i];
