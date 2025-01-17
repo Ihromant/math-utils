@@ -5,11 +5,14 @@ import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
+import java.util.stream.StreamSupport;
 
 public class IncOrbitFinderTest {
     @Test
@@ -28,6 +31,21 @@ public class IncOrbitFinderTest {
             System.out.println(next.size());
         }
         System.out.println("Generated " + unique.size());
+        System.out.println(System.currentTimeMillis() - time);
+    }
+
+    @Test
+    public void depthFirstSearch() {
+        int v = 13;
+        int k = 3;
+        int b = v * (v - 1) / k / (k - 1);
+        OrbitConf conf = new OrbitConf(1, 3, v, b);
+        PartialLiner empty = new PartialLiner(v, k);
+        long time = System.currentTimeMillis();
+        System.out.println("Started generation for v = " + v + ", k = " + k);
+        depthFirstSearchPar(empty, conf, liner -> {
+            System.out.println(Arrays.deepToString(liner.lines()));
+        });
         System.out.println(System.currentTimeMillis() - time);
     }
 
@@ -79,5 +97,51 @@ public class IncOrbitFinderTest {
             }
         }
         return result;
+    }
+
+    private static void depthFirstSearch(PartialLiner partial, OrbitConf conf, Consumer<PartialLiner> cons) {
+        if (partial.lineCount() == conf.full()) {
+            cons.accept(partial);
+            return;
+        }
+        ex: for (int[] block : partial.blocks(true)) {
+            PartialLiner base = partial;
+            int[][] permuted = conf.permute(block);
+            for (int[] possible : permuted) {
+                for (int i = 0; i < possible.length; i++) {
+                    for (int j = i + 1; j < possible.length; j++) {
+                        if (base.line(possible[i], possible[j]) >= 0) {
+                            continue ex;
+                        }
+                    }
+                }
+                base = new PartialLiner(base, possible);
+            }
+            depthFirstSearch(base, conf, cons);
+        }
+    }
+
+    private static void depthFirstSearchPar(PartialLiner partial, OrbitConf conf, Consumer<PartialLiner> cons) {
+        if (partial.lineCount() == conf.full()) {
+            cons.accept(partial);
+            return;
+        }
+        int[][] blocks = StreamSupport.stream(partial.blocks(true).spliterator(), false).toArray(int[][]::new);
+        System.out.println("Parallel search for " + blocks.length + " variants");
+        Arrays.stream(blocks).parallel().forEach(block -> {
+            PartialLiner base = partial;
+            int[][] permuted = conf.permute(block);
+            for (int[] possible : permuted) {
+                for (int i = 0; i < possible.length; i++) {
+                    for (int j = i + 1; j < possible.length; j++) {
+                        if (base.line(possible[i], possible[j]) >= 0) {
+                            return;
+                        }
+                    }
+                }
+                base = new PartialLiner(base, possible);
+            }
+            depthFirstSearch(base, conf, cons);
+        });
     }
 }
