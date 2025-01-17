@@ -4,6 +4,7 @@ import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.InversivePlane;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.SimpleLiner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
@@ -57,6 +58,40 @@ public interface GraphWrapper {
     }
 
     static GraphWrapper forPartial(PartialLiner liner) {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return liner.pointCount() + liner.lineCount();
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < liner.pointCount() ? 0 : 1;
+            }
+
+            @Override
+            public int pointCount() {
+                return liner.pointCount();
+            }
+
+            @Override
+            public int lineCount() {
+                return liner.lineCount();
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                int pc = liner.pointCount();
+                if (a < pc) {
+                    return b >= pc && liner.flag(b - pc, a);
+                } else {
+                    return b < pc && liner.flag(a - pc, b);
+                }
+            }
+        };
+    }
+
+    static GraphWrapper forSimple(SimpleLiner liner) {
         return new GraphWrapper() {
             @Override
             public int size() {

@@ -42,15 +42,11 @@ public class Liner {
         this.lines = lines;
         this.flags = new boolean[lines.length][pointCount];
         int[] beamCounts = new int[pointCount];
-        int minLineLength = lines[0].length;
         for (int i = 0; i < lines.length; i++) {
             int[] line = lines[i];
             for (int pt : line) {
                 flags[i][pt] = true;
                 beamCounts[pt]++;
-            }
-            if (line.length < minLineLength) {
-                minLineLength = line.length;
             }
         }
         this.beams = new int[pointCount][];

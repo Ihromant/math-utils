@@ -1,8 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.SimpleLiner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
@@ -23,11 +22,11 @@ public class IncOrbitFinderTest {
         int k = 3;
         int b = v * (v - 1) / k / (k - 1);
         OrbitConf conf = new OrbitConf(1, 3, v, b);
-        PartialLiner empty = new PartialLiner(v, k);
-        List<PartialLiner> next = List.of(empty);
+        SimpleLiner empty = new SimpleLiner(v, k);
+        List<SimpleLiner> next = List.of(empty);
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k);
-        Map<FixBS, PartialLiner> unique = new ConcurrentHashMap<>();
+        Map<FixBS, SimpleLiner> unique = new ConcurrentHashMap<>();
         while (!next.isEmpty()) {
             next = nextStage(next, unique, conf);
             System.out.println(next.size());
@@ -42,12 +41,12 @@ public class IncOrbitFinderTest {
         int k = 4;
         int b = v * (v - 1) / k / (k - 1);
         OrbitConf conf = new OrbitConf(0, 7, v, b);
-        PartialLiner empty = new PartialLiner(v, k);
+        SimpleLiner empty = new SimpleLiner(v, k);
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + " and conf " + conf);
         Set<Map<Integer, Integer>> unique = ConcurrentHashMap.newKeySet();
-        depthFirstSearchPar(empty, conf, 0, PartialLiner::checkAP, part -> {
-            Liner liner = new Liner(part.pointCount(), part.lines());
+        depthFirstSearchPar(empty, conf, 0, SimpleLiner::checkAP, part -> {
+            SimpleLiner liner = new SimpleLiner(part.pointCount(), part.lines());
             Map<Integer, Integer> freq = liner.hyperbolicFreq();
             if (unique.add(freq)) {
                 System.out.println(freq + " " + Arrays.deepToString(liner.lines()));
@@ -79,16 +78,16 @@ public class IncOrbitFinderTest {
         }
     }
 
-    private static List<PartialLiner> nextStage(List<PartialLiner> partials, Map<FixBS, PartialLiner> unique, OrbitConf conf) {
-        List<PartialLiner> result = new ArrayList<>();
-        for (PartialLiner pl : partials) {
+    private static List<SimpleLiner> nextStage(List<SimpleLiner> partials, Map<FixBS, SimpleLiner> unique, OrbitConf conf) {
+        List<SimpleLiner> result = new ArrayList<>();
+        for (SimpleLiner pl : partials) {
             if (pl.lineCount() == conf.full()) {
                 FixBS canon = pl.getCanonical();
                 unique.putIfAbsent(canon, pl);
                 continue;
             }
-            ex: for (int[] block : pl.blocks(true)) {
-                PartialLiner base = pl;
+            ex: for (int[] block : pl.blocks()) {
+                SimpleLiner base = pl;
                 int[][] permuted = conf.permute(block);
                 for (int[] possible : permuted) {
                     for (int i = 0; i < possible.length; i++) {
@@ -98,7 +97,7 @@ public class IncOrbitFinderTest {
                             }
                         }
                     }
-                    base = new PartialLiner(base, possible);
+                    base = new SimpleLiner(base, possible);
                 }
                 result.add(base);
             }
@@ -106,13 +105,13 @@ public class IncOrbitFinderTest {
         return result;
     }
 
-    private static void depthFirstSearch(PartialLiner partial, OrbitConf conf, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+    private static void depthFirstSearch(SimpleLiner partial, OrbitConf conf, BiPredicate<SimpleLiner, int[]> pred, Consumer<SimpleLiner> cons) {
         if (partial.lineCount() == conf.full()) {
             cons.accept(partial);
             return;
         }
-        ex: for (int[] block : partial.blocks(true)) {
-            PartialLiner base = partial;
+        ex: for (int[] block : partial.blocks()) {
+            SimpleLiner base = partial;
             int[][] permuted = conf.permute(block);
             for (int[] possible : permuted) {
                 for (int i = 0; i < possible.length; i++) {
@@ -125,23 +124,23 @@ public class IncOrbitFinderTest {
                 if (!pred.test(base, possible)) {
                     continue ex;
                 }
-                base = new PartialLiner(base, possible);
+                base = new SimpleLiner(base, possible);
             }
             depthFirstSearch(base, conf, pred, cons);
         }
     }
 
-    private static void depthFirstSearchPar(PartialLiner partial, OrbitConf conf, int depth, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
+    private static void depthFirstSearchPar(SimpleLiner partial, OrbitConf conf, int depth, BiPredicate<SimpleLiner, int[]> pred, Consumer<SimpleLiner> cons) {
         if (partial.lineCount() == conf.full()) {
             cons.accept(partial);
             return;
         }
-        int[][] blocks = StreamSupport.stream(partial.blocks(true).spliterator(), false).toArray(int[][]::new);
+        int[][] blocks = StreamSupport.stream(partial.blocks().spliterator(), false).toArray(int[][]::new);
         if (depth >= 0) {
             System.out.println("Parallel search for depth " + depth + " and " + blocks.length + " variants");
         }
         Arrays.stream(blocks).parallel().forEach(block -> {
-            PartialLiner base = partial;
+            SimpleLiner base = partial;
             int[][] permuted = conf.permute(block);
             for (int[] possible : permuted) {
                 for (int i = 0; i < possible.length; i++) {
@@ -154,7 +153,7 @@ public class IncOrbitFinderTest {
                 if (!pred.test(base, possible)) {
                     return;
                 }
-                base = new PartialLiner(base, possible);
+                base = new SimpleLiner(base, possible);
             }
             if (depth >= 0) {
                 depthFirstSearchPar(base, conf, depth - 1, pred, cons);
