@@ -21,6 +21,7 @@ import java.util.function.Predicate;
 
 public class PartialLiner {
     private final int pointCount;
+    private final int ll;
     private final int[][] lines;
     private final boolean[][] flags;
     private final int[] beamCounts; // number of lines in beam
@@ -34,6 +35,34 @@ public class PartialLiner {
     private int[] pointOrder;
     private FixBS canonical;
 
+    public PartialLiner(int pointCount, int ll) {
+        this.pointCount = pointCount;
+        this.ll = ll;
+        this.lines = new int[0][];
+        this.flags = new boolean[lines.length][pointCount];
+        this.beamCounts = new int[pointCount];
+        int bmc = (pointCount - 1) / (ll - 1);
+        int[] beamLengths = new int[bmc + 1];
+        for (int beamCount : beamCounts) {
+            beamLengths[beamCount]++;
+        }
+        this.beamLengths = beamLengths.clone();
+        this.beams = new int[pointCount][];
+        this.beamDist = new int[beamLengths.length][0];
+        for (int pt = 0; pt < pointCount; pt++) {
+            int bc = beamCounts[pt];
+            if (beamDist[bc].length == 0) {
+                beamDist[bc] = new int[beamLengths[bc]];
+            }
+            beamDist[bc][beamDist[bc].length - beamLengths[bc]--] = pt;
+            beams[pt] = new int[bc];
+        }
+        this.lookup = generateLookup();
+        this.intersections = new int[this.lines.length][this.lines.length];
+        this.lineInter = new int[this.lines.length];
+        this.lineFreq = new int[Math.min(lines.length, bmc * ll) + 1];
+    }
+
     public PartialLiner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
     }
@@ -43,7 +72,7 @@ public class PartialLiner {
         this.lines = lines;
         this.flags = new boolean[lines.length][pointCount];
         this.beamCounts = new int[pointCount];
-        int ll = lines[0].length;
+        this.ll = lines[0].length;
         for (int i = 0; i < lines.length; i++) {
             int[] line = lines[i];
             for (int pt : line) {
@@ -100,6 +129,7 @@ public class PartialLiner {
 
     public PartialLiner(PartialLiner prev, int[] newLine) {
         this.pointCount = prev.pointCount;
+        this.ll = prev.ll;
         int pll = prev.lines.length;
         this.lines = new int[pll + 1][];
         System.arraycopy(prev.lines, 0, this.lines, 0, pll);
@@ -821,24 +851,42 @@ public class PartialLiner {
     }
 
     public Iterable<int[]> blocks() {
-        return BlocksIterator::new;
+        return () -> new BlocksIterator(false);
+    }
+
+    public Iterable<int[]> blocks(boolean minimal) {
+        return () -> new BlocksIterator(minimal);
     }
 
     private class BlocksIterator implements Iterator<int[]> {
         private final int[] block;
         private boolean hasNext;
 
-        public BlocksIterator() {
-            int[] prev = lines[lines.length - 1];
-            int ll = prev.length;
-            this.block = new int[ll];
-            int fst = prev[0];
-            int[] look;
+        public BlocksIterator(boolean minimal) {
+            int fst;
             int snd;
-            do {
-                look = lookup[fst];
-                snd = getUnassigned(look, fst);
-            } while (snd < 0 && ++fst < pointCount);
+            this.block = new int[ll];
+            if (minimal) {
+                fst = pointCount;
+                snd = pointCount;
+                ex: for (int i = 0; i < pointCount; i++) {
+                    for (int j = i + 1; j < pointCount; j++) {
+                        if (line(i, j) < 0) {
+                            fst = i;
+                            snd = j;
+                            break ex;
+                        }
+                    }
+                }
+            } else {
+                int[] prev = lines[lines.length - 1];
+                fst = prev[0];
+                int[] look;
+                do {
+                    look = lookup[fst];
+                    snd = getUnassigned(look, fst);
+                } while (snd < 0 && ++fst < pointCount);
+            }
             block[0] = fst;
             block[1] = snd;
             for (int i = 2; i < ll; i++) {

@@ -476,4 +476,13 @@ public class FixBS implements Comparable<FixBS> {
         }
         return bs;
     }
+
+    public int[] toArray() {
+        int[] result = new int[cardinality()];
+        int cnt = 0;
+        for (int i = nextSetBit(0); i >= 0; i = nextSetBit(i + 1)) {
+            result[cnt++] = i;
+        }
+        return result;
+    }
 }
