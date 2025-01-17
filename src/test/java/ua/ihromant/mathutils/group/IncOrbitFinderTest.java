@@ -39,11 +39,11 @@ public class IncOrbitFinderTest {
         int v = 13;
         int k = 3;
         int b = v * (v - 1) / k / (k - 1);
-        OrbitConf conf = new OrbitConf(1, 3, v, b);
+        OrbitConf conf = new OrbitConf(3, 2, v, b);
         PartialLiner empty = new PartialLiner(v, k);
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k);
-        depthFirstSearchPar(empty, conf, liner -> {
+        depthFirstSearchPar(empty, conf, 0, liner -> {
             System.out.println(Arrays.deepToString(liner.lines()));
         });
         System.out.println(System.currentTimeMillis() - time);
@@ -121,13 +121,15 @@ public class IncOrbitFinderTest {
         }
     }
 
-    private static void depthFirstSearchPar(PartialLiner partial, OrbitConf conf, Consumer<PartialLiner> cons) {
+    private static void depthFirstSearchPar(PartialLiner partial, OrbitConf conf, int depth, Consumer<PartialLiner> cons) {
         if (partial.lineCount() == conf.full()) {
             cons.accept(partial);
             return;
         }
         int[][] blocks = StreamSupport.stream(partial.blocks(true).spliterator(), false).toArray(int[][]::new);
-        System.out.println("Parallel search for " + blocks.length + " variants");
+        if (depth >= 0) {
+            System.out.println("Parallel search for depth " + depth + " and " + blocks.length + " variants");
+        }
         Arrays.stream(blocks).parallel().forEach(block -> {
             PartialLiner base = partial;
             int[][] permuted = conf.permute(block);
@@ -141,7 +143,11 @@ public class IncOrbitFinderTest {
                 }
                 base = new PartialLiner(base, possible);
             }
-            depthFirstSearch(base, conf, cons);
+            if (depth >= 0) {
+                depthFirstSearchPar(base, conf, depth - 1, cons);
+            } else {
+                depthFirstSearch(base, conf, cons);
+            }
         });
     }
 }
