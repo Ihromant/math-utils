@@ -306,15 +306,15 @@ public class Liner {
                 if (o == x) {
                     continue;
                 }
+                int ox = line(o, x);
                 for (int y = 0; y < pointCount; y++) {
-                    if (collinear(o, x, y)) {
+                    if (flag(ox, y)) {
                         continue;
                     }
                     for (int p : lines[line(x, y)]) {
                         if (p == x || p == y) {
                             continue;
                         }
-                        int ox = line(o, x);
                         int counter = 0;
                         for (int u : lines[line(o, y)]) {
                             if (u == o || u == y) {
@@ -342,15 +342,15 @@ public class Liner {
                 if (o == x) {
                     continue;
                 }
+                int ox = line(o, x);
                 for (int y = 0; y < pointCount; y++) {
-                    if (collinear(o, x, y)) {
+                    if (flag(ox, y)) {
                         continue;
                     }
                     for (int p : lines[line(x, y)]) {
                         if (p == x || p == y) {
                             continue;
                         }
-                        int ox = line(o, x);
                         int counter = 0;
                         for (int u : lines[line(o, y)]) {
                             if (u == o || u == y) {
