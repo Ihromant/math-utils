@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -11,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.StreamSupport;
 
@@ -36,15 +38,20 @@ public class IncOrbitFinderTest {
 
     @Test
     public void depthFirstSearch() {
-        int v = 13;
-        int k = 3;
+        int v = 28;
+        int k = 4;
         int b = v * (v - 1) / k / (k - 1);
-        OrbitConf conf = new OrbitConf(3, 2, v, b);
+        OrbitConf conf = new OrbitConf(0, 7, v, b);
         PartialLiner empty = new PartialLiner(v, k);
         long time = System.currentTimeMillis();
-        System.out.println("Started generation for v = " + v + ", k = " + k);
-        depthFirstSearchPar(empty, conf, 0, liner -> {
-            System.out.println(Arrays.deepToString(liner.lines()));
+        System.out.println("Started generation for v = " + v + ", k = " + k + " and conf " + conf);
+        Set<Map<Integer, Integer>> unique = ConcurrentHashMap.newKeySet();
+        depthFirstSearchPar(empty, conf, 0, PartialLiner::checkAP, part -> {
+            Liner liner = new Liner(part.pointCount(), part.lines());
+            Map<Integer, Integer> freq = liner.hyperbolicFreq();
+            if (unique.add(freq)) {
+                System.out.println(freq + " " + Arrays.deepToString(liner.lines()));
+            }
         });
         System.out.println(System.currentTimeMillis() - time);
     }
@@ -99,7 +106,7 @@ public class IncOrbitFinderTest {
         return result;
     }
 
-    private static void depthFirstSearch(PartialLiner partial, OrbitConf conf, Consumer<PartialLiner> cons) {
+    private static void depthFirstSearch(PartialLiner partial, OrbitConf conf, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
         if (partial.lineCount() == conf.full()) {
             cons.accept(partial);
             return;
@@ -115,13 +122,16 @@ public class IncOrbitFinderTest {
                         }
                     }
                 }
+                if (!pred.test(base, possible)) {
+                    continue ex;
+                }
                 base = new PartialLiner(base, possible);
             }
-            depthFirstSearch(base, conf, cons);
+            depthFirstSearch(base, conf, pred, cons);
         }
     }
 
-    private static void depthFirstSearchPar(PartialLiner partial, OrbitConf conf, int depth, Consumer<PartialLiner> cons) {
+    private static void depthFirstSearchPar(PartialLiner partial, OrbitConf conf, int depth, BiPredicate<PartialLiner, int[]> pred, Consumer<PartialLiner> cons) {
         if (partial.lineCount() == conf.full()) {
             cons.accept(partial);
             return;
@@ -141,12 +151,15 @@ public class IncOrbitFinderTest {
                         }
                     }
                 }
+                if (!pred.test(base, possible)) {
+                    return;
+                }
                 base = new PartialLiner(base, possible);
             }
             if (depth >= 0) {
-                depthFirstSearchPar(base, conf, depth - 1, cons);
+                depthFirstSearchPar(base, conf, depth - 1, pred, cons);
             } else {
-                depthFirstSearch(base, conf, cons);
+                depthFirstSearch(base, conf, pred, cons);
             }
         });
     }
