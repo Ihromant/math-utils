@@ -7,10 +7,13 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -65,24 +68,32 @@ public class BibdNotAbelianFinderTest {
         Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
-        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
-        AtomicInteger ai = new AtomicInteger();
+        List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
             calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-                Liner l = new Liner(v, ars);
-                FixBS canon = l.getCanonicalOld();
-                if (unique.putIfAbsent(canon, l) == null) {
-                    System.out.println(Arrays.deepToString(l.lines()));
-                }
-                int val = ai.incrementAndGet();
-                if (val % 100 == 0) {
-                    System.out.println(val);
-                }
+                liners.add(new Liner(v, ars));
             });
         });
-        System.out.println("Total " + ai.get() + " unique " + unique.size());
+        processUniqueLiners(liners);
+    }
+
+    private static void processUniqueLiners(List<Liner> liners) {
+        System.out.println("Non processed liners " + liners.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        AtomicInteger ai = new AtomicInteger();
+        liners.stream().parallel().forEach(l -> {
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(Arrays.deepToString(l.lines()));
+            }
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
+        });
+        System.out.println(unique.size());
     }
 
     @Test
@@ -133,24 +144,15 @@ public class BibdNotAbelianFinderTest {
         Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
-        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
-        AtomicInteger ai = new AtomicInteger();
+        List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
             calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-                Liner l = new Liner(v, ars);
-                FixBS canon = l.getCanonicalOld();
-                if (unique.putIfAbsent(canon, l) == null) {
-                    System.out.println(Arrays.deepToString(l.lines()));
-                }
-                int val = ai.incrementAndGet();
-                if (val % 100 == 0) {
-                    System.out.println(val);
-                }
+                liners.add(new Liner(v, ars));
             });
         });
-        System.out.println("Total " + ai.get() + " unique " + unique.size());
+        processUniqueLiners(liners);
     }
 
     private static int[] calcOrder(int v, Comp[] comps) {
