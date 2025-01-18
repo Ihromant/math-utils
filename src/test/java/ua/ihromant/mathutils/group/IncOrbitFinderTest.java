@@ -45,8 +45,7 @@ public class IncOrbitFinderTest {
         long time = System.currentTimeMillis();
         System.out.println("Started generation for v = " + v + ", k = " + k + " and conf " + conf);
         Set<Map<Integer, Integer>> unique = ConcurrentHashMap.newKeySet();
-        depthFirstSearchPar(empty, conf, 0, SimpleLiner::checkAP, part -> {
-            SimpleLiner liner = new SimpleLiner(part.pointCount(), part.lines());
+        depthFirstSearchPar(empty, conf, 0, SimpleLiner::checkAP, liner -> {
             Map<Integer, Integer> freq = liner.hyperbolicFreq();
             if (unique.add(freq)) {
                 System.out.println(freq + " " + Arrays.deepToString(liner.lines()));
