@@ -78,7 +78,7 @@ public class BibdNotAbelianFinderTest {
         AtomicInteger ai = new AtomicInteger();
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
-            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(v * v, i), fbs -> {
+            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
                 Liner l = new Liner(v, ars);
                 FixBS canon = l.getCanonicalOld();
@@ -153,7 +153,7 @@ public class BibdNotAbelianFinderTest {
         AtomicInteger ai = new AtomicInteger();
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
-            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(v * v, i), fbs -> {
+            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
                 Liner l = new Liner(v, ars);
                 FixBS canon = l.getCanonicalOld();
