@@ -226,7 +226,8 @@ public class BibdNotAbelianFinderTest {
     private static int[] applyLeft(int[] arr, int mul, Group group) {
         int[] res = new int[arr.length];
         for (int i = 0; i < res.length; i++) {
-            res[i] = group.op(mul, arr[i]);
+            int el = arr[i];
+            res[i] = el >= group.order() ? el : group.op(mul, el);
         }
         Arrays.sort(res);
         return res;
@@ -235,7 +236,8 @@ public class BibdNotAbelianFinderTest {
     public int[] applyConjugation(int[] arr, int a, int b, Group group) {
         int[] res = new int[arr.length];
         for (int i = 0; i < res.length; i++) {
-            res[i] = group.op(group.op(group.inv(a), arr[i]), b);
+            int el = arr[i];
+            res[i] = el >= group.order() ? el : group.op(group.op(group.inv(a), el), b);
         }
         Arrays.sort(res);
         return res;
