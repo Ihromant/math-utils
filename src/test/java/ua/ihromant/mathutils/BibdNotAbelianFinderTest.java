@@ -7,12 +7,10 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -28,7 +26,7 @@ public class BibdNotAbelianFinderTest {
         int k = 5;
         System.out.println(g.name() + " " + v + " " + k);
         Group tg = g.asTable();
-        Map<FixBS, Set<ArrPairs>> map = new ConcurrentHashMap<>();
+        Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
             for (int mul = 0; mul < v; mul++) {
@@ -47,22 +45,15 @@ public class BibdNotAbelianFinderTest {
                 }
             }
             Set<ArrPairs> aps = new HashSet<>(components.values());
-            if (map.containsKey(aps.iterator().next().arr)) {
-                return;
-            }
-            for (ArrPairs ap : components.values()) {
-                map.put(ap.arr, aps);
-            }
+            set.add(aps);
         };
         IntStream.range(1, v).parallel().forEach(i -> {
             int[] curr = new int[k];
             curr[1] = i;
             blocks(curr, v, i + 1, 2, cons);
         });
-        System.out.println(map.size());
-        List<Set<ArrPairs>> prs = new ArrayList<>(new HashSet<>(map.values()));
-        System.out.println(prs.size());
-        Comp[] components = prs.stream().map(sap -> {
+        System.out.println(set.size());
+        Comp[] components = set.stream().map(sap -> {
             FixBS res = new FixBS(v * v);
             int card = 0;
             for (ArrPairs ap : sap) {
@@ -101,7 +92,7 @@ public class BibdNotAbelianFinderTest {
         int k = 3;
         System.out.println(g.name() + " " + v + " " + k);
         Group tg = g.asTable();
-        Map<FixBS, Set<ArrPairs>> map = new ConcurrentHashMap<>();
+        Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
             for (int mul = 0; mul < v; mul++) {
@@ -122,22 +113,15 @@ public class BibdNotAbelianFinderTest {
                 }
             }
             Set<ArrPairs> aps = new HashSet<>(components.values());
-            if (map.containsKey(aps.iterator().next().arr)) {
-                return;
-            }
-            for (ArrPairs ap : components.values()) {
-                map.put(ap.arr, aps);
-            }
+            set.add(aps);
         };
         IntStream.range(1, v).parallel().forEach(i -> {
             int[] curr = new int[k];
             curr[1] = i;
             blocks(curr, v, i + 1, 2, cons);
         });
-        System.out.println(map.size());
-        List<Set<ArrPairs>> prs = new ArrayList<>(new HashSet<>(map.values()));
-        System.out.println(prs.size());
-        Comp[] components = prs.stream().map(sap -> {
+        System.out.println(set.size());
+        Comp[] components = set.stream().map(sap -> {
             FixBS res = new FixBS(v * v);
             int card = 0;
             for (ArrPairs ap : sap) {
