@@ -74,19 +74,11 @@ public class BibdNotAbelianFinderTest {
         Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
-        List<Liner> liners = new ArrayList<>();
-        calculate(components, order, v, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
-            int[][] ars = fbs.stream().boxed().flatMap(i -> components[i].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-            liners.add(new Liner(v, ars));
-        });
-        processUniqueLiners(liners);
-    }
-
-    private static void processUniqueLiners(List<Liner> liners) {
-        System.out.println("Non processed liners " + liners.size());
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
-        liners.stream().parallel().forEach(l -> {
+        calculate(components, order, v, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
+            int[][] ars = fbs.stream().boxed().flatMap(i -> components[i].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+            Liner l = new Liner(v, ars);
             FixBS canon = l.getCanonicalOld();
             if (unique.putIfAbsent(canon, l) == null) {
                 System.out.println(Arrays.deepToString(l.lines()));
@@ -96,17 +88,7 @@ public class BibdNotAbelianFinderTest {
                 System.out.println(val);
             }
         });
-        System.out.println(unique.size());
-    }
-
-    private static int[] calcOrder(int v, Comp[] comps) {
-        int[] res = new int[v * v];
-        for (int i = 1; i < res.length; i++) {
-            int prev = res[i - 1];
-            FixBS top = FixBS.of(v * v, i - 1, v * v - 1);
-            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new Comp(top, 0, null), Comparator.comparing(Comp::pairs).reversed()) - 1;
-        }
-        return res;
+        System.out.println("Total " + ai.get() + " unique " + unique.size());
     }
 
     @Test
@@ -164,12 +146,31 @@ public class BibdNotAbelianFinderTest {
         Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
-        List<Liner> liners = new ArrayList<>();
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        AtomicInteger ai = new AtomicInteger();
         calculate(components, order, v, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
             int[][] ars = fbs.stream().boxed().flatMap(i -> components[i].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-            liners.add(new Liner(v, ars));
+            Liner l = new Liner(v, ars);
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(Arrays.deepToString(l.lines()));
+            }
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
         });
-        processUniqueLiners(liners);
+        System.out.println("Total " + ai.get() + " unique " + unique.size());
+    }
+
+    private static int[] calcOrder(int v, Comp[] comps) {
+        int[] res = new int[v * v];
+        for (int i = 1; i < res.length; i++) {
+            int prev = res[i - 1];
+            FixBS top = FixBS.of(v * v, i - 1, v * v - 1);
+            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new Comp(top, 0, null), Comparator.comparing(Comp::pairs).reversed()) - 1;
+        }
+        return res;
     }
 
     private static void blocks(int[] curr, int v, int from, int idx, Consumer<int[]> cons) {
