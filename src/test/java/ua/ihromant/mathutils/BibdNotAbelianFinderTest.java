@@ -24,15 +24,15 @@ import java.util.stream.IntStream;
 public class BibdNotAbelianFinderTest {
     @Test
     public void testLeft() {
-        Group g = new SemiDirectProduct(new CyclicProduct(9), new CyclicGroup(9));
-        int v = g.order();
-        int k = 5;
+        Group g = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        int v = g.order() + 1;
+        int k = 4;
         System.out.println(g.name() + " " + v + " " + k);
         Group tg = g.asTable();
         Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
-            for (int mul = 0; mul < v; mul++) {
+            for (int mul = 0; mul < g.order(); mul++) {
                 int[] applied = applyLeft(arr, mul, tg);
                 int[] pairs = pairs(applied, v);
                 FixBS bs = FixBS.of(v * v, pairs);
@@ -70,13 +70,13 @@ public class BibdNotAbelianFinderTest {
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger ai = new AtomicInteger();
+        FixBS empty = empty(v);
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
-            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
+            calculate(components, order, v, v + comp.card, empty.union(comp.pairs), FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
                 Liner l = new Liner(v, ars);
                 liners.add(l);
-                System.out.println(Arrays.deepToString(l.lines()));
             });
             int val = ai.incrementAndGet();
             if (val % 100 == 0) {
@@ -86,6 +86,14 @@ public class BibdNotAbelianFinderTest {
         processUniqueLiners(liners);
     }
 
+    private static FixBS empty(int v) {
+        FixBS res = new FixBS(v * v);
+        for (int i = 0; i < v; i++) {
+            res.set(v * i + i);
+        }
+        return res;
+    }
+
     private static void processUniqueLiners(List<Liner> liners) {
         System.out.println("Non processed liners " + liners.size());
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
@@ -93,7 +101,7 @@ public class BibdNotAbelianFinderTest {
         liners.stream().parallel().forEach(l -> {
             FixBS canon = l.getCanonicalOld();
             if (unique.putIfAbsent(canon, l) == null) {
-                System.out.println(Arrays.deepToString(l.lines()));
+                System.out.println(l.autCountOld() + " " + Arrays.deepToString(l.lines()));
             }
             int val = ai.incrementAndGet();
             if (val % 100 == 0) {
@@ -113,8 +121,8 @@ public class BibdNotAbelianFinderTest {
         Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
-            for (int mul = 0; mul < v; mul++) {
-                for (int mul1 = 0; mul1 < v; mul1++) {
+            for (int mul = 0; mul < g.order(); mul++) {
+                for (int mul1 = 0; mul1 < g.order(); mul1++) {
                     int[] applied = applyConjugation(arr, mul, mul1, tg);
                     int[] pairs = pairs(applied, v);
                     FixBS bs = FixBS.of(v * v, pairs);
@@ -153,13 +161,13 @@ public class BibdNotAbelianFinderTest {
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger ai = new AtomicInteger();
+        FixBS empty = empty(v);
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
-            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
+            calculate(components, order, v, v + comp.card, empty.union(comp.pairs), FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
                 Liner l = new Liner(v, ars);
                 liners.add(l);
-                System.out.println(Arrays.deepToString(l.lines()));
             });
             int val = ai.incrementAndGet();
             if (val % 100 == 0) {
@@ -191,11 +199,11 @@ public class BibdNotAbelianFinderTest {
     }
 
     private static void calculate(Comp[] components, int[] order, int v, int currCard, FixBS union, FixBS curr, Consumer<FixBS> cons) {
-        if (currCard == v * (v - 1)) {
+        if (currCard == v * v) {
             cons.accept(curr);
             return;
         }
-        int hole = union.nextClearBit(1);
+        int hole = union.nextClearBit(0);
         for (int i = order[hole]; i < order[hole + 1]; i++) {
             Comp c = components[i];
             if (c.pairs.intersects(union)) {
