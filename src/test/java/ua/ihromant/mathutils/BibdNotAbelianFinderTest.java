@@ -76,17 +76,20 @@ public class BibdNotAbelianFinderTest {
         System.out.println(components.length);
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
-        calculate(components, order, v, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
-            int[][] ars = fbs.stream().boxed().flatMap(i -> components[i].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-            Liner l = new Liner(v, ars);
-            FixBS canon = l.getCanonicalOld();
-            if (unique.putIfAbsent(canon, l) == null) {
-                System.out.println(Arrays.deepToString(l.lines()));
-            }
-            int val = ai.incrementAndGet();
-            if (val % 100 == 0) {
-                System.out.println(val);
-            }
+        IntStream.range(order[1], order[2]).parallel().forEach(i -> {
+            Comp comp = components[i];
+            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(v * v, i), fbs -> {
+                int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+                Liner l = new Liner(v, ars);
+                FixBS canon = l.getCanonicalOld();
+                if (unique.putIfAbsent(canon, l) == null) {
+                    System.out.println(Arrays.deepToString(l.lines()));
+                }
+                int val = ai.incrementAndGet();
+                if (val % 100 == 0) {
+                    System.out.println(val);
+                }
+            });
         });
         System.out.println("Total " + ai.get() + " unique " + unique.size());
     }
@@ -148,17 +151,20 @@ public class BibdNotAbelianFinderTest {
         System.out.println(components.length);
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
         AtomicInteger ai = new AtomicInteger();
-        calculate(components, order, v, 0, new FixBS(v * v), new FixBS(components.length), fbs -> {
-            int[][] ars = fbs.stream().boxed().flatMap(i -> components[i].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-            Liner l = new Liner(v, ars);
-            FixBS canon = l.getCanonicalOld();
-            if (unique.putIfAbsent(canon, l) == null) {
-                System.out.println(Arrays.deepToString(l.lines()));
-            }
-            int val = ai.incrementAndGet();
-            if (val % 100 == 0) {
-                System.out.println(val);
-            }
+        IntStream.range(order[1], order[2]).parallel().forEach(i -> {
+            Comp comp = components[i];
+            calculate(components, order, v, comp.card, comp.pairs, FixBS.of(v * v, i), fbs -> {
+                int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+                Liner l = new Liner(v, ars);
+                FixBS canon = l.getCanonicalOld();
+                if (unique.putIfAbsent(canon, l) == null) {
+                    System.out.println(Arrays.deepToString(l.lines()));
+                }
+                int val = ai.incrementAndGet();
+                if (val % 100 == 0) {
+                    System.out.println(val);
+                }
+            });
         });
         System.out.println("Total " + ai.get() + " unique " + unique.size());
     }
