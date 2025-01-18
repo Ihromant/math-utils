@@ -69,12 +69,19 @@ public class BibdNotAbelianFinderTest {
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger ai = new AtomicInteger();
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
             calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-                liners.add(new Liner(v, ars));
+                Liner l = new Liner(v, ars);
+                liners.add(l);
+                System.out.println(Arrays.deepToString(l.lines()));
             });
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
         });
         processUniqueLiners(liners);
     }
@@ -145,12 +152,19 @@ public class BibdNotAbelianFinderTest {
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger ai = new AtomicInteger();
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
             calculate(components, order, v, comp.card, comp.pairs, FixBS.of(components.length, i), fbs -> {
                 int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
-                liners.add(new Liner(v, ars));
+                Liner l = new Liner(v, ars);
+                liners.add(l);
+                System.out.println(Arrays.deepToString(l.lines()));
             });
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
         });
         processUniqueLiners(liners);
     }
