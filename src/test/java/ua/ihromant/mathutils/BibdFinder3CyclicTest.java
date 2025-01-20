@@ -14,9 +14,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,13 +36,13 @@ public class BibdFinder3CyclicTest {
             return cmp < 0;
         }
 
-        private Design simpleAdd(int el, Group gr) {
+        private Design simpleAdd(int el) {
             int[][] cloned = design.clone();
             int[] last = cloned[design.length - 1].clone();
             last[idx] = el;
             cloned[design.length - 1] = last;
             int next = idx + 1;
-            return new Design(cloned, next, next == last.length ? blocksNeeded - blockCount(last, gr) : blocksNeeded);
+            return new Design(cloned, next, blocksNeeded);
         }
 
         private int[] curr() {
@@ -51,10 +51,6 @@ public class BibdFinder3CyclicTest {
 
         private boolean tupleFinished() {
             return idx == design[design.length - 1].length;
-        }
-
-        private boolean complete() {
-            return blocksNeeded == 0;
         }
 
         private int lastVal() {
@@ -69,11 +65,19 @@ public class BibdFinder3CyclicTest {
 
     private static int blockCount(int[] block, Group gr) {
         int ord = gr.order();
-        Set<FixBS> set = new HashSet<>(ord);
-        for (int i = 0; i < ord; i++) {
+        List<FixBS> set = new ArrayList<>(ord);
+        ex: for (int i = 0; i < ord; i++) {
             FixBS fbs = new FixBS(ord + 1);
             for (int el : block) {
                 fbs.set(el == ord ? ord : gr.op(i, el));
+            }
+            for (FixBS os : set) {
+                if (os.equals(fbs)) {
+                    continue ex;
+                }
+                if (os.intersection(fbs).cardinality() > 1) {
+                    return -1;
+                }
             }
             set.add(fbs);
         }
@@ -87,36 +91,50 @@ public class BibdFinder3CyclicTest {
             FixBS filter = new FixBS(v);
             int blocksNeeded = v * (v - 1) / k / (k - 1);
             for (int[] block : baseDesign) {
-                for (int i = 0; i < k; i++) {
-                    int f = block[i];
-                    if (f == group.order()) {
-                        filter.set(f);
-                        continue;
-                    }
-                    for (int j = i + 1; j < k; j++) {
-                        int s = block[j];
-                        filter.set(group.op(f, group.inv(s)));
-                        filter.set(group.op(s, group.inv(f)));
-                    }
-                }
+                updateFilter(group, k, block, filter);
                 blocksNeeded = blocksNeeded - blockCount(block, group);
             }
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
-            Design curr = new Design(nextDesign, 1, blocksNeeded);
+            Design curr = new Design(nextDesign, k, blocksNeeded);
             int[][][] transformations = Arrays.stream(auths).map(aut -> Arrays.stream(baseDesign).map(arr -> minimalTuple(arr, aut, group)).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
-            return state.initiateNextTuple(filter, k, group).acceptElem(group, auths, whiteList.nextSetBit(0), k, st -> {});
+            return state.initiateNextTuple(curr, filter, 0, k, group, transformations).acceptElem(group, auths, whiteList.nextSetBit(0), k, st -> {});
         }
 
-        private State acceptElem(Group group, int[][] auth, int el, int k, Consumer<State> cons) {
-            Design nextCurr = curr.simpleAdd(el, group);
-            int[] nextTuple = nextCurr.curr();
+        private static void updateFilter(Group group, int k, int[] block, FixBS filter) {
+            for (int i = 0; i < k; i++) {
+                int f = block[i];
+                if (f == group.order()) {
+                    filter.set(f);
+                    continue;
+                }
+                for (int j = i + 1; j < k; j++) {
+                    int s = block[j];
+                    if (s == group.order()) {
+                        continue;
+                    }
+                    filter.set(group.op(f, group.inv(s)));
+                    filter.set(group.op(s, group.inv(f)));
+                }
+            }
+        }
+
+        private State acceptElem(Group group, int[][] auth, int el, int k, Consumer<Design> cons) {
+            Design nextCurr = curr.simpleAdd(el);
             boolean tupleFinished = nextCurr.tupleFinished();
-            int[][][] nextTransformations;
+            int[] last = nextCurr.curr();
+            State result;
             if (tupleFinished) {
-                int[] last = nextCurr.curr();
-                nextTransformations = new int[transformations.length][][];
+                int blockCount = blockCount(last, group);
+                if (blockCount < 0) {
+                    return null;
+                }
+                if (blockCount == nextCurr.blocksNeeded) {
+                    cons.accept(nextCurr);
+                    return null;
+                }
+                int[][][] nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
                     int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group));
                     if (nextCurr.bigger(nextTransformation)) {
@@ -124,61 +142,29 @@ public class BibdFinder3CyclicTest {
                     }
                     nextTransformations[i] = nextTransformation;
                 }
-            } else {
-                nextTransformations = transformations;
-            }
-            FixBS newFilter = filter.copy();
-            FixBS newWhiteList = whiteList.copy();
-            int idx = curr.idx;
-            if (el != group.order()) {
-                int invEl = group.inv(el);
-                for (int i = 0; i < idx; i++) {
-                    int val = nextTuple[i];
-                    int diff = group.op(el, group.inv(val));
-                    int outDiff = group.op(val, invEl);
-                    newFilter.set(diff);
-                    newFilter.set(outDiff);
-                    if (tupleFinished) {
-                        continue;
-                    }
-                    for (int rt : group.squareRoots(diff)) {
-                        newWhiteList.clear(group.op(val, rt));
-                    }
-                    for (int rt : group.squareRoots(outDiff)) {
-                        newWhiteList.clear(group.op(el, rt));
-                    }
-                    for (int j = 0; j <= idx; j++) {
-                        int nv = nextTuple[j];
-                        newWhiteList.clear(group.op(nv, diff));
-                        newWhiteList.clear(group.op(nv, outDiff));
-                    }
-                }
-            } else {
-                newWhiteList.clear(el);
-            }
-            State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
-            if (tupleFinished) {
-                if (nextCurr.complete()) {
-                    cons.accept(result);
-                    return null;
-                }
-                result = result.initiateNextTuple(newFilter, k, group)
+                FixBS newFilter = filter.copy();
+                updateFilter(group, k, last, newFilter);
+                result = initiateNextTuple(nextCurr, newFilter, blockCount, k, group, nextTransformations)
                         .acceptElem(group, auth, newFilter.nextClearBit(1), k, st -> {});
-            } else if (el != group.order()) {
-                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
-                    newWhiteList.clear(group.op(el, diff));
+            } else {
+                FixBS newWhiteList = whiteList.copy();
+                if (el != group.order()) {
+                    for (int diff = filter.nextSetBit(0); diff >= 0 && diff < group.order(); diff = filter.nextSetBit(diff + 1)) {
+                        newWhiteList.clear(group.op(el, diff));
+                    }
                 }
+                result = new State(nextCurr, filter, newWhiteList, transformations);
             }
             return result;
         }
 
-        private State initiateNextTuple(FixBS filter, int k, Group gr) {
+        private State initiateNextTuple(Design design, FixBS newFilter, int blockCount, int k, Group gr, int[][][] nextTransformations) {
             int v = gr.order() + 1;
-            FixBS nextWhiteList = filter.copy();
+            FixBS nextWhiteList = newFilter.copy();
             nextWhiteList.flip(1, v);
-            int[][] nextDesign = Arrays.copyOf(curr.design, curr.design.length + 1);
+            int[][] nextDesign = Arrays.copyOf(design.design, curr.design.length + 1);
             nextDesign[curr.design.length] = new int[k];
-            return new State(new Design(nextDesign, 1, curr.blocksNeeded), filter, nextWhiteList, transformations);
+            return new State(new Design(nextDesign, 1, curr.blocksNeeded - blockCount), newFilter, nextWhiteList, nextTransformations);
         }
     }
 
@@ -257,9 +243,9 @@ public class BibdFinder3CyclicTest {
         return min;
     }
 
-    private static void calcCycles(Group group, int[][] auth, int k, State state, Consumer<State> sink) {
+    private static void calcCycles(Group group, int[][] auth, int k, State state, Consumer<Design> sink) {
         FixBS whiteList = state.whiteList();
-        for (int idx = whiteList.nextSetBit(state.curr.lastVal()); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
+        for (int idx = whiteList.nextSetBit(state.curr.lastVal() + 1); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
             State next = state.acceptElem(group, auth, idx, k, sink);
             if (next != null) {
                 calcCycles(group, auth, k, next, sink);
@@ -334,12 +320,12 @@ public class BibdFinder3CyclicTest {
         System.out.println("Initial size " + unProcessed.size());
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
-        Consumer<State> designConsumer = design -> {
+        Consumer<Design> designConsumer = design -> {
             counter.incrementAndGet();
-            destination.println(Arrays.deepToString(design.curr.design));
+            destination.println(Arrays.deepToString(design.design));
             destination.flush();
             if (destination != System.out) {
-                System.out.println(Arrays.deepToString(design.curr.design));
+                System.out.println(Arrays.deepToString(design.design));
             }
         };
         AtomicInteger cnt = new AtomicInteger();
@@ -364,8 +350,8 @@ public class BibdFinder3CyclicTest {
 
     @Test
     public void logAllCycles() {
-        Group group = new CyclicProduct(3, 3, 3);
-        int k = 4;
+        Group group = new CyclicProduct(8, 8);
+        int k = 5;
         logAllCycles(System.out, group, k);
     }
 
@@ -375,8 +361,8 @@ public class BibdFinder3CyclicTest {
         Group table = group.asTable();
         int[][] design = new int[0][k];
         State initial = State.forDesign(table, auths, design, k);
-        calcCycles(table, auths, k, initial, cycle -> {
-            destination.println(Arrays.deepToString(cycle.curr.design));
+        calcCycles(table, auths, k, initial, des -> {
+            destination.println(Arrays.deepToString(des.design));
             destination.flush();
         });
     }
@@ -387,7 +373,7 @@ public class BibdFinder3CyclicTest {
         int k = 7;
         int[][] auths = auth(gr);
         File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
-        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "nf.txt");
+        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
         try (FileInputStream fis = new FileInputStream(unrefined);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr);
