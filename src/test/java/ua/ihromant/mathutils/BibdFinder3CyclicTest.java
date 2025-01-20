@@ -258,7 +258,7 @@ public class BibdFinder3CyclicTest {
         Group gr = new CyclicProduct(11, 11);
         int v = gr.order();
         int k = 5;
-        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
+        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "begrot.txt");
         try (FileInputStream allFis = new FileInputStream(beg);
              InputStreamReader allIsr = new InputStreamReader(allFis);
              BufferedReader allBr = new BufferedReader(allIsr)) {
@@ -274,7 +274,7 @@ public class BibdFinder3CyclicTest {
         int v = gr.order();
         int k = 3;
         File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
-        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
+        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "begrot.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos);
@@ -349,20 +349,32 @@ public class BibdFinder3CyclicTest {
     }
 
     @Test
-    public void logAllCycles() {
+    public void logConsoleCycles() {
         Group group = new CyclicProduct(8, 8);
         int k = 5;
-        logAllCycles(System.out, group, k);
+        logCycles(System.out, group, k);
     }
 
-    private static void logAllCycles(PrintStream destination, Group group, int k) {
+    @Test
+    public void logFileCycles() throws IOException {
+        Group group = new CyclicProduct(8, 8);
+        int k = 5;
+        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "begrot.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logCycles(ps, group, k);
+        }
+    }
+
+    private static void logCycles(PrintStream destination, Group group, int k) {
         System.out.println(group.name() + " " + k);
         int[][] auths = auth(group);
         Group table = group.asTable();
         int[][] design = new int[0][k];
         State initial = State.forDesign(table, auths, design, k);
         calcCycles(table, auths, k, initial, des -> {
-            destination.println(Arrays.deepToString(des.design));
+            destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
             destination.flush();
         });
     }
