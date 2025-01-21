@@ -114,8 +114,8 @@ public class BibdFinder3CyclicTest {
                     if (s == group.order()) {
                         continue;
                     }
-                    filter.set(group.op(f, group.inv(s)));
-                    filter.set(group.op(s, group.inv(f)));
+                    filter.set(group.op(group.inv(s), f));
+                    filter.set(group.op(group.inv(f), s));
                 }
             }
         }
@@ -150,7 +150,7 @@ public class BibdFinder3CyclicTest {
                 FixBS newWhiteList = whiteList.copy();
                 if (el != group.order()) {
                     for (int diff = filter.nextSetBit(0); diff >= 0 && diff < group.order(); diff = filter.nextSetBit(diff + 1)) {
-                        newWhiteList.clear(group.op(el, diff));
+                        newWhiteList.clear(group.op(diff, el));
                     }
                 }
                 result = new State(nextCurr, filter, newWhiteList, transformations);
@@ -231,7 +231,7 @@ public class BibdFinder3CyclicTest {
                 if (i == j) {
                     continue;
                 }
-                int diff = gr.op(arr[i], inv);
+                int diff = gr.op(inv, arr[i]);
                 cnd[i] = diff;
                 if (diff < minDiff) {
                     minDiff = diff;
