@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -22,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class BibdFinder3CyclicTest {
     private record Design(int[][] design, int idx, int blocksNeeded) {
@@ -303,8 +305,11 @@ public class BibdFinder3CyclicTest {
     }
 
     private static int[][] auth(Group group) {
-        int[][] auth = group.auth();
         int ord = group.order();
+        if (!group.isCommutative()) {
+            return new int[][]{IntStream.range(0, ord + 1).toArray()};
+        }
+        int[][] auth = group.auth();
         int[][] result = new int[auth.length][ord + 1];
         for (int i = 0; i < auth.length; i++) {
             System.arraycopy(auth[i], 0, result[i], 0, auth[i].length);
@@ -350,8 +355,8 @@ public class BibdFinder3CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new CyclicProduct(8, 8);
-        int k = 5;
+        Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        int k = 4;
         logCycles(System.out, group, k);
     }
 
