@@ -18,12 +18,16 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class BibdFinder3CyclicTest {
     private record Design(int[][] design, int idx, int blocksNeeded) {
@@ -84,6 +88,19 @@ public class BibdFinder3CyclicTest {
             set.add(fbs);
         }
         return set.size();
+    }
+
+    private static Stream<int[]> blocks(int[] block, Group gr) {
+        int ord = gr.order();
+        Set<FixBS> set = new HashSet<>(ord);
+        for (int i = 0; i < ord; i++) {
+            FixBS fbs = new FixBS(ord + 1);
+            for (int el : block) {
+                fbs.set(el == ord ? ord : gr.op(i, el));
+            }
+            set.add(fbs);
+        }
+        return set.stream().map(FixBS::toArray);
     }
 
     private record State(Design curr, FixBS filter, FixBS whiteList, int[][][] transformations) {
@@ -378,9 +395,19 @@ public class BibdFinder3CyclicTest {
         Group table = group.asTable();
         int[][] design = new int[0][k];
         State initial = State.forDesign(table, auths, design, k);
+        List<Liner> liners = new ArrayList<>();
         calcCycles(table, auths, k, initial, des -> {
             destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
             destination.flush();
+            liners.add(new Liner(table.order() + 1, Arrays.stream(des.design).flatMap(bl -> blocks(bl, table)).toArray(int[][]::new)));
+        });
+        System.out.println(liners.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        liners.stream().parallel().forEach(l -> {
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(l.autCountOld() + " " + Arrays.deepToString(l.lines()));
+            }
         });
     }
 
