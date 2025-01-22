@@ -317,8 +317,8 @@ public class BibdFinder3CyclicTest {
         Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
         int v = group.order() + 1;
         int k = 4;
-        System.out.println(group.name() + " " + v + " " + k);
         int[][] auths = auth(group);
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
         List<int[][]> base = getInitial(table, auths, v, k);
         System.out.println("Initial size " + base.size());
