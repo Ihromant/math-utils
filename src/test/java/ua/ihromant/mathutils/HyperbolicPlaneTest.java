@@ -499,22 +499,22 @@ public class HyperbolicPlaneTest {
         assertEquals(of(0, 1, 2, 3, 4), p1.hyperbolicIndex());
 
         SemiDirectProduct semi = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        BitSet[] lines2 = Stream.concat(Stream.of(new int[]{0, semi.fromAB(1, 0), semi.fromAB(3, 0),
-                        semi.fromAB(7, 0), semi.fromAB(17, 0), semi.fromAB(0, 1)},
-                new int[]{0, semi.fromAB(5, 0), semi.fromAB(19, 1), semi.fromAB(28, 1),
-                        semi.fromAB(10, 2), semi.fromAB(30, 2)}).flatMap(arr -> IntStream.range(0, semi.order()).mapToObj(i -> {
+        BitSet[] lines2 = Stream.concat(Stream.of(new int[]{0, semi.from(1, 0), semi.from(3, 0),
+                        semi.from(7, 0), semi.from(17, 0), semi.from(0, 1)},
+                new int[]{0, semi.from(5, 0), semi.from(19, 1), semi.from(28, 1),
+                        semi.from(10, 2), semi.from(30, 2)}).flatMap(arr -> IntStream.range(0, semi.order()).mapToObj(i -> {
             BitSet res = new BitSet();
             Arrays.stream(arr).forEach(el -> res.set(semi.op(i, el)));
             return res;
         })), Stream.of(new int[]{5, 33}, new int[]{9, 27}, new int[]{10, 23}, new int[]{13, 24}, new int[]{26, 34})
                 .flatMap(arr -> IntStream.range(0, 37).mapToObj(i -> {
                     BitSet res = new BitSet();
-                    res.set(semi.op(i, arr[0]));
-                    res.set(semi.op(i, arr[1]));
-                    res.set(semi.op(semi.fromAB(i, 1), arr[0]));
-                    res.set(semi.op(semi.fromAB(i, 1), arr[1]));
-                    res.set(semi.op(semi.fromAB(i, 2), arr[0]));
-                    res.set(semi.op(semi.fromAB(i, 2), arr[1]));
+                    res.set(semi.op(semi.from(i, 0), semi.from(arr[0], 0)));
+                    res.set(semi.op(semi.from(i, 0), semi.from(arr[1], 0)));
+                    res.set(semi.op(semi.from(i, 1), semi.from(arr[0], 0)));
+                    res.set(semi.op(semi.from(i, 1), semi.from(arr[1], 0)));
+                    res.set(semi.op(semi.from(i, 2), semi.from(arr[0], 0)));
+                    res.set(semi.op(semi.from(i, 2), semi.from(arr[1], 0)));
                     return res;
                 }))).toArray(BitSet[]::new);
         Liner p2 = new Liner(lines2);
@@ -611,11 +611,11 @@ public class HyperbolicPlaneTest {
         assertEquals(of(1, 2, 3, 4), p6.hyperbolicIndex());
 
         SemiDirectProduct semi1 = new SemiDirectProduct(new CyclicGroup(57), new CyclicGroup(3));
-        BitSet[] lines3 = Stream.concat(Stream.of(new int[]{0, 19, 39, 41, semi1.fromAB(14, 1), semi1.fromAB(38, 2)},
-                        new int[]{0, 21, 44, 48, semi1.fromAB(26, 1), semi1.fromAB(11, 2)},
-                        new int[]{0, 1, 43, semi1.fromAB(8, 2), semi1.fromAB(15, 2), semi1.fromAB(44, 2)},
-                        new int[]{0, 3, 31, semi1.fromAB(23, 1), semi1.fromAB(43, 1), semi1.fromAB(36, 2)},
-                        new int[]{0, 40, 50, semi1.fromAB(11, 1), semi1.fromAB(25, 2), semi1.fromAB(34, 2)})
+        BitSet[] lines3 = Stream.concat(Stream.of(new int[]{0, semi1.from(19, 0), semi1.from(39, 0), semi1.from(41, 0), semi1.from(14, 1), semi1.from(38, 2)},
+                        new int[]{0, semi1.from(21, 0), semi1.from(44, 0), semi1.from(48, 0), semi1.from(26, 1), semi1.from(11, 2)},
+                        new int[]{0, semi1.from(1, 0), semi1.from(43, 0), semi1.from(8, 2), semi1.from(15, 2), semi1.from(44, 2)},
+                        new int[]{0, semi1.from(3, 0), semi1.from(31, 0), semi1.from(23, 1), semi1.from(43, 1), semi1.from(36, 2)},
+                        new int[]{0, semi1.from(40, 0), semi1.from(50, 0), semi1.from(11, 1), semi1.from(25, 2), semi1.from(34, 2)})
                 .flatMap(arr -> IntStream.range(0, semi1.order()).mapToObj(i -> {
                     BitSet result = new BitSet();
                     Arrays.stream(arr).forEach(el -> result.set(semi1.op(i, el)));
@@ -623,12 +623,12 @@ public class HyperbolicPlaneTest {
                 })), Stream.of(new int[]{0, 12}, new int[]{37, 42})
                 .flatMap(arr -> IntStream.range(0, 57).mapToObj(i -> {
                     BitSet res = new BitSet();
-                    res.set(semi1.op(i, arr[0]));
-                    res.set(semi1.op(i, arr[1]));
-                    res.set(semi1.op(semi1.fromAB(i, 1), arr[0]));
-                    res.set(semi1.op(semi1.fromAB(i, 1), arr[1]));
-                    res.set(semi1.op(semi1.fromAB(i, 2), arr[0]));
-                    res.set(semi1.op(semi1.fromAB(i, 2), arr[1]));
+                    res.set(semi1.op(semi1.from(i, 0), semi1.from(arr[0], 0)));
+                    res.set(semi1.op(semi1.from(i, 0), semi1.from(arr[1], 0)));
+                    res.set(semi1.op(semi1.from(i, 1), semi1.from(arr[0], 0)));
+                    res.set(semi1.op(semi1.from(i, 1), semi1.from(arr[1], 0)));
+                    res.set(semi1.op(semi1.from(i, 2), semi1.from(arr[0], 0)));
+                    res.set(semi1.op(semi1.from(i, 2), semi1.from(arr[1], 0)));
                     return res;
                 }))).toArray(BitSet[]::new);
         Liner p3 = new Liner(lines3);

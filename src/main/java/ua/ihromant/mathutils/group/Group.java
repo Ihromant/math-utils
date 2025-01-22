@@ -154,6 +154,10 @@ public interface Group {
         return result;
     }
 
+    default int conjugate(int fst, int snd) {
+        return op(op(snd, fst), inv(snd));
+    }
+
     default boolean isCommutative() {
         return IntStream.range(1, order()).allMatch(i -> IntStream.range(1, order()).allMatch(j -> op(i, j) == op(j, i)));
     }

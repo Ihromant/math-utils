@@ -115,6 +115,26 @@ public class GroupTest {
         checkAuth(auths, product);
     }
 
+    @Test
+    public void testAuthSemidirect() {
+        Group product = new SemiDirectProduct(new CyclicProduct(3), new CyclicGroup(2));
+        int[][] auths = product.auth();
+        assertEquals(6, auths.length);
+        checkAuth(auths, product);
+        product = new SemiDirectProduct(new CyclicProduct(7), new CyclicGroup(3));
+        auths = product.auth();
+        assertEquals(42, auths.length);
+        checkAuth(auths, product);
+        product = new SemiDirectProduct(new CyclicProduct(2, 2), new CyclicGroup(3));
+        auths = product.auth();
+        assertEquals(24, auths.length);
+        checkAuth(auths, product);
+        product = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        auths = product.auth();
+        assertEquals(108, auths.length);
+        checkAuth(auths, product);
+    }
+
     private static void checkAuth(int[][] auths, Group simple) {
         for (int[] aut : auths) {
             for (int a = 0; a < simple.order(); a++) {
