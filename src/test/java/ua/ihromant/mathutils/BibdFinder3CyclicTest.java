@@ -7,6 +7,10 @@ import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -313,6 +317,27 @@ public class BibdFinder3CyclicTest {
     }
 
     @Test
+    public void dumpInitial() throws IOException {
+        int fixed = 1;
+        Group group = new CyclicProduct(4, 4, 4);
+        int v = group.order() + fixed;
+        int k = 5;
+        int[][] auths = auth(group);
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        Group table = group.asTable();
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            Consumer<int[][]> cons = arr -> {
+                ps.println(Arrays.stream(arr).map(Arrays::toString).collect(Collectors.joining(" ")));
+                ps.flush();
+            };
+            getInitial(table, auths, v, k, cons);
+        }
+    }
+
+    @Test
     public void logConsoleCycles() {
         Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
         int v = group.order() + 1;
@@ -320,12 +345,13 @@ public class BibdFinder3CyclicTest {
         int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
-        List<int[][]> base = getInitial(table, auths, v, k);
+        List<int[][]> base = new ArrayList<>();
+        getInitial(table, auths, v, k, base::add);
         System.out.println("Initial size " + base.size());
         logResultsByInitial(System.out, table, auths, v, k, base);
     }
 
-    private static List<int[][]> getInitial(Group group, int[][] auths, int v, int k) {
+    private static void getInitial(Group group, int[][] auths, int v, int k, Consumer<int[][]> cons) {
         Group table = group.asTable();
         int[][] design = new int[1][k];
         FixBS filter = new FixBS(v);
@@ -337,9 +363,7 @@ public class BibdFinder3CyclicTest {
             transformations[i][0][1] = auths[i][1];
         }
         State initial = new State(new Design(design, 2, Integer.MAX_VALUE), filter, whiteList, transformations);
-        List<int[][]> result = new ArrayList<>();
-        calcCyclesTrans(table, auths, v, initial, des -> result.add(des.design));
-        return result;
+        calcCyclesTrans(table, auths, v, initial, des -> cons.accept(des.design));
     }
 
     private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int v, int k, List<int[][]> unProcessed) {
