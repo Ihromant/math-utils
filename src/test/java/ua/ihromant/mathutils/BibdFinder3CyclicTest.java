@@ -69,6 +69,17 @@ public class BibdFinder3CyclicTest {
         }
     }
 
+    private static int[] add(int[] block, int idx, int el) {
+        int[] unf = block.clone();
+        int pos = idx;
+        while (pos > 0 && unf[pos - 1] > el) {
+            pos--;
+        }
+        System.arraycopy(unf, pos, unf, pos + 1, idx - pos);
+        unf[pos] = el;
+        return unf;
+    }
+
     private static int blockCount(int[] block, Group gr) {
         int ord = gr.order();
         List<FixBS> set = new ArrayList<>(ord);
@@ -119,6 +130,29 @@ public class BibdFinder3CyclicTest {
             int[][][] transformations = Arrays.stream(auths).map(aut -> Arrays.stream(baseDesign).map(arr -> minimalTuple(arr, aut, group)).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.initiateNextTuple(curr, filter, 0, k, group, transformations).acceptElem(group, auths, whiteList.nextSetBit(0), k, st -> {});
+        }
+
+        private State acceptElemTrans(Group group, int[][] auth, int el, Consumer<Design> cons) {
+            Design nextCurr = curr.simpleAdd(el);
+            boolean tupleFinished = nextCurr.tupleFinished();
+            int[] last = nextCurr.curr();
+            int[][][] nextTransformations = new int[transformations.length][][];
+            for (int i = 0; i < transformations.length; i++) {
+                int[][] nextTransformation = new int[][]{tupleFinished ? minimalTuple(last, auth[i], group) : add(transformations[i][0], curr.idx, auth[i][el])};
+                if (nextCurr.bigger(nextTransformation)) {
+                    return null;
+                }
+                nextTransformations[i] = nextTransformation;
+            }
+            if (tupleFinished) {
+                int blockCount = blockCount(last, group);
+                if (blockCount < 0) {
+                    return null;
+                }
+                cons.accept(nextCurr);
+                return null;
+            }
+            return new State(nextCurr, filter, whiteList, nextTransformations);
         }
 
         private State acceptElem(Group group, int[][] auth, int el, int k, Consumer<Design> cons) {
@@ -272,6 +306,16 @@ public class BibdFinder3CyclicTest {
         }
     }
 
+    private static void calcCyclesTrans(Group group, int[][] auth, State state, Consumer<Design> sink) {
+        FixBS whiteList = state.whiteList();
+        for (int idx = whiteList.nextSetBit(state.curr.lastVal() + 1); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
+            State next = state.acceptElemTrans(group, auth, idx, sink);
+            if (next != null) {
+                calcCyclesTrans(group, auth, next, sink);
+            }
+        }
+    }
+
     @Test
     public void toConsole() throws IOException {
         Group gr = new CyclicProduct(11, 11);
@@ -376,8 +420,14 @@ public class BibdFinder3CyclicTest {
     @Test
     public void logConsoleCycles() {
         Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        int v = group.order() + 1;
         int k = 4;
-        logCycles(System.out, group, k);
+        System.out.println(group.name() + " " + v + " " + k);
+        int[][] auths = auth(group);
+        Group table = group.asTable();
+        List<int[][]> base = getInitial(table, auths, v, k);
+        System.out.println("Initial size " + base.size());
+        logResultsByInitial(System.out, table, auths, k, base);
     }
 
     @Test
@@ -390,6 +440,49 @@ public class BibdFinder3CyclicTest {
              PrintStream ps = new PrintStream(bos)) {
             logCycles(ps, group, k);
         }
+    }
+
+    private static List<int[][]> getInitial(Group group, int[][] auths, int v, int k) {
+        Group table = group.asTable();
+        int[][] design = new int[1][k];
+        FixBS filter = new FixBS(v);
+        FixBS whiteList = filter.copy();
+        whiteList.flip(1, v);
+        design[0][1] = 1;
+        int[][][] transformations = new int[auths.length][1][k];
+        for (int i = 0; i < auths.length; i++) {
+            transformations[i][0][1] = auths[i][1];
+        }
+        State initial = new State(new Design(design, 2, Integer.MAX_VALUE), filter, whiteList, transformations);
+        List<int[][]> result = new ArrayList<>();
+        calcCyclesTrans(table, auths, initial, des -> result.add(des.design));
+        return result;
+    }
+
+    private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int k, List<int[][]> unProcessed) {
+        long time = System.currentTimeMillis();
+        List<Liner> liners = new ArrayList<>();
+        unProcessed.stream().parallel().forEach(init -> {
+            int[][] design = new int[init.length][k];
+            for (int i = 0; i < init.length; i++) {
+                System.arraycopy(init[i], 0, design[i], 0, k);
+            }
+            State initial = State.forDesign(group, auths, design, k);
+            calcCycles(group, auths, k, initial, des -> {
+                destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
+                destination.flush();
+                liners.add(new Liner(group.order() + 1, Arrays.stream(des.design).flatMap(bl -> blocks(bl, group)).toArray(int[][]::new)));
+            });
+        });
+        System.out.println("Unprocessed " + liners.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        liners.stream().parallel().forEach(l -> {
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(l.autCountOld() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
+            }
+        });
+        System.out.println("Results: " + unique.size() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     private static void logCycles(PrintStream destination, Group group, int k) {
