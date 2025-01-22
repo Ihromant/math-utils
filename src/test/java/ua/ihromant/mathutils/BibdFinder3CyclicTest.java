@@ -345,7 +345,7 @@ public class BibdFinder3CyclicTest {
     private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int v, int k, List<int[][]> unProcessed) {
         long time = System.currentTimeMillis();
         List<Liner> liners = new ArrayList<>();
-        unProcessed.stream()/*.parallel()*/.forEach(init -> {
+        unProcessed.stream().parallel().forEach(init -> {
             int[][] design = new int[init.length][k];
             for (int i = 0; i < init.length; i++) {
                 System.arraycopy(init[i], 0, design[i], 0, k);
@@ -354,7 +354,7 @@ public class BibdFinder3CyclicTest {
             calcCycles(group, auths, v, k, initial, des -> {
                 destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
-                liners.add(new Liner(group.order() + 1, Arrays.stream(des.design).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
+                liners.add(new Liner(v, Arrays.stream(des.design).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
             });
         });
         System.out.println("Unprocessed " + liners.size());
