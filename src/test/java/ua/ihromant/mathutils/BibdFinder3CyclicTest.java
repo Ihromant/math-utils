@@ -7,13 +7,6 @@ import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -80,11 +72,11 @@ public class BibdFinder3CyclicTest {
         return unf;
     }
 
-    private static int blockCount(int[] block, Group gr) {
+    private static int blockCount(int[] block, int v, Group gr) {
         int ord = gr.order();
         List<FixBS> set = new ArrayList<>(ord);
         ex: for (int i = 0; i < ord; i++) {
-            FixBS fbs = new FixBS(ord + 1);
+            FixBS fbs = new FixBS(v);
             for (int el : block) {
                 fbs.set(el == ord ? ord : gr.op(i, el));
             }
@@ -101,11 +93,11 @@ public class BibdFinder3CyclicTest {
         return set.size();
     }
 
-    private static Stream<int[]> blocks(int[] block, Group gr) {
+    private static Stream<int[]> blocks(int[] block, int v, Group gr) {
         int ord = gr.order();
         Set<FixBS> set = new HashSet<>(ord);
         for (int i = 0; i < ord; i++) {
-            FixBS fbs = new FixBS(ord + 1);
+            FixBS fbs = new FixBS(v);
             for (int el : block) {
                 fbs.set(el == ord ? ord : gr.op(i, el));
             }
@@ -115,24 +107,23 @@ public class BibdFinder3CyclicTest {
     }
 
     private record State(Design curr, FixBS filter, FixBS whiteList, int[][][] transformations) {
-        private static State forDesign(Group group, int[][] auths, int[][] baseDesign, int k) {
-            int v = group.order() + 1;
+        private static State forDesign(Group group, int[][] auths, int[][] baseDesign, int v, int k) {
             int[][] nextDesign = baseDesign.clone();
             FixBS filter = new FixBS(v);
             int blocksNeeded = v * (v - 1) / k / (k - 1);
             for (int[] block : baseDesign) {
                 updateFilter(group, k, block, filter);
-                blocksNeeded = blocksNeeded - blockCount(block, group);
+                blocksNeeded = blocksNeeded - blockCount(block, v, group);
             }
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, k, blocksNeeded);
             int[][][] transformations = Arrays.stream(auths).map(aut -> Arrays.stream(baseDesign).map(arr -> minimalTuple(arr, aut, group)).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
-            return state.initiateNextTuple(curr, filter, 0, k, group, transformations).acceptElem(group, auths, whiteList.nextSetBit(0), k, st -> {});
+            return state.initiateNextTuple(curr, filter, 0, v, k, transformations).acceptElem(group, auths, v, k, whiteList.nextSetBit(0), st -> {});
         }
 
-        private State acceptElemTrans(Group group, int[][] auth, int el, Consumer<Design> cons) {
+        private State acceptElemTrans(Group group, int[][] auth, int v, int el, Consumer<Design> cons) {
             Design nextCurr = curr.simpleAdd(el);
             boolean tupleFinished = nextCurr.tupleFinished();
             int[] last = nextCurr.curr();
@@ -145,7 +136,7 @@ public class BibdFinder3CyclicTest {
                 nextTransformations[i] = nextTransformation;
             }
             if (tupleFinished) {
-                int blockCount = blockCount(last, group);
+                int blockCount = blockCount(last, v, group);
                 if (blockCount < 0) {
                     return null;
                 }
@@ -155,13 +146,13 @@ public class BibdFinder3CyclicTest {
             return new State(nextCurr, filter, whiteList, nextTransformations);
         }
 
-        private State acceptElem(Group group, int[][] auth, int el, int k, Consumer<Design> cons) {
+        private State acceptElem(Group group, int[][] auth, int v, int k, int el, Consumer<Design> cons) {
             Design nextCurr = curr.simpleAdd(el);
             boolean tupleFinished = nextCurr.tupleFinished();
             int[] last = nextCurr.curr();
             State result;
             if (tupleFinished) {
-                int blockCount = blockCount(last, group);
+                int blockCount = blockCount(last, v, group);
                 if (blockCount < 0) {
                     return null;
                 }
@@ -179,8 +170,8 @@ public class BibdFinder3CyclicTest {
                 }
                 FixBS newFilter = filter.copy();
                 updateFilter(group, k, last, newFilter);
-                result = initiateNextTuple(nextCurr, newFilter, blockCount, k, group, nextTransformations)
-                        .acceptElem(group, auth, newFilter.nextClearBit(1), k, st -> {});
+                result = initiateNextTuple(nextCurr, newFilter, blockCount, v, k, nextTransformations)
+                        .acceptElem(group, auth, v, k, newFilter.nextClearBit(1), st -> {});
             } else {
                 FixBS newWhiteList = whiteList.copy();
                 if (el != group.order()) {
@@ -193,8 +184,7 @@ public class BibdFinder3CyclicTest {
             return result;
         }
 
-        private State initiateNextTuple(Design design, FixBS newFilter, int blockCount, int k, Group gr, int[][][] nextTransformations) {
-            int v = gr.order() + 1;
+        private State initiateNextTuple(Design design, FixBS newFilter, int blockCount, int v, int k, int[][][] nextTransformations) {
             FixBS nextWhiteList = newFilter.copy();
             nextWhiteList.flip(1, v);
             int[][] nextDesign = Arrays.copyOf(design.design, curr.design.length + 1);
@@ -232,17 +222,6 @@ public class BibdFinder3CyclicTest {
         }
         cloned[newIdx] = block;
         return cloned;
-    }
-
-    private boolean bigger(int[][] design, int[][] candidate, int blockIdx) {
-        int i = 0;
-        int cmp;
-        do {
-            int[] cnd = candidate[i];
-            int[] block = design[i];
-            cmp = compare(cnd, block);
-        } while (cmp == 0 && i++ < blockIdx);
-        return cmp < 0;
     }
 
     private static int compare(int[] fst, int[] snd) {
@@ -296,73 +275,24 @@ public class BibdFinder3CyclicTest {
         return min;
     }
 
-    private static void calcCycles(Group group, int[][] auth, int k, State state, Consumer<Design> sink) {
+    private static void calcCycles(Group group, int[][] auth, int v, int k, State state, Consumer<Design> sink) {
         FixBS whiteList = state.whiteList();
         for (int idx = whiteList.nextSetBit(state.curr.lastVal() + 1); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
-            State next = state.acceptElem(group, auth, idx, k, sink);
+            State next = state.acceptElem(group, auth, v, k, idx, sink);
             if (next != null) {
-                calcCycles(group, auth, k, next, sink);
+                calcCycles(group, auth, v, k, next, sink);
             }
         }
     }
 
-    private static void calcCyclesTrans(Group group, int[][] auth, State state, Consumer<Design> sink) {
+    private static void calcCyclesTrans(Group group, int[][] auth, int v, State state, Consumer<Design> sink) {
         FixBS whiteList = state.whiteList();
         for (int idx = whiteList.nextSetBit(state.curr.lastVal() + 1); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
-            State next = state.acceptElemTrans(group, auth, idx, sink);
+            State next = state.acceptElemTrans(group, auth, v, idx, sink);
             if (next != null) {
-                calcCyclesTrans(group, auth, next, sink);
+                calcCyclesTrans(group, auth, v, next, sink);
             }
         }
-    }
-
-    @Test
-    public void toConsole() throws IOException {
-        Group gr = new CyclicProduct(11, 11);
-        int v = gr.order();
-        int k = 5;
-        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "begrot.txt");
-        try (FileInputStream allFis = new FileInputStream(beg);
-             InputStreamReader allIsr = new InputStreamReader(allFis);
-             BufferedReader allBr = new BufferedReader(allIsr)) {
-            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
-            logResultsDepth(System.out, gr, k, set.stream().map(st -> st.stream()
-                    .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
-        }
-    }
-
-    @Test
-    public void toFile() throws IOException {
-        Group gr = new CyclicGroup(13);
-        int v = gr.order();
-        int k = 3;
-        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
-        File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "begrot.txt");
-        try (FileOutputStream fos = new FileOutputStream(f, true);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos);
-             FileInputStream allFis = new FileInputStream(beg);
-             InputStreamReader allIsr = new InputStreamReader(allFis);
-             BufferedReader allBr = new BufferedReader(allIsr);
-             FileInputStream fis = new FileInputStream(f);
-             InputStreamReader isr = new InputStreamReader(fis);
-             BufferedReader br = new BufferedReader(isr)) {
-            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
-            br.lines().forEach(l -> {
-                if (l.contains("[[")) {
-                    System.out.println(l);
-                } else {
-                    set.remove(readPartial(l, v));
-                }
-            });
-            logResultsDepth(ps, gr, k, set.stream().map(st -> st.stream()
-                    .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
-        }
-    }
-
-    private static List<FixBS> readPartial(String line, int v) {
-        String[] sp = line.substring(1, line.length() - 1).split("] \\[");
-        return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
 
     private static int[][] auth(Group group) {
@@ -382,41 +312,6 @@ public class BibdFinder3CyclicTest {
         return result;
     }
 
-    private static void logResultsDepth(PrintStream destination, Group group, int k, List<int[][]> unProcessed) {
-        System.out.println(group.name() + " " + k);
-        Group table = group.asTable();
-        int[][] auths = auth(group);
-        System.out.println("Initial size " + unProcessed.size());
-        AtomicInteger counter = new AtomicInteger();
-        long time = System.currentTimeMillis();
-        Consumer<Design> designConsumer = design -> {
-            counter.incrementAndGet();
-            destination.println(Arrays.deepToString(design.design));
-            destination.flush();
-            if (destination != System.out) {
-                System.out.println(Arrays.deepToString(design.design));
-            }
-        };
-        AtomicInteger cnt = new AtomicInteger();
-        unProcessed.stream().parallel().forEach(init -> {
-            int[][] design = new int[init.length][k];
-            for (int i = 0; i < init.length; i++) {
-                System.arraycopy(init[i], 0, design[i], 0, k);
-            }
-            State initial = State.forDesign(table, auths, design, k);
-            calcCycles(table, auths, k, initial, designConsumer);
-            if (destination != System.out) {
-                destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
-                destination.flush();
-            }
-            int val = cnt.incrementAndGet();
-            if (val % 1000 == 0) {
-                System.out.println(val);
-            }
-        });
-        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
-    }
-
     @Test
     public void logConsoleCycles() {
         Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
@@ -427,19 +322,7 @@ public class BibdFinder3CyclicTest {
         Group table = group.asTable();
         List<int[][]> base = getInitial(table, auths, v, k);
         System.out.println("Initial size " + base.size());
-        logResultsByInitial(System.out, table, auths, k, base);
-    }
-
-    @Test
-    public void logFileCycles() throws IOException {
-        Group group = new CyclicProduct(8, 8);
-        int k = 5;
-        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "begrot.txt");
-        try (FileOutputStream fos = new FileOutputStream(f);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            logCycles(ps, group, k);
-        }
+        logResultsByInitial(System.out, table, auths, v, k, base);
     }
 
     private static List<int[][]> getInitial(Group group, int[][] auths, int v, int k) {
@@ -455,23 +338,23 @@ public class BibdFinder3CyclicTest {
         }
         State initial = new State(new Design(design, 2, Integer.MAX_VALUE), filter, whiteList, transformations);
         List<int[][]> result = new ArrayList<>();
-        calcCyclesTrans(table, auths, initial, des -> result.add(des.design));
+        calcCyclesTrans(table, auths, v, initial, des -> result.add(des.design));
         return result;
     }
 
-    private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int k, List<int[][]> unProcessed) {
+    private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int v, int k, List<int[][]> unProcessed) {
         long time = System.currentTimeMillis();
         List<Liner> liners = new ArrayList<>();
-        unProcessed.stream().parallel().forEach(init -> {
+        unProcessed.stream()/*.parallel()*/.forEach(init -> {
             int[][] design = new int[init.length][k];
             for (int i = 0; i < init.length; i++) {
                 System.arraycopy(init[i], 0, design[i], 0, k);
             }
-            State initial = State.forDesign(group, auths, design, k);
-            calcCycles(group, auths, k, initial, des -> {
+            State initial = State.forDesign(group, auths, design, v, k);
+            calcCycles(group, auths, v, k, initial, des -> {
                 destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
-                liners.add(new Liner(group.order() + 1, Arrays.stream(des.design).flatMap(bl -> blocks(bl, group)).toArray(int[][]::new)));
+                liners.add(new Liner(group.order() + 1, Arrays.stream(des.design).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
             });
         });
         System.out.println("Unprocessed " + liners.size());
@@ -483,63 +366,5 @@ public class BibdFinder3CyclicTest {
             }
         });
         System.out.println("Results: " + unique.size() + ", time elapsed: " + (System.currentTimeMillis() - time));
-    }
-
-    private static void logCycles(PrintStream destination, Group group, int k) {
-        System.out.println(group.name() + " " + k);
-        int[][] auths = auth(group);
-        Group table = group.asTable();
-        int[][] design = new int[0][k];
-        State initial = State.forDesign(table, auths, design, k);
-        List<Liner> liners = new ArrayList<>();
-        calcCycles(table, auths, k, initial, des -> {
-            destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
-            destination.flush();
-            liners.add(new Liner(table.order() + 1, Arrays.stream(des.design).flatMap(bl -> blocks(bl, table)).toArray(int[][]::new)));
-        });
-        System.out.println(liners.size());
-        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
-        liners.stream().parallel().forEach(l -> {
-            FixBS canon = l.getCanonicalOld();
-            if (unique.putIfAbsent(canon, l) == null) {
-                System.out.println(l.autCountOld() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
-            }
-        });
-    }
-
-    @Test
-    public void filter() throws IOException {
-        Group gr = new CyclicProduct(13, 13);
-        int k = 7;
-        int[][] auths = auth(gr);
-        File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
-        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
-        try (FileInputStream fis = new FileInputStream(unrefined);
-             InputStreamReader isr = new InputStreamReader(fis);
-             BufferedReader br = new BufferedReader(isr);
-             FileOutputStream fos = new FileOutputStream(refined);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            br.lines().forEach(l -> {
-                if (!l.contains("[[")) {
-                    return;
-                }
-                String[] sp = l.substring(2, l.length() - 2).split("], \\[");
-                int[][] des = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
-                int cnt = 0;
-                for (int[] auth : auths) {
-                    int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, auth, gr)).toArray(int[][]::new);
-                    Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
-                    if (bigger(des, mapped, des.length - 1)) {
-                        return;
-                    }
-                    if (Arrays.deepEquals(mapped, des)) {
-                        cnt++;
-                    }
-                }
-                System.out.println(cnt + " " + l);
-                ps.println(l);
-            });
-        }
     }
 }
