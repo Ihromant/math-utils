@@ -32,45 +32,6 @@ public class BibdNotAbelianFinderTest {
         findDesigns(app, v, k);
     }
 
-    private static class CustomApplicator implements Applicator {
-        private final Group gr = new CyclicGroup(7).asTable();
-        private final int sz = gr.order();
-        private final int cnt = 25 / sz;
-
-        @Override
-        public int apply(int el, int mul) {
-            int bs = el / sz;
-            if (bs >= cnt) {
-                return el;
-            }
-            int el1 = el % sz;
-            int ap = gr.op(mul, el1);
-            return bs * sz + ap;
-        }
-
-        @Override
-        public int size() {
-            return sz;
-        }
-
-        @Override
-        public void blocks(int v, int k, Consumer<int[]> cons) {
-            IntStream.range(1, v - k + 1).parallel().forEach(i -> {
-                int[] curr = new int[k];
-                curr[0] = i;
-                BibdNotAbelianFinderTest.blocks(curr, v, i + 1, 1, cons);
-            });
-        }
-    }
-
-    @Test
-    public void testApplicator() {
-        int v = 25;
-        int k = 4;
-        Applicator app = new CustomApplicator();
-        findDesigns(app, v, k);
-    }
-
     private static void findDesigns(Applicator app, int v, int k) {
         Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
@@ -323,5 +284,82 @@ public class BibdNotAbelianFinderTest {
         }
         Arrays.sort(res);
         return res;
+    }
+
+    private static class CustomApplicator implements Applicator {
+        private final Group gr = new CyclicGroup(7).asTable();
+        private final int sz = gr.order();
+        private final int cnt = 25 / sz;
+
+        @Override
+        public int apply(int el, int mul) {
+            int bs = el / sz;
+            if (bs >= cnt) {
+                return el;
+            }
+            int el1 = el % sz;
+            int ap = gr.op(mul, el1);
+            return bs * sz + ap;
+        }
+
+        @Override
+        public int size() {
+            return sz;
+        }
+
+        @Override
+        public void blocks(int v, int k, Consumer<int[]> cons) {
+            IntStream.range(1, v - k + 1).parallel().forEach(i -> {
+                int[] curr = new int[k];
+                curr[0] = i;
+                BibdNotAbelianFinderTest.blocks(curr, v, i + 1, 1, cons);
+            });
+        }
+    }
+
+    private static class MillsApplicator implements Applicator {
+        private final Group gr = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3)).asTable();
+        private final int sz = gr.order();
+
+        @Override
+        public int apply(int el, int mul) {
+            if (el >= 65) {
+                return el;
+            }
+            if (el < 39) {
+                int el1 = el % sz;
+                return gr.op(mul, el1);
+            } else {
+                int el1 = el - 39;
+                int bs = el1 / 13;
+                el1 = el1 % 13 * 3;
+                int ap = gr.op(mul, el1);
+                return 39 + bs * 13 + ap / 3;
+            }
+        }
+
+        @Override
+        public int size() {
+            return sz;
+        }
+
+        @Override
+        public void blocks(int v, int k, Consumer<int[]> cons) {
+            IntStream.of(0, 39, 52).parallel().forEach(fst ->
+                    IntStream.range(fst + 1, v).parallel().forEach(snd -> {
+                        int[] curr = new int[k];
+                        curr[0] = fst;
+                        curr[1] = snd;
+                        BibdNotAbelianFinderTest.blocks(curr, v, snd + 1, 2, cons);
+                    }));
+        }
+    }
+
+    @Test
+    public void testApplicator() {
+        int v = 66;
+        int k = 6;
+        Applicator app = new MillsApplicator();
+        findDesigns(app, v, k);
     }
 }
