@@ -318,34 +318,49 @@ public class BibdNotAbelianFinderTest {
     }
 
     private static class MillsApplicator implements Applicator {
-        private final Group gr = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3)).asTable();
-        private final int sz = gr.order();
+        private final Group gr;
+        private final int fOrd;
+        private final int lOrd;
+        private final int rOrd;
+        private final int fCap;
+        private final int lCap;
+
+        public MillsApplicator(int v, Group full, Group left, CyclicGroup right) {
+            this.gr = full.asTable();
+            this.fOrd = gr.order();
+            this.lOrd = left.order();
+            this.rOrd = right.order();
+            this.fCap = v / fOrd * fOrd;
+            this.lCap = (v - fCap) / lOrd * lOrd + fCap;
+        }
 
         @Override
         public int apply(int el, int mul) {
-            if (el >= 65) {
+            if (el >= lCap) {
                 return el;
             }
-            if (el < 39) {
-                int el1 = el % sz;
-                return gr.op(mul, el1);
+            if (el < fCap) {
+                int cff = el / fOrd;
+                int el1 = el % fOrd;
+                return cff * fOrd + gr.op(mul, el1);
             } else {
-                int el1 = el - 39;
-                int bs = el1 / 13;
-                el1 = el1 % 13 * 3;
+                int el1 = el - fCap;
+                int bs = el1 / lOrd;
+                el1 = el1 % lOrd * rOrd;
                 int ap = gr.op(mul, el1);
-                return 39 + bs * 13 + ap / 3;
+                return fCap + bs * lOrd + ap / rOrd;
             }
         }
 
         @Override
         public int size() {
-            return sz;
+            return fOrd;
         }
 
         @Override
         public void blocks(int v, int k, Consumer<int[]> cons) {
-            IntStream.of(0, 39, 52).parallel().forEach(fst ->
+            IntStream.concat(IntStream.range(0, fCap / fOrd).map(i -> i * fOrd),
+                    IntStream.range(0, (lCap - fCap) / lOrd).map(i -> fCap + i * lOrd)).parallel().forEach(fst ->
                     IntStream.range(fst + 1, v).parallel().forEach(snd -> {
                         int[] curr = new int[k];
                         curr[0] = fst;
@@ -359,7 +374,9 @@ public class BibdNotAbelianFinderTest {
     public void testApplicator() {
         int v = 66;
         int k = 6;
-        Applicator app = new MillsApplicator();
+        Group left = new CyclicGroup(13);
+        CyclicGroup right = new CyclicGroup(3);
+        Applicator app = new MillsApplicator(v, new SemiDirectProduct(left, right), left, right);
         findDesigns(app, v, k);
     }
 }
