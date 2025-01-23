@@ -32,6 +32,45 @@ public class BibdNotAbelianFinderTest {
         findDesigns(app, v, k);
     }
 
+    private static class CustomApplicator implements Applicator {
+        private final Group gr = new CyclicGroup(7).asTable();
+        private final int sz = gr.order();
+        private final int cnt = 25 / sz;
+
+        @Override
+        public int apply(int el, int mul) {
+            int bs = el / sz;
+            if (bs >= cnt) {
+                return el;
+            }
+            int el1 = el % sz;
+            int ap = gr.op(mul, el1);
+            return bs * sz + ap;
+        }
+
+        @Override
+        public int size() {
+            return sz;
+        }
+
+        @Override
+        public void blocks(int v, int k, Consumer<int[]> cons) {
+            IntStream.range(1, v - k + 1).parallel().forEach(i -> {
+                int[] curr = new int[k];
+                curr[0] = i;
+                BibdNotAbelianFinderTest.blocks(curr, v, i + 1, 1, cons);
+            });
+        }
+    }
+
+    @Test
+    public void testApplicator() {
+        int v = 25;
+        int k = 4;
+        Applicator app = new CustomApplicator();
+        findDesigns(app, v, k);
+    }
+
     private static void findDesigns(Applicator app, int v, int k) {
         Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
@@ -54,11 +93,7 @@ public class BibdNotAbelianFinderTest {
             Set<ArrPairs> aps = new HashSet<>(components.values());
             set.add(aps);
         };
-        IntStream.range(1, v).parallel().forEach(i -> {
-            int[] curr = new int[k];
-            curr[1] = i;
-            blocks(curr, v, i + 1, 2, cons);
-        });
+        app.blocks(v, k, cons);
         System.out.println(set.size());
         Comp[] components = set.stream().map(sap -> {
             FixBS res = new FixBS(v * v);
@@ -247,6 +282,8 @@ public class BibdNotAbelianFinderTest {
             Arrays.sort(res);
             return res;
         }
+
+        void blocks(int v, int k, Consumer<int[]> cons);
     }
 
     private static class LeftApplicator implements Applicator {
@@ -266,6 +303,15 @@ public class BibdNotAbelianFinderTest {
         @Override
         public int size() {
             return order;
+        }
+
+        @Override
+        public void blocks(int v, int k, Consumer<int[]> cons) {
+            IntStream.range(1, v).parallel().forEach(i -> {
+                int[] curr = new int[k];
+                curr[1] = i;
+                BibdNotAbelianFinderTest.blocks(curr, v, i + 1, 2, cons);
+            });
         }
     }
 
