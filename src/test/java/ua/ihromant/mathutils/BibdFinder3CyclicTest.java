@@ -8,9 +8,12 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -319,7 +322,7 @@ public class BibdFinder3CyclicTest {
     @Test
     public void dumpInitial() throws IOException {
         int fixed = 1;
-        Group group = new CyclicProduct(4, 4, 4);
+        Group group = new CyclicProduct(8, 8);
         int v = group.order() + fixed;
         int k = 5;
         int[][] auths = auth(group);
@@ -337,6 +340,49 @@ public class BibdFinder3CyclicTest {
         }
     }
 
+    private static List<FixBS> readPartial(String line, int v) {
+        String[] sp = line.substring(1, line.length() - 1).split("] \\[");
+        return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
+    }
+
+    @Test
+    public void toFile() throws IOException {
+        int fixed = 1;
+        Group group = new CyclicProduct(8, 8);
+        int v = group.order() + fixed;
+        int k = 5;
+        int[][] auths = auth(group);
+        Group table = group.asTable();
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + ".txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
+            List<Liner> liners = new ArrayList<>();
+            br.lines().forEach(l -> {
+                if (l.contains("[[")) {
+                    System.out.println(l);
+                    String[] split = l.substring(2, l.length() - 2).split("], \\[");
+                    int[][] base = Arrays.stream(split).map(bl -> Arrays.stream(bl.split(", "))
+                            .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                    liners.add(new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
+                } else {
+                    set.remove(readPartial(l, v));
+                }
+            });
+            logResultsByInitial(ps, table, auths, v, k, set.stream().map(st -> st.stream()
+                    .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList(), liners);
+        }
+    }
+
     @Test
     public void logConsoleCycles() {
         Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
@@ -347,8 +393,7 @@ public class BibdFinder3CyclicTest {
         Group table = group.asTable();
         List<int[][]> base = new ArrayList<>();
         getInitial(table, auths, v, k, base::add);
-        System.out.println("Initial size " + base.size());
-        logResultsByInitial(System.out, table, auths, v, k, base);
+        logResultsByInitial(System.out, table, auths, v, k, base, new ArrayList<>());
     }
 
     private static void getInitial(Group group, int[][] auths, int v, int k, Consumer<int[][]> cons) {
@@ -366,9 +411,9 @@ public class BibdFinder3CyclicTest {
         calcCyclesTrans(table, auths, v, initial, des -> cons.accept(des.design));
     }
 
-    private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int v, int k, List<int[][]> unProcessed) {
+    private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int v, int k, List<int[][]> unProcessed, List<Liner> liners) {
+        System.out.println("Processing initial of size " + unProcessed.size());
         long time = System.currentTimeMillis();
-        List<Liner> liners = new ArrayList<>();
         unProcessed.stream().parallel().forEach(init -> {
             int[][] design = new int[init.length][k];
             for (int i = 0; i < init.length; i++) {
@@ -376,10 +421,14 @@ public class BibdFinder3CyclicTest {
             }
             State initial = State.forDesign(group, auths, design, v, k);
             calcCycles(group, auths, v, k, initial, des -> {
-                destination.println(Arrays.stream(des.design).map(Arrays::toString).collect(Collectors.joining(" ")));
+                destination.println(Arrays.deepToString(des.design));
                 destination.flush();
                 liners.add(new Liner(v, Arrays.stream(des.design).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
             });
+            if (destination != System.out) {
+                destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
+                destination.flush();
+            }
         });
         System.out.println("Unprocessed " + liners.size());
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
@@ -390,5 +439,17 @@ public class BibdFinder3CyclicTest {
             }
         });
         System.out.println("Results: " + unique.size() + ", time elapsed: " + (System.currentTimeMillis() - time));
+    }
+
+    private static final int[][][] sample = {
+            {{0, 1, 2, 3, 31, 80}, {0, 4, 7, 12, 32, 71}, {0, 5, 19, 46, 53, 75}, {0, 6, 17, 22, 62, 73}, {0, 9, 48, 58, 69, 93}, {0, 13, 23, 26, 30, 91}, {0, 15, 40, 44, 79, 98}}
+    };
+
+    @Test
+    public void testSample() {
+        Group gr = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        int v = gr.order();
+        List<Liner> liners = Arrays.stream(sample).map(des -> new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl, v, gr)).toArray(int[][]::new))).toList();
+        liners.forEach(l -> System.out.println(l.hyperbolicFreq()));
     }
 }
