@@ -161,4 +161,36 @@ public interface Group {
     default boolean isCommutative() {
         return IntStream.range(1, order()).allMatch(i -> IntStream.range(1, order()).allMatch(j -> op(i, j) == op(j, i)));
     }
+
+    Group trivial = new Group() {
+        @Override
+        public int op(int a, int b) {
+            return 0;
+        }
+
+        @Override
+        public int inv(int a) {
+            return 0;
+        }
+
+        @Override
+        public int order() {
+            return 1;
+        }
+
+        @Override
+        public String name() {
+            return "TR";
+        }
+
+        @Override
+        public String elementName(int a) {
+            return "0";
+        }
+
+        @Override
+        public int[][] auth() {
+            return new int[][]{{0}};
+        }
+    };
 }

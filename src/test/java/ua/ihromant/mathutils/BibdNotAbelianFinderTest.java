@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -325,7 +326,7 @@ public class BibdNotAbelianFinderTest {
         private final int fCap;
         private final int lCap;
 
-        public MillsApplicator(int v, Group full, Group left, CyclicGroup right) {
+        public MillsApplicator(int v, Group full, Group left, Group right) {
             this.gr = full.asTable();
             this.fOrd = gr.order();
             this.lOrd = left.order();
@@ -360,7 +361,7 @@ public class BibdNotAbelianFinderTest {
         @Override
         public void blocks(int v, int k, Consumer<int[]> cons) {
             IntStream.concat(IntStream.range(0, fCap / fOrd).map(i -> i * fOrd),
-                    IntStream.range(0, (lCap - fCap) / lOrd).map(i -> fCap + i * lOrd)).parallel().forEach(fst ->
+                    IntStream.range(0, (lCap - fCap) / lOrd + 1).map(i -> fCap + i * lOrd)).parallel().forEach(fst ->
                     IntStream.range(fst + 1, v).parallel().forEach(snd -> {
                         int[] curr = new int[k];
                         curr[0] = fst;
@@ -372,11 +373,11 @@ public class BibdNotAbelianFinderTest {
 
     @Test
     public void testApplicator() {
-        int v = 66;
-        int k = 6;
-        Group left = new CyclicGroup(13);
-        CyclicGroup right = new CyclicGroup(3);
-        Applicator app = new MillsApplicator(v, new SemiDirectProduct(left, right), left, right);
+        int v = 25;
+        int k = 4;
+        Group left = new CyclicGroup(7);
+        Group right = Group.trivial;
+        Applicator app = new MillsApplicator(v, new GroupProduct(left, right), left, right);
         findDesigns(app, v, k);
     }
 }
