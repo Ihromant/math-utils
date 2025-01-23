@@ -28,12 +28,16 @@ public class BibdNotAbelianFinderTest {
         int v = g.order() + 1;
         int k = 4;
         System.out.println(g.name() + " " + v + " " + k);
-        Group tg = g.asTable();
+        Applicator app = new LeftApplicator(g.asTable());
+        findDesigns(app, v, k);
+    }
+
+    private static void findDesigns(Applicator app, int v, int k) {
         Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
-            for (int mul = 0; mul < g.order(); mul++) {
-                int[] applied = applyLeft(arr, mul, tg);
+            for (int mul = 0; mul < app.size(); mul++) {
+                int[] applied = app.apply(arr, mul);
                 int[] pairs = pairs(applied, v);
                 FixBS bs = FixBS.of(v * v, pairs);
                 for (int pr : pairs) {
@@ -231,14 +235,38 @@ public class BibdNotAbelianFinderTest {
         return res;
     }
 
-    private static int[] applyLeft(int[] arr, int mul, Group group) {
-        int[] res = new int[arr.length];
-        for (int i = 0; i < res.length; i++) {
-            int el = arr[i];
-            res[i] = el >= group.order() ? el : group.op(mul, el);
+    private interface Applicator {
+        int apply(int el, int mul);
+        int size();
+
+        default int[] apply(int[] arr, int mul) {
+            int[] res = new int[arr.length];
+            for (int i = 0; i < res.length; i++) {
+                res[i] = apply(arr[i], mul);
+            }
+            Arrays.sort(res);
+            return res;
         }
-        Arrays.sort(res);
-        return res;
+    }
+
+    private static class LeftApplicator implements Applicator {
+        private final Group gr;
+        private final int order;
+
+        private LeftApplicator(Group gr) {
+            this.gr = gr;
+            this.order = gr.order();
+        }
+
+        @Override
+        public int apply(int el, int mul) {
+            return el >= order ? el : gr.op(mul, el);
+        }
+
+        @Override
+        public int size() {
+            return order;
+        }
     }
 
     public int[] applyConjugation(int[] arr, int a, int b, Group group) {
