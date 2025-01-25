@@ -133,6 +133,14 @@ public class GroupTest {
         auths = product.auth();
         assertEquals(108, auths.length);
         checkAuth(auths, product);
+        product = new PermutationGroup(4, false);
+        auths = product.auth();
+        assertEquals(24, auths.length);
+        checkAuth(auths, product);
+        product = new PermutationGroup(4, true);
+        auths = product.auth();
+        assertEquals(12, auths.length);
+        checkAuth(auths, product);
     }
 
     private static void checkAuth(int[][] auths, Group simple) {

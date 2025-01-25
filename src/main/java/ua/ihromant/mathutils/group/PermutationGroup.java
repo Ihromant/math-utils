@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.group;
 
+import ua.ihromant.mathutils.GaloisField;
+
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -10,6 +12,23 @@ import java.util.stream.IntStream;
 public class PermutationGroup implements Group {
     private final int[][] permutations;
     private final Map<Map<Integer, Integer>, Integer> lookup;
+
+    public PermutationGroup(int cnt, boolean even) {
+        this(GaloisField.permutations(IntStream.range(0, cnt).toArray())
+                .filter(perm -> !even || parity(perm) % 2 == 0).toArray(int[][]::new));
+    }
+
+    private static int parity(int[] arr) {
+        int cnt = 0;
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = i + 1; j < arr.length; j++) {
+                if (arr[i] > arr[j]) {
+                    cnt++;
+                }
+            }
+        }
+        return cnt;
+    }
 
     public PermutationGroup(int[][] permutations) {
         this.permutations = permutations;
@@ -69,7 +88,14 @@ public class PermutationGroup implements Group {
     }
 
     @Override
-    public int[][] auth() {
-        throw new UnsupportedOperationException();
+    public int[][] auth() { // this is correct only for most S_n, but still generates specific Auth subgroup
+        int ord = order();
+        int[][] result = new int[ord][ord];
+        for (int conj = 0; conj < ord; conj++) {
+            for (int x = 0; x < ord; x++) {
+                result[conj][x] = op(inv(conj), op(x, conj));
+            }
+        }
+        return result;
     }
 }
