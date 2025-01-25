@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -414,6 +415,7 @@ public class BibdFinder3CyclicTest {
     private static void logResultsByInitial(PrintStream destination, Group group, int[][] auths, int v, int k, List<int[][]> unProcessed, List<Liner> liners) {
         System.out.println("Processing initial of size " + unProcessed.size());
         long time = System.currentTimeMillis();
+        AtomicInteger cnt = new AtomicInteger();
         unProcessed.stream().parallel().forEach(init -> {
             int[][] design = new int[init.length][k];
             for (int i = 0; i < init.length; i++) {
@@ -428,6 +430,10 @@ public class BibdFinder3CyclicTest {
             if (destination != System.out) {
                 destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
+            }
+            int val = cnt.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
             }
         });
         System.out.println("Unprocessed " + liners.size());
