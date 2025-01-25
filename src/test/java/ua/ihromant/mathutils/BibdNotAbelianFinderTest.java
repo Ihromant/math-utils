@@ -33,7 +33,7 @@ public class BibdNotAbelianFinderTest {
     }
 
     private static void findDesigns(Applicator app, int v, int k) {
-        Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
+        Set<Comp> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
             for (int mul = 0; mul < app.size(); mul++) {
@@ -52,29 +52,31 @@ public class BibdNotAbelianFinderTest {
                 }
             }
             Set<ArrPairs> aps = new HashSet<>(components.values());
-            set.add(aps);
+            FixBS pairs = new FixBS(v * v);
+            int card = 0;
+            List<FixBS> lines = new ArrayList<>();
+            for (ArrPairs ap : aps) {
+                pairs.or(ap.pairs);
+                card = card + ap.pairs.cardinality();
+                lines.add(ap.line());
+            }
+            lines.sort(Comparator.reverseOrder());
+            set.add(new Comp(pairs, card, lines));
         };
         app.blocks(v, k, cons);
         System.out.println(set.size());
-        Comp[] components = set.stream().map(sap -> {
-            FixBS res = new FixBS(v * v);
-            int card = 0;
-            for (ArrPairs ap : sap) {
-                res.or(ap.pairs);
-                card = card + ap.pairs.cardinality();
-            }
-            return new Comp(res, card, sap);
-        }).toArray(Comp[]::new);
+        Comp[] components = set.toArray(Comp[]::new);
         Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger ai = new AtomicInteger();
         FixBS empty = empty(v);
+        System.out.println("To process " + (order[2] - order[1]));
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
             calculate(components, order, v, v + comp.card, empty.union(comp.pairs), FixBS.of(components.length, i), fbs -> {
-                int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+                int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].lines().stream().map(FixBS::toArray)).toArray(int[][]::new);
                 Liner l = new Liner(v, ars);
                 liners.add(l);
                 System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
@@ -119,7 +121,7 @@ public class BibdNotAbelianFinderTest {
         int k = 3;
         System.out.println(g.name() + " " + v + " " + k);
         Group tg = g.asTable();
-        Set<Set<ArrPairs>> set = ConcurrentHashMap.newKeySet();
+        Set<Comp> set = ConcurrentHashMap.newKeySet();
         Consumer<int[]> cons = arr -> {
             Map<Integer, ArrPairs> components = new HashMap<>();
             for (int mul = 0; mul < g.order(); mul++) {
@@ -140,7 +142,16 @@ public class BibdNotAbelianFinderTest {
                 }
             }
             Set<ArrPairs> aps = new HashSet<>(components.values());
-            set.add(aps);
+            FixBS pairs = new FixBS(v * v);
+            int card = 0;
+            List<FixBS> lines = new ArrayList<>();
+            for (ArrPairs ap : aps) {
+                pairs.or(ap.pairs);
+                card = card + ap.pairs.cardinality();
+                lines.add(ap.line());
+            }
+            lines.sort(Comparator.reverseOrder());
+            set.add(new Comp(pairs, card, lines));
         };
         IntStream.range(1, v).parallel().forEach(i -> {
             int[] curr = new int[k];
@@ -148,25 +159,18 @@ public class BibdNotAbelianFinderTest {
             blocks(curr, v, i + 1, 2, cons);
         });
         System.out.println(set.size());
-        Comp[] components = set.stream().map(sap -> {
-            FixBS res = new FixBS(v * v);
-            int card = 0;
-            for (ArrPairs ap : sap) {
-                res.or(ap.pairs);
-                card = card + ap.pairs.cardinality();
-            }
-            return new Comp(res, card, sap);
-        }).toArray(Comp[]::new);
+        Comp[] components = set.toArray(Comp[]::new);
         Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger ai = new AtomicInteger();
         FixBS empty = empty(v);
+        System.out.println("To process " + (order[2] - order[1]));
         IntStream.range(order[1], order[2]).parallel().forEach(i -> {
             Comp comp = components[i];
             calculate(components, order, v, v + comp.card, empty.union(comp.pairs), FixBS.of(components.length, i), fbs -> {
-                int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].set().stream().map(pr -> pr.arr().stream().toArray())).toArray(int[][]::new);
+                int[][] ars = fbs.stream().boxed().flatMap(j -> components[j].lines().stream().map(FixBS::toArray)).toArray(int[][]::new);
                 Liner l = new Liner(v, ars);
                 liners.add(l);
             });
@@ -216,9 +220,9 @@ public class BibdNotAbelianFinderTest {
         }
     }
 
-    private record Comp(FixBS pairs, int card, Set<ArrPairs> set) {}
+    private record Comp(FixBS pairs, int card, List<FixBS> lines) {}
 
-    private record ArrPairs(FixBS arr, FixBS pairs) {}
+    private record ArrPairs(FixBS line, FixBS pairs) {}
 
     private static int[] pairs(int[] arr, int v) {
         int[] res = new int[arr.length * (arr.length - 1)];
