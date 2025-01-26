@@ -3,6 +3,7 @@ package ua.ihromant.mathutils.group;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
@@ -25,6 +26,9 @@ public class GroupTest {
         testCorrectness(new SemiDirectProduct(new CyclicProduct(2, 2, 3), new CyclicGroup(2)), false);
         testCorrectness(new BurnsideGroup(), false);
         testCorrectness(new Liner(new GaloisField(2).generatePlane()).automorphisms(), false);
+        SemiDirectProduct prod = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
+        testCorrectness(new SubGroup(prod, FixBS.of(21, 0, 3, 6, 9, 12, 15, 18)), true);
+        testCorrectness(new SubGroup(prod, FixBS.of(3, 0, 1, 2)), true);
     }
 
     @Test
