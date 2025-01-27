@@ -49,4 +49,15 @@ public class SubGroup implements Group {
     public int[][] auth() {
         throw new UnsupportedOperationException();
     }
+
+    public boolean isNormal() {
+        for (int n : map) {
+            for (int g = 0; g < group.order(); g++) {
+                if (!elems.get(group.op(g, group.op(n, group.inv(g))))) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
