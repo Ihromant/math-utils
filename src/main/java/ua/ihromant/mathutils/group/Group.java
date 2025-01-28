@@ -1,5 +1,8 @@
 package ua.ihromant.mathutils.group;
 
+import ua.ihromant.mathutils.QuickFind;
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -156,6 +159,17 @@ public interface Group {
 
     default int conjugate(int fst, int snd) {
         return op(op(snd, fst), inv(snd));
+    }
+
+    default List<FixBS> conjugationClasses() {
+        int order = order();
+        QuickFind qf = new QuickFind(order);
+        for (int g = 0; g < order; g++) {
+            for (int x = 0; x < order; x++) {
+                qf.union(x, op(inv(g), op(x, g)));
+            }
+        }
+        return qf.components();
     }
 
     default boolean isCommutative() {
