@@ -425,6 +425,9 @@ public class BibdFinder3CyclicTest {
             calcCycles(group, auths, v, k, initial, des -> {
                 destination.println(Arrays.deepToString(des.design));
                 destination.flush();
+                if (destination != System.out) {
+                    System.out.println(Arrays.deepToString(des.design));
+                }
                 liners.add(new Liner(v, Arrays.stream(des.design).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
             });
             if (destination != System.out) {
