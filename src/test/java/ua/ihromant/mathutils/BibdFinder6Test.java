@@ -15,9 +15,9 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -331,20 +331,20 @@ public class BibdFinder6Test {
 
     @Test
     public void refine() throws IOException {
-        Group gr = new CyclicGroup(126);
+        Group gr = new CyclicGroup(151);
         int v = gr.order();
         int k = 6;
         int[] multipliers = multipliers(v);
         File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
-        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "nf.txt");
+        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
         try (FileInputStream fis = new FileInputStream(unrefined);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr);
              FileOutputStream fos = new FileOutputStream(refined);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            Set<List<FixBS>> unique = new HashSet<>();
-            br.lines().forEach(l -> {
+            Set<List<FixBS>> unique = ConcurrentHashMap.newKeySet();
+            br.lines().parallel().forEach(l -> {
                 if (!l.contains("[[")) {
                     return;
                 }
