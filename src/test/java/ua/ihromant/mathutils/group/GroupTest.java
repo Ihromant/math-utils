@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.List;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 
@@ -32,6 +33,22 @@ public class GroupTest {
         SubGroup right = new SubGroup(prod, FixBS.of(3, 0, 1, 2));
         testCorrectness(right, true);
         assertFalse(right.isNormal());
+    }
+
+    @Test
+    public void testSubGroups() {
+        Group gr = new CyclicGroup(6);
+        List<SubGroup> subGroups = gr.subGroups();
+        assertEquals(2, subGroups.size());
+        gr = new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2));
+        subGroups = gr.subGroups();
+        assertEquals(4, subGroups.size());
+        gr = new QuaternionGroup();
+        subGroups = gr.subGroups();
+        assertEquals(4, subGroups.size());
+        gr = new PermutationGroup(5, true);
+        subGroups = gr.subGroups();
+        assertEquals(57, subGroups.size());
     }
 
     @Test

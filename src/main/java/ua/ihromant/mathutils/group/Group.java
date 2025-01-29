@@ -6,7 +6,9 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public interface Group {
@@ -174,6 +176,50 @@ public interface Group {
 
     default boolean isCommutative() {
         return IntStream.range(1, order()).allMatch(i -> IntStream.range(1, order()).allMatch(j -> op(i, j) == op(j, i)));
+    }
+
+    default List<SubGroup> subGroups() {
+        List<SubGroup> result = new ArrayList<>();
+        Set<FixBS> found = new HashSet<>();
+        int order = order();
+        FixBS all = new FixBS(order);
+        all.set(0, order);
+        found.add(all);
+        FixBS init = new FixBS(order);
+        init.set(0);
+        find(result, found, init, order);
+        return result;
+    }
+
+    private void find(List<SubGroup> result, Set<FixBS> found, FixBS currGroup, int order) {
+        for (int gen = currGroup.nextClearBit(0); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
+            FixBS nextGroup = currGroup.copy();
+            nextGroup.set(gen);
+            FixBS additional = new FixBS(order);
+            additional.set(gen);
+            do {
+                nextGroup.or(additional);
+            } while (!(additional = additional(nextGroup, additional, order)).isEmpty());
+            if (!found.add(nextGroup)) {
+                continue;
+            }
+            result.add(new SubGroup(this, nextGroup));
+            find(result, found, nextGroup, order);
+        }
+    }
+
+    private FixBS additional(FixBS first, FixBS second, int order) {
+        FixBS result = new FixBS(order);
+        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
+            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
+                result.set(op(x, y));
+            }
+        }
+        FixBS removal = new FixBS(order);
+        removal.or(first);
+        removal.or(second);
+        result.xor(removal);
+        return result;
     }
 
     Group trivial = new Group() {
