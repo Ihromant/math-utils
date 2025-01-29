@@ -187,7 +187,9 @@ public interface Group {
         found.add(all);
         FixBS init = new FixBS(order);
         init.set(0);
+        result.add(new SubGroup(this, init));
         find(result, found, init, order);
+        result.add(new SubGroup(this, all));
         return result;
     }
 

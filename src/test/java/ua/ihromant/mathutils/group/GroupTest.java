@@ -39,16 +39,16 @@ public class GroupTest {
     public void testSubGroups() {
         Group gr = new CyclicGroup(6);
         List<SubGroup> subGroups = gr.subGroups();
-        assertEquals(2, subGroups.size());
+        assertEquals(4, subGroups.size());
         gr = new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2));
         subGroups = gr.subGroups();
-        assertEquals(4, subGroups.size());
+        assertEquals(6, subGroups.size());
         gr = new QuaternionGroup();
         subGroups = gr.subGroups();
-        assertEquals(4, subGroups.size());
+        assertEquals(6, subGroups.size());
         gr = new PermutationGroup(5, true);
         subGroups = gr.subGroups();
-        assertEquals(57, subGroups.size());
+        assertEquals(59, subGroups.size());
     }
 
     @Test
