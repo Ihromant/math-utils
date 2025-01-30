@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.CyclicProduct;
-import ua.ihromant.mathutils.group.QuaternionGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -110,23 +109,23 @@ public class BibdFinder4CyclicTest {
             int invEl = group.inv(el);
             for (int i = 0; i < idx; i++) {
                 int val = block[i];
-                int diff = group.op(el, group.inv(val));
-                int outDiff = group.op(val, invEl);
+                int diff = group.op(group.inv(val), el);
+                int outDiff = group.op(invEl, val);
                 newFilter.set(diff);
                 newFilter.set(outDiff);
                 if (tupleFinished) {
                     continue;
                 }
                 for (int rt : group.squareRoots(diff)) {
-                    newWhiteList.clear(group.op(rt, val));
+                    newWhiteList.clear(group.op(val, rt));
                 }
                 for (int rt : group.squareRoots(outDiff)) {
-                    newWhiteList.clear(group.op(rt, el));
+                    newWhiteList.clear(group.op(el, rt));
                 }
                 for (int j = 0; j <= idx; j++) {
                     int nv = nextBlock[j];
-                    newWhiteList.clear(group.op(diff, nv));
-                    newWhiteList.clear(group.op(outDiff, nv));
+                    newWhiteList.clear(group.op(nv, diff));
+                    newWhiteList.clear(group.op(nv, outDiff));
                 }
             }
             if (!tupleFinished) {
@@ -233,14 +232,12 @@ public class BibdFinder4CyclicTest {
                     if (filter.intersects(sg.elems())) {
                         continue;
                     }
-                    if (sg.order() == k) {
-                        if (sg.elems().get(next)) {
-                            State nextState = state.initiateSubGroup(sg, v, k);
-                            calcCycles(subGroups, sg, nextDesign, v, k, nextState, sink);
-                        }
+                    if (sg.elems().get(next)) {
+                        State nextState = state.initiateSubGroup(sg, v, k);
+                        calcCycles(subGroups, sg, nextDesign, v, k, nextState, sink);
                         continue;
                     }
-                    if (!sg.whiteList(v).get(next)) {
+                    if (sg.arr().length == k || !sg.whiteList(v).get(next)) {
                         continue;
                     }
                     State nextState = state.initiateSubGroup(sg, v, k).acceptElem(sg.group(), next);
@@ -249,7 +246,7 @@ public class BibdFinder4CyclicTest {
             }
             return;
         }
-        int lastVal = -1;
+        int lastVal = 1;
         for (int i = idx - 1; i >= 0; i--) {
             int val = state.block[i];
             if (!currSub.elems().get(val)) {
@@ -264,6 +261,19 @@ public class BibdFinder4CyclicTest {
         }
     }
 
+    private static FixBS differences(int[] block, int v, Group gr) {
+        FixBS res = new FixBS(v);
+        for (int i = 0; i < block.length; i++) {
+            int x = block[i];
+            for (int j = i + 1; j < block.length; j++) {
+                int y = block[j];
+                res.set(gr.op(gr.inv(x), y));
+                res.set(gr.op(gr.inv(y), x));
+            }
+        }
+        return res;
+    }
+
     private static void calcCyclesTrans(SubGroup currGroup, int[][] auths, int k, State state, int[][] transformations, Consumer<int[][]> sink) {
         int idx = state.idx;
         if (idx == k) {
@@ -271,7 +281,7 @@ public class BibdFinder4CyclicTest {
             return;
         }
         FixBS whiteList = state.whiteList();
-        int lastVal = -1;
+        int lastVal = 1;
         for (int i = idx - 1; i >= 0; i--) {
             int val = state.block[i];
             if (!currGroup.elems().get(val)) {
@@ -383,8 +393,8 @@ public class BibdFinder4CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new QuaternionGroup();
-        int v = group.order() + 1;
+        Group group = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
+        int v = group.order();
         int k = 3;
         int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
@@ -414,13 +424,11 @@ public class BibdFinder4CyclicTest {
                     continue ex;
                 }
             }
-            if (arr.length == k) {
-                if (arr[1] == 1) {
-                    cons.accept(new int[][]{initial.block});
-                }
+            if (sub.elems().get(1)) {
+                calcCyclesTrans(sub, auths, k, initial, transformations, cons);
                 continue;
             }
-            if (!sub.whiteList(v).get(1)) {
+            if (arr.length == k || !sub.whiteList(v).get(1)) {
                 continue;
             }
             int el = 1;
