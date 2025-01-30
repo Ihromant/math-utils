@@ -49,6 +49,10 @@ public class GroupTest {
         gr = new PermutationGroup(5, true);
         subGroups = gr.subGroups();
         assertEquals(59, subGroups.size());
+        assertTrue(subGroups.subList(1, subGroups.size() - 1).stream().noneMatch(SubGroup::isNormal));
+        gr = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
+        subGroups = gr.subGroups();
+        assertEquals(10, subGroups.size());
     }
 
     @Test

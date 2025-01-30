@@ -66,11 +66,6 @@ public interface Group {
         return result;
     }
 
-    // TODO this is not true for even orders
-    default int squareRoot(int from) {
-        return mul(from, (order() + 1) / 2);
-    }
-
     default int[] squareRoots(int from) {
         return IntStream.range(0, order()).filter(i -> op(i, i) == from).toArray();
     }

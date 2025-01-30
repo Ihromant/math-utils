@@ -5,34 +5,42 @@ import ua.ihromant.mathutils.util.FixBS;
 public class SubGroup implements Group {
     private final Group group;
     private final FixBS elems;
-    private final int[] map;
+    private final int[] arr;
     private final int[] reverse;
 
     public SubGroup(Group group, FixBS elems) {
         this.group = group;
         this.elems = elems;
-        this.map = new int[elems.cardinality()];
+        this.arr = new int[elems.cardinality()];
         this.reverse = new int[group.order()];
         int cnt = 0;
         for (int i = elems.nextSetBit(0); i >= 0; i = elems.nextSetBit(i+1)) {
-            map[cnt] = i;
+            arr[cnt] = i;
             reverse[i] = cnt++;
         }
     }
 
+    public FixBS elems() {
+        return elems;
+    }
+
+    public int[] arr() {
+        return arr;
+    }
+
     @Override
     public int op(int a, int b) {
-        return reverse[group.op(map[a], map[b])];
+        return reverse[group.op(arr[a], arr[b])];
     }
 
     @Override
     public int inv(int a) {
-        return reverse[group.inv(map[a])];
+        return reverse[group.inv(arr[a])];
     }
 
     @Override
     public int order() {
-        return map.length;
+        return arr.length;
     }
 
     @Override
@@ -42,7 +50,7 @@ public class SubGroup implements Group {
 
     @Override
     public String elementName(int a) {
-        return group.elementName(map[a]);
+        return group.elementName(arr[a]);
     }
 
     @Override
@@ -51,7 +59,7 @@ public class SubGroup implements Group {
     }
 
     public boolean isNormal() {
-        for (int n : map) {
+        for (int n : arr) {
             for (int g = 0; g < group.order(); g++) {
                 if (!elems.get(group.op(g, group.op(n, group.inv(g))))) {
                     return false;
