@@ -221,6 +221,9 @@ public class BibdFinder4CyclicTest {
                 FixBS filter = state.filter();
                 int next = filter.nextClearBit(1);
                 for (SubGroup sg : subGroups) {
+                    if (filter.intersects(sg.elems())) {
+                        continue;
+                    }
                     if (sg.order() == k) {
                         if (sg.elems().get(next)) {
                             State nextState = state.initiateSubGroup(sg, v, k);
@@ -228,7 +231,7 @@ public class BibdFinder4CyclicTest {
                         }
                         continue;
                     }
-                    if (filter.intersects(sg.elems()) || !sg.whiteList(v).get(next)) {
+                    if (!sg.whiteList(v).get(next)) {
                         continue;
                     }
                     State nextState = state.initiateSubGroup(sg, v, k).acceptElem(sg.group(), next);
@@ -371,9 +374,9 @@ public class BibdFinder4CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new CyclicGroup(21);
+        Group group = new CyclicGroup(28);
         int v = group.order();
-        int k = 3;
+        int k = 4;
         int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
