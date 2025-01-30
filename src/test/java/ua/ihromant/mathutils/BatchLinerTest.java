@@ -577,7 +577,7 @@ public class BatchLinerTest {
         try (InputStream is = new FileInputStream("/home/ihromant/maths/diffSets/beg/" + k + "-" + group.name() + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
-            br.lines().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
+            br.lines().parallel().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
                 String[] split = line.substring(2, line.length() - 2).split("], \\[|}, \\{");
                 int[][] des = Stream.concat(Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()),
                         v % k == 0 ? Stream.of(group.elements().filter(e -> k % group.order(e) == 0).toArray()) : Stream.empty()).toArray(int[][]::new);
