@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.QuaternionGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -46,6 +47,9 @@ public class BibdFinder4CyclicTest {
             int x = block[i];
             for (int j = i + 1; j < block.length; j++) {
                 int y = block[j];
+                if (y == gr.order()) {
+                    continue;
+                }
                 diffs.set(gr.op(y, gr.inv(x)));
                 diffs.set(gr.op(x, gr.inv(y)));
             }
@@ -98,6 +102,11 @@ public class BibdFinder4CyclicTest {
             boolean tupleFinished = nextIdx == block.length;
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
+            if (el == group.order()) {
+                newFilter.set(el);
+                newWhiteList.clear(el);
+                return new State(nextBlock, diffNeeded, nextIdx, newFilter, newWhiteList);
+            }
             int invEl = group.inv(el);
             for (int i = 0; i < idx; i++) {
                 int val = block[i];
@@ -121,7 +130,7 @@ public class BibdFinder4CyclicTest {
                 }
             }
             if (!tupleFinished) {
-                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0 && diff < group.order(); diff = newFilter.nextSetBit(diff + 1)) {
                     newWhiteList.clear(group.op(el, diff));
                 }
             }
@@ -240,7 +249,6 @@ public class BibdFinder4CyclicTest {
             }
             return;
         }
-        FixBS whiteList = state.whiteList();
         int lastVal = -1;
         for (int i = idx - 1; i >= 0; i--) {
             int val = state.block[i];
@@ -249,6 +257,7 @@ public class BibdFinder4CyclicTest {
                 break;
             }
         }
+        FixBS whiteList = state.whiteList();
         for (int el = whiteList.nextSetBit(lastVal); el >= 0; el = whiteList.nextSetBit(el + 1)) {
             State next = state.acceptElem(currSub.group(), el);
             calcCycles(subGroups, currSub, design, v, k, next, sink);
@@ -374,9 +383,9 @@ public class BibdFinder4CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new CyclicGroup(28);
-        int v = group.order();
-        int k = 4;
+        Group group = new QuaternionGroup();
+        int v = group.order() + 1;
+        int k = 3;
         int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
