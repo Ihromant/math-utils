@@ -85,7 +85,7 @@ public class BibdFinder4CyclicTest {
             newWhiteList.flip(1, v);
             newWhiteList.and(sub.whiteList(v));
             newFilter.or(sub.elems());
-            filter.clear(0);
+            newFilter.clear(0);
             int[] block = new int[k];
             int[] arr = sub.arr();
             System.arraycopy(arr, 0, block, 0, arr.length);
@@ -371,7 +371,7 @@ public class BibdFinder4CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new CyclicProduct(3, 3);
+        Group group = new CyclicGroup(21);
         int v = group.order();
         int k = 3;
         int[][] auths = auth(group);
