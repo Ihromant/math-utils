@@ -7,6 +7,7 @@ public class SubGroup implements Group {
     private final FixBS elems;
     private final int[] arr;
     private final int[] reverse;
+    private FixBS whiteList;
 
     public SubGroup(Group group, FixBS elems) {
         this.group = group;
@@ -18,6 +19,10 @@ public class SubGroup implements Group {
             arr[cnt] = i;
             reverse[i] = cnt++;
         }
+    }
+
+    public Group group() {
+        return group;
     }
 
     public FixBS elems() {
@@ -67,5 +72,28 @@ public class SubGroup implements Group {
             }
         }
         return true;
+    }
+
+    public FixBS whiteList(int v) {
+        if (whiteList == null) {
+            whiteList = new FixBS(v);
+            whiteList.set(1, v);
+            for (int i = 0; i < arr.length; i++) {
+                int x = arr[i];
+                whiteList.clear(x);
+                for (int j = i + 1; j < arr.length; j++) {
+                    int y = arr[j];
+                    int sqr = group.op(y, group.inv(x));
+                    for (int root : group.squareRoots(sqr)) {
+                        whiteList.clear(group.op(root, x));
+                    }
+                    int invSqr = group.op(x, group.inv(y));
+                    for (int root : group.squareRoots(invSqr)) {
+                        whiteList.clear(group.op(root, y));
+                    }
+                }
+            }
+        }
+        return whiteList;
     }
 }
