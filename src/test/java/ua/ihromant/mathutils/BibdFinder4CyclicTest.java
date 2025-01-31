@@ -86,11 +86,28 @@ public class BibdFinder4CyclicTest {
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = filter.copy();
             newWhiteList.flip(1, v);
-            newWhiteList.and(sub.whiteList(v));
             newFilter.or(sub.elems());
             newFilter.clear(0);
-            int[] block = new int[k];
+            Group group = sub.group();
             int[] arr = sub.arr();
+            for (int i = 0; i < arr.length; i++) {
+                int x = arr[i];
+                for (int diff = newFilter.nextSetBit(0); diff >= 0 && diff < group.order(); diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear(group.op(x, diff));
+                }
+                for (int j = i + 1; j < arr.length; j++) {
+                    int y = arr[j];
+                    int sqr = group.op(y, group.inv(x));
+                    for (int root : group.squareRoots(sqr)) {
+                        whiteList.clear(group.op(x, root));
+                    }
+                    int invSqr = group.op(x, group.inv(y));
+                    for (int root : group.squareRoots(invSqr)) {
+                        whiteList.clear(group.op(y, root));
+                    }
+                }
+            }
+            int[] block = new int[k];
             System.arraycopy(arr, 0, block, 0, arr.length);
             return new State(block, diffNeeded - arr.length + 1, arr.length, newFilter, newWhiteList);
         }
@@ -232,15 +249,15 @@ public class BibdFinder4CyclicTest {
                     if (filter.intersects(sg.elems())) {
                         continue;
                     }
+                    State nextState = state.initiateSubGroup(sg, v, k);
                     if (sg.elems().get(next)) {
-                        State nextState = state.initiateSubGroup(sg, v, k);
                         calcCycles(subGroups, sg, nextDesign, v, k, nextState, sink);
                         continue;
                     }
-                    if (sg.arr().length == k || !sg.whiteList(v).get(next)) {
+                    if (sg.arr().length == k || !nextState.whiteList().get(next)) {
                         continue;
                     }
-                    State nextState = state.initiateSubGroup(sg, v, k).acceptElem(sg.group(), next);
+                    nextState = nextState.acceptElem(sg.group(), next);
                     calcCycles(subGroups, sg, nextDesign, v, k, nextState, sink);
                 }
             }
@@ -269,6 +286,7 @@ public class BibdFinder4CyclicTest {
                 int y = block[j];
                 res.set(gr.op(gr.inv(x), y));
                 res.set(gr.op(gr.inv(y), x));
+                System.out.println(x + " " + y + " " + gr.op(gr.inv(x), y) + " " + gr.op(gr.inv(y), x));
             }
         }
         return res;
@@ -393,9 +411,9 @@ public class BibdFinder4CyclicTest {
 
     @Test
     public void logConsoleCycles() {
-        Group group = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
-        int v = group.order();
-        int k = 3;
+        Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        int v = group.order() + 1;
+        int k = 4;
         int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
@@ -428,7 +446,7 @@ public class BibdFinder4CyclicTest {
                 calcCyclesTrans(sub, auths, k, initial, transformations, cons);
                 continue;
             }
-            if (arr.length == k || !sub.whiteList(v).get(1)) {
+            if (arr.length == k || !initial.whiteList().get(1)) {
                 continue;
             }
             int el = 1;
