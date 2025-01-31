@@ -59,14 +59,17 @@ public class BibdFinder4CyclicTest {
     private static Stream<int[]> blocks(int[] block, int v, Group gr) {
         int ord = gr.order();
         Set<FixBS> set = new HashSet<>(ord);
+        List<int[]> res = new ArrayList<>();
         for (int i = 0; i < ord; i++) {
             FixBS fbs = new FixBS(v);
             for (int el : block) {
                 fbs.set(el == ord ? ord : gr.op(i, el));
             }
-            set.add(fbs);
+            if (set.add(fbs)) {
+                res.add(fbs.toArray());
+            }
         }
-        return set.stream().map(FixBS::toArray);
+        return res.stream();
     }
 
     private record State(int[] block, int diffNeeded, int idx, FixBS filter, FixBS whiteList) {
@@ -276,6 +279,29 @@ public class BibdFinder4CyclicTest {
             State next = state.acceptElem(currSub.group(), el);
             calcCycles(subGroups, currSub, design, v, k, next, sink);
         }
+    }
+
+    @Test
+    public void testDifferences() {
+        Group g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        int[] block = new int[]{0, 1, 2, 3, 31, 80};
+        System.out.println(differences(block, g.order(), g));
+        blocks(block, g.order(), g).forEach(arr -> System.out.println(Arrays.toString(arr) + " " + Arrays.stream(arr)
+                .mapToObj(g::elementName).collect(Collectors.joining(", ", "[", "]"))));
+    }
+
+    private static FixBS differences(int[] block, int v, Group gr) {
+        FixBS res = new FixBS(v);
+        for (int i = 0; i < block.length; i++) {
+            int x = block[i];
+            for (int j = i + 1; j < block.length; j++) {
+                int y = block[j];
+                res.set(gr.op(gr.inv(x), y));
+                res.set(gr.op(gr.inv(y), x));
+                System.out.println(x + " " + y + " " + gr.op(gr.inv(x), y) + " " + gr.op(gr.inv(y), x));
+            }
+        }
+        return res;
     }
 
     private static void calcCyclesTrans(SubGroup currGroup, int[][] auths, int k, State state, int[][] transformations, Consumer<int[][]> sink) {
