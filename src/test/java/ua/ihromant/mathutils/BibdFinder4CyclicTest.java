@@ -278,20 +278,6 @@ public class BibdFinder4CyclicTest {
         }
     }
 
-    private static FixBS differences(int[] block, int v, Group gr) {
-        FixBS res = new FixBS(v);
-        for (int i = 0; i < block.length; i++) {
-            int x = block[i];
-            for (int j = i + 1; j < block.length; j++) {
-                int y = block[j];
-                res.set(gr.op(gr.inv(x), y));
-                res.set(gr.op(gr.inv(y), x));
-                System.out.println(x + " " + y + " " + gr.op(gr.inv(x), y) + " " + gr.op(gr.inv(y), x));
-            }
-        }
-        return res;
-    }
-
     private static void calcCyclesTrans(SubGroup currGroup, int[][] auths, int k, State state, int[][] transformations, Consumer<int[][]> sink) {
         int idx = state.idx;
         if (idx == k) {
@@ -467,15 +453,19 @@ public class BibdFinder4CyclicTest {
         System.out.println("Processing initial of size " + unProcessed.size());
         long time = System.currentTimeMillis();
         AtomicInteger cnt = new AtomicInteger();
-        unProcessed.stream()/*.parallel()*/.forEach(init -> {
+        unProcessed.stream().parallel().forEach(init -> {
             State initial = State.forInitial(group, init, v, k);
             calcCycles(subGroups, null, Arrays.copyOf(init, init.length - 1), v, k, initial, des -> {
-                destination.println(Arrays.deepToString(des));
-                destination.flush();
-                if (destination != System.out) {
-                    System.out.println(Arrays.deepToString(des));
+                try {
+                    liners.add(new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
+                    destination.println(Arrays.deepToString(des));
+                    destination.flush();
+                    if (destination != System.out) {
+                        System.out.println(Arrays.deepToString(des));
+                    }
+                } catch (IllegalStateException e) {
+                    // TODO ok for now, fix later
                 }
-                liners.add(new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
             });
             if (destination != System.out) {
                 destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
