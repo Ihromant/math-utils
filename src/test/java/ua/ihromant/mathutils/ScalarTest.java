@@ -1,6 +1,10 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
+import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.NumeratedAffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.TranslationPlaneTest;
@@ -13,6 +17,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class ScalarTest {
@@ -500,6 +505,24 @@ public class ScalarTest {
                 }
                 System.out.println(l + " all " + all + " k3 " + k3);
             }
+        }
+    }
+
+    @Test
+    public void testOrbits() throws IOException {
+        String name = "hughes9";
+        int order = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + order + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = BatchAffineTest.readProj(br);
+            PermutationGroup auto = new PermutationGroup(TernaryAutomorphisms.automorphismsProj(proj).toArray(int[][]::new));
+            Group table = auto.asTable();
+            System.out.println("Calculated automorphisms " + auto.order());
+            List<SubGroup> subGroups = table.subGroups();
+            System.out.println(subGroups.size());
+            Map<Integer, List<SubGroup>> bySize = subGroups.stream().collect(Collectors.groupingBy(sg -> sg.arr().length));
+            System.out.println(subGroups.stream().collect(Collectors.groupingBy(sg -> sg.arr().length, Collectors.counting())));
         }
     }
 }
