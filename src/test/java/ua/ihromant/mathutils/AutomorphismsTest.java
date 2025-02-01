@@ -1,13 +1,9 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.plane.AffinePlane;
-import ua.ihromant.mathutils.plane.CharVals;
-import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
-import ua.ihromant.mathutils.plane.Quad;
-import ua.ihromant.mathutils.plane.TernarMapping;
-import ua.ihromant.mathutils.plane.TernaryRing;
-import ua.ihromant.mathutils.plane.TernaryRingTest;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedReader;
@@ -228,7 +224,7 @@ public class AutomorphismsTest {
                  BufferedReader br = new BufferedReader(isr)) {
                 Liner proj = BatchAffineTest.readProj(br);
                 //long time = System.currentTimeMillis();
-                List<int[]> auto = automorphismsProj(proj);
+                List<int[]> auto = TernaryAutomorphisms.automorphismsProj(proj);
                 for (int i = 0; i < auto.size(); i++) {
                     assertTrue(isAutomorphism(proj, auto.get(i)), i + " " + Arrays.toString(auto.get(i)));
                 }
@@ -273,143 +269,5 @@ public class AutomorphismsTest {
             }
         }
         return true;
-    }
-
-    private static List<int[]> automorphismsAffine(Liner proj, int dl) {
-        List<int[]> result = new ArrayList<>();
-        ProjectiveTernaryRing first = null;
-        TernarMapping mapping = null;
-        int pc = proj.pointCount();
-        int order = proj.line(0).length - 1;
-        int[] line = proj.line(dl);
-        for (int h : line) {
-            for (int v : line) {
-                if (v == h) {
-                    continue;
-                }
-                for (int o = 0; o < pc; o++) {
-                    if (proj.flag(dl, o)) {
-                        continue;
-                    }
-                    int oh = proj.line(o, h);
-                    int ov = proj.line(o, v);
-                    for (int e = 0; e < pc; e++) {
-                        if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
-                            continue;
-                        }
-                        int w = proj.intersection(proj.line(e, h), ov);
-                        int u = proj.intersection(proj.line(e, v), oh);
-                        Quad base = new Quad(o, u, w, e);
-                        ProjectiveTernaryRing ring = new ProjectiveTernaryRing("", proj, base);
-                        int two = ring.op(1, 1, 1);
-                        if (two == 0) {
-                            continue;
-                        }
-                        CharVals cv = CharVals.of(ring, two, order);
-                        if (!cv.induced()) {
-                            continue;
-                        }
-                        if (mapping == null) {
-                            first = ring;
-                            mapping = TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order);
-                            result.add(IntStream.range(0, proj.pointCount()).toArray());
-                            continue;
-                        }
-                        if (!mapping.chr().equals(cv.chr())) {
-                            continue;
-                        }
-                        TernaryRing matrix = ring.toMatrix();
-                        int[] ringIsomorphism = TernaryRingTest.ringIsomorphism(mapping, matrix);
-                        if (ringIsomorphism == null) {
-                            continue;
-                        }
-                        int[] map = new int[order * order + order + 1];
-                        for (int i = 0; i < order; i++) {
-                            for (int j = 0; j < order; j++) {
-                                int fromPt = first.withCrd(i, j);
-                                int toPt = ring.withCrd(ringIsomorphism[i], ringIsomorphism[j]);
-                                map[fromPt] = toPt;
-                            }
-                            int fromDir = first.withDirection(i);
-                            int toDir = ring.withDirection(ringIsomorphism[i]);
-                            map[fromDir] = toDir;
-                        }
-                        map[first.horDir()] = ring.horDir();
-                        result.add(map);
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    private static List<int[]> automorphismsProj(Liner proj) {
-        List<int[]> result = new ArrayList<>();
-        ProjectiveTernaryRing first = null;
-        TernarMapping mapping = null;
-        int pc = proj.pointCount();
-        int order = proj.line(0).length - 1;
-        for (int dl = 0; dl < proj.lineCount(); dl++) {
-            int[] line = proj.line(dl);
-            for (int h : line) {
-                for (int v : line) {
-                    if (v == h) {
-                        continue;
-                    }
-                    for (int o = 0; o < pc; o++) {
-                        if (proj.flag(dl, o)) {
-                            continue;
-                        }
-                        int oh = proj.line(o, h);
-                        int ov = proj.line(o, v);
-                        for (int e = 0; e < pc; e++) {
-                            if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
-                                continue;
-                            }
-                            int w = proj.intersection(proj.line(e, h), ov);
-                            int u = proj.intersection(proj.line(e, v), oh);
-                            Quad base = new Quad(o, u, w, e);
-                            ProjectiveTernaryRing ring = new ProjectiveTernaryRing("", proj, base);
-                            int two = ring.op(1, 1, 1);
-                            if (two == 0) {
-                                continue;
-                            }
-                            CharVals cv = CharVals.of(ring, two, order);
-                            if (!cv.induced()) {
-                                continue;
-                            }
-                            if (mapping == null) {
-                                first = ring;
-                                mapping = TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order);
-                                result.add(IntStream.range(0, proj.pointCount()).toArray());
-                                continue;
-                            }
-                            if (!mapping.chr().equals(cv.chr())) {
-                                continue;
-                            }
-                            TernaryRing matrix = ring.toMatrix();
-                            int[] ringIsomorphism = TernaryRingTest.ringIsomorphism(mapping, matrix);
-                            if (ringIsomorphism == null) {
-                                continue;
-                            }
-                            int[] map = new int[order * order + order + 1];
-                            for (int i = 0; i < order; i++) {
-                                for (int j = 0; j < order; j++) {
-                                    int fromPt = first.withCrd(i, j);
-                                    int toPt = ring.withCrd(ringIsomorphism[i], ringIsomorphism[j]);
-                                    map[fromPt] = toPt;
-                                }
-                                int fromDir = first.withDirection(i);
-                                int toDir = ring.withDirection(ringIsomorphism[i]);
-                                map[fromDir] = toDir;
-                            }
-                            map[first.horDir()] = ring.horDir();
-                            result.add(map);
-                        }
-                    }
-                }
-            }
-        }
-        return result;
     }
 }

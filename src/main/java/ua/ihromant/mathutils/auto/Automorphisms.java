@@ -1,4 +1,6 @@
-package ua.ihromant.mathutils;
+package ua.ihromant.mathutils.auto;
+
+import ua.ihromant.mathutils.Liner;
 
 import java.util.ArrayList;
 import java.util.Arrays;

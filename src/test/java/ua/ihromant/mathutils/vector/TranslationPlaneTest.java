@@ -10,7 +10,7 @@ import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.plane.CharVals;
+import ua.ihromant.mathutils.auto.CharVals;
 import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 import ua.ihromant.mathutils.plane.ProjChar;
@@ -19,6 +19,7 @@ import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.plane.TernarMapping;
 import ua.ihromant.mathutils.plane.TernaryRing;
 import ua.ihromant.mathutils.plane.TernaryRingTest;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -246,7 +247,7 @@ public class TranslationPlaneTest {
                             continue;
                         }
                         if (mappings.isEmpty()) {
-                            mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                            mappings.add(TernaryAutomorphisms.fillTernarMapping(ring.toMatrix(), cv, two, order));
                         }
                         Characteristic fstChr = mappings.getFirst().chr();
                         List<ProjChar> existingChars = map.get(cv.chr());
@@ -256,7 +257,7 @@ public class TranslationPlaneTest {
                         }
                         TernaryRing matrix = ring.toMatrix();
                         if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
-                            mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
+                            mappings.add(TernaryAutomorphisms.fillTernarMapping(matrix, cv, two, order));
                         }
                         if (existingChars != null) {
                             Optional<ProjChar> opt = existingChars.stream()
@@ -307,7 +308,7 @@ public class TranslationPlaneTest {
                             continue;
                         }
                         if (mappings.isEmpty()) {
-                            mappings.add(TernaryRingTest.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                            mappings.add(TernaryAutomorphisms.fillTernarMapping(ring.toMatrix(), cv, two, order));
                         }
                         Characteristic fstChr = mappings.getFirst().chr();
                         boolean eq = fstChr.equals(cv.chr());
@@ -316,7 +317,7 @@ public class TranslationPlaneTest {
                         }
                         TernaryRing matrix = ring.toMatrix();
                         if (mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
-                            mappings.add(TernaryRingTest.fillTernarMapping(matrix, cv, two, order));
+                            mappings.add(TernaryAutomorphisms.fillTernarMapping(matrix, cv, two, order));
                         }
                     }
                 }

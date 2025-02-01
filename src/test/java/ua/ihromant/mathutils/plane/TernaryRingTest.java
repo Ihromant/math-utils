@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.Triangle;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
 
@@ -57,7 +58,7 @@ public class TernaryRingTest {
     private static Map<Characteristic, List<TernarMapping>> ternarsOfAffine(String name, Liner proj, int dl) {
         Map<Characteristic, List<TernarMapping>> result = new HashMap<>();
         ternars(name, proj, dl).forEach(tr -> {
-            TernarMapping mapping = findTernarMapping(tr);
+            TernarMapping mapping = TernaryAutomorphisms.findTernarMapping(tr);
             Characteristic chr = mapping.chr();
             if (!mapping.isInduced()) {
                 return;
@@ -73,17 +74,7 @@ public class TernaryRingTest {
     }
 
     private static TernarMapping findInduced(String name, Liner proj, int dl) {
-        return ternars(name, proj, dl).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElse(null);
-    }
-
-    public static TernarMapping inducedOfProjective(String name, Liner proj) {
-        for (int dl = 0; dl < proj.lineCount(); dl++) {
-            TernarMapping result = findInduced(name, proj, dl);
-            if (result != null) {
-                return result;
-            }
-        }
-        throw new IllegalArgumentException("WTF?");
+        return ternars(name, proj, dl).map(TernaryAutomorphisms::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElse(null);
     }
 
     public static List<MappingList> ternarsOfProjective(Liner proj, String name) {
@@ -114,7 +105,7 @@ public class TernaryRingTest {
             Liner proj = BatchAffineTest.readProj(br);
             for (int dl1 = 0; dl1 < proj.lineCount(); dl1++) {
                 for (int dl2 = 0; dl2 < proj.lineCount(); dl2++) {
-                    TernarMapping map = ternars(name, proj, dl1).map(TernaryRingTest::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
+                    TernarMapping map = ternars(name, proj, dl1).map(TernaryAutomorphisms::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
                     boolean isomorphic = ternars(name, proj, dl2).anyMatch(m -> ringIsomorphic(map, m));
                     System.out.println(dl1 + " " + " " + dl2 + " " + isomorphic);
                 }
@@ -198,116 +189,6 @@ public class TernaryRingTest {
             }
         }
         return true;
-    }
-
-    public static int[] ringIsomorphism(TernarMapping tm, TernaryRing second) {
-        TernaryRing first = tm.ring();
-        int[] function = new int[second.order()];
-        Arrays.fill(function, -1);
-        function[0] = 0;
-        function[1] = 1;
-        for (int i = 1; i < tm.xl().size(); i++) {
-            FixBS xn1 = tm.xl().get(i);
-            FixBS xn = tm.xl().get(i - 1);
-            FixBS missing = xn1.copy().symDiff(xn);
-            for (int x = missing.nextSetBit(0); x >= 0; x = missing.nextSetBit(x + 1)) {
-                Triangle tr = tm.function()[x];
-                int mappedX = second.op(function[tr.o()], function[tr.u()], function[tr.w()]);
-                function[x] = mappedX;
-            }
-        }
-        if (!isBijective(function)) {
-            return null;
-        }
-        for (int a = 1; a < first.order(); a++) {
-            for (int b = 0; b < first.order(); b++) {
-                for (int c = 0; c < first.order(); c++) {
-                    if (second.op(function[a], function[b], function[c]) != function[first.op(a, b, c)]) {
-                        return null;
-                    }
-                }
-            }
-        }
-        return function;
-    }
-
-    private static final Triangle t111 = new Triangle(1, 1, 1);
-    private static final FixBS base = FixBS.of(2, 0, 1);
-
-    private static TernarMapping findTernarMapping(TernaryRing ring) {
-        int two = ring.op(1, 1, 1);
-        int order = ring.order();
-        if (two == 0) {
-            return new TernarMapping(ring, List.of(base), new Triangle[order], Characteristic.simpleChr);
-        }
-        CharVals cv = CharVals.of(ring, two, order);
-        TernarMapping result = fillTernarMapping(ring, cv, two, order);
-        return finishTernarMapping(result);
-    }
-
-    public static TernarMapping fillTernarMapping(TernaryRing ring, CharVals cv, int two, int order) {
-        List<FixBS> xl = new ArrayList<>();
-        xl.add(base);
-        FixBS xi = base.copy();
-        xi.set(two);
-        xl.add(xi);
-        int[][] vals = cv.vals();
-        Triangle[] function = new Triangle[order];
-        function[two] = t111;
-        for (int i = 3; i < order; i++) {
-            xi = xi.copy();
-            if (!xi.get(vals[0][i])) {
-                xi.set(vals[0][i]);
-                function[vals[0][i]] = new Triangle(1, 1, vals[0][i - 1]);
-            }
-            if (!xi.get(vals[1][i])) {
-                xi.set(vals[1][i]);
-                function[vals[1][i]] = new Triangle(vals[1][i - 1], 1, 1);
-            }
-            if (!xi.get(vals[2][i])) {
-                xi.set(vals[2][i]);
-                function[vals[2][i]] = new Triangle(1, vals[2][i - 1], 1);
-            }
-            if (!xi.get(vals[3][i])) {
-                xi.set(vals[3][i]);
-                function[vals[3][i]] = new Triangle(two, vals[3][i - 1], 0);
-            }
-            if (!xi.get(vals[4][i])) {
-                xi.set(vals[4][i]);
-                function[vals[4][i]] = new Triangle(vals[4][i - 1], two, 0);
-            }
-            xl.add(xi);
-            if (xi.cardinality() == order) {
-                break;
-            }
-        }
-        return new TernarMapping(ring, xl, function, cv.chr());
-    }
-
-    private static TernarMapping finishTernarMapping(TernarMapping mapping) {
-        TernaryRing ring = mapping.ring();
-        int order = ring.order();
-        FixBS xn = mapping.xl().getLast();
-        if (xn.cardinality() == order) {
-            return new TernarMapping(ring.toMatrix(), mapping.xl(), mapping.function(), mapping.chr());
-        }
-        FixBS xn1 = xn.copy();
-        for (int a = xn.nextSetBit(0); a >= 0; a = xn.nextSetBit(a + 1)) {
-            for (int b = xn.nextSetBit(0); b >= 0; b = xn.nextSetBit(b + 1)) {
-                for (int c = xn.nextSetBit(0); c >= 0; c = xn.nextSetBit(c + 1)) {
-                    int t = ring.op(a, b, c);
-                    if (!xn1.get(t)) {
-                        xn1.set(t);
-                        mapping.function()[t] = new Triangle(a, b, c);
-                    }
-                }
-            }
-        }
-        if (xn1.cardinality() == xn.cardinality()) {
-            return mapping;
-        }
-        mapping.xl().add(xn1);
-        return finishTernarMapping(mapping);
     }
 
     @Test

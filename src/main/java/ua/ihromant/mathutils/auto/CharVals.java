@@ -1,4 +1,7 @@
-package ua.ihromant.mathutils.plane;
+package ua.ihromant.mathutils.auto;
+
+import ua.ihromant.mathutils.plane.Characteristic;
+import ua.ihromant.mathutils.plane.TernaryRing;
 
 public record CharVals(Characteristic chr, int[][] vals, boolean induced) {
     public static CharVals of(TernaryRing ring, int two, int order) {
