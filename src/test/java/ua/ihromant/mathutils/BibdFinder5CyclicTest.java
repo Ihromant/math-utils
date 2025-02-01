@@ -24,8 +24,8 @@ public class BibdFinder5CyclicTest {
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
         FixBS filter = new FixBS(v);
-        int[][] design = new int[0][k];
-        Consumer<int[][]> cons = arr -> {
+        State[] design = new State[0];
+        Consumer<State[]> cons = arr -> {
             System.out.println(Arrays.deepToString(arr));
         };
         int blocksNeeded = v * (v - 1) / k / (k - 1);
@@ -35,11 +35,11 @@ public class BibdFinder5CyclicTest {
         searchDesigns(table, filter, design, state, v, k, val, blocksNeeded, cons);
     }
 
-    private static void searchDesigns(Group group, FixBS filter, int[][] currDesign, State state, int v, int k, int prev, int blocksNeeded, Consumer<int[][]> cons) {
+    private static void searchDesigns(Group group, FixBS filter, State[] currDesign, State state, int v, int k, int prev, int blocksNeeded, Consumer<State[]> cons) {
         if (state.size() == k) {
             int nextBlocksNeeded = blocksNeeded - group.order() / state.stabilizer().cardinality();
-            int[][] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
-            nextDesign[currDesign.length] = state.block.toArray();
+            State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
+            nextDesign[currDesign.length] = state;
             if (nextBlocksNeeded == 0) {
                 cons.accept(nextDesign);
                 return;
