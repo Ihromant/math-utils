@@ -67,7 +67,7 @@ public class BibdFinder5CyclicTest {
                 for (int el = base.nextSetBit(0); el >= 0; el = base.nextSetBit(el + 1)) {
                     block.set(auth[el]);
                 }
-                for (int diff = block.nextSetBit(1); diff >= 0; diff = block.nextSetBit(diff + 1)) {
+                for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
                     FixBS altBlock = new FixBS(v);
                     int inv = table.inv(diff);
                     for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
