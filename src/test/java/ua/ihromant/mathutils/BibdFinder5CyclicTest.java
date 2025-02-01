@@ -1,0 +1,126 @@
+package ua.ihromant.mathutils;
+
+import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.CyclicGroup;
+import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.util.FixBS;
+
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+public class BibdFinder5CyclicTest {
+    @Test
+    public void logBlocks() {
+        Group group = new CyclicGroup(7);
+        int v = group.order();
+        int k = 3;
+        int[][] auths = group.auth();
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        Group table = group.asTable();
+        FixBS filter = new FixBS(v);
+        int[][] design = new int[0][k];
+        Consumer<int[][]> cons = arr -> {
+            System.out.println(Arrays.deepToString(arr));
+        };
+        int blocksNeeded = v * (v - 1) / k / (k - 1);
+        searchDesigns(table, filter, design, v, k, 0, blocksNeeded, cons);
+    }
+
+    private static void searchDesigns(Group group, FixBS filter, int[][] currDesign, int v, int k, int prev, int blocksNeeded, Consumer<int[][]> cons) {
+        if (blocksNeeded == 0) {
+            cons.accept(currDesign);
+            return;
+        }
+        FixBS nextBlock = new FixBS(v);
+        nextBlock.set(0);
+        int min = filter.nextClearBit(1);
+    }
+
+    private record State(FixBS block, FixBS stabilizer, FixBS selfDiff, int size) {
+        private State acceptElem(Group group, int val, int v, int k) {
+            FixBS newBlock = block.copy();
+            FixBS queue = new FixBS(v);
+            queue.set(val);
+            int sz = size;
+            FixBS newSelfDiff = selfDiff.copy();
+            FixBS newStabilizer = stabilizer.copy();
+            while (!queue.isEmpty()) {
+                if (++sz > k) {
+                    return null;
+                }
+                int x = queue.nextSetBit(0);
+                if (x < val) {
+                    return null;
+                }
+                FixBS stabExt = new FixBS(v);
+                FixBS selfDiffExt = new FixBS(v);
+                for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
+                    int xb = group.op(x, group.inv(b));
+                    selfDiffExt.set(xb);
+                    if (newSelfDiff.get(xb) || newBlock.get(group.op(xb, x))) {
+                        stabExt.set(xb);
+                    }
+                    int bx = group.op(b, group.inv(x));
+                    if (newSelfDiff.get(bx)) {
+                        stabExt.set(bx);
+                    }
+                    selfDiffExt.set(bx);
+                }
+                newBlock.set(x);
+                stabExt.andNot(newStabilizer);
+                for (int st = newStabilizer.nextSetBit(1); st >= 0; st = newStabilizer.nextSetBit(st + 1)) {
+                    queue.set(group.op(st, x));
+                }
+                for (int st = stabExt.nextSetBit(1); st >= 0; st = stabExt.nextSetBit(st + 1)) {
+                    for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
+                        queue.set(group.op(st, b));
+                    }
+                }
+                newStabilizer.or(stabExt);
+                newSelfDiff.or(selfDiffExt);
+                queue.andNot(newBlock);
+            }
+            return new State(newBlock, newStabilizer, newSelfDiff, sz);
+        }
+    }
+
+    @Test
+    public void testState() {
+        Group g = new CyclicGroup(21);
+        int v = g.order();
+        int k = 5;
+        FixBS zero = FixBS.of(v, 0);
+        State state = new State(zero, zero, zero, 1);
+        state = Objects.requireNonNull(state.acceptElem(g, 3, v, k));
+        assertEquals(FixBS.of(v, 0, 3), state.block);
+        assertEquals(FixBS.of(v, 0), state.stabilizer);
+        assertEquals(FixBS.of(v, 0, 3, 18), state.selfDiff);
+        assertNull(state.acceptElem(g, 6, v, k));
+        assertNull(state.acceptElem(g, 12, v, 7));
+        state = Objects.requireNonNull(state.acceptElem(g, 6, v, 7));
+        FixBS bs = FixBS.of(v, IntStream.range(0, 7).map(i -> i * 3).toArray());
+        assertEquals(bs, state.selfDiff);
+        assertEquals(bs, state.stabilizer);
+        assertEquals(bs, state.block);
+        state = new State(zero, zero, zero, 1);
+        state = Objects.requireNonNull(state.acceptElem(g, 7, v, k));
+        state = Objects.requireNonNull(state.acceptElem(g, 14, v, k));
+        assertNull(state.acceptElem(g, 1, v, 6));
+        g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        v = g.order();
+        k = 6;
+        zero = FixBS.of(v, 0);
+        state = new State(zero, zero, zero, 1);
+        state = Objects.requireNonNull(state.acceptElem(g, 1, v, k));
+        state = Objects.requireNonNull(state.acceptElem(g, 2, v, k));
+        System.out.println(state);
+        state = state.acceptElem(g, 3, v, k);
+        System.out.println(state);
+    }
+}
