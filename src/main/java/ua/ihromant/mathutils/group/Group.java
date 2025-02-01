@@ -175,47 +175,40 @@ public interface Group {
 
     default List<SubGroup> subGroups() {
         List<SubGroup> result = new ArrayList<>();
-        Set<FixBS> found = new HashSet<>();
         int order = order();
         FixBS all = new FixBS(order);
         all.set(0, order);
-        found.add(all);
         FixBS init = new FixBS(order);
         init.set(0);
         result.add(new SubGroup(this, init));
-        find(result, found, init, order);
-        result.add(new SubGroup(this, all));
+        find(result, init, 0, order);
         return result;
     }
 
-    private void find(List<SubGroup> result, Set<FixBS> found, FixBS currGroup, int order) {
-        for (int gen = currGroup.nextClearBit(0); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
+    private void find(List<SubGroup> result, FixBS currGroup, int prev, int order) {
+        ex: for (int gen = currGroup.nextClearBit(prev + 1); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
             FixBS nextGroup = currGroup.copy();
-            nextGroup.set(gen);
             FixBS additional = new FixBS(order);
             additional.set(gen);
             do {
+                if (additional.nextSetBit(0) < gen) {
+                    continue ex;
+                }
                 nextGroup.or(additional);
             } while (!(additional = additional(nextGroup, additional, order)).isEmpty());
-            if (!found.add(nextGroup)) {
-                continue;
-            }
             result.add(new SubGroup(this, nextGroup));
-            find(result, found, nextGroup, order);
+            find(result, nextGroup, gen, order);
         }
     }
 
-    private FixBS additional(FixBS first, FixBS second, int order) {
+    private FixBS additional(FixBS currGroup, FixBS addition, int order) {
         FixBS result = new FixBS(order);
-        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
-            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
+        for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
+            for (int y = addition.nextSetBit(0); y >= 0; y = addition.nextSetBit(y + 1)) {
                 result.set(op(x, y));
             }
         }
-        FixBS removal = new FixBS(order);
-        removal.or(first);
-        removal.or(second);
-        result.xor(removal);
+        result.andNot(currGroup);
         return result;
     }
 

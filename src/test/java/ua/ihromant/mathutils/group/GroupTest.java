@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
@@ -49,6 +50,7 @@ public class GroupTest {
         gr = new PermutationGroup(5, true);
         subGroups = gr.subGroups();
         assertEquals(59, subGroups.size());
+        subGroups.sort(Comparator.comparingInt(sg -> sg.arr().length));
         assertTrue(subGroups.subList(1, subGroups.size() - 1).stream().noneMatch(SubGroup::isNormal));
         gr = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
         subGroups = gr.subGroups();
