@@ -8,7 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.function.Consumer;
+import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -25,8 +25,12 @@ public class BibdFinder5CyclicTest {
         Group table = group.asTable();
         FixBS filter = new FixBS(v);
         State[] design = new State[0];
-        Consumer<State[]> cons = arr -> {
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            if (blockNeeded != 0) {
+                return false;
+            }
             System.out.println(Arrays.deepToString(arr));
+            return true;
         };
         int blocksNeeded = v * (v - 1) / k / (k - 1);
         FixBS zero = FixBS.of(v, 0);
@@ -35,13 +39,12 @@ public class BibdFinder5CyclicTest {
         searchDesigns(table, filter, design, state, v, k, val, blocksNeeded, cons);
     }
 
-    private static void searchDesigns(Group group, FixBS filter, State[] currDesign, State state, int v, int k, int prev, int blocksNeeded, Consumer<State[]> cons) {
+    private static void searchDesigns(Group group, FixBS filter, State[] currDesign, State state, int v, int k, int prev, int blocksNeeded, BiPredicate<State[], Integer> cons) {
         if (state.size() == k) {
             int nextBlocksNeeded = blocksNeeded - group.order() / state.stabilizer().cardinality();
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
             nextDesign[currDesign.length] = state;
-            if (nextBlocksNeeded == 0) {
-                cons.accept(nextDesign);
+            if (cons.test(nextDesign, nextBlocksNeeded)) {
                 return;
             }
             FixBS nextFilter = filter.union(state.filter());
