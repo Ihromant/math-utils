@@ -16,7 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -97,7 +97,7 @@ public class BibdFinder5CyclicTest {
             int[][] ars = Arrays.stream(arr).flatMap(st -> blocks(st.block().toArray(), v, group)).toArray(int[][]::new);
             Liner l = new Liner(v, ars);
             liners.add(l);
-            System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
+            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(", ", "{", "}")));
             return true;
         };
         states.stream().parallel().forEach(st -> {
