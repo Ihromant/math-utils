@@ -60,7 +60,7 @@ public class BibdNonAbelianFinderTest {
                 card = card + ap.pairs.cardinality();
                 lines.add(ap.line());
             }
-            lines.sort(Comparator.reverseOrder());
+            lines.sort(Comparator.naturalOrder());
             set.add(new Comp(pairs, card, lines));
         };
         app.blocks(v, k, cons);
@@ -150,7 +150,7 @@ public class BibdNonAbelianFinderTest {
                 card = card + ap.pairs.cardinality();
                 lines.add(ap.line());
             }
-            lines.sort(Comparator.reverseOrder());
+            lines.sort(Comparator.naturalOrder());
             set.add(new Comp(pairs, card, lines));
         };
         IntStream.range(1, v).parallel().forEach(i -> {

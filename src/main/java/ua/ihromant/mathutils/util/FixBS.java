@@ -368,9 +368,9 @@ public class FixBS implements Comparable<FixBS> {
     @Override
     public int compareTo(FixBS o) {
         for (int i = 0; i < words.length; i++) {
-            int cmp = Long.compareUnsigned(Long.reverse(words[i]), Long.reverse(o.words[i]));
+            int cmp = Long.compareUnsigned(Long.reverse(o.words[i]), Long.reverse(words[i]));
             if (cmp != 0) {
-                return -cmp;
+                return cmp;
             }
         }
         return 0;
