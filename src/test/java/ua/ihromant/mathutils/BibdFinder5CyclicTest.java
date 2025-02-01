@@ -29,20 +29,37 @@ public class BibdFinder5CyclicTest {
             System.out.println(Arrays.deepToString(arr));
         };
         int blocksNeeded = v * (v - 1) / k / (k - 1);
-        searchDesigns(table, filter, design, v, k, 0, blocksNeeded, cons);
+        FixBS zero = FixBS.of(v, 0);
+        int val = 1;
+        State state = new State(zero, zero, zero, zero, 1).acceptElem(group, val, v, k);
+        searchDesigns(table, filter, design, state, v, k, val, blocksNeeded, cons);
     }
 
-    private static void searchDesigns(Group group, FixBS filter, int[][] currDesign, int v, int k, int prev, int blocksNeeded, Consumer<int[][]> cons) {
-        if (blocksNeeded == 0) {
-            cons.accept(currDesign);
-            return;
+    private static void searchDesigns(Group group, FixBS filter, int[][] currDesign, State state, int v, int k, int prev, int blocksNeeded, Consumer<int[][]> cons) {
+        if (state.size() == k) {
+            int nextBlocksNeeded = blocksNeeded - group.order() / state.stabilizer().cardinality();
+            int[][] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
+            nextDesign[currDesign.length] = state.block.toArray();
+            if (nextBlocksNeeded == 0) {
+                cons.accept(nextDesign);
+                return;
+            }
+            FixBS nextFilter = filter.union(state.filter());
+            FixBS zero = FixBS.of(v, 0);
+            int val = nextFilter.nextClearBit(1);
+            State nextState = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, val, v, k));
+            searchDesigns(group, nextFilter, nextDesign, nextState, v, k, 0, nextBlocksNeeded, cons);
+        } else {
+            for (int el = filter.nextClearBit(prev + 1); el >= 0 && el < v; el = filter.nextClearBit(el + 1)) {
+                State nextState = state.acceptElem(group, el, v, k);
+                if (nextState != null) {
+                    searchDesigns(group, filter, currDesign, nextState, v, k, el, blocksNeeded, cons);
+                }
+            }
         }
-        FixBS nextBlock = new FixBS(v);
-        nextBlock.set(0);
-        int min = filter.nextClearBit(1);
     }
 
-    private record State(FixBS block, FixBS stabilizer, FixBS selfDiff, int size) {
+    private record State(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int size) {
         private State acceptElem(Group group, int val, int v, int k) {
             FixBS newBlock = block.copy();
             FixBS queue = new FixBS(v);
@@ -50,6 +67,7 @@ public class BibdFinder5CyclicTest {
             int sz = size;
             FixBS newSelfDiff = selfDiff.copy();
             FixBS newStabilizer = stabilizer.copy();
+            FixBS newFilter = filter.copy();
             while (!queue.isEmpty()) {
                 if (++sz > k) {
                     return null;
@@ -61,16 +79,22 @@ public class BibdFinder5CyclicTest {
                 FixBS stabExt = new FixBS(v);
                 FixBS selfDiffExt = new FixBS(v);
                 for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
-                    int xb = group.op(x, group.inv(b));
+                    int bInv = group.inv(b);
+                    int xInv = group.inv(x);
+                    int xb = group.op(x, bInv);
                     selfDiffExt.set(xb);
                     if (newSelfDiff.get(xb) || newBlock.get(group.op(xb, x))) {
                         stabExt.set(xb);
                     }
-                    int bx = group.op(b, group.inv(x));
+                    int bx = group.op(b, xInv);
                     if (newSelfDiff.get(bx)) {
                         stabExt.set(bx);
                     }
                     selfDiffExt.set(bx);
+                    int diff = group.op(bInv, x);
+                    int outDiff = group.op(xInv, b);
+                    newFilter.set(diff);
+                    newFilter.set(outDiff);
                 }
                 newBlock.set(x);
                 stabExt.andNot(newStabilizer);
@@ -86,7 +110,7 @@ public class BibdFinder5CyclicTest {
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
-            return new State(newBlock, newStabilizer, newSelfDiff, sz);
+            return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
         }
     }
 
@@ -96,7 +120,7 @@ public class BibdFinder5CyclicTest {
         int v = g.order();
         int k = 5;
         FixBS zero = FixBS.of(v, 0);
-        State state = new State(zero, zero, zero, 1);
+        State state = new State(zero, zero, zero, zero, 1);
         state = Objects.requireNonNull(state.acceptElem(g, 3, v, k));
         assertEquals(FixBS.of(v, 0, 3), state.block);
         assertEquals(FixBS.of(v, 0), state.stabilizer);
@@ -108,7 +132,7 @@ public class BibdFinder5CyclicTest {
         assertEquals(bs, state.selfDiff);
         assertEquals(bs, state.stabilizer);
         assertEquals(bs, state.block);
-        state = new State(zero, zero, zero, 1);
+        state = new State(zero, zero, zero, zero, 1);
         state = Objects.requireNonNull(state.acceptElem(g, 7, v, k));
         state = Objects.requireNonNull(state.acceptElem(g, 14, v, k));
         assertNull(state.acceptElem(g, 1, v, 6));
@@ -116,11 +140,14 @@ public class BibdFinder5CyclicTest {
         v = g.order();
         k = 6;
         zero = FixBS.of(v, 0);
-        state = new State(zero, zero, zero, 1);
+        state = new State(zero, zero, zero, zero, 1);
         state = Objects.requireNonNull(state.acceptElem(g, 1, v, k));
         state = Objects.requireNonNull(state.acceptElem(g, 2, v, k));
-        System.out.println(state);
-        state = state.acceptElem(g, 3, v, k);
-        System.out.println(state);
+        assertEquals(FixBS.of(v, 0, 1, 2), state.selfDiff);
+        assertEquals(FixBS.of(v, 0, 1, 2), state.block);
+        assertEquals(FixBS.of(v, 0, 1, 2), state.stabilizer);
+        state = Objects.requireNonNull(state.acceptElem(g, 3, v, k));
+        assertEquals(FixBS.of(v, 0, 1, 2, 3, 31, 80), state.block);
+        assertEquals(FixBS.of(v, 0, 1, 2), state.stabilizer);
     }
 }
