@@ -5,8 +5,8 @@ import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -574,22 +574,51 @@ public class BatchLinerTest {
 
     private void cdfForGroup(Group group, int k, Consumer<Liner> cons) throws IOException {
         int v = group.order();
-        try (InputStream is = new FileInputStream("/home/ihromant/maths/diffSets/beg/" + k + "-" + group.name() + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            br.lines().parallel().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
-                String[] split = line.substring(2, line.length() - 2).split("], \\[|}, \\{");
-                int[][] des = Stream.concat(Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()),
-                        v % k == 0 ? Stream.of(group.elements().filter(e -> k % group.order(e) == 0).toArray()) : Stream.empty()).toArray(int[][]::new);
-                return Liner.byDiffFamily(group, des);
-            }).forEach(cons);
+        if (group.isCommutative()) {
+            try (InputStream is = new FileInputStream("/home/ihromant/maths/diffSets/beg/" + k + "-" + group.name() + ".txt");
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                br.lines().parallel().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
+                    String[] split = line.substring(2, line.length() - 2).split("], \\[|}, \\{");
+                    int[][] des = Stream.concat(Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()),
+                            v % k == 0 ? Stream.of(group.elements().filter(e -> k % group.order(e) == 0).toArray()) : Stream.empty()).toArray(int[][]::new);
+                    return Liner.byDiffFamily(group, des);
+                }).forEach(cons);
+            }
+        } else {
+            try (InputStream is = new FileInputStream("/home/ihromant/maths/g-spaces/bunch/" + k + "-" + group.name() + ".txt");
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                br.lines().parallel().filter(l -> l.contains("{{") || l.contains("[[")).map(line -> {
+                    String[] split = line.substring(2, line.length() - 2).split("], \\[|}, \\{");
+                    int[][] des = Arrays.stream(split).map(part -> Arrays.stream(part.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                    int[][] blocks = Arrays.stream(des).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new);
+                    return new Liner(v, blocks);
+                }).forEach(cons);
+            }
         }
+    }
+
+    private static Stream<int[]> blocks(int[] block, int v, Group gr) {
+        int ord = gr.order();
+        Set<FixBS> set = new HashSet<>(ord);
+        List<int[]> res = new ArrayList<>();
+        for (int i = 0; i < ord; i++) {
+            FixBS fbs = new FixBS(v);
+            for (int el : block) {
+                fbs.set(el == ord ? ord : gr.op(i, el));
+            }
+            if (set.add(fbs)) {
+                res.add(fbs.toArray());
+            }
+        }
+        return res.stream();
     }
 
     @Test
     public void testDesigns() throws IOException {
-        Group gr = new CyclicProduct(2, 2, 13);
-        cdfForGroup(gr, 4, l -> System.out.println(l.hyperbolicIndex()));
+        Group gr = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        cdfForGroup(gr, 6, l -> System.out.println(l.hyperbolicFreq()));
     }
 
     @Test
