@@ -8,10 +8,12 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -55,16 +57,17 @@ public class BibdFinder5CyclicTest {
         BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
             State st = arr[0];
             FixBS block = st.block;
-            for (int diff = block.nextSetBit(1); diff >= 0 && diff < v; diff = block.nextSetBit(diff + 1)) {
+            for (int diff = block.nextSetBit(1); diff >= 0; diff = block.nextSetBit(diff + 1)) {
                 FixBS altBlock = new FixBS(v);
                 int inv = table.inv(diff);
-                for (int el = block.nextSetBit(0); el >= 0 && el < v; el = block.nextSetBit(el + 1)) {
+                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
                     altBlock.set(table.op(inv, el));
                 }
                 if (altBlock.compareTo(block) < 0) {
                     return true;
                 }
             }
+            st.filter.clear(0);
             states.add(st);
             return true;
         };
@@ -72,7 +75,43 @@ public class BibdFinder5CyclicTest {
         FixBS zero = FixBS.of(v, 0);
         State state = new State(zero, zero, zero, zero, 1);
         searchDesigns(table, filter, design, state, v, k, 0, blocksNeeded, cons);
-        System.out.println(states.size());
+        State[] statesArr = states.toArray(State[]::new);
+        Arrays.parallelSort(statesArr, Comparator.comparing(State::filter));
+        int[] order = calcOrder(statesArr, v);
+        System.out.println(statesArr.length);
+        statesArr = Stream.concat(Arrays.stream(statesArr, order[1], order[2])
+                .filter(st -> {
+                    FixBS base = st.block;
+                    for (int[] auth : auths) {
+                        FixBS block = new FixBS(v);
+                        for (int el = base.nextSetBit(0); el >= 0; el = base.nextSetBit(el + 1)) {
+                            block.set(auth[el]);
+                        }
+                        for (int diff = block.nextSetBit(1); diff >= 0; diff = block.nextSetBit(diff + 1)) {
+                            FixBS altBlock = new FixBS(v);
+                            int inv = table.inv(diff);
+                            for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                                altBlock.set(table.op(inv, el));
+                            }
+                            if (altBlock.compareTo(base) < 0) {
+                                return false;
+                            }
+                        }
+                    }
+                    return true;
+                }), Arrays.stream(statesArr, order[2], order[v - 1])).toArray(State[]::new);
+        order = calcOrder(statesArr, v);
+        System.out.println(statesArr.length);
+    }
+
+    private static int[] calcOrder(State[] comps, int v) {
+        int[] res = new int[v];
+        for (int i = 1; i < res.length; i++) {
+            int prev = res[i - 1];
+            FixBS top = FixBS.of(v, i - 1, v);
+            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new State(null, null, top, null, 1), Comparator.comparing(State::filter)) - 1;
+        }
+        return res;
     }
 
     private static void searchDesigns(Group group, FixBS filter, State[] currDesign, State state, int v, int k, int prev, int blocksNeeded, BiPredicate<State[], Integer> cons) {

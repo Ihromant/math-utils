@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class BibdNotAbelianFinderTest {
+public class BibdNonAbelianFinderTest {
     @Test
     public void testLeft() {
         Group g = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
@@ -276,7 +276,7 @@ public class BibdNotAbelianFinderTest {
             IntStream.range(1, v).parallel().forEach(i -> {
                 int[] curr = new int[k];
                 curr[1] = i;
-                BibdNotAbelianFinderTest.blocks(curr, v, i + 1, 2, cons);
+                BibdNonAbelianFinderTest.blocks(curr, v, i + 1, 2, cons);
             });
         }
     }
@@ -317,7 +317,7 @@ public class BibdNotAbelianFinderTest {
             IntStream.range(1, v - k + 1).parallel().forEach(i -> {
                 int[] curr = new int[k];
                 curr[0] = i;
-                BibdNotAbelianFinderTest.blocks(curr, v, i + 1, 1, cons);
+                BibdNonAbelianFinderTest.blocks(curr, v, i + 1, 1, cons);
             });
         }
     }
@@ -370,7 +370,7 @@ public class BibdNotAbelianFinderTest {
                         int[] curr = new int[k];
                         curr[0] = fst;
                         curr[1] = snd;
-                        BibdNotAbelianFinderTest.blocks(curr, v, snd + 1, 2, cons);
+                        BibdNonAbelianFinderTest.blocks(curr, v, snd + 1, 2, cons);
                     }));
         }
     }
