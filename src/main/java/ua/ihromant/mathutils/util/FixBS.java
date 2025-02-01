@@ -370,7 +370,7 @@ public class FixBS implements Comparable<FixBS> {
         for (int i = 0; i < words.length; i++) {
             int cmp = Long.compareUnsigned(Long.reverse(words[i]), Long.reverse(o.words[i]));
             if (cmp != 0) {
-                return cmp;
+                return -cmp;
             }
         }
         return 0;

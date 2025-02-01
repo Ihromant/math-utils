@@ -199,7 +199,7 @@ public class BibdFinderCyclicTest {
                     multiplied[i] = auth[arr[i]];
                 }
                 FixBS mulBs = minimalTuple(multiplied, table, v);
-                if (res.compareTo(mulBs) < 0) {
+                if (res.compareTo(mulBs) > 0) {
                     return;
                 }
             }
@@ -216,7 +216,7 @@ public class BibdFinderCyclicTest {
             for (int i : arr) {
                 cnd.set(gr.op(i, inv));
             }
-            if (min == null || cnd.compareTo(min) > 0) {
+            if (min == null || cnd.compareTo(min) < 0) {
                 min = cnd;
             }
         }
@@ -228,10 +228,10 @@ public class BibdFinderCyclicTest {
             FixBS ca = cnd[i];
             FixBS aa = bp[i].bs();
             int cmp = ca.compareTo(aa);
-            if (cmp < 0) {
+            if (cmp > 0) {
                 return false;
             }
-            if (cmp > 0) {
+            if (cmp < 0) {
                 return true;
             }
         }

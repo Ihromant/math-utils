@@ -349,7 +349,7 @@ public class BibdFinder3Test {
         System.out.println(map.size());
         DiffPair[] pairs = map.entrySet().stream().map(e -> new DiffPair(e.getKey(), e.getValue())).toArray(DiffPair[]::new);
         map.clear();
-        Arrays.parallelSort(pairs, Comparator.comparing(DiffPair::diff).reversed());
+        Arrays.parallelSort(pairs, Comparator.comparing(DiffPair::diff));
         //dump(pairs, v, k);
         processPairs(ps, v, k, pairs);
     }
@@ -374,7 +374,7 @@ public class BibdFinder3Test {
             arr[0] = i == 1 ? 0 : idxes[i - 2][vk - 1];
             for (int j = 1; j < arr.length; j++) {
                 FixBS top = FixBS.of(v, new int[]{i, i + j, v - 1});
-                arr[j] = -Arrays.binarySearch(pairs, arr[j - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff).reversed()) - 1;
+                arr[j] = -Arrays.binarySearch(pairs, arr[j - 1], pairs.length, new DiffPair(top, null), Comparator.comparing(DiffPair::diff)) - 1;
             }
         }
         return idxes;
@@ -505,7 +505,7 @@ public class BibdFinder3Test {
                 nextFilter.or(dp.diff);
                 if (needed == 2) {
                     nextFilter.flip(1, v);
-                    int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff).reversed());
+                    int idx = Arrays.binarySearch(pairs, new DiffPair(nextFilter, null), Comparator.comparing(DiffPair::diff));
                     if (idx < 0) {
                         return;
                     }

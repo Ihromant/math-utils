@@ -66,7 +66,7 @@ public class BibdNotAbelianFinderTest {
         app.blocks(v, k, cons);
         System.out.println(set.size());
         Comp[] components = set.toArray(Comp[]::new);
-        Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
+        Arrays.parallelSort(components, Comparator.comparing(c -> c.pairs));
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
@@ -160,7 +160,7 @@ public class BibdNotAbelianFinderTest {
         });
         System.out.println(set.size());
         Comp[] components = set.toArray(Comp[]::new);
-        Arrays.parallelSort(components, Comparator.<Comp, FixBS>comparing(c -> c.pairs).reversed());
+        Arrays.parallelSort(components, Comparator.comparing(c -> c.pairs));
         int[] order = calcOrder(v, components);
         System.out.println(components.length);
         List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
@@ -187,7 +187,7 @@ public class BibdNotAbelianFinderTest {
         for (int i = 1; i < res.length; i++) {
             int prev = res[i - 1];
             FixBS top = FixBS.of(v * v, i - 1, v * v - 1);
-            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new Comp(top, 0, null), Comparator.comparing(Comp::pairs).reversed()) - 1;
+            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new Comp(top, 0, null), Comparator.comparing(Comp::pairs)) - 1;
         }
         return res;
     }

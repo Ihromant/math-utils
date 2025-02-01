@@ -24,7 +24,7 @@ public class CanonicalConsumer implements Consumer<Partition> {
         if (cert == null) {
             return true;
         }
-        return candidate.compareTo(cert) > 0;
+        return candidate.compareTo(cert) < 0;
     }
 
     @Override

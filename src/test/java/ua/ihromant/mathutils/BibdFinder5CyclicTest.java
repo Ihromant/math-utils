@@ -6,7 +6,9 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
@@ -16,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class BibdFinder5CyclicTest {
     @Test
-    public void logBlocks() {
+    public void logDesigns() {
         Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         int v = group.order();
         int k = 6;
@@ -37,6 +39,40 @@ public class BibdFinder5CyclicTest {
         int val = 1;
         State state = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, val, v, k));
         searchDesigns(table, filter, design, state, v, k, val, blocksNeeded, cons);
+    }
+
+    @Test
+    public void logBlocks() {
+        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        int v = group.order();
+        int k = 6;
+        int[][] auths = group.auth();
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        Group table = group.asTable();
+        FixBS filter = new FixBS(v);
+        State[] design = new State[0];
+        List<State> states = new ArrayList<>();
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            State st = arr[0];
+            FixBS block = st.block;
+            for (int diff = block.nextSetBit(1); diff >= 0 && diff < v; diff = block.nextSetBit(diff + 1)) {
+                FixBS altBlock = new FixBS(v);
+                int inv = table.inv(diff);
+                for (int el = block.nextSetBit(0); el >= 0 && el < v; el = block.nextSetBit(el + 1)) {
+                    altBlock.set(table.op(inv, el));
+                }
+                if (altBlock.compareTo(block) < 0) {
+                    return true;
+                }
+            }
+            states.add(st);
+            return true;
+        };
+        int blocksNeeded = v * (v - 1) / k / (k - 1);
+        FixBS zero = FixBS.of(v, 0);
+        State state = new State(zero, zero, zero, zero, 1);
+        searchDesigns(table, filter, design, state, v, k, 0, blocksNeeded, cons);
+        System.out.println(states.size());
     }
 
     private static void searchDesigns(Group group, FixBS filter, State[] currDesign, State state, int v, int k, int prev, int blocksNeeded, BiPredicate<State[], Integer> cons) {
