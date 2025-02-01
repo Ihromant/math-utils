@@ -41,7 +41,7 @@ public class IntList {
     }
 
     public IntList copy() {
-        return new IntList(arr, size);
+        return new IntList(arr.clone(), size);
     }
 
     @Override

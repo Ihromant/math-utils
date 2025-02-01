@@ -8,10 +8,15 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -79,7 +84,7 @@ public class BibdFinder5CyclicTest {
         Arrays.parallelSort(statesArr, Comparator.comparing(State::filter));
         int[] order = calcOrder(statesArr, v);
         System.out.println(statesArr.length);
-        statesArr = Stream.concat(Arrays.stream(statesArr, order[1], order[2])
+        State[] filteredStatesArr = Stream.concat(Arrays.stream(statesArr, order[1], order[2])
                 .filter(st -> {
                     FixBS base = st.block;
                     for (int[] auth : auths) {
@@ -100,8 +105,61 @@ public class BibdFinder5CyclicTest {
                     }
                     return true;
                 }), Arrays.stream(statesArr, order[2], order[v - 1])).toArray(State[]::new);
-        order = calcOrder(statesArr, v);
-        System.out.println(statesArr.length);
+        int[] newOrder = calcOrder(filteredStatesArr, v);
+        System.out.println(filteredStatesArr.length);
+        List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger ai = new AtomicInteger();
+        System.out.println("To process " + (newOrder[2] - newOrder[1]));
+        IntStream.range(newOrder[1], newOrder[2]).parallel().forEach(i -> {
+            State st = filteredStatesArr[i];
+            IntList base = new IntList(v);
+            base.add(i);
+            calculate(filteredStatesArr, newOrder, v, st.filter().cardinality(), st.filter(), base, fbs -> {
+                int[] arr = fbs.toArray();
+                int[][] ars = Arrays.stream(arr).boxed().flatMap(j -> blocks(filteredStatesArr[j].block().toArray(), v, group)).toArray(int[][]::new);
+                Liner l = new Liner(v, ars);
+                liners.add(l);
+                System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
+            });
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
+        });
+        System.out.println(liners.size());
+    }
+
+    private static Stream<int[]> blocks(int[] block, int v, Group gr) {
+        int ord = gr.order();
+        Set<FixBS> set = new HashSet<>(ord);
+        List<int[]> res = new ArrayList<>();
+        for (int i = 0; i < ord; i++) {
+            FixBS fbs = new FixBS(v);
+            for (int el : block) {
+                fbs.set(el == ord ? ord : gr.op(i, el));
+            }
+            if (set.add(fbs)) {
+                res.add(fbs.toArray());
+            }
+        }
+        return res.stream();
+    }
+
+    private static void calculate(State[] components, int[] order, int v, int currCard, FixBS union, IntList curr, Consumer<IntList> cons) {
+        if (currCard == v - 1) {
+            cons.accept(curr);
+            return;
+        }
+        int hole = union.nextClearBit(1);
+        for (int i = order[hole]; i < order[hole + 1]; i++) {
+            State c = components[i];
+            if (c.filter.intersects(union)) {
+                continue;
+            }
+            IntList newCurr = curr.copy();
+            newCurr.add(i);
+            calculate(components, order, v, currCard + c.filter().cardinality(), union.union(c.filter()), newCurr, cons);
+        }
     }
 
     private static int[] calcOrder(State[] comps, int v) {
