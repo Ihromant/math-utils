@@ -75,9 +75,17 @@ public interface Group {
     default Group asTable() {
         int order = order();
         int[][] table = new int[order][order];
-        for (int i = 0; i < order; i++) {
-            for (int j = 0; j < order; j++) {
-                table[i][j] = op(i, j);
+        if (order > 1000) {
+            IntStream.range(0, order).parallel().forEach(i -> {
+                for (int j = 0; j < order; j++) {
+                    table[i][j] = op(i, j);
+                }
+            });
+        } else {
+            for (int i = 0; i < order; i++) {
+                for (int j = 0; j < order; j++) {
+                    table[i][j] = op(i, j);
+                }
             }
         }
         return new TableGroup(table);
