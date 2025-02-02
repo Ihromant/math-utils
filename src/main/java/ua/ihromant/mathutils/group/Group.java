@@ -6,9 +6,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.IntStream;
 
 public interface Group {
@@ -75,10 +73,14 @@ public interface Group {
     }
 
     default Group asTable() {
-        return new TableGroup(
-                elements().mapToObj(i -> elements().map(j -> op(i, j)).toArray()).toArray(int[][]::new),
-                elements().map(this::inv).toArray(),
-                elements().mapToObj(this::squareRoots).toArray(int[][]::new));
+        int order = order();
+        int[][] table = new int[order][order];
+        for (int i = 0; i < order; i++) {
+            for (int j = 0; j < order; j++) {
+                table[i][j] = op(i, j);
+            }
+        }
+        return new TableGroup(table);
     }
 
     default BitSet difference(int[] basic) {
