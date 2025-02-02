@@ -4,12 +4,12 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -247,5 +247,85 @@ public class BibdFinder5CyclicTest {
         state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 3, v, k));
         assertEquals(FixBS.of(v, 0, 1, 2, 3, 31, 80), state.block);
         assertEquals(FixBS.of(v, 0, 1, 2), state.stabilizer);
+    }
+
+    private static class SubGroupConfig {
+        private final Group gr;
+        private final FixBS[] cosets;
+        private final int[] idx;
+
+        public SubGroupConfig(SubGroup sg) {
+            this.gr = sg.group();
+            Set<FixBS> set = new HashSet<>();
+            for (int i = 0; i < gr.order(); i++) {
+                FixBS coset = new FixBS(gr.order());
+                for (int el : sg.arr()) {
+                    coset.set(gr.op(i, el));
+                }
+                set.add(coset);
+            }
+            this.cosets = set.toArray(FixBS[]::new);
+            Arrays.sort(cosets);
+            this.idx = new int[gr.order()];
+            for (int i = 0; i < cosets.length; i++) {
+                FixBS coset = cosets[i];
+                for (int el = coset.nextSetBit(0); el >= 0; el = coset.nextSetBit(el + 1)) {
+                    idx[el] = i;
+                }
+            }
+        }
+
+        private int convert(int g) {
+            return idx[g];
+        }
+
+        private int apply(int g, int el) {
+            return idx[gr.op(g, cosets[el].nextSetBit(0))];
+        }
+    }
+
+    private static class OrbitApplicator {
+        private final SubGroupConfig[] subs;
+        private final int[] oBeg;
+        private final int v;
+
+        public OrbitApplicator(SubGroup[] subs) {
+            this.subs = new SubGroupConfig[subs.length];
+            this.oBeg = new int[subs.length];
+            int min = 0;
+            for (int i = 0; i < subs.length; i++) {
+                oBeg[i] = min;
+                SubGroupConfig conf = new SubGroupConfig(subs[i]);
+                this.subs[i] = conf;
+                min = min + conf.cosets.length;
+            }
+            this.v = min;
+        }
+
+        public int apply(int g, int x) {
+            int idx = Arrays.binarySearch(oBeg, x);
+            if (idx < 0) {
+                idx = -idx - 2;
+            }
+            int min = oBeg[idx];
+            return subs[idx].apply(g, x - min) + min;
+        }
+    }
+
+    @Test
+    public void testApplicator() {
+        Group g = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        SubGroup tr = new SubGroup(g, FixBS.of(g.order(), 0));
+        SubGroup small = new SubGroup(g, FixBS.of(g.order(), 0, 1, 2));
+        FixBS f = new FixBS(g.order());
+        f.set(0, g.order());
+        SubGroup fix = new SubGroup(g, f);
+        OrbitApplicator applicator = new OrbitApplicator(new SubGroup[]{tr, small, small, fix});
+        assertEquals(66, applicator.v);
+        for (int x = 0; x < applicator.v; x++) {
+            for (int j = 0; j < g.order(); j++) {
+                System.out.println(j + "*" + x + "=" + applicator.apply(j, x));
+            }
+        }
     }
 }
