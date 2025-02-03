@@ -257,7 +257,7 @@ public class BibdFinder5CyclicTest {
         int v = group.order();
         int k = 4;
         int[][] auths = group.auth();
-        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        System.out.println(group.name() + " " + (v + 1) + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
         FixBS filter = new FixBS(v);
         State[] design = new State[0];
