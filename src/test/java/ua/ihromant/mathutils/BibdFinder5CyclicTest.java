@@ -2,9 +2,9 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
-import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
@@ -12,8 +12,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -247,5 +249,95 @@ public class BibdFinder5CyclicTest {
         state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 3, v, k));
         assertEquals(FixBS.of(v, 0, 1, 2, 3, 31, 80), state.block);
         assertEquals(FixBS.of(v, 0, 1, 2), state.stabilizer);
+    }
+
+    @Test
+    public void logBlocksWithFixed() {
+        Group group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        int v = group.order();
+        int k = 4;
+        int[][] auths = group.auth();
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        Group table = group.asTable();
+        FixBS filter = new FixBS(v);
+        State[] design = new State[0];
+        List<State> oneStates = new ArrayList<>();
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            State st = arr[0];
+            FixBS base = st.block;
+            for (int[] auth : auths) {
+                FixBS block = new FixBS(v);
+                for (int el = base.nextSetBit(0); el >= 0; el = base.nextSetBit(el + 1)) {
+                    block.set(auth[el]);
+                }
+                for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
+                    FixBS altBlock = new FixBS(v);
+                    int inv = table.inv(diff);
+                    for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                        altBlock.set(table.op(inv, el));
+                    }
+                    if (altBlock.compareTo(base) < 0) {
+                        return true;
+                    }
+                }
+            }
+            st.filter.clear(0);
+            if (st.stabilizer.equals(st.block)) {
+                oneStates.add(st);
+            }
+            return true;
+        };
+        int blocksNeeded = (v + 1) * v / k / (k - 1);
+        FixBS zero = FixBS.of(v, 0);
+        int val = 1;
+        State state = new State(zero, zero, zero, zero, 1);
+        searchDesigns(table, filter, design, state, v, k - 1, val, blocksNeeded, cons);
+        System.out.println("Ones size " + oneStates.size());
+        List<State[]> twoStates = Collections.synchronizedList(new ArrayList<>());
+        BiPredicate<State[], Integer> cons1 = (arr, bn) -> {
+            twoStates.add(arr);
+            return true;
+        };
+        oneStates.stream().parallel().forEach(st -> {
+            int nextBlocksNeeded = blocksNeeded - group.order() / state.stabilizer().cardinality();
+            State[] nextDesign = new State[]{st};
+            FixBS nextFilter = st.filter();
+            int min = nextFilter.nextClearBit(1);
+            State nextState = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, min, v, k));
+            searchDesigns(group, nextFilter, nextDesign, nextState, v, k, min, nextBlocksNeeded, cons1);
+        });
+        System.out.println("Twos size " + twoStates.size());
+        List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger ai = new AtomicInteger();
+        BiPredicate<State[], Integer> fCons = (arr, blockNeeded) -> {
+            if (blockNeeded != 0) {
+                return false;
+            }
+            int[][] ars = Stream.concat(blocks(arr[0].block.toArray(), v, group).map(bl -> IntStream.concat(Arrays.stream(bl), IntStream.of(v)).toArray()),
+                    Arrays.stream(arr, 1, arr.length).flatMap(st -> blocks(st.block().toArray(), v, group))).toArray(int[][]::new);
+            Liner l = new Liner(v + 1, ars);
+            liners.add(l);
+            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(", ", "{", "}")));
+            return true;
+        };
+        twoStates.stream().parallel().forEach(st -> {
+            FixBS nextFilter = st[0].filter.union(st[1].filter);
+            int from = nextFilter.nextClearBit(1);
+            State init = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, from, v, k));
+            searchDesigns(table, nextFilter, st, init, v, k, from,
+                    blocksNeeded - group.order() / st[0].stabilizer.cardinality() - group.order() / st[1].stabilizer.cardinality(), fCons);
+            int cnt = ai.incrementAndGet();
+            if (cnt % 100 == 0) {
+                System.out.println(cnt);
+            }
+        });
+        System.out.println("Unprocessed " + liners.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        liners.stream().parallel().forEach(l -> {
+            FixBS canon = l.getCanonicalOld();
+            if (unique.putIfAbsent(canon, l) == null) {
+                System.out.println(l.autCountOld() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
+            }
+        });
     }
 }
