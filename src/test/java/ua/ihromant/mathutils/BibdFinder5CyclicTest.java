@@ -289,9 +289,8 @@ public class BibdFinder5CyclicTest {
         };
         int blocksNeeded = (v + 1) * v / k / (k - 1);
         FixBS zero = FixBS.of(v, 0);
-        int val = 1;
         State state = new State(zero, zero, zero, zero, 1);
-        searchDesigns(table, filter, design, state, v, k - 1, val, blocksNeeded, cons);
+        searchDesigns(table, filter, design, state, v, k - 1, 0, blocksNeeded, cons);
         System.out.println("Ones size " + oneStates.size());
         List<State[]> twoStates = Collections.synchronizedList(new ArrayList<>());
         BiPredicate<State[], Integer> cons1 = (arr, bn) -> {
