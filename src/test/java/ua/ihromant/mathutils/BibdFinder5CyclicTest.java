@@ -294,6 +294,39 @@ public class BibdFinder5CyclicTest {
         System.out.println("Ones size " + oneStates.size());
         List<State[]> twoStates = Collections.synchronizedList(new ArrayList<>());
         BiPredicate<State[], Integer> cons1 = (arr, bn) -> {
+            FixBS[] base = arr[0].block.nextSetBit(1) > arr[1].block.nextSetBit(1)
+                    ? new FixBS[]{arr[1].block, arr[0].block} : new FixBS[]{arr[0].block, arr[1].block};
+            for (int[] auth : auths) {
+                FixBS[] mapped = new FixBS[arr.length];
+                for (int i = 0; i < arr.length; i++) {
+                    FixBS bl = arr[i].block;
+                    FixBS block = new FixBS(v);
+                    for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
+                        block.set(auth[el]);
+                    }
+                    FixBS min = block;
+                    for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
+                        FixBS altBlock = new FixBS(v);
+                        int inv = table.inv(diff);
+                        for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                            altBlock.set(table.op(inv, el));
+                        }
+                        if (altBlock.compareTo(min) < 0) {
+                            min = altBlock;
+                        }
+                    }
+                    mapped[i] = min;
+                }
+                if (mapped[0].compareTo(mapped[1]) > 0) {
+                    FixBS tmp = mapped[1];
+                    mapped[1] = mapped[0];
+                    mapped[0] = tmp;
+                }
+                int cmp = mapped[0].compareTo(base[0]);
+                if (cmp < 0 || cmp == 0 && mapped[1].compareTo(base[1]) < 0) {
+                    return true;
+                }
+            }
             twoStates.add(arr);
             return true;
         };
