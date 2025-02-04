@@ -223,5 +223,11 @@ public class GroupTest {
         for (SubGroup sg : sgs) {
             System.out.println(sg.order() + " " + sg.isNormal());
         }
+        Group simple = new PermutationGroup(new CyclicProduct(2, 2, 2).auth()).asTable();
+        System.out.println(Arrays.toString(IntStream.range(0, simple.order()).map(simple::order).toArray()));
+        sgs = simple.subGroups();
+        for (SubGroup sg : sgs) {
+            System.out.println(sg.order() + " " + sg.isNormal());
+        }
     }
 }

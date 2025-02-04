@@ -108,6 +108,7 @@ public record CyclicProduct(int... base) implements Group {
         int order = order();
         int[][] result = new int[helpers.stream().mapToInt(h -> h.helper.gl().length).reduce(1, (a, b) -> a * b)][order];
         calculateAuth(result, helpers);
+        Arrays.parallelSort(result, Group::compareArr);
         return result;
     }
 
