@@ -40,12 +40,12 @@ public class ApplicatorTest {
             }
         }
 
-        private int convert(int g) {
+        private int idx(int g) {
             return idx[g];
         }
 
         private int apply(int g, int el) {
-            return idx[gr.op(g, cosets[el].nextSetBit(0))];
+            return gr.op(g, cosets[el].nextSetBit(0));
         }
     }
 
@@ -73,7 +73,8 @@ public class ApplicatorTest {
                 idx = -idx - 2;
             }
             int min = oBeg[idx];
-            return subs[idx].apply(g, x - min) + min;
+            SubGroupConfig conf = subs[idx];
+            return conf.idx(conf.apply(g, x - min)) + min;
         }
     }
 

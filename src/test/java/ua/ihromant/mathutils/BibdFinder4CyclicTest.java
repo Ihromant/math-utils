@@ -336,13 +336,7 @@ public class BibdFinder4CyclicTest {
 
     private static int[][] auth(Group group) {
         int ord = group.order();
-        int[][] auth;
-        try {
-            auth = group.auth();
-        } catch (UnsupportedOperationException e) {
-            System.out.println("Unsupported auths for " + group);
-            auth = new int[][]{IntStream.range(0, ord).toArray()};
-        }
+        int[][] auth = group.auth();
         int[][] result = new int[auth.length][ord + 1];
         for (int i = 0; i < auth.length; i++) {
             System.arraycopy(auth[i], 0, result[i], 0, auth[i].length);
