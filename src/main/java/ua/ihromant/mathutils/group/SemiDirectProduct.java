@@ -136,6 +136,8 @@ public class SemiDirectProduct implements Group {
                 }
             }
         }
-        return result.toArray(int[][]::new);
+        int[][] res = result.toArray(int[][]::new);
+        Arrays.parallelSort(res, Group::compareArr);
+        return res;
     }
 }
