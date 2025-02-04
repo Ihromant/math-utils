@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.stream.IntStream;
 
 public interface Group {
@@ -42,7 +43,28 @@ public interface Group {
 
     String elementName(int a);
 
-    int[][] auth();
+    default int[][] auth() { // inner automorphisms if not implemented specifically
+        TreeSet<int[]> set = new TreeSet<>(Group::compareArr);
+        int ord = order();
+        for (int g = 0; g < ord; g++) {
+            int[] arr = new int[ord];
+            for (int x = 0; x < ord; x++) {
+                arr[x] = op(inv(g), op(x, g));
+            }
+            set.add(arr);
+        }
+        return set.toArray(int[][]::new);
+    }
+
+    static int compareArr(int[] fst, int[] snd) {
+        for (int i = 0; i < fst.length; i++) {
+            int cmp = fst[i] - snd[i];
+            if (cmp != 0) {
+                return cmp;
+            }
+        }
+        return 0;
+    }
 
     default int mul(int a, int cff) {
         int result = 0;
@@ -246,11 +268,6 @@ public interface Group {
         @Override
         public String elementName(int a) {
             return "0";
-        }
-
-        @Override
-        public int[][] auth() {
-            return new int[][]{{0}};
         }
     };
 }

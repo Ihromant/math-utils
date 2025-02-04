@@ -57,11 +57,6 @@ public class SubGroup implements Group {
         return group.elementName(arr[a]);
     }
 
-    @Override
-    public int[][] auth() {
-        throw new UnsupportedOperationException();
-    }
-
     public boolean isNormal() {
         for (int n : arr) {
             for (int g = 0; g < group.order(); g++) {

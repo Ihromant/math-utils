@@ -33,9 +33,4 @@ public class BurnsideGroup implements Group {
     public String elementName(int a) {
         return Arrays.toString(mul.toArr(a));
     }
-
-    @Override
-    public int[][] auth() {
-        throw new UnsupportedOperationException();
-    }
 }

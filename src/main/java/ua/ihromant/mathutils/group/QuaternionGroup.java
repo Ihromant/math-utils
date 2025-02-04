@@ -27,9 +27,4 @@ public class QuaternionGroup implements Group {
     public String elementName(int a) {
         return NearField.values()[a + 1].name();
     }
-
-    @Override
-    public int[][] auth() {
-        throw new UnsupportedOperationException();
-    }
 }

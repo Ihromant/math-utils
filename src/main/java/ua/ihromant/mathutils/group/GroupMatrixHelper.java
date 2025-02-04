@@ -21,9 +21,6 @@ public class GroupMatrixHelper {
     private final int[] gl;
 
     public GroupMatrixHelper(int... sequence) {
-        if (!Arrays.equals(sequence, Arrays.stream(sequence).sorted().toArray())) {
-            throw new IllegalArgumentException("Not sorted");
-        }
         this.mod = sequence[0];
         this.n = sequence.length;
         this.p = Group.factorize(mod)[0];

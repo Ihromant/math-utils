@@ -47,11 +47,6 @@ public class TableGroup implements Group {
     }
 
     @Override
-    public int[][] auth() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public Group asTable() {
         return this;
     }
