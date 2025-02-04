@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -144,68 +145,31 @@ public class BatchLinerTest {
 
     @Test
     public void test28_4() throws IOException {
-        List<Liner> planes = readPlanes(28, 4);
+        int v = 28;
+        List<Liner> planes = readPlanes(v, 4);
         assertEquals(4466, planes.size());
-        Liner plane = planes.get(1001);
+        Liner plane = planes.get(1001); // 1001 classical, 976 Ree
         assertEquals(of(2), plane.hyperbolicIndex());
-        assertEquals(of(28), plane.cardSubPlanes(true));
+        assertEquals(of(v), plane.cardSubPlanes(true));
 
-        String[] design = printDesign(planes.get(3429));
-        Arrays.stream(design).forEach(System.out::println);
-
-        for (int i = 2600; i < planes.size(); i++) {
-            Liner p1 = planes.get(i);
-            Set<BitSet> subaffines = new HashSet<>();
-            for (int t0 = 0; t0 < p1.pointCount(); t0++) {
-                for (int t1 = t0 + 1; t1 < p1.pointCount(); t1++) {
-                    for (int t3 = t1 + 1; t3 < p1.pointCount(); t3++) {
-                        if (p1.collinear(t0, t1, t3)) {
-                            continue;
-                        }
-                        for (int t2 : p1.points(p1.line(t0, t1))) {
-                            if (t2 == t0 || t2 == t1) {
-                                continue;
-                            }
-                            for (int t6 : p1.points(p1.line(t0, t3))) {
-                                if (t6 == t0 || t6 == t3) {
-                                    continue;
-                                }
-                                for (int t4 : p1.points(p1.line(t2, t6))) {
-                                    if (t2 == t4 || t6 == t4) {
-                                        continue;
-                                    }
-                                    for (int t8 : p1.points(p1.line(t0, t4))) {
-                                        if (t8 == t0 || t8 == t4 || !p1.collinear(t1, t3, t8)) {
-                                            continue;
-                                        }
-                                        for (int t7 : p1.points(p1.line(t6, t8))) {
-                                            if (t7 == t6 || t7 == t8 || !p1.collinear(t2, t3, t7) || !p1.collinear(t1, t4, t7)) {
-                                                continue;
-                                            }
-                                            for (int t5 : p1.points(p1.line(t2, t8))) {
-                                                if (t5 == t2 || t5 == t8 || !p1.collinear(t3, t4, t5) || !p1.collinear(t0, t5, t7) || !p1.collinear(t1, t5, t6)) {
-                                                    continue;
-                                                }
-                                                BitSet aff = of(t0, t1, t2, t3, t4, t5, t6, t7, t8);
-                                                if (subaffines.add(aff)) {
-                                                    System.out.println(i + " " + aff);
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+        Liner ree = planes.get(976);
+        PermutationGroup pg = ree.automorphisms();
+        Group table = pg.asTable();
+        List<SubGroup> subGroups = table.subGroups();
+        System.out.println(subGroups.stream().collect(Collectors.groupingBy(SubGroup::order, Collectors.counting())));
+        for (SubGroup g : table.subGroups()) {
+            if (g.order() % v != 0) {
+                continue;
+            }
+            QuickFind pts = new QuickFind(ree.pointCount());
+            for (int a = 0; a < g.order(); a++) {
+                int[] arr = pg.permutation(g.arr()[a]);
+                for (int p1 = 0; p1 < ree.pointCount(); p1++) {
+                    pts.union(p1, arr[p1]);
                 }
             }
+            System.out.println(g.order() + " elems " + g.elems() + " points " + pts.components());
         }
-    }
-
-    private String[] printDesign(Liner plane) {
-        return IntStream.range(0, plane.line(0).length).mapToObj(i -> IntStream.range(0, plane.lineCount())
-                .mapToObj(plane::line).map(bs -> String.valueOf(Character.forDigit(Arrays.stream(bs)
-                        .skip(i).findAny().orElseThrow(), 36))).collect(Collectors.joining())).toArray(String[]::new);
     }
 
     @Test
