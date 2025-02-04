@@ -14,16 +14,17 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ApplicatorTest {
-    private static class SubGroupApplicator {
+    private static class CosetApplicator {
         private final Group gr;
         private final int[][] cosets;
         private final int[] idx;
 
-        public SubGroupApplicator(SubGroup sg) {
+        public CosetApplicator(SubGroup sg) {
             this.gr = sg.group();
             Set<FixBS> set = new HashSet<>();
-            for (int i = 0; i < gr.order(); i++) {
-                FixBS coset = new FixBS(gr.order());
+            int order = gr.order();
+            for (int i = 0; i < order; i++) {
+                FixBS coset = new FixBS(order);
                 for (int el : sg.arr()) {
                     coset.set(gr.op(i, el));
                 }
@@ -31,7 +32,7 @@ public class ApplicatorTest {
             }
             this.cosets = set.stream().map(FixBS::toArray).toArray(int[][]::new);
             Arrays.sort(cosets, Group::compareArr);
-            this.idx = new int[gr.order()];
+            this.idx = new int[order];
             for (int i = 0; i < cosets.length; i++) {
                 for (int el : cosets[i]) {
                     idx[el] = i;
@@ -46,17 +47,17 @@ public class ApplicatorTest {
     }
 
     private static class OrbitApplicator {
-        private final SubGroupApplicator[] subs;
+        private final CosetApplicator[] subs;
         private final int[] oBeg;
         private final int v;
 
         public OrbitApplicator(SubGroup[] subs) {
-            this.subs = new SubGroupApplicator[subs.length];
+            this.subs = new CosetApplicator[subs.length];
             this.oBeg = new int[subs.length];
             int min = 0;
             for (int i = 0; i < subs.length; i++) {
                 oBeg[i] = min;
-                SubGroupApplicator conf = new SubGroupApplicator(subs[i]);
+                CosetApplicator conf = new CosetApplicator(subs[i]);
                 this.subs[i] = conf;
                 min = min + conf.cosets.length;
             }
@@ -69,7 +70,7 @@ public class ApplicatorTest {
                 idx = -idx - 2;
             }
             int min = oBeg[idx];
-            SubGroupApplicator conf = subs[idx];
+            CosetApplicator conf = subs[idx];
             return conf.apply(g, x - min) + min;
         }
     }
@@ -134,7 +135,7 @@ public class ApplicatorTest {
             return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
         }
 
-        private State acceptElem(SubGroupApplicator app, FixBS globalFilter, int val, int v, int k) {
+        private State acceptElem(CosetApplicator app, FixBS globalFilter, int val, int v, int k) {
             FixBS newBlock = block.copy();
             FixBS queue = new FixBS(v);
             queue.set(val);
