@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class ApplicatorTest {
     private static class SubGroupApplicator {
         private final Group gr;
-        private final FixBS[] cosets;
+        private final int[][] cosets;
         private final int[] idx;
 
         public SubGroupApplicator(SubGroup sg) {
@@ -29,19 +29,18 @@ public class ApplicatorTest {
                 }
                 set.add(coset);
             }
-            this.cosets = set.toArray(FixBS[]::new);
-            Arrays.sort(cosets);
+            this.cosets = set.stream().map(FixBS::toArray).toArray(int[][]::new);
+            Arrays.sort(cosets, Group::compareArr);
             this.idx = new int[gr.order()];
             for (int i = 0; i < cosets.length; i++) {
-                FixBS coset = cosets[i];
-                for (int el = coset.nextSetBit(0); el >= 0; el = coset.nextSetBit(el + 1)) {
+                for (int el : cosets[i]) {
                     idx[el] = i;
                 }
             }
         }
 
         private int apply(int g, int x) {
-            int min = cosets[x].nextSetBit(0);
+            int min = cosets[x][0];
             return idx[gr.op(g, min)];
         }
     }
