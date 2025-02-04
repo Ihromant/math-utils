@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.IntBinaryOperator;
@@ -212,5 +213,15 @@ public class GroupTest {
             });
         }).sum();
         assertEquals(commutative, nonComm == 0);
+    }
+
+    @Test
+    public void test56() {
+        Group g = new SemiDirectProduct(new CyclicProduct(2, 2, 2), new CyclicGroup(7));
+        System.out.println(Arrays.toString(IntStream.range(0, g.order()).map(g::order).toArray()));
+        List<SubGroup> sgs = g.subGroups();
+        for (SubGroup sg : sgs) {
+            System.out.println(sg.order() + " " + sg.isNormal());
+        }
     }
 }
