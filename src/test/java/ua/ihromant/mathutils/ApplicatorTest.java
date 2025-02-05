@@ -319,10 +319,10 @@ public class ApplicatorTest {
     @Test
     public void logDesigns() {
         int k = 6;
-        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        Group group = new SemiDirectProduct(new CyclicGroup(19), new CyclicGroup(3));
         Group table = group.asTable();
         List<SubGroup> subGroups = table.subGroups();
-        int[] comp = new int[]{1, 3, 3, 39};
+        int[] comp = new int[]{1, 3};
         SubGroup[] subs = Arrays.stream(comp).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
         GSpace space = new GSpace(k, subs);
         int[][] auths = group.auth();
@@ -371,6 +371,9 @@ public class ApplicatorTest {
             searchDesigns(space, nextFilter, nextDesign, nextState, snd, cons);
         } else {
             for (int el = prev + 1; el < space.v; el++) {
+                if (state.block.get(el)) {
+                    continue;
+                }
                 State nextState = state.acceptElem(space, filter, el);
                 if (nextState != null) {
                     searchDesigns(space, filter, currDesign, nextState, el, cons);
