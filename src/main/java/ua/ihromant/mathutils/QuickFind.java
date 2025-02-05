@@ -2,7 +2,6 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -59,22 +58,6 @@ public class QuickFind {
         for (int i = 0; i < size(); i++) {
             map.computeIfAbsent(root(i), k -> new FixBS(size())).set(i);
         }
-        return map.values().stream().sorted(Comparator.comparingInt(bs -> bs.nextSetBit(0))).toList();
-    }
-
-    public FixBS[] mapComponents() {
-        int size = size();
-        FixBS[] result = new FixBS[size];
-        for (int i = 0; i < size; i++) {
-            int root = root(i);
-            FixBS currComp = result[root];
-            if (currComp == null) {
-                currComp = new FixBS(size);
-                result[root] = currComp;
-            }
-            currComp.set(i);
-            result[i] = currComp;
-        }
-        return result;
+        return map.values().stream().sorted().toList();
     }
 }
