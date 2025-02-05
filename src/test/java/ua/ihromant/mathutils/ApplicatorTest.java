@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -15,6 +14,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -330,7 +330,15 @@ public class ApplicatorTest {
         int diffs = space.differences.size();
         FixBS filter = new FixBS(diffs);
         State[] design = new State[0];
+        List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
+            initial.add(arr[0]);
+            return true;
+        };
+        int val = 1;
+        State state = space.statesCache[0][val];
+        searchDesigns(space, filter, design, state, val, cons);
+        BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (ftr.cardinality() < diffs) {
                 return false;
             }
@@ -338,9 +346,15 @@ public class ApplicatorTest {
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
             return true;
         };
-        int val = 1;
-        State state = space.statesCache[0][val];
-        searchDesigns(space, filter, design, state, val, cons);
+        System.out.println("Initial length: " + initial.size());
+        AtomicInteger cnt = new AtomicInteger();
+        initial.stream().parallel().forEach(st -> {
+            searchDesigns(space, filter, design, st, 0, fCons);
+            int vl = cnt.incrementAndGet();
+            if (vl % 100 == 0) {
+                System.out.println(vl);
+            }
+        });
     }
 
     private static void searchDesigns(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
