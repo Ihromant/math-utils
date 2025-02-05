@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -15,6 +16,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -155,6 +157,21 @@ public class ApplicatorTest {
 
         public int apply(int g, int x) {
             return cayley[g][x];
+        }
+
+        private Stream<int[]> blocks(FixBS block) {
+            Set<FixBS> set = new HashSet<>(2 * group.order());
+            List<int[]> res = new ArrayList<>();
+            for (int g = 0; g < group.order(); g++) {
+                FixBS fbs = new FixBS(v);
+                for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
+                    fbs.set(apply(g, x));
+                }
+                if (set.add(fbs)) {
+                    res.add(fbs.toArray());
+                }
+            }
+            return res.stream();
         }
     }
 
@@ -312,7 +329,8 @@ public class ApplicatorTest {
             if (ftr.cardinality() < diffs) {
                 return false;
             }
-            System.out.println(Arrays.stream(arr).map(State::block).toList());
+            Liner l = new Liner(space.v, Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
             return true;
         };
         int val = 1;
