@@ -387,7 +387,18 @@ public class ApplicatorTest {
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            initial.add(arr[0]);
+            State fst = arr[0];
+            FixBS block = fst.block;
+            for (int[] auth : auths) {
+                FixBS altBlock = new FixBS(space.v);
+                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                    altBlock.set(auth[el]);
+                }
+                if (altBlock.compareTo(block) < 0) {
+                    return true;
+                }
+            }
+            initial.add(fst);
             return true;
         };
         int val = 1;
