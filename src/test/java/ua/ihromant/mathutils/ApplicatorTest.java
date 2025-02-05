@@ -185,7 +185,13 @@ public class ApplicatorTest {
             queue.set(val);
             int sz = size;
             FixBS newStabilizer = stabilizer.copy();
-            IntList[] newDiffs = Arrays.stream(diffs).map(il -> il == null ? null : il.copy()).toArray(IntList[]::new);
+            IntList[] newDiffs = new IntList[diffs.length];
+            for (int i = 0; i < diffs.length; i++) {
+                IntList lst = diffs[i];
+                if (lst != null) {
+                    newDiffs[i] = lst.copy();
+                }
+            }
             while (!queue.isEmpty()) {
                 if (++sz > k) {
                     return null;
