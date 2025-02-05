@@ -318,12 +318,13 @@ public class ApplicatorTest {
 
     @Test
     public void logDesigns() {
-        int k = 4;
-        Group group = new PermutationGroup(new CyclicProduct(2, 2, 2).auth());
+        int k = 6;
+        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
         Group table = group.asTable();
         List<SubGroup> subGroups = table.subGroups();
-        GSpace space = new GSpace(k, new SubGroup(table, FixBS.of(group.order(),
-                subGroups.stream().filter(sg -> sg.order() == 6).findFirst().orElseThrow().arr())));
+        int[] comp = new int[]{1, 3, 3, 39};
+        SubGroup[] subs = Arrays.stream(comp).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
+        GSpace space = new GSpace(k, subs);
         int[][] auths = group.auth();
         System.out.println(group.name() + " " + space.v + " " + k + " auths: " + auths.length);
         int diffs = space.differences.size();
