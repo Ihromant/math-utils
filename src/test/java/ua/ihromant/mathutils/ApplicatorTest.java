@@ -317,9 +317,12 @@ public class ApplicatorTest {
 
     @Test
     public void logDesigns() {
-        int k = 3;
-        Group group = new CyclicProduct(3, 3);
-        GSpace space = new GSpace(k, new SubGroup(group.asTable(), FixBS.of(group.order(), 0)));
+        int k = 4;
+        Group group = new SemiDirectProduct(new CyclicProduct(2, 2, 2), new CyclicGroup(7));
+        Group table = group.asTable();
+        List<SubGroup> subGroups = table.subGroups();
+        GSpace space = new GSpace(k, new SubGroup(table, FixBS.of(group.order(),
+                subGroups.stream().filter(sg -> sg.order() == 2).findFirst().orElseThrow().arr())));
         int[][] auths = group.auth();
         System.out.println(group.name() + " " + space.v + " " + k + " auths: " + auths.length);
         int diffs = space.differences.size();
