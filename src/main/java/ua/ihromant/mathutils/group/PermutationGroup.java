@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -18,6 +19,16 @@ public class PermutationGroup implements Group {
                 .filter(perm -> !even || parity(perm) % 2 == 0).toArray(int[][]::new));
     }
 
+    public PermutationGroup(int[][] permutations) {
+        this.permutations = permutations;
+        this.lookup = new HashMap<>();
+        for (int i = 0; i < permutations.length; i++) {
+            int[] perm = permutations[i];
+            Map<Integer, Integer> map = toMap(perm);
+            lookup.put(map, i);
+        }
+    }
+
     private static int parity(int[] arr) {
         int cnt = 0;
         for (int i = 0; i < arr.length; i++) {
@@ -30,14 +41,22 @@ public class PermutationGroup implements Group {
         return cnt;
     }
 
-    public PermutationGroup(int[][] permutations) {
-        this.permutations = permutations;
-        this.lookup = new HashMap<>();
-        for (int i = 0; i < permutations.length; i++) {
-            int[] perm = permutations[i];
-            Map<Integer, Integer> map = toMap(perm);
-            lookup.put(map, i);
+    public PermutationGroup subset(FixBS set) {
+        int[][] res = new int[set.cardinality()][];
+        int cnt = 0;
+        for (int idx = set.nextSetBit(0); idx >= 0; idx = set.nextSetBit(idx + 1)) {
+            res[cnt++] = permutations[idx];
         }
+        return new PermutationGroup(res);
+    }
+    
+    public FixBS apply(int elem, FixBS fbs) {
+        FixBS result = new FixBS(fbs.size());
+        int[] perm = permutations[elem];
+        for (int x = fbs.nextSetBit(0); x >= 0; x = fbs.nextSetBit(x + 1)) {
+            result.set(perm[x]);
+        }
+        return result;
     }
 
     private static Map<Integer, Integer> toMap(int[] perm) {

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -16,6 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -61,14 +63,18 @@ public class ApplicatorTest {
         private final int v;
         private final int k;
         private final int[][] cayley;
+        private final int[][] auths;
         private final List<FixBS> differences;
         private final int[][] diffMap;
         private final FixBS[][] preImages;
         private final State[][] statesCache;
 
-        public GSpace(int k, SubGroup... subs) {
+        public GSpace(int k, Group group, int... comps) {
             this.k = k;
-            this.group = subs[0].group();
+            Group table = group.asTable();
+            this.group = table;
+            List<SubGroup> subGroups = table.subGroups();
+            SubGroup[] subs = Arrays.stream(comps).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
             this.cosets = new GCosets[subs.length];
             this.oBeg = new int[subs.length];
             int min = 0;
@@ -79,14 +85,43 @@ public class ApplicatorTest {
                 min = min + conf.cosets.length;
             }
             this.v = min;
-            int gOrd = group.order();
+            int gOrd = table.order();
+            PermutationGroup auths = new PermutationGroup(group.auth());
+            FixBS suitableAuths = new FixBS(auths.order());
+            ex: for (int el = 0; el < auths.order(); el++) {
+                for (GCosets coset : cosets) {
+                    int[][] csts = coset.cosets;
+                    Set<FixBS> set = Arrays.stream(csts).map(arr -> FixBS.of(gOrd, arr)).collect(Collectors.toSet());
+                    FixBS fbs = set.iterator().next();
+                    if (!set.contains(auths.apply(el, fbs))) {
+                        continue ex;
+                    }
+                }
+                suitableAuths.set(el);
+            }
+            PermutationGroup suitable = auths.subset(suitableAuths);
+            this.auths = new int[suitable.order()][v];
+            for (int el = 0; el < suitable.order(); el++) {
+                int[] perm = suitable.permutation(el);
+                for (int x = 0; x < v; x++) {
+                    int idx = Arrays.binarySearch(oBeg, x);
+                    if (idx < 0) {
+                        idx = -idx - 2;
+                    }
+                    int cosMin = oBeg[idx];
+                    GCosets conf = cosets[idx];
+                    int gBase = conf.cosets[x - cosMin][0];
+                    int gMapped = perm[gBase];
+                    this.auths[el][x] = conf.idx[gMapped] + cosMin;
+                }
+            }
             FixBS inter = new FixBS(gOrd);
             inter.set(0, gOrd);
             for (SubGroup sub : subs) {
                 for (int x = 0; x < gOrd; x++) {
                     FixBS conj = new FixBS(gOrd);
                     for (int h : sub.arr()) {
-                        conj.set(group.op(group.inv(x), group.op(h, x)));
+                        conj.set(table.op(table.inv(x), table.op(h, x)));
                     }
                     inter.and(conj);
                 }
@@ -104,7 +139,7 @@ public class ApplicatorTest {
             for (int x1 = 0; x1 < v; x1++) {
                 for (int x2 = 0; x2 < v; x2++) {
                     int pair = x1 * v + x2;
-                    for (int g = 0; g < group.order(); g++) {
+                    for (int g = 0; g < gOrd; g++) {
                         int gx1 = applyByDef(g, x1);
                         int gx2 = applyByDef(g, x2);
                         int gPair = gx1 * v + gx2;
@@ -140,7 +175,7 @@ public class ApplicatorTest {
             FixBS emptyFilter = new FixBS(differences.size());
             for (int f = 0; f < v; f++) {
                 for (int s = f + 1; s < v; s++) {
-                    statesCache[f][s] = new State(FixBS.of(v, f), FixBS.of(group.order(), 0), new IntList[differences.size()], 1)
+                    statesCache[f][s] = new State(FixBS.of(v, f), FixBS.of(gOrd, 0), new IntList[differences.size()], 1)
                             .acceptElem(this, emptyFilter, s);
                 }
             }
@@ -265,12 +300,7 @@ public class ApplicatorTest {
     @Test
     public void testApplicator() {
         Group gr = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
-        SubGroup tr = new SubGroup(gr, FixBS.of(gr.order(), 0));
-        SubGroup small = new SubGroup(gr, FixBS.of(gr.order(), 0, 1, 2));
-        FixBS f = new FixBS(gr.order());
-        f.set(0, gr.order());
-        SubGroup fix = new SubGroup(gr, f);
-        GSpace applicator = new GSpace(6, tr, small, small, fix);
+        GSpace applicator = new GSpace(6, gr, 1, 3, 3, 39);
         assertEquals(66, applicator.v);
         for (int x = 0; x < applicator.v; x++) {
             for (int j = 0; j < gr.order(); j++) {
@@ -278,7 +308,7 @@ public class ApplicatorTest {
             }
         }
         gr = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
-        applicator = new GSpace(6, new SubGroup(gr, FixBS.of(gr.order(), 0)), new SubGroup(gr, FixBS.of(gr.order(), 0)));
+        applicator = new GSpace(6, gr, 1, 1);
         for (int g = 0; g < gr.order(); g++) {
             for (int x = 0; x < 2 * gr.order(); x++) {
                 int app = applicator.apply(g, x);
@@ -291,13 +321,13 @@ public class ApplicatorTest {
     @Test
     public void testState() {
         try {
-            new GSpace(6, new SubGroup(new CyclicProduct(2, 2), FixBS.of(4, 0, 1)));
+            new GSpace(6, new CyclicProduct(2, 2), 2);
             fail();
         } catch (Exception e) {
             // ok
         }
         Group g = new CyclicGroup(21);
-        GSpace space = new GSpace(7, new SubGroup(g, FixBS.of(g.order(), 0)));
+        GSpace space = new GSpace(7, g, 1);
         FixBS emptyFilter = new FixBS(space.differences.size());
         State state = space.statesCache[0][3];
         assertEquals(FixBS.of(space.v, 0, 3), state.block);
@@ -311,7 +341,7 @@ public class ApplicatorTest {
         state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 14));
         assertNull(state.acceptElem(space, emptyFilter, 1));
         g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        space = new GSpace(6, new SubGroup(g, FixBS.of(g.order(), 0)));
+        space = new GSpace(6, g, 1);
         state = space.statesCache[0][1];
         emptyFilter = new FixBS(space.differences.size());
         state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 2));
@@ -323,15 +353,34 @@ public class ApplicatorTest {
     }
 
     @Test
+    public void testAutomorphisms() {
+        Group g = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        GSpace space = new GSpace(100, g, 3);
+        PermutationGroup gr = new PermutationGroup(g.auth());
+        int sz = gr.order();
+        System.out.println(sz);
+        int cnt = 0;
+        ex: for (int el = 0; el < sz; el++) {
+            System.out.println(el + " ************************************");
+            int[][] cosets = space.cosets[0].cosets;
+            Set<FixBS> set = Arrays.stream(cosets).map(arr -> FixBS.of(g.order(), arr)).collect(Collectors.toSet());
+            for (FixBS fbs : set) {
+                if (!set.contains(gr.apply(el, fbs))) {
+                    System.out.println("Not contains " + fbs + " applied " + gr.apply(el, fbs));
+                    continue ex;
+                }
+            }
+            cnt++;
+        }
+        System.out.println(cnt);
+    }
+
+    @Test
     public void logDesigns() {
         int k = 6;
-        Group group = new SemiDirectProduct(new CyclicGroup(19), new CyclicGroup(3));
-        Group table = group.asTable();
-        List<SubGroup> subGroups = table.subGroups();
-        int[] comp = new int[]{1, 3};
-        SubGroup[] subs = Arrays.stream(comp).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
-        GSpace space = new GSpace(k, subs);
-        int[][] auths = group.auth();
+        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        GSpace space = new GSpace(k, group, 1, 3, 3, 39);
+        int[][] auths = space.auths;
         System.out.println(group.name() + " " + space.v + " " + k + " auths: " + auths.length);
         int diffs = space.differences.size();
         FixBS filter = new FixBS(diffs);
