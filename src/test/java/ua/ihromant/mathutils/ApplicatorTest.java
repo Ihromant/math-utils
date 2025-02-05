@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -202,7 +203,7 @@ public class ApplicatorTest {
                     }
                     IntList existingDiffs = newDiffs[compBx];
                     if (existingDiffs == null) {
-                        existingDiffs = (newDiffs[compBx] = new IntList(k));
+                        existingDiffs = (newDiffs[compBx] = new IntList(3 * k));
                     } else {
                         for (int i = 0; i < existingDiffs.size(); i++) {
                             int diff = existingDiffs.get(i);
@@ -216,7 +217,7 @@ public class ApplicatorTest {
 
                     existingDiffs = newDiffs[compXb];
                     if (existingDiffs == null) {
-                        existingDiffs = (newDiffs[compXb] = new IntList(k));
+                        existingDiffs = (newDiffs[compXb] = new IntList(3 * k));
                     } else {
                         for (int i = 0; i < existingDiffs.size(); i++) {
                             int diff = existingDiffs.get(i);
@@ -318,11 +319,11 @@ public class ApplicatorTest {
     @Test
     public void logDesigns() {
         int k = 4;
-        Group group = new SemiDirectProduct(new CyclicProduct(2, 2, 2), new CyclicGroup(7));
+        Group group = new PermutationGroup(new CyclicProduct(2, 2, 2).auth());
         Group table = group.asTable();
         List<SubGroup> subGroups = table.subGroups();
         GSpace space = new GSpace(k, new SubGroup(table, FixBS.of(group.order(),
-                subGroups.stream().filter(sg -> sg.order() == 2).findFirst().orElseThrow().arr())));
+                subGroups.stream().filter(sg -> sg.order() == 6).findFirst().orElseThrow().arr())));
         int[][] auths = group.auth();
         System.out.println(group.name() + " " + space.v + " " + k + " auths: " + auths.length);
         int diffs = space.differences.size();
