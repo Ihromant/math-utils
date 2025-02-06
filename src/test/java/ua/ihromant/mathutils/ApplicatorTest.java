@@ -159,18 +159,23 @@ public class ApplicatorTest {
             for (int i = 0; i < v; i++) {
                 diffMap[i * v + i] = -1;
             }
-            this.preImages = new FixBS[v][v];
-            for (int i = 0; i < v; i++) {
-                for (int j = 0; j < v; j++) {
+            this.preImages = new FixBS[v * v][v * v];
+            IntStream.range(0, v * v).parallel().forEach(i -> {
+                for (int j = 0; j < v * v; j++) {
                     preImages[i][j] = new FixBS(gOrd);
                 }
-            }
-            for (int g = 0; g < gOrd; g++) {
-                for (int x = 0; x < v; x++) {
-                    int gx = apply(g, x);
-                    preImages[gx][x].set(g);
+            });
+            IntStream.range(0, v).parallel().forEach(a -> {
+                for (int b = 0; b < v; b++) {
+                    int ab = a * v + b;
+                    for (int g = 0; g < gOrd; g++) {
+                        int ga = apply(g, a);
+                        int gb = apply(g, b);
+                        int gagb = ga * v + gb;
+                        preImages[gagb][ab].set(g);
+                    }
                 }
-            }
+            });
             this.statesCache = new State[v][v];
             FixBS emptyFilter = new FixBS(v * v);
             for (int f = 0; f < v; f++) {
@@ -250,10 +255,7 @@ public class ApplicatorTest {
                     } else {
                         for (int i = 0; i < existingDiffs.size(); i++) {
                             int diff = existingDiffs.get(i);
-                            int gb = diff / v;
-                            int gx = diff % v;
-                            FixBS preImg = gSpace.preImages[gb][b].intersection(gSpace.preImages[gx][x]);
-                            stabExt.or(preImg);
+                            stabExt.or(gSpace.preImages[diff][bx]);
                         }
                     }
                     existingDiffs.add(bx);
@@ -264,10 +266,7 @@ public class ApplicatorTest {
                     } else {
                         for (int i = 0; i < existingDiffs.size(); i++) {
                             int diff = existingDiffs.get(i);
-                            int gb = diff % v;
-                            int gx = diff / v;
-                            FixBS preImg = gSpace.preImages[gb][b].intersection(gSpace.preImages[gx][x]);
-                            stabExt.or(preImg);
+                            stabExt.or(gSpace.preImages[diff][xb]);
                         }
                     }
                     existingDiffs.add(xb);
