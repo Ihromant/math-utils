@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -129,6 +130,19 @@ public class BatchLinerTest {
     public void test41_5() throws IOException {
         List<Liner> planes = readPlanes(41, 5);
         assertEquals(15, planes.size());
+        IntStream.range(0, planes.size()).parallel().forEach(i -> {
+            Liner l = planes.get(i);
+            PermutationGroup g = l.automorphisms();
+            Group table = g.asTable();
+            QuickFind pts = new QuickFind(l.pointCount());
+            for (int a = 0; a < g.order(); a++) {
+                int[] arr = g.permutation(a);
+                for (int p1 = 0; p1 < l.pointCount(); p1++) {
+                    pts.union(p1, arr[p1]);
+                }
+            }
+            System.out.println(i + " group " + GroupIndex.identify(table) + " elems " + pts.components());
+        });
     }
 
     @Test

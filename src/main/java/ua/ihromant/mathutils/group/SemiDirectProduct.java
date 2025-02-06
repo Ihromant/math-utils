@@ -10,6 +10,7 @@ public class SemiDirectProduct implements Group {
     private final CyclicGroup k;
     private final PermutationGroup gr;
     private final int[] psi;
+    private final int elem;
 
     public SemiDirectProduct(Group h, CyclicGroup k) {
         this.h = h;
@@ -18,7 +19,7 @@ public class SemiDirectProduct implements Group {
         Arrays.sort(auth, SemiDirectProduct::compare);
         this.gr = new PermutationGroup(auth);
         this.psi = new int[k.order()];
-        int elem = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).findAny()
+        this.elem = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).findAny()
                 .orElseGet(() -> IntStream.range(1, gr.order()).filter(e -> k.order() % gr.order(e) == 0).findAny().orElseThrow());
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
@@ -36,7 +37,7 @@ public class SemiDirectProduct implements Group {
         this.gr = new PermutationGroup(auth);
         this.psi = new int[k.order()];
         psi[0] = 0;
-        int elem = IntStream.range(1, gr.order()).filter(e -> k.order() / mul == gr.order(e)).findAny().orElseThrow();
+        this.elem = IntStream.range(1, gr.order()).filter(e -> k.order() / mul == gr.order(e)).findAny().orElseThrow();
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
         }
@@ -81,7 +82,7 @@ public class SemiDirectProduct implements Group {
 
     @Override
     public String name() {
-        return h.name() + "⋊" + k.name();
+        return h.name() + "⋊" + k.name() + "ord" + gr.order(elem);
     }
 
     @Override
