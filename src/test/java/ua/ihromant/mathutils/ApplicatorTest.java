@@ -65,7 +65,7 @@ public class ApplicatorTest {
         private final int[][] cayley;
         private final int[][] auths;
         private final List<FixBS> differences;
-        private final int[][] diffMap;
+        private final int[] diffMap;
         private final FixBS[][] preImages;
         private final State[][] statesCache;
 
@@ -149,15 +149,15 @@ public class ApplicatorTest {
             }
             FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());
             this.differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toList();
-            this.diffMap = new int[v][v];
+            this.diffMap = new int[v * v];
             for (int i = 0; i < differences.size(); i++) {
                 FixBS comp = differences.get(i);
                 for (int val = comp.nextSetBit(0); val >= 0; val = comp.nextSetBit(val + 1)) {
-                    diffMap[val / v][val % v] = i;
+                    diffMap[val] = i;
                 }
             }
             for (int i = 0; i < v; i++) {
-                diffMap[i][i] = -1;
+                diffMap[i * v + i] = -1;
             }
             this.preImages = new FixBS[v][v];
             for (int i = 0; i < v; i++) {
@@ -172,7 +172,7 @@ public class ApplicatorTest {
                 }
             }
             this.statesCache = new State[v][v];
-            FixBS emptyFilter = new FixBS(differences.size());
+            FixBS emptyFilter = new FixBS(v * v);
             for (int f = 0; f < v; f++) {
                 for (int s = f + 1; s < v; s++) {
                     statesCache[f][s] = new State(FixBS.of(v, f), FixBS.of(gOrd, 0), new IntList[differences.size()], 1)
@@ -237,11 +237,13 @@ public class ApplicatorTest {
                 }
                 FixBS stabExt = new FixBS(gSpace.group.order());
                 for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
-                    int compBx = gSpace.diffMap[b][x];
-                    int compXb = gSpace.diffMap[x][b];
-                    if (globalFilter.get(compBx) || globalFilter.get(compXb)) {
+                    int bx = b * v + x;
+                    int xb = x * v + b;
+                    if (globalFilter.get(bx) || globalFilter.get(xb)) {
                         return null;
                     }
+                    int compBx = gSpace.diffMap[bx];
+                    int compXb = gSpace.diffMap[xb];
                     IntList existingDiffs = newDiffs[compBx];
                     if (existingDiffs == null) {
                         existingDiffs = (newDiffs[compBx] = new IntList(3 * k));
@@ -254,7 +256,7 @@ public class ApplicatorTest {
                             stabExt.or(preImg);
                         }
                     }
-                    existingDiffs.add(b * v + x);
+                    existingDiffs.add(bx);
 
                     existingDiffs = newDiffs[compXb];
                     if (existingDiffs == null) {
@@ -268,7 +270,7 @@ public class ApplicatorTest {
                             stabExt.or(preImg);
                         }
                     }
-                    existingDiffs.add(x * v + b);
+                    existingDiffs.add(xb);
                 }
                 newBlock.set(x);
                 stabExt.andNot(newStabilizer);
@@ -286,11 +288,11 @@ public class ApplicatorTest {
             return new State(newBlock, newStabilizer, newDiffs, sz);
         }
 
-        private FixBS updatedFilter(FixBS oldFilter) {
+        private FixBS updatedFilter(FixBS oldFilter, GSpace space) {
             FixBS result = oldFilter.copy();
             for (int i = 0; i < diffs.length; i++) {
                 if (diffs[i] != null) {
-                    result.set(i);
+                    result.or(space.differences.get(i));
                 }
             }
             return result;
@@ -328,7 +330,7 @@ public class ApplicatorTest {
         }
         Group g = new CyclicGroup(21);
         GSpace space = new GSpace(7, g, 1);
-        FixBS emptyFilter = new FixBS(space.differences.size());
+        FixBS emptyFilter = new FixBS(space.v * space.v);
         State state = space.statesCache[0][3];
         assertEquals(FixBS.of(space.v, 0, 3), state.block);
         assertEquals(FixBS.of(g.order(), 0), state.stabilizer);
@@ -343,7 +345,7 @@ public class ApplicatorTest {
         g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         space = new GSpace(6, g, 1);
         state = space.statesCache[0][1];
-        emptyFilter = new FixBS(space.differences.size());
+        emptyFilter = new FixBS(space.v * space.v);
         state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 2));
         assertEquals(FixBS.of(space.v, 0, 1, 2), state.block);
         assertEquals(FixBS.of(g.order(), 0, 1, 2), state.stabilizer);
@@ -382,8 +384,11 @@ public class ApplicatorTest {
         GSpace space = new GSpace(k, group, 1, 3, 3, 39);
         int[][] auths = space.auths;
         System.out.println(group.name() + " " + space.v + " " + k + " auths: " + auths.length);
-        int diffs = space.differences.size();
-        FixBS filter = new FixBS(diffs);
+        int sqr = space.v * space.v;
+        FixBS filter = new FixBS(sqr);
+        for (int i = 0; i < space.v; i++) {
+            filter.set(i * space.v + i);
+        }
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
@@ -405,7 +410,7 @@ public class ApplicatorTest {
         State state = space.statesCache[0][val];
         searchDesigns(space, filter, design, state, val, cons);
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-            if (ftr.cardinality() < diffs) {
+            if (ftr.cardinality() < sqr) {
                 return false;
             }
             Liner l = new Liner(space.v, Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
@@ -427,19 +432,20 @@ public class ApplicatorTest {
         if (state.size() == space.k) {
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
             nextDesign[currDesign.length] = state;
-            FixBS nextFilter = state.updatedFilter(filter);
+            FixBS nextFilter = state.updatedFilter(filter, space);
             if (cons.test(nextDesign, nextFilter)) {
                 return;
             }
-            int pair = space.differences.get(nextFilter.nextClearBit(0)).nextSetBit(0);
+            int pair = nextFilter.nextClearBit(0);
             int snd = pair % space.v;
             State nextState = space.statesCache[pair / space.v][snd];
             searchDesigns(space, nextFilter, nextDesign, nextState, snd, cons);
         } else {
-            for (int el = prev + 1; el < space.v; el++) {
-                if (state.block.get(el)) {
-                    continue;
-                }
+            int v = space.v;
+            int from = prev * v + prev + 1;
+            int to = prev * v + v;
+            for (int pair = filter.nextClearBit(from); pair >= 0 && pair < to; pair = filter.nextClearBit(pair + 1)) {
+                int el = pair % v;
                 State nextState = state.acceptElem(space, filter, el);
                 if (nextState != null) {
                     searchDesigns(space, filter, currDesign, nextState, el, cons);
