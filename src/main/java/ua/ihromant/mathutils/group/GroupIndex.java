@@ -80,7 +80,7 @@ public class GroupIndex {
         register(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(4))); // 28
         register(new CyclicGroup(29)); // 29
         register(new CyclicGroup(30)); // 30
-        register(new DihedralGroup(15)); // 30
+        register(new SemiDirectProduct(new CyclicGroup(15), new CyclicGroup(2), 2, false)); // 30
         register(new GroupProduct(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), new CyclicGroup(3))); // 30
         register(new GroupProduct(new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2)), new CyclicGroup(5))); // 30
         register(new CyclicGroup(31)); // 31

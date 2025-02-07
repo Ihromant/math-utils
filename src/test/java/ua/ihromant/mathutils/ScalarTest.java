@@ -3,11 +3,11 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.NumeratedAffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
-import ua.ihromant.mathutils.vector.TranslationPlaneTest;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -516,13 +516,23 @@ public class ScalarTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            PermutationGroup auto = new PermutationGroup(TernaryAutomorphisms.automorphismsProj(proj).toArray(int[][]::new));
+            int dl = 3;
+            PermutationGroup auto = new PermutationGroup(TernaryAutomorphisms.automorphismsAffine(proj, dl).toArray(int[][]::new));
             Group table = auto.asTable();
-            System.out.println("Calculated automorphisms " + auto.order());
             List<SubGroup> subGroups = table.subGroups();
             System.out.println(subGroups.size());
             Map<Integer, List<SubGroup>> bySize = subGroups.stream().collect(Collectors.groupingBy(sg -> sg.arr().length));
             System.out.println(subGroups.stream().collect(Collectors.groupingBy(sg -> sg.arr().length, Collectors.counting())));
+            auto = auto.subset(bySize.get(auto.order()).getFirst().elems());
+            System.out.println("Calculated automorphisms " + auto.order());
+            QuickFind pts = new QuickFind(proj.pointCount());
+            for (int a = 0; a < auto.order(); a++) {
+                int[] arr = auto.permutation(a);
+                for (int p1 = 0; p1 < proj.pointCount(); p1++) {
+                    pts.union(p1, arr[p1]);
+                }
+            }
+            System.out.println("Group " + GroupIndex.identify(table) + " elems " + pts.components() + " infty " + Arrays.toString(proj.line(dl)));
         }
     }
 }
