@@ -80,10 +80,14 @@ public class GroupIndex {
         register(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(4))); // 28
         register(new CyclicGroup(29)); // 29
         register(new CyclicGroup(30)); // 30
-        register(new SemiDirectProduct(new CyclicGroup(15), new CyclicGroup(2), 2, false)); // 30
-        register(new GroupProduct(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), new CyclicGroup(3))); // 30
-        register(new GroupProduct(new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2)), new CyclicGroup(5))); // 30
+        register(new SemiDirectProduct(new CyclicGroup(15), new CyclicGroup(2), 0, false), new GroupProduct(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), new CyclicGroup(3))); // 30
+        register(new GroupProduct(new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2)), new CyclicGroup(5)), new GroupProduct(new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2)), new CyclicGroup(5))); // 30
+        register(new SemiDirectProduct(new CyclicGroup(15), new CyclicGroup(2), 2, false), new DihedralGroup(15)); // 30
         register(new CyclicGroup(31)); // 31
+    }
+
+    public static void main(String[] args) {
+        System.out.println(identify(new CyclicGroup(1)));
     }
 
     public static String identify(Group g) {
@@ -105,6 +109,14 @@ public class GroupIndex {
         Group prev = index.computeIfAbsent(g.order(), k -> new HashMap<>()).put(fp, g);
         if (prev != null) {
             throw new IllegalStateException("Duplicate groups " + prev.name() + " and " + g.name());
+        }
+    }
+
+    private static void register(Group g, Group alias) {
+        Fingerprint fp = fingerprint(g);
+        Group prev = index.computeIfAbsent(g.order(), k -> new HashMap<>()).put(fp, alias);
+        if (prev != null) {
+            throw new IllegalStateException("Duplicate groups " + prev.name() + " and " + alias.name());
         }
     }
 
