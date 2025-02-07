@@ -11,6 +11,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -67,7 +68,7 @@ public class ApplicatorTest {
         private final int[][] auths;
         private final List<FixBS> differences;
         private final int[] diffMap;
-        private final FixBS[][] preImages;
+        private final List<Map<Integer, FixBS>> preImages;
         private final State[][] statesCache;
 
         public GSpace(int k, Group group, int... comps) {
@@ -166,6 +167,7 @@ public class ApplicatorTest {
                 }
             }
             QuickFind qf = new QuickFind(v * v);
+            this.preImages = IntStream.range(0, v * v).<Map<Integer, FixBS>>mapToObj(i -> new HashMap<>()).toList();
             for (int x1 = 0; x1 < v; x1++) {
                 for (int x2 = 0; x2 < v; x2++) {
                     int pair = x1 * v + x2;
@@ -174,6 +176,7 @@ public class ApplicatorTest {
                         int gx2 = applyByDef(g, x2);
                         int gPair = gx1 * v + gx2;
                         qf.union(pair, gPair);
+                        preImages.get(gPair).computeIfAbsent(pair, key -> new FixBS(gOrd)).set(g);
                     }
                 }
             }
@@ -189,23 +192,6 @@ public class ApplicatorTest {
             for (int i = 0; i < v; i++) {
                 diffMap[i * v + i] = -1;
             }
-            this.preImages = new FixBS[v * v][v * v];
-            IntStream.range(0, v * v).parallel().forEach(i -> {
-                for (int j = 0; j < v * v; j++) {
-                    preImages[i][j] = new FixBS(gOrd);
-                }
-            });
-            IntStream.range(0, v).parallel().forEach(a -> {
-                for (int b = 0; b < v; b++) {
-                    int ab = a * v + b;
-                    for (int g = 0; g < gOrd; g++) {
-                        int ga = apply(g, a);
-                        int gb = apply(g, b);
-                        int gagb = ga * v + gb;
-                        preImages[gagb][ab].set(g);
-                    }
-                }
-            });
             this.statesCache = new State[v][v];
             FixBS emptyFilter = new FixBS(v * v);
             for (int f = 0; f < v; f++) {
@@ -368,7 +354,7 @@ public class ApplicatorTest {
                     } else {
                         for (int i = 0; i < existingDiffs.size(); i++) {
                             int diff = existingDiffs.get(i);
-                            stabExt.or(gSpace.preImages[diff][bx]);
+                            stabExt.or(gSpace.preImages.get(diff).get(bx));
                         }
                     }
                     existingDiffs.add(bx);
@@ -379,7 +365,7 @@ public class ApplicatorTest {
                     } else {
                         for (int i = 0; i < existingDiffs.size(); i++) {
                             int diff = existingDiffs.get(i);
-                            stabExt.or(gSpace.preImages[diff][xb]);
+                            stabExt.or(gSpace.preImages.get(diff).get(xb));
                         }
                     }
                     existingDiffs.add(xb);
