@@ -401,6 +401,16 @@ public class ApplicatorTest {
                 if (altBlock.compareTo(block) < 0) {
                     return true;
                 }
+                for (int sh = altBlock.nextSetBit(0); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
+                    FixBS shifted = new FixBS(space.v);
+                    int inv = group.inv(sh);
+                    for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
+                        shifted.set(space.apply(inv, el));
+                    }
+                    if (shifted.compareTo(block) < 0) {
+                        return true;
+                    }
+                }
             }
             initial.add(fst);
             return true;
