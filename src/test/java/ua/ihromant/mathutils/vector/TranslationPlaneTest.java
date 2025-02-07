@@ -120,7 +120,7 @@ public class TranslationPlaneTest {
             int[][] lines = toProjective(sp, arr);
             allCounter.incrementAndGet();
             Liner l = new Liner(lines.length, lines);
-            if (isDesargues(l, half)) {
+            if (TernaryAutomorphisms.isDesargues(l, half)) {
                 return;
             }
             ProjChar chr = newTranslation(counter.toString(), l, projData);
@@ -326,61 +326,6 @@ public class TranslationPlaneTest {
         return new ProjChar(name, mappings);
     }
 
-    public static boolean isDesargues(Liner liner, int order) {
-        int dl = 0;
-        int o = order;
-        int u = order + order;
-        int w = order + 1;
-        int ou = order;
-        int ow = 1;
-        int e = liner.intersection(liner.line(u, liner.intersection(dl, ow)), liner.line(w, liner.intersection(dl, ou)));
-        TernaryRing ring = new ProjectiveTernaryRing("", liner, new Quad(o, u, w, e)).toMatrix();
-        for (int x = 1; x < order; x++) {
-            for (int y = x + 1; y < order; y++) {
-                int xy = ring.mul(x, y);
-                if (xy != ring.mul(y, x)) {
-                    return false;
-                }
-                if (ring.mul(ring.mul(x, x), y) != ring.mul(x, xy)) {
-                    return false;
-                }
-                for (int z = 1; z < order; z++) {
-                    int yz = ring.add(y, z);
-                    if (ring.op(x, y, z) != ring.add(xy, z)) {
-                        return false;
-                    }
-                    if (ring.add(ring.add(x, y), z) != ring.add(x, yz)) {
-                        return false;
-                    }
-                    if (ring.mul(x, yz) != ring.add(xy, ring.mul(x, z))) {
-                        return false;
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public static int findTranslationLine(Liner liner) {
-        for (int dl : IntStream.range(0, liner.lineCount()).toArray()) {
-            int o = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p)).findAny().orElseThrow();
-            int[] dropped = liner.line(dl);
-            int v = dropped[0];
-            int h = dropped[1];
-            int oh = liner.line(o, h);
-            int ov = liner.line(o, v);
-            int e = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p) && !liner.flag(ov, p) && !liner.flag(oh, p)).findAny().orElseThrow();
-            int w = liner.intersection(liner.line(e, h), ov);
-            int u = liner.intersection(liner.line(e, v), oh);
-            Quad base = new Quad(o, u, w, e);
-            TernaryRing ring = new ProjectiveTernaryRing("", liner, base).toMatrix();
-            if (ring.isLinear() && ring.addAssoc() && ring.addComm() && ring.isRightDistributive()) {
-                return dl;
-            }
-        }
-        return -1;
-    }
-
     @Test
     public void generateAlt() {
         int p = 3;
@@ -421,7 +366,7 @@ public class TranslationPlaneTest {
             }
             int[][] lines = toProjective(sp, newBase);
             Liner l = new Liner(lines.length, lines);
-            if (isDesargues(l, mc)) {
+            if (TernaryAutomorphisms.isDesargues(l, mc)) {
                 System.out.println("Desargues " + Arrays.toString(arr));
                 return;
             }
@@ -638,7 +583,7 @@ public class TranslationPlaneTest {
                     }
                     int[][] lines = toProjective(sp, finalBase);
                     Liner l = new Liner(lines.length, lines);
-                    if (isDesargues(l, order)) {
+                    if (TernaryAutomorphisms.isDesargues(l, order)) {
                         System.out.println("Desargues " + Arrays.toString(start) + " " + Arrays.toString(arr));
                         return;
                     }
@@ -745,7 +690,7 @@ public class TranslationPlaneTest {
                      InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                      BufferedReader br = new BufferedReader(isr)) {
                     Liner proj = BatchAffineTest.readProj(br);
-                    int transLine = findTranslationLine(proj);
+                    int transLine = TernaryAutomorphisms.findTranslationLine(proj);
                     if (transLine < 0) {
                         System.out.println("Not translation " + name);
                         return;

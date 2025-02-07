@@ -29,7 +29,7 @@ public class ScalarTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            int line = TranslationPlaneTest.findTranslationLine(proj);
+            int line = TernaryAutomorphisms.findTranslationLine(proj);
             if (line < 0) {
                 throw new IllegalArgumentException("Not translation");
             } else {

@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.QuickFind;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.ProjChar;
 import ua.ihromant.mathutils.util.FixBS;
@@ -107,7 +108,7 @@ public class TranslationPlane2Test {
                 }
                 int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
                 Liner l = new Liner(lines.length, lines);
-                if (TranslationPlaneTest.isDesargues(l, mc)) {
+                if (TernaryAutomorphisms.isDesargues(l, mc)) {
                     System.out.println("Desargues " + Arrays.toString(arr) + " " + state);
                     return;
                 }
@@ -472,7 +473,7 @@ public class TranslationPlane2Test {
                     }
                     int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
                     Liner l = new Liner(lines.length, lines);
-                    if (TranslationPlaneTest.isDesargues(l, mc)) {
+                    if (TernaryAutomorphisms.isDesargues(l, mc)) {
                         System.out.println("Desargues " + Arrays.toString(arr) + " " + state);
                         return;
                     }

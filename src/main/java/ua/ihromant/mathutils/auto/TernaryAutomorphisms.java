@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.auto;
 
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.Triangle;
+import ua.ihromant.mathutils.plane.AffineTernaryRing;
 import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
 import ua.ihromant.mathutils.plane.Quad;
@@ -278,5 +279,82 @@ public class TernaryAutomorphisms {
         }
         mapping.xl().add(xn1);
         return finishTernarMapping(mapping);
+    }
+
+    public static boolean isDesargues(Liner liner, int order) {
+        int dl = 0;
+        int o = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p)).findAny().orElseThrow();
+        int u = IntStream.range(0, liner.pointCount()).filter(p -> p != o && !liner.flag(dl, p)).findAny().orElseThrow();
+        int ou = liner.line(o, u);
+        int w = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(ou, p) && !liner.flag(dl, p)).findAny().orElseThrow();
+        int ow = liner.line(o, w);
+        int e = liner.intersection(liner.line(u, liner.intersection(dl, ow)), liner.line(w, liner.intersection(dl, ou)));
+        TernaryRing ring = new ProjectiveTernaryRing("", liner, new Quad(o, u, w, e)).toMatrix();
+        return isDesargues(ring);
+    }
+
+    private static boolean isDesargues(TernaryRing ring) {
+        for (int x = 1; x < ring.order(); x++) {
+            for (int y = x + 1; y < ring.order(); y++) {
+                int xy = ring.mul(x, y);
+                if (xy != ring.mul(y, x)) {
+                    return false;
+                }
+                if (ring.mul(ring.mul(x, x), y) != ring.mul(x, xy)) {
+                    return false;
+                }
+                for (int z = 1; z < ring.order(); z++) {
+                    int yz = ring.add(y, z);
+                    if (ring.op(x, y, z) != ring.add(xy, z)) {
+                        return false;
+                    }
+                    if (ring.add(ring.add(x, y), z) != ring.add(x, yz)) {
+                        return false;
+                    }
+                    if (ring.mul(x, yz) != ring.add(xy, ring.mul(x, z))) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    public static int findTranslationLine(Liner liner) {
+        for (int dl : IntStream.range(0, liner.lineCount()).toArray()) {
+            int o = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p)).findAny().orElseThrow();
+            int[] dropped = liner.line(dl);
+            int v = dropped[0];
+            int h = dropped[1];
+            int oh = liner.line(o, h);
+            int ov = liner.line(o, v);
+            int e = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p) && !liner.flag(ov, p) && !liner.flag(oh, p)).findAny().orElseThrow();
+            int w = liner.intersection(liner.line(e, h), ov);
+            int u = liner.intersection(liner.line(e, v), oh);
+            Quad base = new Quad(o, u, w, e);
+            TernaryRing ring = new ProjectiveTernaryRing("", liner, base).toMatrix();
+            if (ring.isLinear() && ring.addAssoc() && ring.addComm() && ring.isRightDistributive()) {
+                return dl;
+            }
+        }
+        return -1;
+    }
+
+    public static boolean isAffineTranslation(Liner liner) {
+        int o = 0;
+        int u = 1;
+        int ou = liner.line(o, u);
+        int w = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(ou, p)).findAny().orElseThrow();
+        TernaryRing ring = new AffineTernaryRing(liner, new Triangle(o, u, w)).toMatrix();
+        return ring.isLinear() && ring.addAssoc() && ring.addComm() && ring.isRightDistributive();
+    }
+
+    public static boolean isAffineDesargues(Liner liner) {
+        int o = 0;
+        int u = 1;
+        int ou = liner.line(o, u);
+        int w = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(ou, p)).findAny().orElseThrow();
+        TernaryRing ring = new AffineTernaryRing(liner, new Triangle(o, u, w)).toMatrix();
+        return isDesargues(ring);
     }
 }
