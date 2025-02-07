@@ -392,27 +392,9 @@ public class ApplicatorTest {
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
             State fst = arr[0];
-            FixBS block = fst.block;
-            for (int[] auth : auths) {
-                FixBS altBlock = new FixBS(space.v);
-                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
-                    altBlock.set(auth[el]);
-                }
-                if (altBlock.compareTo(block) < 0) {
-                    return true;
-                }
-                for (int sh = altBlock.nextSetBit(0); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
-                    FixBS shifted = new FixBS(space.v);
-                    int inv = group.inv(sh);
-                    for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
-                        shifted.set(space.apply(inv, el));
-                    }
-                    if (shifted.compareTo(block) < 0) {
-                        return true;
-                    }
-                }
+            if (minimal(auths, space, fst.block)) {
+                initial.add(fst);
             }
-            initial.add(fst);
             return true;
         };
         int val = 1;
@@ -435,6 +417,29 @@ public class ApplicatorTest {
                 System.out.println(vl);
             }
         });
+    }
+
+    private static boolean minimal(int[][] auths, GSpace space, FixBS block) {
+        for (int[] auth : auths) {
+            FixBS altBlock = new FixBS(space.v);
+            for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                altBlock.set(auth[el]);
+            }
+            if (altBlock.compareTo(block) < 0) {
+                return false;
+            }
+            for (int sh = altBlock.nextSetBit(1); sh >= 0 && sh < space.group.order(); sh = altBlock.nextSetBit(sh + 1)) {
+                FixBS shifted = new FixBS(space.v);
+                int inv = space.group.inv(sh);
+                for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
+                    shifted.set(space.apply(inv, el));
+                }
+                if (shifted.compareTo(block) < 0) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     private static void searchDesigns(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
