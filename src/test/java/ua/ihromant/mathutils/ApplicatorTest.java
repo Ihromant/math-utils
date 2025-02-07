@@ -413,15 +413,12 @@ public class ApplicatorTest {
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            State fst = arr[0];
-            if (space.minimal(fst.block)) {
-                initial.add(fst);
-            }
+            initial.add(arr[0]);
             return true;
         };
         int val = 1;
         State state = space.statesCache[0][val];
-        searchDesigns(space, filter, design, state, val, cons);
+        searchDesignsMinimal(space, filter, design, state, val, cons);
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (ftr.cardinality() < sqr) {
                 return false;
@@ -462,6 +459,32 @@ public class ApplicatorTest {
                 State nextState = state.acceptElem(space, filter, el);
                 if (nextState != null) {
                     searchDesigns(space, filter, currDesign, nextState, el, cons);
+                }
+            }
+        }
+    }
+
+    private static void searchDesignsMinimal(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
+        if (state.size() == space.k) {
+            State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
+            nextDesign[currDesign.length] = state;
+            FixBS nextFilter = state.updatedFilter(filter, space);
+            if (cons.test(nextDesign, nextFilter)) {
+                return;
+            }
+            int pair = nextFilter.nextClearBit(0);
+            int snd = pair % space.v;
+            State nextState = space.statesCache[pair / space.v][snd];
+            searchDesignsMinimal(space, nextFilter, nextDesign, nextState, snd, cons);
+        } else {
+            int v = space.v;
+            int from = prev * v + prev + 1;
+            int to = prev * v + v;
+            for (int pair = filter.nextClearBit(from); pair >= 0 && pair < to; pair = filter.nextClearBit(pair + 1)) {
+                int el = pair % v;
+                State nextState = state.acceptElem(space, filter, el);
+                if (nextState != null && space.minimal(nextState.block)) {
+                    searchDesignsMinimal(space, filter, currDesign, nextState, el, cons);
                 }
             }
         }
