@@ -2,7 +2,6 @@ package ua.ihromant.mathutils.group;
 
 import ua.ihromant.mathutils.QuickFind;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -103,48 +102,35 @@ public class GroupIndex {
 
     private static void register(Group g) {
         Fingerprint fp = fingerprint(g);
-        if (index.computeIfAbsent(g.order(), k -> new HashMap<>()).put(fp, g) != null) {
-            throw new IllegalStateException("Duplicate group");
+        Group prev = index.computeIfAbsent(g.order(), k -> new HashMap<>()).put(fp, g);
+        if (prev != null) {
+            throw new IllegalStateException("Duplicate groups " + prev.name() + " and " + g.name());
         }
     }
 
     private static Fingerprint fingerprint(Group gr) {
         int order = gr.order();
-        int[] orders = new int[order + 1];
+        Map<Integer, Integer> orders = new HashMap<>();
         QuickFind qf = new QuickFind(order);
         for (int g = 0; g < order; g++) {
-            orders[gr.order(g)]++;
+            orders.compute(gr.order(g), (k, v) -> v == null ? 1 : v + 1);
             for (int h = 0; h < order; h++) {
                 qf.union(g, gr.op(gr.inv(h), gr.op(g, h)));
             }
         }
-        int[] conjugations = new int[order];
+        Map<Integer, Integer> conjugations = new HashMap<>();
         for (int i = 0; i < order; i++) {
             if (qf.root(i) == i) {
-                conjugations[qf.size(i)]++;
+                conjugations.compute(qf.size(i), (k, v) -> v == null ? 1 : v + 1);
             }
         }
         return new GroupIndex.Fingerprint(orders, conjugations);
     }
 
-    private record Fingerprint(int[] orders, int[] conjugations) {
+    private record Fingerprint(Map<Integer, Integer> orders, Map<Integer, Integer> conjugations) {
         @Override
         public String toString() {
-            return "FP(" + Arrays.toString(orders) + ", " + Arrays.toString(conjugations) + ")";
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof Fingerprint(int[] orders1, int[] conjugations1))) return false;
-
-            return Arrays.equals(orders, orders1) && Arrays.equals(conjugations, conjugations1);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = Arrays.hashCode(orders);
-            result = 31 * result + Arrays.hashCode(conjugations);
-            return result;
+            return "FP(" + orders + ", " + conjugations + ")";
         }
     }
 }
