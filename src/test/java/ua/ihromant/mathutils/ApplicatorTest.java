@@ -287,6 +287,46 @@ public class ApplicatorTest {
             }
             return true;
         }
+
+        private boolean minimal(State[] states) {
+            FixBS[] blocks = new FixBS[states.length];
+            for (int i = 0; i < states.length; i++) {
+                blocks[i] = states[i].block;
+            }
+            ex: for (int[] auth : auths) {
+                FixBS[] altBlocks = new FixBS[blocks.length];
+                for (int i = 0; i < blocks.length; i++) {
+                    FixBS block = blocks[i];
+                    FixBS altBlock = new FixBS(v);
+                    for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                        altBlock.set(auth[el]);
+                    }
+                    FixBS min = altBlock;
+                    for (int sh = altBlock.nextSetBit(0); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
+                        FixBS shifted = new FixBS(v);
+                        int inv = group.inv(sh);
+                        for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
+                            shifted.set(apply(inv, el));
+                        }
+                        if (shifted.compareTo(min) < 0) {
+                            min = shifted;
+                        }
+                    }
+                    altBlocks[i] = min;
+                }
+                Arrays.sort(altBlocks);
+                for (int i = 0; i < blocks.length; i++) {
+                    int cmp = altBlocks[i].compareTo(blocks[i]);
+                    if (cmp < 0) {
+                        return false;
+                    }
+                    if (cmp > 0) {
+                        continue ex;
+                    }
+                }
+            }
+            return true;
+        }
     }
 
     private record State(FixBS block, FixBS stabilizer, IntList[] diffs, int size) {
@@ -470,6 +510,9 @@ public class ApplicatorTest {
         State state = space.statesCache[0][val];
         searchDesignsMinimal(space, filter, design, state, val, cons);
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+            if (arr.length > 1 && arr.length < 5 && !space.minimal(arr)) {
+                return true;
+            }
             if (ftr.cardinality() < sqr) {
                 return false;
             }
