@@ -104,7 +104,7 @@ public class TranslationPlane1Test {
                 }
                 int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
                 Liner l = new Liner(lines.length, lines);
-                if (TernaryAutomorphisms.isDesargues(l, mc)) {
+                if (TernaryAutomorphisms.isDesargues(l)) {
                     System.out.println("Desargues " + Arrays.toString(arr) + " " + state);
                     return;
                 }
@@ -570,7 +570,7 @@ public class TranslationPlane1Test {
                     }
                     int[][] lines = TranslationPlaneTest.toProjective(sp, newBase);
                     Liner l = new Liner(lines.length, lines);
-                    if (TernaryAutomorphisms.isDesargues(l, mc)) {
+                    if (TernaryAutomorphisms.isDesargues(l)) {
                         System.out.println("Desargues " + Arrays.toString(arr) + " " + state);
                         return;
                     }

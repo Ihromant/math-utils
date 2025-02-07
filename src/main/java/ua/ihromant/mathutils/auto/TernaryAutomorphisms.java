@@ -281,7 +281,7 @@ public class TernaryAutomorphisms {
         return finishTernarMapping(mapping);
     }
 
-    public static boolean isDesargues(Liner liner, int order) {
+    public static boolean isDesargues(Liner liner) {
         int dl = 0;
         int o = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(dl, p)).findAny().orElseThrow();
         int u = IntStream.range(0, liner.pointCount()).filter(p -> p != o && !liner.flag(dl, p)).findAny().orElseThrow();
