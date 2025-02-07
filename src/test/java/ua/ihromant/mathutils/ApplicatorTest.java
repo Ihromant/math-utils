@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -100,9 +101,37 @@ public class ApplicatorTest {
                 suitableAuths.set(el);
             }
             PermutationGroup suitable = auths.subset(suitableAuths);
-            this.auths = new int[suitable.order()][v];
+            List<List<Integer>> grouped = IntStream.range(0, comps.length).boxed().collect(Collectors.groupingBy(i -> comps[i]))
+                    .entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).toList();
+            int[] base = IntStream.range(0, comps.length).toArray();
+            List<PermutationGroup> permutations = grouped.stream().map(lst -> {
+                int[] arr = lst.stream().mapToInt(Integer::intValue).toArray();
+                int[][] perms;
+                if (comps[arr[0]] == gOrd) {
+                    perms = IntStream.range(0, arr.length).mapToObj(sh -> {
+                        int[] copy = base.clone();
+                        for (int i = 0; i < arr.length; i++) {
+                            copy[arr[i]] = arr[(i + sh) % arr.length];
+                        }
+                        return copy;
+                    }).toArray(int[][]::new);
+                } else {
+                    perms = GaloisField.permutations(arr).map(perm -> {
+                        int[] copy = base.clone();
+                        for (int i = 0; i < arr.length; i++) {
+                            copy[arr[i]] = perm[i];
+                        }
+                        return copy;
+                    }).toArray(int[][]::new);
+                }
+                return new PermutationGroup(perms);
+            }).toList();
+            int prod = permutations.stream().mapToInt(Group::order).reduce(1, (a, b) -> a * b);
+            this.auths = new int[suitable.order() * prod][v];
+            int cnt = 0;
             for (int el = 0; el < suitable.order(); el++) {
                 int[] perm = suitable.permutation(el);
+                int[] permuted = new int[v];
                 for (int x = 0; x < v; x++) {
                     int idx = Arrays.binarySearch(oBeg, x);
                     if (idx < 0) {
@@ -112,8 +141,9 @@ public class ApplicatorTest {
                     GCosets conf = cosets[idx];
                     int gBase = conf.cosets[x - cosMin][0];
                     int gMapped = perm[gBase];
-                    this.auths[el][x] = conf.idx[gMapped] + cosMin;
+                    permuted[x] = conf.idx[gMapped] + cosMin;
                 }
+                cnt = generateAuth(permutations, permuted, cnt, 0);
             }
             FixBS inter = new FixBS(gOrd);
             inter.set(0, gOrd);
@@ -186,6 +216,29 @@ public class ApplicatorTest {
             }
         }
 
+        private int generateAuth(List<PermutationGroup> permutations, int[] base, int counter, int idx) {
+            if (idx == permutations.size()) {
+                System.arraycopy(base, 0, auths[counter], 0, base.length);
+                return ++counter;
+            }
+            PermutationGroup gr = permutations.get(idx);
+            for (int i = 0; i < gr.order(); i++) {
+                int[] newBase = base.clone();
+                int[] perm = gr.permutation(i);
+                for (int j = 0; j < perm.length; j++) {
+                    int map = perm[j];
+                    if (map == j) {
+                        continue;
+                    }
+                    int from = oBeg[j];
+                    int sz = (j == perm.length - 1 ? v : oBeg[j + 1]) - from;
+                    System.arraycopy(base, from, newBase, oBeg[map], sz);
+                }
+                counter = generateAuth(permutations, newBase, counter, idx + 1);
+            }
+            return counter;
+        }
+
         private int applyByDef(int g, int x) {
             int idx = Arrays.binarySearch(oBeg, x);
             if (idx < 0) {
@@ -221,10 +274,7 @@ public class ApplicatorTest {
                 for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
                     altBlock.set(auth[el]);
                 }
-                if (altBlock.compareTo(block) < 0) {
-                    return false;
-                }
-                for (int sh = altBlock.nextSetBit(1); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
+                for (int sh = altBlock.nextSetBit(0); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
                     FixBS shifted = new FixBS(v);
                     int inv = group.inv(sh);
                     for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
