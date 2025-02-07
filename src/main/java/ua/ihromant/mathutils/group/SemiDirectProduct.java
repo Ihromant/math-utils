@@ -10,7 +10,7 @@ public class SemiDirectProduct implements Group {
     private final CyclicGroup k;
     private final PermutationGroup gr;
     private final int[] psi;
-    private final int elem;
+    private final Integer elem;
 
     public SemiDirectProduct(Group h, CyclicGroup k) {
         this.h = h;
@@ -19,11 +19,12 @@ public class SemiDirectProduct implements Group {
         Arrays.sort(auth, SemiDirectProduct::compare);
         this.gr = new PermutationGroup(auth);
         this.psi = new int[k.order()];
-        this.elem = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).findAny()
+        int elem = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).findAny()
                 .orElseGet(() -> IntStream.range(1, gr.order()).filter(e -> k.order() % gr.order(e) == 0).findAny().orElseThrow());
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
         }
+        this.elem = null;
     }
 
     public SemiDirectProduct(Group h, CyclicGroup k, int mul) {
@@ -38,6 +39,21 @@ public class SemiDirectProduct implements Group {
         this.psi = new int[k.order()];
         psi[0] = 0;
         this.elem = IntStream.range(1, gr.order()).filter(e -> k.order() / mul == gr.order(e)).findAny().orElseThrow();
+        for (int i = 1; i < k.order(); i++) {
+            psi[i] = gr.mul(elem, i);
+        }
+    }
+
+    public SemiDirectProduct(Group h, CyclicGroup k, int idx, boolean b) {
+        this.h = h;
+        this.k = k;
+        int[][] auth = h.auth();
+        Arrays.sort(auth, SemiDirectProduct::compare);
+        this.gr = new PermutationGroup(auth);
+        this.psi = new int[k.order()];
+        psi[0] = 0;
+        int[] elems = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).toArray();
+        this.elem = elems[idx];
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
         }
@@ -82,7 +98,7 @@ public class SemiDirectProduct implements Group {
 
     @Override
     public String name() {
-        return h.name() + "⋊" + k.name() + "ord" + gr.order(elem);
+        return h.name() + "⋊" + k.name() + (elem == null ? "" : "ord" + gr.order(elem));
     }
 
     @Override

@@ -49,7 +49,7 @@ public class GroupIndex {
         register(new CyclicProduct(2, 3, 3)); // 18
         register(new GroupProduct(new SemiDirectProduct(new CyclicGroup(3), new CyclicGroup(2)), new CyclicGroup(3))); // 18
         register(new SemiDirectProduct(new CyclicGroup(9), new CyclicGroup(2))); // 18
-        //register(new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(2))); // 18 TODO fix
+        register(new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(2), 6, false)); // 18
         register(new CyclicGroup(19)); // 19
         register(new CyclicGroup(20)); // 20
         register(new CyclicProduct(2, 2, 5)); // 20
