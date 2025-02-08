@@ -572,13 +572,13 @@ public class ApplicatorTest {
         }
     }
 
-    private record BlockDiff(FixBS block, FixBS diff) {}
+    private record BlockDiff(FixBS block, int card, FixBS diff) {}
 
     @Test
     public void logByDiff() {
-        int k = 4;
-        Group group = new CyclicGroup(3);
-        GSpace space = new GSpace(k, group, 1, 1, 1, 1, 1, 1, 1, 1, 3);
+        int k = 5;
+        Group group = new CyclicGroup(5);
+        GSpace space = new GSpace(k, group, 1, 1, 1, 1, 1, 1, 1, 1, 5);
         System.out.println(group.name() + " " + space.v + " " + k + " auths: " + space.auths.length);
         int sqr = space.v * space.v;
         FixBS filter = new FixBS(sqr);
@@ -606,7 +606,7 @@ public class ApplicatorTest {
                     diff.set(i);
                 }
             }
-            initial.add(new BlockDiff(block, diff));
+            initial.add(new BlockDiff(block, diff.cardinality(), diff));
             return true;
         };
         for (int fst = 0; fst < space.v; fst++) {
@@ -616,16 +616,16 @@ public class ApplicatorTest {
         BlockDiff[] blocks = initial.toArray(BlockDiff[]::new);
         Arrays.parallelSort(blocks, Comparator.comparing(BlockDiff::diff));
         int[] order = calcOrder(sz, blocks);
-        System.out.println("Initial length: " + initial.size());
+        System.out.println("Global length " + initial.size() + ", to process " + (order[1] - order[0]));
         AtomicInteger ai = new AtomicInteger();
-        Map<FixBS, Liner> liners = new ConcurrentHashMap<>();
+        Map<Map<Integer, Integer>, Liner> liners = new ConcurrentHashMap<>();
         IntStream.range(order[0], order[1]).parallel().forEach(i -> {
             BlockDiff bd = blocks[i];
             IntList base = new IntList(sz / k);
             base.add(i);
-            calculate(blocks, order, bd.diff().cardinality(), bd.diff(), base, (idx, card) -> {
+            calculate(blocks, order, bd.card(), bd.diff(), base, (idx, card) -> {
                 int size = idx.size();
-                if (size < 7) {
+                if (size < 3) {
                     FixBS[] init = new FixBS[size];
                     for (int j = 0; j < size; j++) {
                         init[j] = blocks[idx.get(j)].block;
@@ -657,7 +657,7 @@ public class ApplicatorTest {
                 }
                 int[][] ars = Arrays.stream(idx.toArray()).boxed().flatMap(j -> space.blocks(blocks[j].block)).toArray(int[][]::new);
                 Liner l = new Liner(space.v, ars);
-                if (liners.putIfAbsent(l.getCanonicalOld(), l) == null) {
+                if (liners.putIfAbsent(l.hyperbolicFreq(), l) == null) {
                     System.out.println(l.hyperbolicFreq() + " " + GroupIndex.identify(l.automorphisms()) + " " + Arrays.deepToString(l.lines()));
                 }
                 return true;
@@ -675,7 +675,7 @@ public class ApplicatorTest {
         for (int i = 1; i < res.length; i++) {
             int prev = res[i - 1];
             FixBS top = FixBS.of(sz, i - 1, sz - 1);
-            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new BlockDiff(null, top), Comparator.comparing(BlockDiff::diff)) - 1;
+            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new BlockDiff(null, 0, top), Comparator.comparing(BlockDiff::diff)) - 1;
         }
         return res;
     }
@@ -692,7 +692,7 @@ public class ApplicatorTest {
             }
             IntList newCurr = curr.copy();
             newCurr.add(i);
-            calculate(blockDiffs, order, currCard + c.diff().cardinality(), union.union(c.diff()), newCurr, cons);
+            calculate(blockDiffs, order, currCard + c.card(), union.union(c.diff()), newCurr, cons);
         }
     }
 }
