@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -622,14 +623,42 @@ public class ApplicatorTest {
             BlockDiff bd = blocks[i];
             IntList base = new IntList(sz / k);
             base.add(i);
-            calculate(blocks, order, bd.diff().cardinality(), bd.diff(), base, (blcs, card) -> {
+            calculate(blocks, order, bd.diff().cardinality(), bd.diff(), base, (idx, card) -> {
+                int size = idx.size();
+                if (size < 7) {
+                    FixBS[] init = new FixBS[size];
+                    for (int j = 0; j < size; j++) {
+                        init[j] = blocks[idx.get(j)].block;
+                    }
+                    ex: for (int[] auth : space.auths) {
+                        FixBS[] altBlocks = new FixBS[size];
+                        for (int j = 0; j < size; j++) {
+                            FixBS altBlock = new FixBS(space.v);
+                            FixBS bb = init[j];
+                            for (int el = bb.nextSetBit(0); el >= 0; el = bb.nextSetBit(el + 1)) {
+                                altBlock.set(auth[el]);
+                            }
+                            altBlocks[j] = altBlock;
+                        }
+                        Arrays.sort(altBlocks);
+                        for (int j = 0; j < size; j++) {
+                            int cmp = altBlocks[j].compareTo(init[j]);
+                            if (cmp < 0) {
+                                return true;
+                            }
+                            if (cmp > 0) {
+                                continue ex;
+                            }
+                        }
+                    }
+                }
                 if (card < sz) {
                     return false;
                 }
-                int[][] ars = Arrays.stream(blcs.toArray()).boxed().flatMap(j -> space.blocks(blocks[j].block)).toArray(int[][]::new);
+                int[][] ars = Arrays.stream(idx.toArray()).boxed().flatMap(j -> space.blocks(blocks[j].block)).toArray(int[][]::new);
                 Liner l = new Liner(space.v, ars);
                 if (liners.putIfAbsent(l.getCanonicalOld(), l) == null) {
-                    System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
+                    System.out.println(l.hyperbolicFreq() + " " + GroupIndex.identify(l.automorphisms()) + " " + Arrays.deepToString(l.lines()));
                 }
                 return true;
             });
