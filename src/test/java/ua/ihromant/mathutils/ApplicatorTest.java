@@ -568,4 +568,47 @@ public class ApplicatorTest {
             }
         }
     }
+
+    private record BlockDiff(FixBS block, FixBS diff) {}
+
+    @Test
+    public void logByDiff() {
+        int k = 4;
+        Group group = new CyclicGroup(3);
+        GSpace space = new GSpace(k, group, 1, 1, 1, 1, 1, 1, 1, 1, 3);
+        System.out.println(group.name() + " " + space.v + " " + k + " auths: " + space.auths.length);
+        int sqr = space.v * space.v;
+        FixBS filter = new FixBS(sqr);
+        for (int i = 0; i < space.v; i++) {
+            filter.set(i * space.v + i);
+        }
+        State[] design = new State[0];
+        List<BlockDiff> initial = new ArrayList<>();
+        BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
+            State st = arr[0];
+            FixBS block = st.block;
+            for (int g = 1; g < space.group.order(); g++) {
+                FixBS altBlock = new FixBS(space.v);
+                for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
+                    altBlock.set(space.apply(g, x));
+                }
+                if (altBlock.compareTo(block) < 0) {
+                    return true;
+                }
+            }
+            FixBS diff = new FixBS(space.differences.size());
+            for (int i = 0; i < space.differences.size(); i++) {
+                if (st.diffs[i] != null) {
+                    diff.set(i);
+                }
+            }
+            initial.add(new BlockDiff(block, diff));
+            return true;
+        };
+        for (int fst = 0; fst < space.v; fst++) {
+            State state = new State(FixBS.of(space.v, fst), FixBS.of(space.group.order(), 0), new IntList[space.differences.size()], 1);
+            searchDesigns(space, filter, design, state, fst, cons);
+        }
+        System.out.println("Initial length: " + initial.size());
+    }
 }
