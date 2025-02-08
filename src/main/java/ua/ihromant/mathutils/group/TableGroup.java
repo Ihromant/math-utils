@@ -47,8 +47,12 @@ public class TableGroup implements Group {
     }
 
     @Override
-    public Group asTable() {
+    public TableGroup asTable() {
         return this;
+    }
+
+    public int[][] table() {
+        return operationTable;
     }
 
     @Override

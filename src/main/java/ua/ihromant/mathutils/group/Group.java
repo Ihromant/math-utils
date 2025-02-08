@@ -94,7 +94,7 @@ public interface Group {
         return IntStream.range(0, order());
     }
 
-    default Group asTable() {
+    default TableGroup asTable() {
         int order = order();
         int[][] table = new int[order][order];
         if (order > 1000) {
