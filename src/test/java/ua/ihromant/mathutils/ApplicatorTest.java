@@ -11,12 +11,14 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -584,6 +586,7 @@ public class ApplicatorTest {
         }
         State[] design = new State[0];
         List<BlockDiff> initial = new ArrayList<>();
+        int sz = space.differences.size();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
             State st = arr[0];
             FixBS block = st.block;
@@ -596,8 +599,8 @@ public class ApplicatorTest {
                     return true;
                 }
             }
-            FixBS diff = new FixBS(space.differences.size());
-            for (int i = 0; i < space.differences.size(); i++) {
+            FixBS diff = new FixBS(sz);
+            for (int i = 0; i < sz; i++) {
                 if (st.diffs[i] != null) {
                     diff.set(i);
                 }
@@ -606,9 +609,61 @@ public class ApplicatorTest {
             return true;
         };
         for (int fst = 0; fst < space.v; fst++) {
-            State state = new State(FixBS.of(space.v, fst), FixBS.of(space.group.order(), 0), new IntList[space.differences.size()], 1);
+            State state = new State(FixBS.of(space.v, fst), FixBS.of(space.group.order(), 0), new IntList[sz], 1);
             searchDesigns(space, filter, design, state, fst, cons);
         }
+        BlockDiff[] blocks = initial.toArray(BlockDiff[]::new);
+        Arrays.parallelSort(blocks, Comparator.comparing(BlockDiff::diff));
+        int[] order = calcOrder(sz, blocks);
         System.out.println("Initial length: " + initial.size());
+        AtomicInteger ai = new AtomicInteger();
+        Map<FixBS, Liner> liners = new ConcurrentHashMap<>();
+        IntStream.range(order[0], order[1]).parallel().forEach(i -> {
+            BlockDiff bd = blocks[i];
+            IntList base = new IntList(sz / k);
+            base.add(i);
+            calculate(blocks, order, bd.diff().cardinality(), bd.diff(), base, (blcs, card) -> {
+                if (card < sz) {
+                    return false;
+                }
+                int[][] ars = Arrays.stream(blcs.toArray()).boxed().flatMap(j -> space.blocks(blocks[j].block)).toArray(int[][]::new);
+                Liner l = new Liner(space.v, ars);
+                if (liners.putIfAbsent(l.getCanonicalOld(), l) == null) {
+                    System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
+                }
+                return true;
+            });
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
+        });
+        System.out.println(ai + " " + liners.size());
+    }
+
+    private static int[] calcOrder(int sz, BlockDiff[] comps) {
+        int[] res = new int[sz];
+        for (int i = 1; i < res.length; i++) {
+            int prev = res[i - 1];
+            FixBS top = FixBS.of(sz, i - 1, sz - 1);
+            res[i] = -Arrays.binarySearch(comps, prev, comps.length, new BlockDiff(null, top), Comparator.comparing(BlockDiff::diff)) - 1;
+        }
+        return res;
+    }
+
+    private static void calculate(BlockDiff[] blockDiffs, int[] order, int currCard, FixBS union, IntList curr, BiPredicate<IntList, Integer> cons) {
+        if (cons.test(curr, currCard)) {
+            return;
+        }
+        int hole = union.nextClearBit(0);
+        for (int i = order[hole]; i < order[hole + 1]; i++) {
+            BlockDiff c = blockDiffs[i];
+            if (union.intersects(c.diff())) {
+                continue;
+            }
+            IntList newCurr = curr.copy();
+            newCurr.add(i);
+            calculate(blockDiffs, order, currCard + c.diff().cardinality(), union.union(c.diff()), newCurr, cons);
+        }
     }
 }
