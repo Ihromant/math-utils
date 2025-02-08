@@ -106,7 +106,7 @@ public class ApplicatorTest {
                     .entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).toList();
             int[] base = IntStream.range(0, comps.length).toArray();
             List<PermutationGroup> permutations = grouped.stream().map(lst -> {
-                int[] arr = lst.stream().mapToInt(Integer::intValue).toArray();
+                int[] arr = lst.subList(0, Math.min(lst.size(), 7)).stream().mapToInt(Integer::intValue).toArray();
                 int[][] perms;
                 if (comps[arr[0]] == gOrd) {
                     perms = IntStream.range(0, arr.length).mapToObj(sh -> {
