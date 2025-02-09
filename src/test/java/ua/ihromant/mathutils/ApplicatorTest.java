@@ -65,6 +65,7 @@ public class ApplicatorTest {
         private final Group group;
         private final GCosets[] cosets;
         private final int[] oBeg;
+        private final int[] orbIdx;
         private final int v;
         private final int k;
         private final int[][] cayley;
@@ -90,6 +91,14 @@ public class ApplicatorTest {
                 min = min + conf.cosets.length;
             }
             this.v = min;
+            this.orbIdx = new int[v];
+            for (int i = 0; i < oBeg.length; i++) {
+                int beg = oBeg[i];
+                int sz = (i == oBeg.length - 1 ? v : oBeg[i + 1]) - beg;
+                for (int j = 0; j < sz; j++) {
+                    orbIdx[beg + j] = i;
+                }
+            }
             int gOrd = table.order();
             PermutationGroup auths = new PermutationGroup(group.auth());
             FixBS suitableAuths = new FixBS(auths.order());
@@ -137,10 +146,7 @@ public class ApplicatorTest {
                 int[] perm = suitable.permutation(el);
                 int[] permuted = new int[v];
                 for (int x = 0; x < v; x++) {
-                    int idx = Arrays.binarySearch(oBeg, x);
-                    if (idx < 0) {
-                        idx = -idx - 2;
-                    }
+                    int idx = orbIdx[x];
                     int cosMin = oBeg[idx];
                     GCosets conf = cosets[idx];
                     int gBase = conf.cosets[x - cosMin][0];
@@ -492,6 +498,13 @@ public class ApplicatorTest {
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
+            State st = arr[0];
+            FixBS block = st.block();
+            for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
+                if (!block.get(space.oBeg[space.orbIdx[i]])) {
+                    return true;
+                }
+            }
             initial.add(arr[0]);
             return true;
         };
