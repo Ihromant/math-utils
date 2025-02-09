@@ -69,7 +69,6 @@ public class ApplicatorTest {
         private final int v;
         private final int k;
         private final int[][] cayley;
-        private final int[][] auths;
         private final List<FixBS> differences;
         private final int[] diffMap;
         private final List<Map<Integer, FixBS>> preImages;
@@ -112,48 +111,6 @@ public class ApplicatorTest {
                     }
                 }
                 suitableAuths.set(el);
-            }
-            PermutationGroup suitable = auths.subset(suitableAuths);
-            List<List<Integer>> grouped = IntStream.range(0, comps.length).boxed().collect(Collectors.groupingBy(i -> comps[i]))
-                    .entrySet().stream().sorted(Map.Entry.comparingByKey()).map(Map.Entry::getValue).toList();
-            int[] base = IntStream.range(0, comps.length).toArray();
-            List<PermutationGroup> permutations = grouped.stream().map(lst -> {
-                int[] arr = lst.subList(0, Math.min(lst.size(), 7)).stream().mapToInt(Integer::intValue).toArray();
-                int[][] perms;
-                if (comps[arr[0]] == gOrd) {
-                    perms = IntStream.range(0, arr.length).mapToObj(sh -> {
-                        int[] copy = base.clone();
-                        for (int i = 0; i < arr.length; i++) {
-                            copy[arr[i]] = arr[(i + sh) % arr.length];
-                        }
-                        return copy;
-                    }).toArray(int[][]::new);
-                } else {
-                    perms = GaloisField.permutations(arr).map(perm -> {
-                        int[] copy = base.clone();
-                        for (int i = 0; i < arr.length; i++) {
-                            copy[arr[i]] = perm[i];
-                        }
-                        return copy;
-                    }).toArray(int[][]::new);
-                }
-                return new PermutationGroup(perms);
-            }).toList();
-            int prod = permutations.stream().mapToInt(Group::order).reduce(1, (a, b) -> a * b);
-            this.auths = new int[suitable.order() * prod][v];
-            int cnt = 0;
-            for (int el = 0; el < suitable.order(); el++) {
-                int[] perm = suitable.permutation(el);
-                int[] permuted = new int[v];
-                for (int x = 0; x < v; x++) {
-                    int idx = orbIdx[x];
-                    int cosMin = oBeg[idx];
-                    GCosets conf = cosets[idx];
-                    int gBase = conf.cosets[x - cosMin][0];
-                    int gMapped = perm[gBase];
-                    permuted[x] = conf.idx[gMapped] + cosMin;
-                }
-                cnt = generateAuth(permutations, permuted, cnt, 0);
             }
             FixBS inter = new FixBS(gOrd);
             inter.set(0, gOrd);
@@ -211,34 +168,8 @@ public class ApplicatorTest {
             }
         }
 
-        private int generateAuth(List<PermutationGroup> permutations, int[] base, int counter, int idx) {
-            if (idx == permutations.size()) {
-                System.arraycopy(base, 0, auths[counter], 0, base.length);
-                return ++counter;
-            }
-            PermutationGroup gr = permutations.get(idx);
-            for (int i = 0; i < gr.order(); i++) {
-                int[] newBase = base.clone();
-                int[] perm = gr.permutation(i);
-                for (int j = 0; j < perm.length; j++) {
-                    int map = perm[j];
-                    if (map == j) {
-                        continue;
-                    }
-                    int from = oBeg[j];
-                    int sz = (j == perm.length - 1 ? v : oBeg[j + 1]) - from;
-                    System.arraycopy(base, from, newBase, oBeg[map], sz);
-                }
-                counter = generateAuth(permutations, newBase, counter, idx + 1);
-            }
-            return counter;
-        }
-
         private int applyByDef(int g, int x) {
-            int idx = Arrays.binarySearch(oBeg, x);
-            if (idx < 0) {
-                idx = -idx - 2;
-            }
+            int idx = orbIdx[x];
             int min = oBeg[idx];
             GCosets conf = cosets[idx];
             return conf.apply(g, x - min) + min;
@@ -264,63 +195,7 @@ public class ApplicatorTest {
         }
 
         private boolean minimal(FixBS block) {
-            for (int[] auth : auths) {
-                FixBS altBlock = new FixBS(v);
-                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
-                    altBlock.set(auth[el]);
-                }
-                for (int sh = altBlock.nextSetBit(0); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
-                    FixBS shifted = new FixBS(v);
-                    int inv = group.inv(sh);
-                    for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
-                        shifted.set(apply(inv, el));
-                    }
-                    if (shifted.compareTo(block) < 0) {
-                        return false;
-                    }
-                }
-            }
-            return true;
-        }
-
-        private boolean minimal(State[] states) {
-            FixBS[] blocks = new FixBS[states.length];
-            for (int i = 0; i < states.length; i++) {
-                blocks[i] = states[i].block;
-            }
-            ex: for (int[] auth : auths) {
-                FixBS[] altBlocks = new FixBS[blocks.length];
-                for (int i = 0; i < blocks.length; i++) {
-                    FixBS block = blocks[i];
-                    FixBS altBlock = new FixBS(v);
-                    for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
-                        altBlock.set(auth[el]);
-                    }
-                    FixBS min = altBlock;
-                    for (int sh = altBlock.nextSetBit(0); sh >= 0 && sh < group.order(); sh = altBlock.nextSetBit(sh + 1)) {
-                        FixBS shifted = new FixBS(v);
-                        int inv = group.inv(sh);
-                        for (int el = altBlock.nextSetBit(0); el >= 0; el = altBlock.nextSetBit(el + 1)) {
-                            shifted.set(apply(inv, el));
-                        }
-                        if (shifted.compareTo(min) < 0) {
-                            min = shifted;
-                        }
-                    }
-                    altBlocks[i] = min;
-                }
-                Arrays.sort(altBlocks);
-                for (int i = 0; i < blocks.length; i++) {
-                    int cmp = altBlocks[i].compareTo(blocks[i]);
-                    if (cmp < 0) {
-                        return false;
-                    }
-                    if (cmp > 0) {
-                        continue ex;
-                    }
-                }
-            }
-            return true;
+            return true; // TODO
         }
     }
 
@@ -489,7 +364,7 @@ public class ApplicatorTest {
         int k = 6;
         Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
         GSpace space = new GSpace(k, group, 1, 3, 3, 39);
-        System.out.println(group.name() + " " + space.v + " " + k + " auths: " + space.auths.length);
+        System.out.println(group.name() + " " + space.v + " " + k + " auths: " + 0); // TODO
         int sqr = space.v * space.v;
         FixBS filter = new FixBS(sqr);
         for (int i = 0; i < space.v; i++) {
@@ -498,13 +373,6 @@ public class ApplicatorTest {
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            State st = arr[0];
-            FixBS block = st.block();
-            for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
-                if (!block.get(space.oBeg[space.orbIdx[i]])) {
-                    return true;
-                }
-            }
             initial.add(arr[0]);
             return true;
         };
@@ -512,9 +380,6 @@ public class ApplicatorTest {
         State state = space.statesCache[0][val];
         searchDesignsMinimal(space, filter, design, state, val, cons);
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-            if (arr.length > 1 && arr.length < 5 && !space.minimal(arr)) {
-                return true;
-            }
             if (ftr.cardinality() < sqr) {
                 return false;
             }
@@ -592,7 +457,7 @@ public class ApplicatorTest {
         int k = 5;
         Group group = new CyclicGroup(5);
         GSpace space = new GSpace(k, group, 1, 1, 1, 1, 1, 1, 1, 1, 5);
-        System.out.println(group.name() + " " + space.v + " " + k + " auths: " + space.auths.length);
+        System.out.println(group.name() + " " + space.v + " " + k + " auths: " + 0); // TODO
         int sqr = space.v * space.v;
         FixBS filter = new FixBS(sqr);
         for (int i = 0; i < space.v; i++) {
@@ -637,34 +502,6 @@ public class ApplicatorTest {
             IntList base = new IntList(sz / k);
             base.add(i);
             calculate(blocks, order, bd.card(), bd.diff(), base, (idx, card) -> {
-                int size = idx.size();
-                if (size < 3) {
-                    FixBS[] init = new FixBS[size];
-                    for (int j = 0; j < size; j++) {
-                        init[j] = blocks[idx.get(j)].block;
-                    }
-                    ex: for (int[] auth : space.auths) {
-                        FixBS[] altBlocks = new FixBS[size];
-                        for (int j = 0; j < size; j++) {
-                            FixBS altBlock = new FixBS(space.v);
-                            FixBS bb = init[j];
-                            for (int el = bb.nextSetBit(0); el >= 0; el = bb.nextSetBit(el + 1)) {
-                                altBlock.set(auth[el]);
-                            }
-                            altBlocks[j] = altBlock;
-                        }
-                        Arrays.sort(altBlocks);
-                        for (int j = 0; j < size; j++) {
-                            int cmp = altBlocks[j].compareTo(init[j]);
-                            if (cmp < 0) {
-                                return true;
-                            }
-                            if (cmp > 0) {
-                                continue ex;
-                            }
-                        }
-                    }
-                }
                 if (card < sz) {
                     return false;
                 }
