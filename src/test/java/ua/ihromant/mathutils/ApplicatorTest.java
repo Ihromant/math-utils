@@ -567,34 +567,18 @@ public class ApplicatorTest {
             filter.set(i * space.v + i);
         }
         State[] design = new State[0];
-        List<BlockDiff> initial = new ArrayList<>();
+        Map<FixBS, BlockDiff> initial = new HashMap<>();
         int sz = space.differences.size();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
             State st = arr[0];
-            FixBS block = st.block;
-            for (int g = 1; g < space.group.order(); g++) {
-                FixBS altBlock = new FixBS(space.v);
-                for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
-                    altBlock.set(space.apply(g, x));
-                }
-                if (altBlock.compareTo(block) < 0) {
-                    return true;
-                }
-            }
-            FixBS diff = new FixBS(sz);
-            for (int i = 0; i < sz; i++) {
-                if (st.diffs[i] != null) {
-                    diff.set(i);
-                }
-            }
-            initial.add(new BlockDiff(block, diff.cardinality(), diff));
+            initial.putIfAbsent(st.diffSet, new BlockDiff(st.block, st.diffSet.cardinality(), st.diffSet));
             return true;
         };
         for (int fst = 0; fst < space.v; fst++) {
             State state = new State(FixBS.of(space.v, fst), FixBS.of(space.group.order(), 0), new FixBS(sz), new IntList[sz], 1);
             searchDesigns(space, filter, design, state, fst, cons);
         }
-        BlockDiff[] blocks = initial.toArray(BlockDiff[]::new);
+        BlockDiff[] blocks = initial.values().toArray(BlockDiff[]::new);
         Arrays.parallelSort(blocks, Comparator.comparing(BlockDiff::diff));
         int[] order = calcOrder(sz, blocks);
         System.out.println("Global length " + initial.size() + ", to process " + (order[1] - order[0]));
