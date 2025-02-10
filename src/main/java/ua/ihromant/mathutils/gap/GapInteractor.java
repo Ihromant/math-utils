@@ -25,12 +25,9 @@ public class GapInteractor {
         inter.process.outputWriter().write("quit;\n");
         inter.process.outputWriter().flush();
         inter.process.inputReader().lines().dropWhile(l -> !l.contains("true")).forEach(l -> {
-            System.out.println(l);
-//            int idx = l.indexOf(ANSI_RED);
-//            if (idx < 0) {
-//                return;
-//            }
-//            System.out.println(l.substring(idx + ANSI_RED.length()));
+//            System.out.println(l);
+            int idx = l.indexOf(ANSI_RED);
+            System.out.println(idx < 0 ? l : l.substring(idx + ANSI_RED.length()));
         });
         System.out.println(inter.process.isAlive());
         inter.process.destroyForcibly();
