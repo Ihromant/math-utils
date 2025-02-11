@@ -21,6 +21,7 @@ public class PermutationGroup implements Group {
 
     public PermutationGroup(int[][] permutations) {
         this.permutations = permutations;
+        Arrays.sort(permutations, Group::compareArr);
         this.lookup = new HashMap<>();
         for (int i = 0; i < permutations.length; i++) {
             int[] perm = permutations[i];

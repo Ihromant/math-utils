@@ -244,6 +244,11 @@ public interface Group {
         return result;
     }
 
+    default boolean isSimple() {
+        List<SubGroup> subGroups = subGroups();
+        return subGroups.stream().allMatch(sg -> sg.order() == 1 || sg.order() == order() || !sg.isNormal());
+    }
+
     Group trivial = new Group() {
         @Override
         public int op(int a, int b) {

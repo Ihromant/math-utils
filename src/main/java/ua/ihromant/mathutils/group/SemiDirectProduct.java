@@ -15,9 +15,7 @@ public class SemiDirectProduct implements Group {
     public SemiDirectProduct(Group h, CyclicGroup k) {
         this.h = h;
         this.k = k;
-        int[][] auth = h.auth();
-        Arrays.sort(auth, SemiDirectProduct::compare);
-        this.gr = new PermutationGroup(auth);
+        this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
         int elem = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).findAny()
                 .orElseGet(() -> IntStream.range(1, gr.order()).filter(e -> k.order() % gr.order(e) == 0).findAny().orElseThrow());
@@ -33,9 +31,7 @@ public class SemiDirectProduct implements Group {
         }
         this.h = h;
         this.k = k;
-        int[][] auth = h.auth();
-        Arrays.sort(auth, SemiDirectProduct::compare);
-        this.gr = new PermutationGroup(auth);
+        this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
         psi[0] = 0;
         this.elem = IntStream.range(1, gr.order()).filter(e -> k.order() / mul == gr.order(e)).findAny().orElseThrow();
@@ -47,9 +43,7 @@ public class SemiDirectProduct implements Group {
     public SemiDirectProduct(Group h, CyclicGroup k, int idx, boolean b) {
         this.h = h;
         this.k = k;
-        int[][] auth = h.auth();
-        Arrays.sort(auth, SemiDirectProduct::compare);
-        this.gr = new PermutationGroup(auth);
+        this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
         psi[0] = 0;
         int[] elems = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).toArray();
@@ -57,16 +51,6 @@ public class SemiDirectProduct implements Group {
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
         }
-    }
-
-    private static int compare(int[] fst, int[] snd) {
-        for (int i = 1; i < fst.length; i++) {
-            int dff = fst[i] - snd[i];
-            if (dff != 0) {
-                return dff;
-            }
-        }
-        return 0;
     }
 
     public int from(int hp, int kp) {
