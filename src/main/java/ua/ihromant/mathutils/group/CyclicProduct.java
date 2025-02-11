@@ -69,7 +69,7 @@ public record CyclicProduct(int... base) implements Group {
         return IntStream.range(0, base.length).mapToObj(i -> String.valueOf(arr[i])).collect(Collectors.joining(", ", "(", ")"));
     }
 
-    private class HelperInfo {
+    private static class HelperInfo {
         private final int bs;
         private final List<Integer> elems;
         private final FixBS idx;

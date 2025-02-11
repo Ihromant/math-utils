@@ -20,6 +20,13 @@ public class GroupTest {
         testCorrectness(new CyclicProduct(3, 3, 5), true);
         testCorrectness(new QuaternionGroup(), false);
         testCorrectness(new DihedralGroup(7), false);
+        GeneralLinear gl = new GeneralLinear(2, new GaloisField(4));
+        assertEquals(180, gl.order());
+        testCorrectness(gl, false);
+        SimpleLinear sl = new SimpleLinear(2, new GaloisField(4));
+        assertEquals(60, sl.order());
+        assertTrue(sl.isSimple());
+        testCorrectness(sl, false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(2)), false);
         SemiDirectProduct prod = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
         testCorrectness(prod, false);

@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -181,11 +182,11 @@ public class GaloisFieldTest {
 
     @Test
     public void testParity() {
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3}).collect(Collectors.groupingBy(GaloisField::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4}).collect(Collectors.groupingBy(GaloisField::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5}).collect(Collectors.groupingBy(GaloisField::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7}).collect(Collectors.groupingBy(GaloisField::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8}).collect(Collectors.groupingBy(GaloisField::parity, Collectors.counting())));
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
+        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
     }
 
     private static BitSet of(int... values) {

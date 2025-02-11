@@ -462,17 +462,59 @@ public class GaloisField {
         return next;
     }
 
-    public static boolean isPrime(int p) {
-        return IntStream.range(2, p).allMatch(q -> p % q != 0);
+    public int determinant(int[][] matrix) {
+        int n = matrix.length;
+        int det = 1;
+        boolean sign = true;
+
+        for (int i = 0; i < n; i++) {
+            if (matrix[i][i] == 0) {
+                boolean swapped = false;
+                for (int j = i + 1; j < n; j++) {
+                    if (matrix[j][i] != 0) {
+                        swapRows(matrix, i, j);
+                        sign = !sign;
+                        swapped = true;
+                        break;
+                    }
+                }
+                if (!swapped) {
+                    return 0;
+                }
+            }
+
+            for (int j = i + 1; j < n; j++) {
+                if (matrix[j][i] != 0) {
+                    int scale = mul(matrix[j][i], inverse(matrix[i][i]));
+                    for (int k = i; k < n; k++) {
+                        matrix[j][k] = add(matrix[j][k], neg(mul(scale, matrix[i][k])));
+                    }
+                }
+            }
+        }
+
+        for (int i = 0; i < n; i++) {
+            det = mul(det, matrix[i][i]);
+        }
+
+        return sign ? det : neg(det);
     }
 
-    public static int parity(int[] perm) {
-        int result = 0;
-        for (int i = 0; i < perm.length; i++) {
-            for (int j = i + 1; j < perm.length; j++) {
-                if (perm[i] > perm[j]) {
-                    result++;
+    private static void swapRows(int[][] matrix, int i, int j) {
+        int[] temp = matrix[i];
+        matrix[i] = matrix[j];
+        matrix[j] = temp;
+    }
+
+    public int[][] multiply(int[][] first, int[][] second) {
+        int[][] result = new int[first.length][first.length];
+        for (int i = 0; i < first.length; i++) {
+            for (int j = 0; j < first.length; j++) {
+                int sum = 0;
+                for (int k = 0; k < first.length; k++) {
+                    sum = add(sum, mul(first[i][k], second[k][j]));
                 }
+                result[i][j] = sum;
             }
         }
         return result;

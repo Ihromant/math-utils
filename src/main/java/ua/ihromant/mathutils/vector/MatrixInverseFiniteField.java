@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.vector;
 
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Rational;
 
 public class MatrixInverseFiniteField {
@@ -127,6 +128,64 @@ public class MatrixInverseFiniteField {
 
         // Extract the inverse matrix from the augmented matrix
         Rational[][] inverse = new Rational[n][n];
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(augmented[i], n, inverse[i], 0, n);
+        }
+
+        return inverse;
+    }
+
+    // Method to find the inverse of a matrix in field fd
+    public static int[][] inverseMatrix(int[][] matrix, GaloisField fd) {
+        int n = matrix.length;
+        int[][] augmented = new int[n][2 * n];
+
+        // Create the augmented matrix [A | I]
+        for (int i = 0; i < n; i++) {
+            System.arraycopy(matrix[i], 0, augmented[i], 0, n);
+            augmented[i][n + i] = 1; // Identity matrix on the right
+        }
+
+        // Perform Gaussian elimination
+        for (int i = 0; i < n; i++) {
+            // Find the pivot element
+            if (augmented[i][i] == 0) {
+                // Swap with a row below if pivot is zero
+                boolean swapped = false;
+                for (int k = i + 1; k < n; k++) {
+                    if (augmented[k][i] != 0) {
+                        int[] temp = augmented[i];
+                        augmented[i] = augmented[k];
+                        augmented[k] = temp;
+                        swapped = true;
+                        break;
+                    }
+                }
+                if (!swapped) {
+                    throw new ArithmeticException("Matrix is not invertible in field of cardinality " + fd.cardinality());
+                }
+            }
+
+            // Normalize the pivot row
+            int pivot = augmented[i][i];
+            int pivotInverse = fd.inverse(pivot);
+            for (int j = 0; j < 2 * n; j++) {
+                augmented[i][j] = fd.mul(augmented[i][j], pivotInverse);
+            }
+
+            // Eliminate other rows
+            for (int k = 0; k < n; k++) {
+                if (k != i) {
+                    int factor = augmented[k][i];
+                    for (int j = 0; j < 2 * n; j++) {
+                        augmented[k][j] = fd.add(augmented[k][j], fd.neg(fd.mul(factor, augmented[i][j])));
+                    }
+                }
+            }
+        }
+
+        // Extract the inverse matrix from the augmented matrix
+        int[][] inverse = new int[n][n];
         for (int i = 0; i < n; i++) {
             System.arraycopy(augmented[i], n, inverse[i], 0, n);
         }
