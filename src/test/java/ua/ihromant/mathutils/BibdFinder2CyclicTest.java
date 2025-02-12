@@ -280,10 +280,21 @@ public class BibdFinder2CyclicTest {
     private static FixBS baseFilter(Group gr, int k) {
         int v = gr.order();
         FixBS filter = new FixBS(v);
-        for (int i = 0; i < v; i++) {
-            int ord = gr.order(i);
-            if (ord != 1 && k % ord == 0) {
-                filter.set(i);
+        int rest = v % (k * (k - 1));
+        if (rest == k) {
+            for (int i = 1; i < v; i++) {
+                int ord = gr.order(i);
+                if (ord != 1 && k % ord == 0) {
+                    filter.set(i);
+                }
+            }
+        }
+        if (rest == (k - 1)) {
+            for (int i = 1; i < v; i++) {
+                int ord = gr.order(i);
+                if (ord != 1 && (k - 1) % ord == 0) {
+                    filter.set(i);
+                }
             }
         }
         return filter;
