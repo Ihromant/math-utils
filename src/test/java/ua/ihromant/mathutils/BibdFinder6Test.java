@@ -163,9 +163,19 @@ public class BibdFinder6Test {
 
     private static FixBS baseFilter(int v, int k) {
         FixBS filter = new FixBS(v);
-        for (int i = 1; i < v; i++) {
-            if (i * k % v == 0) {
-                filter.set(i);
+        int rest = v % (k * (k - 1));
+        if (rest == k) {
+            for (int i = 1; i < v; i++) {
+                if (i * k % v == 0) {
+                    filter.set(i);
+                }
+            }
+        }
+        if (rest == (k - 1)) {
+            for (int i = 1; i < v; i++) {
+                if (i * (k - 1) % v == 0) {
+                    filter.set(i);
+                }
             }
         }
         return filter;
