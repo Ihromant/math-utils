@@ -146,8 +146,8 @@ public class ApplicatorTest {
                 for (int x2 = 0; x2 < v; x2++) {
                     int pair = x1 * v + x2;
                     for (int g = 0; g < gOrd; g++) {
-                        int gx1 = applyByDef(g, x1);
-                        int gx2 = applyByDef(g, x2);
+                        int gx1 = cayley[g][x1];
+                        int gx2 = cayley[g][x2];
                         int gPair = gx1 * v + gx2;
                         qf.union(pair, gPair);
                         preImages.get(gPair).computeIfAbsent(pair, key -> new FixBS(gOrd)).set(g);
@@ -503,11 +503,11 @@ public class ApplicatorTest {
         };
         int val = 1;
         State state = space.statesCache[0][val];
-        searchDesignsMinimal(space, filter, design, state, val, cons);
+        searchDesigns(space, filter, design, state, val, cons);
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-            if (!space.minimal(arr)) {
-                return true;
-            }
+//            if (!space.minimal(arr)) {
+//                return true;
+//            }
             if (ftr.cardinality() < sqr) {
                 return false;
             }
