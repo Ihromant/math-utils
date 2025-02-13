@@ -34,7 +34,7 @@ public class ApplicatorTest {
         private final int[][] cosets;
         private final int[] idx;
 
-        public GCosets(SubGroup sg) {
+        private GCosets(SubGroup sg) {
             this.gr = sg.group();
             Set<FixBS> set = new HashSet<>();
             int order = gr.order();
@@ -53,6 +53,18 @@ public class ApplicatorTest {
                     idx[el] = i;
                 }
             }
+        }
+
+        private int xToG(int x) {
+            return cosets[x][0];
+        }
+
+        private int gToX(int g) {
+            return idx[g];
+        }
+
+        private int[] xToGs(int x) {
+            return cosets[x];
         }
 
         private int apply(int g, int x) {
