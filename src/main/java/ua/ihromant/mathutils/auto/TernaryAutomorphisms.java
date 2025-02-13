@@ -227,19 +227,13 @@ public class TernaryAutomorphisms {
         return function;
     }
 
-    private static boolean isBijective(int[] partialFunc) {
-        int[] idxes = new int[partialFunc.length];
-        Arrays.fill(idxes, -1);
-        for (int i = 0; i < partialFunc.length; i++) {
-            int val = partialFunc[i];
-            if (val >= 0) {
-                if (idxes[val] >= 0) {
-                    return false;
-                }
-                idxes[val] = i;
-            } else {
+    public static boolean isBijective(int[] partialFunc) {
+        boolean[] vals = new boolean[partialFunc.length];
+        for (int val : partialFunc) {
+            if (vals[val]) {
                 return false;
             }
+            vals[val] = true;
         }
         return true;
     }

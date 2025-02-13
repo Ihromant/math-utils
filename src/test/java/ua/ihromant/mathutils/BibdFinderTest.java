@@ -2,8 +2,8 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
-import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.Group;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;

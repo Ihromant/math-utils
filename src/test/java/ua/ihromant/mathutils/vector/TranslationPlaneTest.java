@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.auto.CharVals;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 import ua.ihromant.mathutils.plane.ProjChar;
@@ -19,7 +20,6 @@ import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.plane.TernarMapping;
 import ua.ihromant.mathutils.plane.TernaryRing;
 import ua.ihromant.mathutils.plane.TernaryRingTest;
-import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;

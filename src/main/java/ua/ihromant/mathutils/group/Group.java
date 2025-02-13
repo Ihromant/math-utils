@@ -1,12 +1,15 @@
 package ua.ihromant.mathutils.group;
 
+import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.IntStream;
 
@@ -42,19 +45,6 @@ public interface Group {
     String name();
 
     String elementName(int a);
-
-    default int[][] auth() { // inner automorphisms if not implemented specifically
-        TreeSet<int[]> set = new TreeSet<>(Group::compareArr);
-        int ord = order();
-        for (int g = 0; g < ord; g++) {
-            int[] arr = new int[ord];
-            for (int x = 0; x < ord; x++) {
-                arr[x] = op(inv(g), op(x, g));
-            }
-            set.add(arr);
-        }
-        return set.toArray(int[][]::new);
-    }
 
     static int compareArr(int[] fst, int[] snd) {
         for (int i = 0; i < fst.length; i++) {
@@ -111,11 +101,6 @@ public interface Group {
             }
         }
         return new TableGroup(table);
-    }
-
-    default BitSet difference(int[] basic) {
-        return Arrays.stream(basic).flatMap(i -> Arrays.stream(basic).filter(j -> i != j).map(j -> op(i, inv(j))))
-                .collect(BitSet::new, BitSet::set, BitSet::or);
     }
 
     static int[] factorize(int base) {
@@ -233,6 +218,22 @@ public interface Group {
         }
     }
 
+    private int[] gens(IntList genList, FixBS currGroup) {
+        int ord = order();
+        if (currGroup.cardinality() == ord) {
+            return genList.toArray();
+        }
+        int gen = currGroup.nextClearBit(0);
+        genList.add(gen);
+        FixBS nextGroup = currGroup.copy();
+        FixBS additional = new FixBS(ord);
+        additional.set(gen);
+        do {
+            nextGroup.or(additional);
+        } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
+        return gens(genList, nextGroup);
+    }
+
     private FixBS additional(FixBS currGroup, FixBS addition, int order) {
         FixBS result = new FixBS(order);
         for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
@@ -244,35 +245,80 @@ public interface Group {
         return result;
     }
 
+    default int[][] auth() {
+        Set<int[]> result = new TreeSet<>(Group::compareArr);
+        int order = order();
+        FixBS init = FixBS.of(order, 0);
+        int[] map = new int[order];
+        TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
+        for (int i = 0; i < order; i++) {
+            int ord = order(i);
+            byOrders.computeIfAbsent(ord, k -> new FixBS(order)).set(i);
+        }
+        int[][] bOrd = new int[byOrders.lastKey() + 1][0];
+        for (Map.Entry<Integer, FixBS> e : byOrders.entrySet()) {
+            bOrd[e.getKey()] = e.getValue().toArray();
+        }
+        IntList list = new IntList(order);
+        int[] gens = gens(list, init);
+        find(gens, result, new PartialMap(init, map), 0, bOrd, order);
+        return result.toArray(int[][]::new);
+    }
+
+    record PartialMap(FixBS keys, int[] map) {
+        public PartialMap copy() {
+            return new PartialMap(keys.copy(), map.clone());
+        }
+    }
+
+    private void find(int[] gens, Set<int[]> result, PartialMap currMap, int idx, int[][] byOrders, int order) {
+        if (gens.length == idx) {
+            if (TernaryAutomorphisms.isBijective(currMap.map())) {
+                result.add(currMap.map());
+            }
+            return;
+        }
+        int gen = gens[idx];
+        int ord = order(gen);
+        for (int suitVal : byOrders[ord]) {
+            PartialMap nextGroup = currMap.copy();
+            PartialMap additional = new PartialMap(new FixBS(order), new int[order]);
+            additional.keys.set(gen);
+            additional.map[gen] = suitVal;
+            do {
+                nextGroup.keys.or(additional.keys);
+                for (int k = additional.keys.nextSetBit(0); k >= 0; k = additional.keys.nextSetBit(k + 1)) {
+                    nextGroup.map[k] = additional.map[k];
+                }
+            } while ((additional = additional(nextGroup, additional, order)) != null && !additional.keys.isEmpty());
+            if (additional != null) {
+                find(gens, result, nextGroup, idx + 1, byOrders, order);
+            }
+        }
+    }
+
+    private PartialMap additional(PartialMap currMap, PartialMap addition, int order) {
+        PartialMap result = new PartialMap(new FixBS(order), new int[order]);
+        for (int x = currMap.keys.nextSetBit(0); x >= 0; x = currMap.keys.nextSetBit(x + 1)) {
+            for (int y = addition.keys.nextSetBit(0); y >= 0; y = addition.keys.nextSetBit(y + 1)) {
+                int key = op(x, y);
+                int val = op(currMap.map[x], addition.map[y]);
+                if (result.keys.get(key)) {
+                    if (result.map[key] != val) {
+                        return null;
+                    }
+                } else {
+                    result.keys.set(key);
+                    result.map[key] = val;
+                }
+            }
+        }
+        result.keys.andNot(currMap.keys);
+        return result;
+    }
+
     default boolean isSimple() {
         List<SubGroup> subGroups = subGroups();
         return subGroups.stream().allMatch(sg -> sg.order() == 1 || sg.order() == order() || !sg.isNormal());
     }
-
-    Group trivial = new Group() {
-        @Override
-        public int op(int a, int b) {
-            return 0;
-        }
-
-        @Override
-        public int inv(int a) {
-            return 0;
-        }
-
-        @Override
-        public int order() {
-            return 1;
-        }
-
-        @Override
-        public String name() {
-            return "TR";
-        }
-
-        @Override
-        public String elementName(int a) {
-            return "0";
-        }
-    };
 }

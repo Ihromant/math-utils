@@ -121,7 +121,7 @@ public class GroupTest {
     }
 
     @Test
-    public void testAuth() {
+    public void testCyclicAuth() {
         assertArrayEquals(new int[][]{{0, 1, 2}, {0, 2, 1}}, new CyclicGroup(3).auth());
         assertArrayEquals(new int[][]{{0, 1, 2, 3}, {0, 3, 2, 1}}, new CyclicGroup(4).auth());
         Group product = new CyclicGroup(7);
@@ -155,31 +155,32 @@ public class GroupTest {
     }
 
     @Test
-    public void testAuthSemidirect() {
-        Group product = new SemiDirectProduct(new CyclicProduct(3), new CyclicGroup(2));
-        int[][] auths = product.auth();
-        assertEquals(6, auths.length);
-        checkAuth(auths, product);
-        product = new SemiDirectProduct(new CyclicProduct(7), new CyclicGroup(3));
-        auths = product.auth();
+    public void testDefaultAuth() {
+        Group group = new QuaternionGroup();
+        int[][] auths = group.auth();
+        assertEquals(24, auths.length);
+        checkAuth(auths, group);
+        group = new SemiDirectProduct(new CyclicProduct(7), new CyclicGroup(3)).asTable();
+        auths = group.auth();
         assertEquals(42, auths.length);
-        checkAuth(auths, product);
-        product = new SemiDirectProduct(new CyclicProduct(2, 2), new CyclicGroup(3));
-        auths = product.auth();
+        checkAuth(auths, group);
+        assertArrayEquals(new SemiDirectProduct(new CyclicProduct(7), new CyclicGroup(3)).auth(), auths);
+        group = new SemiDirectProduct(new CyclicProduct(2, 2), new CyclicGroup(3));
+        auths = group.auth();
         assertEquals(24, auths.length);
-        checkAuth(auths, product);
-        product = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
-        auths = product.auth();
-        assertEquals(108, auths.length);
-        checkAuth(auths, product);
-        product = new PermutationGroup(4, false);
-        auths = product.auth();
+        checkAuth(auths, group);
+        group = new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(3));
+        auths = group.auth();
+        assertEquals(432, auths.length);
+        checkAuth(auths, group);
+        group = new PermutationGroup(4, true);
+        auths = group.auth();
         assertEquals(24, auths.length);
-        checkAuth(auths, product);
-        product = new PermutationGroup(4, true);
-        auths = product.auth();
-        assertEquals(12, auths.length);
-        checkAuth(auths, product);
+        checkAuth(auths, group);
+        group = new PermutationGroup(6, false).asTable();
+        auths = group.auth();
+        assertEquals(1440, auths.length);
+        checkAuth(auths, group);
     }
 
     private static void checkAuth(int[][] auths, Group simple) {

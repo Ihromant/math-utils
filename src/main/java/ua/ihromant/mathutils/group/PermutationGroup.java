@@ -106,16 +106,4 @@ public class PermutationGroup implements Group {
     public static boolean identity(int[] perm) {
         return IntStream.range(0, perm.length).allMatch(i -> i == perm[i]);
     }
-
-    @Override
-    public int[][] auth() { // this is correct only for most S_n, but still generates specific Auth subgroup
-        int ord = order();
-        int[][] result = new int[ord][ord];
-        for (int conj = 0; conj < ord; conj++) {
-            for (int x = 0; x < ord; x++) {
-                result[conj][x] = op(inv(conj), op(x, conj));
-            }
-        }
-        return result;
-    }
 }
