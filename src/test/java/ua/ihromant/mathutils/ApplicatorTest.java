@@ -30,12 +30,11 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class ApplicatorTest {
     private static class GCosets {
-        private final Group gr;
         private final int[][] cosets;
         private final int[] idx;
 
         private GCosets(SubGroup sg) {
-            this.gr = sg.group();
+            Group gr = sg.group();
             Set<FixBS> set = new HashSet<>();
             int order = gr.order();
             for (int i = 0; i < order; i++) {
@@ -65,11 +64,6 @@ public class ApplicatorTest {
 
         private int[] xToGs(int x) {
             return cosets[x];
-        }
-
-        private int apply(int g, int x) {
-            int min = cosets[x][0];
-            return idx[gr.op(g, min)];
         }
     }
 
@@ -239,11 +233,30 @@ public class ApplicatorTest {
             }
         }
 
+        private int orbIdx(int x) {
+            return orbIdx[x];
+        }
+
         private int applyByDef(int g, int x) {
+            int idx = orbIdx(x);
+            int g1 = xToG(x);
+            return gToX(group.op(g, g1), idx);
+        }
+
+        private int xToG(int x) {
             int idx = orbIdx[x];
-            int min = oBeg[idx];
-            GCosets conf = cosets[idx];
-            return conf.apply(g, x - min) + min;
+            int xCos = x - oBeg[idx];
+            return cosets[idx].xToG(xCos);
+        }
+
+        private int[] xToGs(int x) {
+            int idx = orbIdx[x];
+            int xCos = x - oBeg[idx];
+            return cosets[idx].xToGs(xCos);
+        }
+
+        private int gToX(int g, int orbIdx) {
+            return cosets[orbIdx].gToX(g) + oBeg[orbIdx];
         }
 
         public int apply(int g, int x) {
