@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -64,19 +65,6 @@ public class ApplicatorTest {
 
         private int[] xToGs(int x) {
             return cosets[x];
-        }
-    }
-
-    private record Mp(int[] map) {
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof Mp(int[] map1))) return false;
-            return Arrays.equals(map, map1);
-        }
-
-        @Override
-        public int hashCode() {
-            return Arrays.hashCode(map);
         }
     }
 
@@ -183,8 +171,8 @@ public class ApplicatorTest {
             auths = auths.subset(suitableAuths);
             int nonTr = Arrays.stream(comps).filter(c -> c != gOrd).map(c -> 1).sum();
             int mCap = 1 << nonTr;
-            Set<Mp> bUnique = new HashSet<>();
-            Set<Mp> unique = new HashSet<>();
+            Set<int[]> bUnique = new TreeSet<>(Group::compareArr);
+            Set<int[]> unique = new TreeSet<>(Group::compareArr);
             for (int i = 0; i < auths.order(); i++) {
                 int[] perm = auths.permutation(i);
                 for (int mask = 0; mask < mCap; mask++) {
@@ -193,35 +181,23 @@ public class ApplicatorTest {
                         int pair = differences.get(comp).nextSetBit(0);
                         int a = pair / v;
                         int b = pair % v;
-                        int aIdx = orbIdx[a];
-                        int bIdx = orbIdx[b];
+                        int aIdx = orbIdx(a);
+                        int bIdx = orbIdx(b);
                         boolean aMoved = (mask & (1 << aIdx)) != 0;
                         boolean bMoved = (mask & (1 << bIdx)) != 0;
-                        int aMap = a;
-                        int bMap = b;
-                        if (aMoved) {
-                            int aMin = oBeg[aIdx];
-                            GCosets conf = cosets[aIdx];
-                            int g = conf.cosets[a - aMin][0];
-                            aMap = conf.idx[perm[g]] + aMin;
-                        }
-                        if (bMoved) {
-                            int bMin = oBeg[bIdx];
-                            GCosets conf = cosets[bIdx];
-                            int g = conf.cosets[b - bMin][0];
-                            bMap = conf.idx[perm[g]] + bMin;
-                        }
+                        int aMap = aMoved ? gToX(perm[xToG(a)], aIdx) : a;
+                        int bMap = bMoved ? gToX(perm[xToG(b)], bIdx) : b;
                         map[comp] = diffMap[aMap * v + bMap];
                     }
-                    bUnique.add(new Mp(map));
+                    bUnique.add(map);
                     if (mask == sz - 1) {
-                        unique.add(new Mp(map));
+                        unique.add(map);
                     }
                 }
             }
-            this.bDiffAuths = bUnique.stream().map(Mp::map).toArray(int[][]::new);
+            this.bDiffAuths = bUnique.toArray(int[][]::new);
             Arrays.parallelSort(bDiffAuths, Group::compareArr);
-            this.diffAuths = unique.stream().map(Mp::map).toArray(int[][]::new);
+            this.diffAuths = unique.toArray(int[][]::new);
             Arrays.parallelSort(diffAuths, Group::compareArr);
             this.statesCache = new State[v][v];
             FixBS emptyFilter = new FixBS(v * v);
@@ -503,11 +479,11 @@ public class ApplicatorTest {
         };
         int val = 1;
         State state = space.statesCache[0][val];
-        searchDesigns(space, filter, design, state, val, cons);
+        searchDesignsMinimal(space, filter, design, state, val, cons);
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-//            if (!space.minimal(arr)) {
-//                return true;
-//            }
+            if (!space.minimal(arr)) {
+                return true;
+            }
             if (ftr.cardinality() < sqr) {
                 return false;
             }
