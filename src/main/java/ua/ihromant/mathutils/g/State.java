@@ -1,0 +1,89 @@
+package ua.ihromant.mathutils.g;
+
+import ua.ihromant.mathutils.IntList;
+import ua.ihromant.mathutils.util.FixBS;
+
+public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
+    public State acceptElem(GSpace gSpace, FixBS globalFilter, int val) {
+        int v = gSpace.v();
+        int k = gSpace.k();
+        FixBS newBlock = block.copy();
+        FixBS queue = new FixBS(v);
+        queue.set(val);
+        int sz = size;
+        FixBS newStabilizer = stabilizer.copy();
+        FixBS newDiffSet = diffSet.copy();
+        IntList[] newDiffs = new IntList[diffs.length];
+        for (int i = 0; i < diffs.length; i++) {
+            IntList lst = diffs[i];
+            if (lst != null) {
+                newDiffs[i] = lst.copy();
+            }
+        }
+        while (!queue.isEmpty()) {
+            if (++sz > k) {
+                return null;
+            }
+            int x = queue.nextSetBit(0);
+            if (x < val) {
+                return null;
+            }
+            FixBS stabExt = new FixBS(gSpace.gOrd());
+            for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
+                int bx = b * v + x;
+                int xb = x * v + b;
+                if (globalFilter.get(bx) || globalFilter.get(xb)) {
+                    return null;
+                }
+                int compBx = gSpace.diffIdx(bx);
+                int compXb = gSpace.diffIdx(xb);
+                IntList existingDiffs = newDiffs[compBx];
+                if (existingDiffs == null) {
+                    existingDiffs = (newDiffs[compBx] = new IntList(3 * k));
+                } else {
+                    for (int i = 0; i < existingDiffs.size(); i++) {
+                        int diff = existingDiffs.get(i);
+                        stabExt.or(gSpace.preImage(bx, diff));
+                    }
+                }
+                existingDiffs.add(bx);
+                newDiffSet.set(compBx);
+
+                existingDiffs = newDiffs[compXb];
+                if (existingDiffs == null) {
+                    existingDiffs = (newDiffs[compXb] = new IntList(3 * k));
+                } else {
+                    for (int i = 0; i < existingDiffs.size(); i++) {
+                        int diff = existingDiffs.get(i);
+                        stabExt.or(gSpace.preImage(xb, diff));
+                    }
+                }
+                existingDiffs.add(xb);
+                newDiffSet.set(compXb);
+            }
+            newBlock.set(x);
+            stabExt.andNot(newStabilizer);
+            for (int st = newStabilizer.nextSetBit(1); st >= 0; st = newStabilizer.nextSetBit(st + 1)) {
+                queue.set(gSpace.apply(st, x));
+            }
+            for (int st = stabExt.nextSetBit(1); st >= 0; st = stabExt.nextSetBit(st + 1)) {
+                for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
+                    queue.set(gSpace.apply(st, b));
+                }
+            }
+            newStabilizer.or(stabExt);
+            queue.andNot(newBlock);
+        }
+        return new State(newBlock, newStabilizer, newDiffSet, newDiffs, sz);
+    }
+
+    public FixBS updatedFilter(FixBS oldFilter, GSpace space) {
+        FixBS result = oldFilter.copy();
+        for (int i = 0; i < diffs.length; i++) {
+            if (diffs[i] != null) {
+                result.or(space.difference(i));
+            }
+        }
+        return result;
+    }
+}
