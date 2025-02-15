@@ -255,4 +255,19 @@ public class ApplicatorTest {
             calculate(blockDiffs, order, currCard + c.card(), union.union(c.diff()), newCurr, cons);
         }
     }
+
+    @Test
+    public void testDifferences() {
+        int k = 6;
+        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        GSpace space = new GSpace(k, group, 1, 3, 3, 39);
+        int v = space.v();
+        for (int i = 0; i < space.diffLength(); i++) {
+            FixBS dff = space.difference(i);
+            System.out.println("Difference " + i + " size " + dff.cardinality() + " *****************************");
+            for (int diff = dff.nextSetBit(0); diff >= 0; diff = dff.nextSetBit(diff + 1)) {
+                System.out.println(diff / v + " " + diff % v);
+            }
+        }
+    }
 }
