@@ -3,8 +3,10 @@ package ua.ihromant.mathutils.group;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.gap.GapInteractor;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
@@ -238,5 +240,11 @@ public class GroupTest {
         for (SubGroup sg : sgs) {
             System.out.println(sg.order() + " " + sg.isCommutative() + " " + sg.isNormal());
         }
+    }
+
+    @Test
+    public void testGap() throws IOException {
+        Group g = new GapInteractor().smallGroup(40, 7);
+        testCorrectness(g, false);
     }
 }
