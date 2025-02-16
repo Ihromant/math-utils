@@ -38,4 +38,9 @@ public class GapInteractor {
         inter.process.destroyForcibly();
         return new TableGroup(table);
     }
+
+    public static Group group(int order, int index) throws IOException {
+        System.out.println("Reading SmallGroup(" + order + "," + index + ")");
+        return new GapInteractor().smallGroup(order, index);
+    }
 }

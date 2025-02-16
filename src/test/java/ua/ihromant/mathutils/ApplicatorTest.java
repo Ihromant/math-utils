@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
+import ua.ihromant.mathutils.gap.GapInteractor;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
@@ -10,6 +11,7 @@ import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -81,9 +83,9 @@ public class ApplicatorTest {
     }
 
     @Test
-    public void logDesigns() {
+    public void logDesigns() throws IOException {
         int k = 6;
-        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        Group group = GapInteractor.group(39, 1);
         GSpace space = new GSpace(k, group, 1, 3, 3, 39);
         int v = space.v();
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
@@ -95,12 +97,15 @@ public class ApplicatorTest {
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            initial.add(arr[0]);
+            if (space.minimal(arr)) {
+                initial.add(arr[0]);
+            }
             return true;
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, filter, design, state, val, cons);
+        searchDesigns(space, filter, design, state, val, cons);
+        AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (!space.minimal(arr)) {
                 return true;
@@ -108,6 +113,7 @@ public class ApplicatorTest {
             if (ftr.cardinality() < sqr) {
                 return false;
             }
+            ai.incrementAndGet();
             Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
             return true;
@@ -121,6 +127,7 @@ public class ApplicatorTest {
                 System.out.println(vl);
             }
         });
+        System.out.println("Results " + ai);
     }
 
     private static void searchDesigns(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
