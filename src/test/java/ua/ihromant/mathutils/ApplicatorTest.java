@@ -49,7 +49,7 @@ public class ApplicatorTest {
     }
 
     @Test
-    public void testState() {
+    public void testState() throws IOException {
         try {
             new GSpace(6, new CyclicProduct(2, 2), 2);
             fail();
@@ -80,6 +80,16 @@ public class ApplicatorTest {
         state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 3));
         assertEquals(FixBS.of(space.v(), 0, 1, 2, 3, 31, 80), state.block());
         assertEquals(FixBS.of(g.order(), 0, 1, 2), state.stabilizer());
+        g = GapInteractor.group(40, 4);
+        space = new GSpace(6, g, 1, 8, 8, 8, 8, 40);
+        state = space.forInitial(0, 3);
+        emptyFilter = new FixBS(space.v() * space.v());
+        assertEquals(FixBS.of(g.order(), 0, 3), state.stabilizer());
+        assertEquals(FixBS.of(g.order(), 0, 3), state.block());
+        state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 43));
+        assertEquals(FixBS.of(g.order(), 0, 3), state.stabilizer());
+        assertEquals(FixBS.of(g.order(), 0, 3, 43), state.block());
+        assertNull(state.acceptElem(space, emptyFilter, 48));
     }
 
     @Test

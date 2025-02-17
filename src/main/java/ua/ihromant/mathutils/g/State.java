@@ -40,25 +40,23 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
                 IntList existingDiffs = newDiffs[compBx];
                 if (existingDiffs == null) {
                     existingDiffs = (newDiffs[compBx] = new IntList(3 * k));
-                } else {
-                    for (int i = 0; i < existingDiffs.size(); i++) {
-                        int diff = existingDiffs.get(i);
-                        stabExt.or(gSpace.preImage(bx, diff));
-                    }
                 }
                 existingDiffs.add(bx);
+                for (int i = 0; i < existingDiffs.size(); i++) {
+                    int diff = existingDiffs.get(i);
+                    stabExt.or(gSpace.preImage(bx, diff));
+                }
                 newDiffSet.set(compBx);
 
                 existingDiffs = newDiffs[compXb];
                 if (existingDiffs == null) {
                     existingDiffs = (newDiffs[compXb] = new IntList(3 * k));
-                } else {
-                    for (int i = 0; i < existingDiffs.size(); i++) {
-                        int diff = existingDiffs.get(i);
-                        stabExt.or(gSpace.preImage(xb, diff));
-                    }
                 }
                 existingDiffs.add(xb);
+                for (int i = 0; i < existingDiffs.size(); i++) {
+                    int diff = existingDiffs.get(i);
+                    stabExt.or(gSpace.preImage(xb, diff));
+                }
                 newDiffSet.set(compXb);
             }
             newBlock.set(x);
