@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.group;
 
 import ua.ihromant.mathutils.QuickFind;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -86,8 +87,9 @@ public class GroupIndex {
         register(new CyclicGroup(31)); // 31
     }
 
-    public static void main(String[] args) {
-        System.out.println(identify(new CyclicGroup(1)));
+    public static Group group(int order, int index) throws IOException {
+        System.out.println("Reading SmallGroup(" + order + "," + index + ")");
+        return new GapInteractor().smallGroup(order, index);
     }
 
     public static String identify(Group g) {

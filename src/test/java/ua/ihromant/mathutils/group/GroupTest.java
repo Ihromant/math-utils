@@ -3,7 +3,6 @@ package ua.ihromant.mathutils.group;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
-import ua.ihromant.mathutils.gap.GapInteractor;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;

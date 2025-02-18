@@ -3,7 +3,6 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
-import ua.ihromant.mathutils.gap.GapInteractor;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
@@ -80,7 +79,7 @@ public class ApplicatorTest {
         state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 3));
         assertEquals(FixBS.of(space.v(), 0, 1, 2, 3, 31, 80), state.block());
         assertEquals(FixBS.of(g.order(), 0, 1, 2), state.stabilizer());
-        g = GapInteractor.group(40, 4);
+        g = GroupIndex.group(40, 4);
         space = new GSpace(6, g, 1, 8, 8, 8, 8, 40);
         state = space.forInitial(0, 3);
         emptyFilter = new FixBS(space.v() * space.v());
@@ -95,7 +94,7 @@ public class ApplicatorTest {
     @Test
     public void logDesigns() throws IOException {
         int k = 6;
-        Group group = GapInteractor.group(39, 1);
+        Group group = GroupIndex.group(39, 1);
         GSpace space = new GSpace(k, group, 1, 3, 3, 39);
         int v = space.v();
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
