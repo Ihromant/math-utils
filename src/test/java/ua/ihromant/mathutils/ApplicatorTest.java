@@ -158,7 +158,7 @@ public class ApplicatorTest {
         AtomicInteger cnt = new AtomicInteger();
         BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
             if (arr.length == 2) {
-                if (space.minimal(arr)) {
+                if (space.minimalTwo(arr)) {
                     tuples.add(arr);
                 }
                 return true;

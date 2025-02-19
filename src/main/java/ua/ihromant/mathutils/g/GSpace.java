@@ -323,12 +323,38 @@ public class GSpace {
 
     public boolean minimal(FixBS block) {
         for (int[] auth : auths) {
-            FixBS alt = new FixBS(auth.length);
+            FixBS alt = new FixBS(v);
             for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
                 alt.set(auth[diff]);
             }
             if (alt.compareTo(block) < 0) {
                 return false;
+            }
+        }
+        return true;
+    }
+
+    public boolean minimalTwo(State[] states) {
+        for (int[] auth : auths) {
+            FixBS sndMapped = new FixBS(v);
+            FixBS fstBlock = states[0].block();
+            FixBS sndBlock = states[1].block();
+            for (int el = sndBlock.nextSetBit(0); el >= 0; el = sndBlock.nextSetBit(el + 1)) {
+                sndMapped.set(auth[el]);
+            }
+            int cmpToFst = sndMapped.compareTo(fstBlock);
+            if (cmpToFst < 0) {
+                return false;
+            }
+            int cmpToSnd = sndMapped.compareTo(sndBlock);
+            if (cmpToSnd < 0) {
+                FixBS fstMapped = new FixBS(v);
+                for (int el = fstBlock.nextSetBit(0); el >= 0; el = fstBlock.nextSetBit(el + 1)) {
+                    fstMapped.set(auth[el]);
+                }
+                if ((cmpToFst == 0 && fstMapped.compareTo(sndBlock) < 0) || fstMapped.equals(fstBlock)) {
+                    return false;
+                }
             }
         }
         return true;
@@ -343,7 +369,7 @@ public class GSpace {
             FixBS[] altBlocks = new FixBS[blocks.length];
             for (int i = 0; i < blocks.length; i++) {
                 FixBS block = blocks[i];
-                FixBS alt = new FixBS(auth.length);
+                FixBS alt = new FixBS(v);
                 for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
                     alt.set(auth[el]);
                 }
