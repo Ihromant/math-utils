@@ -4,6 +4,14 @@ import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.util.FixBS;
 
 public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
+    public State fromBlock(GSpace space, FixBS block) {
+        int fst = block.nextSetBit(0);
+        int snd = block.nextSetBit(fst + 1);
+        State result = space.forInitial(fst, snd);
+        return result;
+        //for (int i = 0;)
+    }
+
     public State acceptElem(GSpace gSpace, FixBS globalFilter, int val) {
         int v = gSpace.v();
         int k = gSpace.k();
@@ -75,13 +83,11 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
         return new State(newBlock, newStabilizer, newDiffSet, newDiffs, sz);
     }
 
-    public FixBS updatedFilter(FixBS oldFilter, GSpace space) {
-        FixBS result = oldFilter.copy();
+    public void updateFilter(FixBS filter, GSpace space) {
         for (int i = 0; i < diffs.length; i++) {
             if (diffs[i] != null) {
-                result.or(space.difference(i));
+                filter.or(space.difference(i));
             }
         }
-        return result;
     }
 }

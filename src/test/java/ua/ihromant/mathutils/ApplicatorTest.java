@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
@@ -57,38 +58,35 @@ public class ApplicatorTest {
         }
         Group g = new CyclicGroup(21);
         GSpace space = new GSpace(7, g, 1);
-        FixBS emptyFilter = new FixBS(space.v() * space.v());
         State state = space.forInitial(0, 3);
         assertEquals(FixBS.of(space.v(), 0, 3), state.block());
         assertEquals(FixBS.of(g.order(), 0), state.stabilizer());
-        assertNull(state.acceptElem(space, emptyFilter, 12));
-        state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 6));
+        assertNull(state.acceptElem(space, space.emptyFilter(), 12));
+        state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 6));
         FixBS bs = FixBS.of(g.order(), IntStream.range(0, 7).map(i -> i * 3).toArray());
         assertEquals(bs, state.stabilizer());
         assertEquals(bs, state.block());
         state = space.forInitial(0, 7);
-        state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 14));
-        assertNull(state.acceptElem(space, emptyFilter, 1));
+        state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 14));
+        assertNull(state.acceptElem(space, space.emptyFilter(), 1));
         g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         space = new GSpace(6, g, 1);
         state = space.forInitial(0, 1);
-        emptyFilter = new FixBS(space.v() * space.v());
-        state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 2));
+        state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 2));
         assertEquals(FixBS.of(space.v(), 0, 1, 2), state.block());
         assertEquals(FixBS.of(g.order(), 0, 1, 2), state.stabilizer());
-        state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 3));
+        state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 3));
         assertEquals(FixBS.of(space.v(), 0, 1, 2, 3, 31, 80), state.block());
         assertEquals(FixBS.of(g.order(), 0, 1, 2), state.stabilizer());
         g = GroupIndex.group(40, 4);
         space = new GSpace(6, g, 1, 8, 8, 8, 8, 40);
         state = space.forInitial(0, 3);
-        emptyFilter = new FixBS(space.v() * space.v());
         assertEquals(FixBS.of(g.order(), 0, 3), state.stabilizer());
         assertEquals(FixBS.of(g.order(), 0, 3), state.block());
-        state = Objects.requireNonNull(state.acceptElem(space, emptyFilter, 43));
+        state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 43));
         assertEquals(FixBS.of(g.order(), 0, 3), state.stabilizer());
         assertEquals(FixBS.of(g.order(), 0, 3, 43), state.block());
-        assertNull(state.acceptElem(space, emptyFilter, 48));
+        assertNull(state.acceptElem(space, space.emptyFilter(), 48));
     }
 
     @Test
@@ -100,7 +98,7 @@ public class ApplicatorTest {
         int v = space.v();
         System.out.println("Randomized test");
         IntStream.range(0, 100).parallel().forEach(i -> {
-            int[] auth = space.auth(i);
+            int[] auth = space.auth(ThreadLocalRandom.current().nextInt(space.authLength()));
             for (int a = 0; a < v; a++) {
                 for (int b = a + 1; b < v; b++) {
                     for (int c = 0; c < v; c++) {
@@ -123,7 +121,7 @@ public class ApplicatorTest {
         int ov = space1.v();
         System.out.println("Randomized test");
         IntStream.range(0, 100).parallel().forEach(i -> {
-            int[] auth = space1.auth(i);
+            int[] auth = space1.auth(ThreadLocalRandom.current().nextInt(space1.authLength()));
             for (int a = 0; a < ov; a++) {
                 for (int b = a + 1; b < ov; b++) {
                     for (int c = 0; c < ov; c++) {
@@ -150,10 +148,6 @@ public class ApplicatorTest {
         int v = space.v();
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
-        FixBS filter = new FixBS(sqr);
-        for (int i = 0; i < v; i++) {
-            filter.set(i * v + i);
-        }
         State[] design = new State[0];
         List<State[]> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
@@ -167,7 +161,7 @@ public class ApplicatorTest {
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, filter, design, state, val, cons);
+        searchDesignsMinimal(space, space.emptyFilter(), design, state, val, cons);
         AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (ftr.cardinality() < sqr) {
@@ -185,9 +179,9 @@ public class ApplicatorTest {
         AtomicInteger cnt = new AtomicInteger();
         initial.stream().parallel().forEach(curr -> {
             State[] pr = Arrays.copyOf(curr, curr.length - 1);
-            FixBS newFilter = filter.copy();
+            FixBS newFilter = space.emptyFilter().copy();
             for (int i = 0; i < curr.length - 1; i++) {
-                newFilter = curr[i].updatedFilter(newFilter, space);
+                curr[i].updateFilter(newFilter, space);
             }
             searchDesigns(space, newFilter, pr, curr[curr.length - 1], 0, fCons);
             int vl = cnt.incrementAndGet();
@@ -203,7 +197,8 @@ public class ApplicatorTest {
         if (state.size() == space.k()) {
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
             nextDesign[currDesign.length] = state;
-            FixBS nextFilter = state.updatedFilter(filter, space);
+            FixBS nextFilter = filter.copy();
+            state.updateFilter(nextFilter, space);
             if (cons.test(nextDesign, nextFilter)) {
                 return;
             }
@@ -229,7 +224,8 @@ public class ApplicatorTest {
         if (state.size() == space.k()) {
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
             nextDesign[currDesign.length] = state;
-            FixBS nextFilter = state.updatedFilter(filter, space);
+            FixBS nextFilter = filter.copy();
+            state.updateFilter(nextFilter, space);
             if (cons.test(nextDesign, nextFilter)) {
                 return;
             }

@@ -24,6 +24,7 @@ public class GSpace {
     private final int[] orbIdx;
     private final int v;
     private final FixBS empty;
+    private final FixBS emptyFilter;
     private final int k;
     private final int[][] cayley;
     private final List<Relation> relations;
@@ -108,7 +109,10 @@ public class GSpace {
         }
 
         this.statesCache = new State[v][v];
-        FixBS emptyFilter = new FixBS(v * v);
+        this.emptyFilter = new FixBS(v * v);
+        for (int i = 0; i < v; i++) {
+            emptyFilter.set(i * v + i);
+        }
         for (int f = 0; f < v; f++) {
             for (int s = f + 1; s < v; s++) {
                 statesCache[f][s] = new State(FixBS.of(v, f), FixBS.of(gOrd, 0), new FixBS(sz), new IntList[sz], 1)
@@ -287,6 +291,10 @@ public class GSpace {
 
     private int gToX(int g, int orbIdx) {
         return cosets[orbIdx].gToX(g) + oBeg[orbIdx];
+    }
+
+    public FixBS emptyFilter() {
+        return emptyFilter;
     }
 
     public int apply(int g, int x) {
