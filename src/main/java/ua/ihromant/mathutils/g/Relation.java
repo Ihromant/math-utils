@@ -8,9 +8,6 @@ public class Relation {
     private final FixBS diffs;
     private final FixBS[] domMap;
     private final FixBS[] rngMap;
-    private final int domCard;
-    private final int rngCard;
-    private final int totalCard;
 
     public Relation(int v, FixBS comp) {
         this.dom = new FixBS(v);
@@ -23,9 +20,6 @@ public class Relation {
             int s = pair % v;
             acceptPair(v, f, s);
         }
-        this.domCard = dom.cardinality();
-        this.rngCard = rng.cardinality();
-        this.totalCard = dom.union(rng).cardinality();
     }
 
     public FixBS diffs() {

@@ -13,12 +13,9 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -148,20 +145,36 @@ public class ApplicatorTest {
         int v = space.v();
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
-        State[] design = new State[0];
-        List<State[]> initial = new ArrayList<>();
-        BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            if (arr.length == 2) {
-                if (space.minimal(arr)) {
-                    initial.add(arr);
-                }
-                return true;
-            }
-            return false;
+        List<State[]> singles = new ArrayList<>();
+        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+            singles.add(arr);
+            return true;
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, space.emptyFilter(), design, state, val, cons);
+        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+        System.out.println("Singles size: " + singles.size());
+        List<State[]> tuples = Collections.synchronizedList(new ArrayList<>());
+        AtomicInteger cnt = new AtomicInteger();
+        BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
+            if (arr.length == 2) {
+                if (space.minimal(arr)) {
+                    tuples.add(arr);
+                }
+                return true;
+            } else {
+                return false;
+            }
+        };
+        singles.stream().parallel().forEach(single -> {
+            searchDesigns(space, space.emptyFilter(), new State[0], single[0], 0, tCons);
+            int vl = cnt.incrementAndGet();
+            if (vl % 100 == 0) {
+                System.out.println(vl);
+            }
+        });
+        System.out.println("Tuples size: " + tuples.size());
+        cnt.set(0);
         AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (ftr.cardinality() < sqr) {
@@ -175,15 +188,13 @@ public class ApplicatorTest {
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
             return true;
         };
-        System.out.println("Initial length: " + initial.size());
-        AtomicInteger cnt = new AtomicInteger();
-        initial.stream().parallel().forEach(curr -> {
-            State[] pr = Arrays.copyOf(curr, curr.length - 1);
+        tuples.stream().parallel().forEach(tuple -> {
+            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
             FixBS newFilter = space.emptyFilter().copy();
-            for (int i = 0; i < curr.length - 1; i++) {
-                curr[i].updateFilter(newFilter, space);
+            for (int i = 0; i < tuple.length - 1; i++) {
+                tuple[i].updateFilter(newFilter, space);
             }
-            searchDesigns(space, newFilter, pr, curr[curr.length - 1], 0, fCons);
+            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
             int vl = cnt.incrementAndGet();
             if (vl % 100 == 0) {
                 System.out.println(vl);
