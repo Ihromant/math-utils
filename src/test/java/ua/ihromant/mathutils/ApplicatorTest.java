@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
@@ -8,9 +9,13 @@ import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -254,6 +259,14 @@ public class ApplicatorTest {
                     searchDesignsMinimal(space, filter, currDesign, nextState, el, cons);
                 }
             }
+        }
+    }
+
+    private static Group readGroup(String name) throws IOException {
+        try (InputStream is = ApplicatorTest.class.getResourceAsStream("/group/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            return new TableGroup(new ObjectMapper().readValue(br.readLine(), int[][].class));
         }
     }
 }

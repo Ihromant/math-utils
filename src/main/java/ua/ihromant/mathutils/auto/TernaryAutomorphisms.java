@@ -84,6 +84,64 @@ public class TernaryAutomorphisms {
         return result;
     }
 
+    public static List<int[]> automorphismsAffine(Liner aff) {
+        List<int[]> result = new ArrayList<>();
+        AffineTernaryRing first = null;
+        TernarMapping mapping = null;
+        int order = aff.line(0).length;
+        int[] lns = IntStream.range(0, aff.lineCount()).toArray();
+        for (int h : lns) {
+            for (int v : lns) {
+                int o = aff.intersection(h, v);
+                if (o < 0) {
+                    continue;
+                }
+                for (int e = 0; e < aff.pointCount(); e++) {
+                    if (aff.flag(h, e) || aff.flag(v, e)) {
+                        continue;
+                    }
+                    int we = Arrays.stream(aff.lines(e)).filter(l -> aff.intersection(l, h) < 0).findAny().orElseThrow();
+                    int ue = Arrays.stream(aff.lines(e)).filter(l -> aff.intersection(l, v) < 0).findAny().orElseThrow();
+                    int w = aff.intersection(we, v);
+                    int u = aff.intersection(ue, h);
+                    AffineTernaryRing ring = new AffineTernaryRing(aff, new Triangle(o, u, w));
+                    int two = ring.op(1, 1, 1);
+                    if (two == 0) {
+                        continue;
+                    }
+                    CharVals cv = CharVals.of(ring, two, order);
+                    if (!cv.induced()) {
+                        continue;
+                    }
+                    if (mapping == null) {
+                        first = ring;
+                        mapping = fillTernarMapping(ring.toMatrix(), cv, two, order);
+                        result.add(IntStream.range(0, aff.pointCount()).toArray());
+                        continue;
+                    }
+                    if (!mapping.chr().equals(cv.chr())) {
+                        continue;
+                    }
+                    TernaryRing matrix = ring.toMatrix();
+                    int[] ringIsomorphism = ringIsomorphism(mapping, matrix);
+                    if (ringIsomorphism == null) {
+                        continue;
+                    }
+                    int[] map = new int[order * order];
+                    for (int i = 0; i < order; i++) {
+                        for (int j = 0; j < order; j++) {
+                            int fromPt = first.withCrd(i, j);
+                            int toPt = ring.withCrd(ringIsomorphism[i], ringIsomorphism[j]);
+                            map[fromPt] = toPt;
+                        }
+                    }
+                    result.add(map);
+                }
+            }
+        }
+        return result;
+    }
+
     public static List<int[]> automorphismsProj(Liner proj) {
         List<int[]> result = new ArrayList<>();
         ProjectiveTernaryRing first = null;

@@ -125,7 +125,7 @@ public class AffineTernaryRing implements TernaryRing {
         return new IntPair(idxes[liner.intersection(parallel(ver, pt), oe)], idxes[liner.intersection(parallel(hor, pt), oe)]);
     }
 
-    public int toPt(IntPair crd) {
-        return liner.intersection(parallel(ver, diagonalOrder[crd.fst()]), parallel(hor, diagonalOrder[crd.snd()]));
+    public int withCrd(int a, int b) {
+        return liner.intersection(parallel(ver, diagonalOrder[a]), parallel(hor, diagonalOrder[b]));
     }
 }
