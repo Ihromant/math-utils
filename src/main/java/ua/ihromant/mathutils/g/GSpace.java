@@ -13,7 +13,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.SequencedMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -27,6 +26,7 @@ public class GSpace {
     private final int[] oBeg;
     private final int[] orbIdx;
     private final int v;
+    private final FixBS empty;
     private final int k;
     private final int[][] cayley;
     private final List<Relation> relations;
@@ -35,6 +35,9 @@ public class GSpace {
     private final int[][] bDiffAuths;
     private final int[][] diffAuths;
     private final State[][] statesCache;
+
+    private final Map<int[], List<int[]>> auths;
+    private final int[][] authArr;
 
     public GSpace(int k, Group group, int... comps) {
         this.k = k;
@@ -52,6 +55,7 @@ public class GSpace {
             min = min + conf.cosetCount();
         }
         this.v = min;
+        this.empty = new FixBS(v);
         this.orbIdx = new int[v];
         for (int i = 0; i < oBeg.length; i++) {
             int beg = oBeg[i];
@@ -161,34 +165,63 @@ public class GSpace {
             }
         }
 
-        TreeMap<int[], List<int[]>> auths = new TreeMap<>(Group::compareArr);
+        this.auths = new TreeMap<>(Group::compareArr);
+
+        PartialMap pm = new PartialMap(empty, empty, new int[v]);
+        find(auths, pm);
+        this.authArr = auths.values().stream().flatMap(List::stream).toArray(int[][]::new);
     }
 
-    private void find(Map<int[], List<int[]>> auths, PartialMap currMap, FixBS triples) {
-        if (currMap.keys.cardinality() == v) {
+    private void find(Map<int[], List<int[]>> auths, PartialMap currMap) {
+        FixBS keys = currMap.keys();
+        int nextKey = keys.nextClearBit(0);
+        if (nextKey == v) {
             int[] map = autToDiffAut(currMap.map);
             if (map != null) {
                 auths.computeIfAbsent(map, ky -> new ArrayList<>()).add(currMap.map);
             }
             return;
         }
-        SequencedMap<Integer, Integer> map = new TreeMap<>();
-        FixBS keys = currMap.keys();
-        int k = keys.nextClearBit(0);
-        for (int val = 0; val < v; val++) {
-            PartialMap nextMap = currMap.copy();
-            nextMap.add(k, val);
-            map.put(k, val);
-            while (!map.isEmpty()) {
-                Map.Entry<Integer, Integer> next = map.pollFirstEntry();
-                int c = next.getKey();
-                for (int a = keys.nextSetBit(0); a >= 0; a = keys.nextSetBit(a + 1)) {
-                    for (int b = keys.nextSetBit(a + 1); b >= 0; b = keys.nextSetBit(b + 1)) {
-
-                    }
+        FixBS possVals = empty.copy();
+        possVals.set(0, v);
+        possVals.andNot(currMap.values);
+        ex: for (int a = keys.nextSetBit(0); a >= 0; a = keys.nextSetBit(a + 1)) {
+            int aVal = currMap.val(a);
+            for (int b = keys.nextSetBit(a + 1); b >= 0; b = keys.nextSetBit(b + 1)) {
+                int bVal = currMap.val(b);
+                Relation rel = relation(a, b);
+                Relation relVal = relation(aVal, bVal);
+                FixBS secondKeys = forFirst(rel, nextKey).intersection(keys);
+                for (int sndKey = secondKeys.nextSetBit(0); sndKey >= 0; sndKey = secondKeys.nextSetBit(sndKey + 1)) {
+                    int sndVal = currMap.val(sndKey);
+                    possVals.and(forSecond(relVal, sndVal));
+                }
+                FixBS firstKeys = forSecond(rel, nextKey).intersection(keys);
+                for (int fstKey = firstKeys.nextSetBit(0); fstKey >= 0; fstKey = firstKeys.nextSetBit(fstKey + 1)) {
+                    int fstVal = currMap.val(fstKey);
+                    possVals.and(forFirst(relVal, fstVal));
+                }
+                int card = possVals.cardinality();
+                if (card <= 1) {
+                    break ex;
                 }
             }
         }
+        for (int nextVal = possVals.nextSetBit(0); nextVal >= 0; nextVal = possVals.nextSetBit(nextVal + 1)) {
+            PartialMap nextMap = currMap.copy();
+            nextMap.set(nextKey, nextVal);
+            find(auths, nextMap);
+        }
+    }
+
+    private FixBS forFirst(Relation rel, int fst) {
+        FixBS vals = rel.secondFor(fst);
+        return vals == null ? empty : vals;
+    }
+
+    private FixBS forSecond(Relation rel, int snd) {
+        FixBS vals = rel.firstFor(snd);
+        return vals == null ? empty : vals;
     }
 
     private int[] autToDiffAut(int[] auth) {
@@ -196,14 +229,14 @@ public class GSpace {
         Arrays.fill(diffAut, -1);
         for (int x : oBeg) {
             for (int y = x + 1; y < v; y++) {
-                int base = x * v + y;
-                int map = auth[x] * v + auth[y];
-                if (connect(diffAut, base, map)) {
+                int basePair = x * v + y;
+                int mapPair = auth[x] * v + auth[y];
+                if (connect(diffAut, diffMap[basePair], diffMap[mapPair])) {
                     return null;
                 }
                 int inv = y * v + x;
                 int invMap = auth[y] * v + auth[x];
-                if (connect(diffAut, inv, invMap)) {
+                if (connect(diffAut, diffMap[inv], diffMap[invMap])) {
                     return null;
                 }
             }
@@ -221,20 +254,25 @@ public class GSpace {
         }
     }
 
-    private record PartialMap(FixBS keys, int[] map) {
+    private record PartialMap(FixBS keys, FixBS values, int[] map) {
         private PartialMap copy() {
-            return new PartialMap(keys.copy(), map.clone());
+            return new PartialMap(keys.copy(), values.copy(), map.clone());
         }
 
-        private void add(int k, int v) {
+        private void set(int k, int v) {
             if (keys.get(k)) {
                 if (map[k] != v) {
                     throw new IllegalStateException();
                 }
             } else {
                 keys.set(k);
+                values.set(v);
                 map[k] = v;
             }
+        }
+
+        private int val(int key) {
+            return map[key];
         }
     }
 
@@ -251,7 +289,11 @@ public class GSpace {
     }
 
     public int authLength() {
-        return bDiffAuths.length;
+        return authArr.length;
+    }
+
+    public int[] auth(int i) {
+        return authArr[i];
     }
 
     public int diffLength() {
@@ -260,6 +302,10 @@ public class GSpace {
 
     public FixBS difference(int idx) {
         return relations.get(idx).diffs();
+    }
+
+    public Relation relation(int a, int b) {
+        return relations.get(diffMap[a * v + b]);
     }
 
     public int diffIdx(int xy) {

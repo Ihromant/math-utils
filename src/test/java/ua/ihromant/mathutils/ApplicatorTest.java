@@ -92,6 +92,34 @@ public class ApplicatorTest {
     }
 
     @Test
+    public void testAutomorphisms() {
+        int k = 6;
+        Group g = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        GSpace space = new GSpace(k, g, 1, 3, 3, 39);
+        assertEquals(12168, space.authLength());
+        int v = space.v();
+        System.out.println("Randomized test");
+        IntStream.range(0, 100).parallel().forEach(i -> {
+            int[] auth = space.auth(i);
+            for (int a = 0; a < v; a++) {
+                for (int b = a + 1; b < v; b++) {
+                    for (int c = 0; c < v; c++) {
+                        for (int d = c + 1; d < v; d++) {
+                            int ab = a * v + b;
+                            int cd = c * v + d;
+                            boolean eq = space.diffIdx(ab) == space.diffIdx(cd);
+                            int mapAb = auth[a] * v + auth[b];
+                            int mapCd = auth[c] * v + auth[d];
+                            boolean mapEq = space.diffIdx(mapAb) == space.diffIdx(mapCd);
+                            assertEquals(eq, mapEq);
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
     public void logDesigns() throws IOException {
         int k = 6;
         Group group = GroupIndex.group(39, 1);

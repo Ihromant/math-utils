@@ -44,4 +44,12 @@ public class Relation {
         domMap[f].set(s);
         rngMap[s].set(f);
     }
+
+    public FixBS firstFor(int snd) {
+        return rngMap[snd];
+    }
+
+    public FixBS secondFor(int fst) {
+        return domMap[fst];
+    }
 }
