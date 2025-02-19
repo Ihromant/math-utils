@@ -143,7 +143,7 @@ public class ApplicatorTest {
     }
 
     @Test
-    public void logDesigns3() throws IOException {
+    public void logDesigns() throws IOException {
         int k = 6;
         Group group = GroupIndex.group(39, 1);
         GSpace space = new GSpace(k, group, 1, 3, 3, 39);
@@ -155,21 +155,26 @@ public class ApplicatorTest {
             filter.set(i * v + i);
         }
         State[] design = new State[0];
-        List<State> initial = new ArrayList<>();
+        List<State[]> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            initial.add(arr[0]);
-            return true;
+            if (arr.length == 2) {
+                if (space.minimal(arr)) {
+                    initial.add(arr);
+                }
+                return true;
+            }
+            return false;
         };
         int val = 1;
         State state = space.forInitial(0, val);
         searchDesignsMinimal(space, filter, design, state, val, cons);
         AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-            if (!space.minimal(arr)) {
-                return true;
-            }
             if (ftr.cardinality() < sqr) {
                 return false;
+            }
+            if (!space.minimal(arr)) {
+                return true;
             }
             ai.incrementAndGet();
             Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
@@ -178,8 +183,13 @@ public class ApplicatorTest {
         };
         System.out.println("Initial length: " + initial.size());
         AtomicInteger cnt = new AtomicInteger();
-        initial.stream().parallel().forEach(st -> {
-            searchDesigns(space, filter, design, st, 0, fCons);
+        initial.stream().parallel().forEach(curr -> {
+            State[] pr = Arrays.copyOf(curr, curr.length - 1);
+            FixBS newFilter = filter.copy();
+            for (int i = 0; i < curr.length - 1; i++) {
+                newFilter = curr[i].updatedFilter(newFilter, space);
+            }
+            searchDesigns(space, newFilter, pr, curr[curr.length - 1], 0, fCons);
             int vl = cnt.incrementAndGet();
             if (vl % 100 == 0) {
                 System.out.println(vl);
@@ -233,7 +243,7 @@ public class ApplicatorTest {
             for (int pair = filter.nextClearBit(from); pair >= 0 && pair < to; pair = filter.nextClearBit(pair + 1)) {
                 int el = pair % v;
                 State nextState = state.acceptElem(space, filter, el);
-                if (nextState != null && space.minimal(nextState.block())) {
+                if (nextState != null && (currDesign.length > 0 || space.minimal(nextState.block()))) {
                     searchDesignsMinimal(space, filter, currDesign, nextState, el, cons);
                 }
             }
