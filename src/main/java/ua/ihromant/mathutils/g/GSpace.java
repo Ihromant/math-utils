@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -120,9 +121,13 @@ public class GSpace {
             }
         }
 
-        TreeSet<int[]> sortedAuths = new TreeSet<>(Group::compareArr);
-        PartialMap pm = new PartialMap(empty, empty, new int[v]);
-        find(sortedAuths, pm);
+        Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Group::compareArr));
+        PartialMap emMap = new PartialMap(empty, empty, new int[v]);
+        IntStream.range(0, v).parallel().forEach(fst -> {
+            PartialMap init = emMap.copy();
+            init.set(0, fst);
+            find(sortedAuths, init);
+        });
         this.auths = sortedAuths.toArray(int[][]::new);
     }
 
