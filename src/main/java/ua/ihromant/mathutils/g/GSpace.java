@@ -3,7 +3,6 @@ package ua.ihromant.mathutils.g;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -14,9 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -32,12 +29,9 @@ public class GSpace {
     private final List<Relation> relations;
     private final int[] diffMap;
     private final List<Map<Integer, FixBS>> preImages;
-    private final int[][] bDiffAuths;
-    private final int[][] diffAuths;
     private final State[][] statesCache;
 
-    private final Map<int[], List<int[]>> auths;
-    private final int[][] authArr;
+    private final int[][] auths;
 
     public GSpace(int k, Group group, int... comps) {
         this.k = k;
@@ -112,50 +106,7 @@ public class GSpace {
         for (int i = 0; i < v; i++) {
             diffMap[i * v + i] = -1;
         }
-        PermutationGroup gAuths = new PermutationGroup(group.auth());
-        FixBS suitableAuths = new FixBS(gAuths.order());
-        ex: for (int el = 0; el < gAuths.order(); el++) {
-            for (GCosets coset : cosets) {
-                int[][] csts = coset.cosets();
-                Set<FixBS> set = Arrays.stream(csts).map(arr -> FixBS.of(gOrd, arr)).collect(Collectors.toSet());
-                FixBS fbs = set.iterator().next();
-                if (!set.contains(gAuths.apply(el, fbs))) {
-                    continue ex;
-                }
-            }
-            suitableAuths.set(el);
-        }
-        gAuths = gAuths.subset(suitableAuths);
-        int nonTr = Arrays.stream(comps).filter(c -> c != gOrd).map(c -> 1).sum();
-        int mCap = 1 << nonTr;
-        Set<int[]> bUnique = new TreeSet<>(Group::compareArr);
-        Set<int[]> unique = new TreeSet<>(Group::compareArr);
-        for (int i = 0; i < gAuths.order(); i++) {
-            int[] perm = gAuths.permutation(i);
-            for (int mask = 0; mask < mCap; mask++) {
-                int[] map = new int[sz];
-                for (int comp = 0; comp < sz; comp++) {
-                    int pair = difference(comp).nextSetBit(0);
-                    int a = pair / v;
-                    int b = pair % v;
-                    int aIdx = orbIdx(a);
-                    int bIdx = orbIdx(b);
-                    boolean aMoved = (mask & (1 << aIdx)) != 0;
-                    boolean bMoved = (mask & (1 << bIdx)) != 0;
-                    int aMap = aMoved ? gToX(perm[xToG(a)], aIdx) : a;
-                    int bMap = bMoved ? gToX(perm[xToG(b)], bIdx) : b;
-                    map[comp] = diffMap[aMap * v + bMap];
-                }
-                bUnique.add(map);
-                if (mask == sz - 1) {
-                    unique.add(map);
-                }
-            }
-        }
-        this.bDiffAuths = bUnique.toArray(int[][]::new);
-        Arrays.parallelSort(bDiffAuths, Group::compareArr);
-        this.diffAuths = unique.toArray(int[][]::new);
-        Arrays.parallelSort(diffAuths, Group::compareArr);
+
         this.statesCache = new State[v][v];
         FixBS emptyFilter = new FixBS(v * v);
         for (int f = 0; f < v; f++) {
@@ -165,20 +116,18 @@ public class GSpace {
             }
         }
 
-        this.auths = new TreeMap<>(Group::compareArr);
-
+        TreeSet<int[]> sortedAuths = new TreeSet<>(Group::compareArr);
         PartialMap pm = new PartialMap(empty, empty, new int[v]);
-        find(auths, pm);
-        this.authArr = auths.values().stream().flatMap(List::stream).toArray(int[][]::new);
+        find(sortedAuths, pm);
+        this.auths = sortedAuths.toArray(int[][]::new);
     }
 
-    private void find(Map<int[], List<int[]>> auths, PartialMap currMap) {
+    private void find(Set<int[]> auths, PartialMap currMap) {
         FixBS keys = currMap.keys();
         int nextKey = keys.nextClearBit(0);
         if (nextKey == v) {
-            int[] map = autToDiffAut(currMap.map);
-            if (map != null) {
-                auths.computeIfAbsent(map, ky -> new ArrayList<>()).add(currMap.map);
+            if (autToDiffAut(currMap.map) != null) {
+                auths.add(currMap.map);
             }
             return;
         }
@@ -289,11 +238,11 @@ public class GSpace {
     }
 
     public int authLength() {
-        return authArr.length;
+        return auths.length;
     }
 
     public int[] auth(int i) {
-        return authArr[i];
+        return auths[i];
     }
 
     public int diffLength() {
@@ -336,12 +285,6 @@ public class GSpace {
         return cosets[idx].xToG(xCos);
     }
 
-    private int[] xToGs(int x) {
-        int idx = orbIdx[x];
-        int xCos = x - oBeg[idx];
-        return cosets[idx].xToGs(xCos);
-    }
-
     private int gToX(int g, int orbIdx) {
         return cosets[orbIdx].gToX(g) + oBeg[orbIdx];
     }
@@ -365,13 +308,13 @@ public class GSpace {
         return res.stream();
     }
 
-    public boolean minimal(FixBS diffSet) {
-        for (int[] auth : bDiffAuths) {
+    public boolean minimal(FixBS block) {
+        for (int[] auth : auths) {
             FixBS alt = new FixBS(auth.length);
-            for (int diff = diffSet.nextSetBit(0); diff >= 0; diff = diffSet.nextSetBit(diff + 1)) {
+            for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
                 alt.set(auth[diff]);
             }
-            if (alt.compareTo(diffSet) < 0) {
+            if (alt.compareTo(block) < 0) {
                 return false;
             }
         }
@@ -379,23 +322,23 @@ public class GSpace {
     }
 
     public boolean minimal(State[] states) {
-        FixBS[] diffSets = new FixBS[states.length];
-        for (int i = 0; i < diffSets.length; i++) {
-            diffSets[i] = states[i].diffSet();
+        FixBS[] blocks = new FixBS[states.length];
+        for (int i = 0; i < blocks.length; i++) {
+            blocks[i] = states[i].block();
         }
-        ex: for (int[] auth : diffAuths) {
-            FixBS[] altDiffSets = new FixBS[diffSets.length];
-            for (int i = 0; i < diffSets.length; i++) {
-                FixBS diffSet = diffSets[i];
+        ex: for (int[] auth : auths) {
+            FixBS[] altBlocks = new FixBS[blocks.length];
+            for (int i = 0; i < blocks.length; i++) {
+                FixBS block = blocks[i];
                 FixBS alt = new FixBS(auth.length);
-                for (int diff = diffSet.nextSetBit(0); diff >= 0; diff = diffSet.nextSetBit(diff + 1)) {
-                    alt.set(auth[diff]);
+                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                    alt.set(auth[el]);
                 }
-                altDiffSets[i] = alt;
+                altBlocks[i] = alt;
             }
-            Arrays.sort(altDiffSets);
-            for (int i = 0; i < diffSets.length; i++) {
-                int cmp = altDiffSets[i].compareTo(diffSets[i]);
+            Arrays.sort(altBlocks);
+            for (int i = 0; i < blocks.length; i++) {
+                int cmp = altBlocks[i].compareTo(blocks[i]);
                 if (cmp < 0) {
                     return false;
                 }

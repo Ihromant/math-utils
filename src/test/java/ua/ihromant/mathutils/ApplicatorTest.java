@@ -117,10 +117,33 @@ public class ApplicatorTest {
                 }
             }
         });
+        g = new CyclicGroup(48);
+        GSpace space1 = new GSpace(k, g, 1, 1);
+        assertEquals(73728, space1.authLength());
+        int ov = space1.v();
+        System.out.println("Randomized test");
+        IntStream.range(0, 100).parallel().forEach(i -> {
+            int[] auth = space1.auth(i);
+            for (int a = 0; a < ov; a++) {
+                for (int b = a + 1; b < ov; b++) {
+                    for (int c = 0; c < ov; c++) {
+                        for (int d = c + 1; d < ov; d++) {
+                            int ab = a * ov + b;
+                            int cd = c * ov + d;
+                            boolean eq = space1.diffIdx(ab) == space1.diffIdx(cd);
+                            int mapAb = auth[a] * ov + auth[b];
+                            int mapCd = auth[c] * ov + auth[d];
+                            boolean mapEq = space1.diffIdx(mapAb) == space1.diffIdx(mapCd);
+                            assertEquals(eq, mapEq);
+                        }
+                    }
+                }
+            }
+        });
     }
 
     @Test
-    public void logDesigns() throws IOException {
+    public void logDesigns3() throws IOException {
         int k = 6;
         Group group = GroupIndex.group(39, 1);
         GSpace space = new GSpace(k, group, 1, 3, 3, 39);
@@ -134,14 +157,12 @@ public class ApplicatorTest {
         State[] design = new State[0];
         List<State> initial = new ArrayList<>();
         BiPredicate<State[], FixBS> cons = (arr, ftr) -> {
-            if (space.minimal(arr)) {
-                initial.add(arr[0]);
-            }
+            initial.add(arr[0]);
             return true;
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesigns(space, filter, design, state, val, cons);
+        searchDesignsMinimal(space, filter, design, state, val, cons);
         AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (!space.minimal(arr)) {
@@ -212,7 +233,7 @@ public class ApplicatorTest {
             for (int pair = filter.nextClearBit(from); pair >= 0 && pair < to; pair = filter.nextClearBit(pair + 1)) {
                 int el = pair % v;
                 State nextState = state.acceptElem(space, filter, el);
-                if (nextState != null && space.minimal(nextState.diffSet())) {
+                if (nextState != null && space.minimal(nextState.block())) {
                     searchDesignsMinimal(space, filter, currDesign, nextState, el, cons);
                 }
             }
