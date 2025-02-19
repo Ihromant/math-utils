@@ -3,13 +3,20 @@ package ua.ihromant.mathutils.g;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.Objects;
+
 public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
     public State fromBlock(GSpace space, FixBS block) {
         int fst = block.nextSetBit(0);
         int snd = block.nextSetBit(fst + 1);
         State result = space.forInitial(fst, snd);
+        for (int el = block.nextSetBit(snd + 1); el >= 0; el = block.nextSetBit(el + 1)) {
+            if (result.block().get(el)) {
+                continue;
+            }
+            result = Objects.requireNonNull(result.acceptElem(space, space.emptyFilter(), el));
+        }
         return result;
-        //for (int i = 0;)
     }
 
     public State acceptElem(GSpace gSpace, FixBS globalFilter, int val) {
