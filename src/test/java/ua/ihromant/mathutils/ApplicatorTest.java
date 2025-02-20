@@ -12,10 +12,14 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -24,6 +28,7 @@ import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -259,6 +264,48 @@ public class ApplicatorTest {
                     searchDesignsMinimal(space, filter, currDesign, nextState, el, cons);
                 }
             }
+        }
+    }
+
+    @Test
+    public void generateInitial() throws IOException {
+        int k = 6;
+        Group group = GroupIndex.group(39, 1);
+        int[] comps = new int[]{1, 3, 3, 39};
+        GSpace space = new GSpace(k, group, comps);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
+            List<State[]> singles = new ArrayList<>();
+            BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+                singles.add(arr);
+                return true;
+            };
+            int val = 1;
+            State state = space.forInitial(0, val);
+            searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+            System.out.println("Singles size: " + singles.size());
+            AtomicInteger cnt = new AtomicInteger();
+            BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
+                if (arr.length == 2) {
+                    if (space.minimalTwo(arr)) {
+                        ps.println(Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(" ")));
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            };
+            singles.stream().parallel().forEach(single -> {
+                searchDesigns(space, space.emptyFilter(), new State[0], single[0], 0, tCons);
+                int vl = cnt.incrementAndGet();
+                if (vl % 100 == 0) {
+                    System.out.println(vl);
+                }
+            });
         }
     }
 

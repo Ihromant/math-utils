@@ -525,7 +525,6 @@ public class ScalarTest {
             Map<Integer, List<SubGroup>> bySize = subGroups.stream().collect(Collectors.groupingBy(sg -> sg.arr().length));
             System.out.println(subGroups.stream().collect(Collectors.groupingBy(sg -> sg.arr().length, Collectors.counting())));
             auto = auto.subset(bySize.get(auto.order()).getFirst().elems());
-            System.out.println(Arrays.deepToString(bySize.get(160).getFirst().asTable().table()).replace('[', '{').replace(']', '}'));
             System.out.println("Calculated automorphisms " + auto.order());
             QuickFind pts = new QuickFind(proj.pointCount());
             for (int a = 0; a < auto.order(); a++) {

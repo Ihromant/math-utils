@@ -34,6 +34,6 @@ public class GapInteractor {
             }
         }
         inter.process.destroyForcibly();
-        return new TableGroup(table);
+        return new TableGroup("SG(" + order + "," + index + ")", table);
     }
 }
