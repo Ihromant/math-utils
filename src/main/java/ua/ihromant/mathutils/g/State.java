@@ -6,7 +6,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.Objects;
 
 public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
-    public State fromBlock(GSpace space, FixBS block) {
+    public static State fromBlock(GSpace space, FixBS block) {
         int fst = block.nextSetBit(0);
         int snd = block.nextSetBit(fst + 1);
         State result = space.forInitial(fst, snd);

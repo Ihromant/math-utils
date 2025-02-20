@@ -15,6 +15,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +26,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -307,6 +309,83 @@ public class ApplicatorTest {
                 }
             });
         }
+    }
+
+    @Test
+    public void byInitial() throws IOException {
+        int k = 6;
+        Group group = GroupIndex.group(39, 1);
+        int[] comps = new int[]{1, 3, 3, 39};
+        GSpace space = new GSpace(k, group, comps);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + ".txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            int v = space.v();
+            int sqr = v * v;
+            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
+            List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+            br.lines().forEach(l -> {
+                if (l.contains("[{")) {
+                    System.out.println(l);
+                    String[] split = l.substring(2, l.length() - 2).split("}, \\{");
+                    List<FixBS> base = Arrays.stream(split).map(bl -> FixBS.of(v, Arrays.stream(bl.split(", "))
+                            .mapToInt(Integer::parseInt).toArray())).toList();
+                    liners.add(new Liner(v, base.stream().flatMap(space::blocks).toArray(int[][]::new)));
+                } else {
+                    set.remove(readPartial(l, v));
+                }
+            });
+            List<List<FixBS>> tuples = new ArrayList<>(set);
+            System.out.println("Tuples size: " + tuples.size());
+            AtomicInteger cnt = new AtomicInteger();
+            AtomicInteger ai = new AtomicInteger();
+            BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+                if (ftr.cardinality() < sqr) {
+                    return false;
+                }
+                if (!space.minimal(arr)) {
+                    return true;
+                }
+                ai.incrementAndGet();
+                Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+                liners.add(l);
+                ps.println(Arrays.stream(arr).map(State::block).toList());
+                System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+                return true;
+            };
+            tuples.stream().parallel().forEach(lst -> {
+                State[] pr = new State[lst.size() - 1];
+                for (int i = 0; i < lst.size() - 1; i++) {
+                    pr[i] = State.fromBlock(space, lst.get(i));
+                }
+                FixBS newFilter = space.emptyFilter().copy();
+                for (State st : pr) {
+                    st.updateFilter(newFilter, space);
+                }
+                searchDesigns(space, newFilter, pr, State.fromBlock(space, lst.getLast()), 0, fCons);
+                int vl = cnt.incrementAndGet();
+                if (vl % 100 == 0) {
+                    System.out.println(vl);
+                }
+                ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" ")));
+            });
+            System.out.println("Results " + liners.size());
+        }
+    }
+
+    private static List<FixBS> readPartial(String line, int v) {
+        String[] sp = line.substring(1, line.length() - 1).split("} \\{");
+        return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
 
     private static Group readGroup(String name) throws IOException {
