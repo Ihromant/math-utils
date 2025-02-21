@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -39,7 +40,7 @@ public class ApplicatorTest {
     @Test
     public void testApplicator() {
         Group gr = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
-        GSpace applicator = new GSpace(6, gr, 1, 3, 3, 39);
+        GSpace applicator = new GSpace(6, gr, false, 1, 3, 3, 39);
         assertEquals(66, applicator.v());
         for (int x = 0; x < applicator.v(); x++) {
             for (int j = 0; j < gr.order(); j++) {
@@ -47,7 +48,7 @@ public class ApplicatorTest {
             }
         }
         gr = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
-        applicator = new GSpace(6, gr, 1, 1);
+        applicator = new GSpace(6, gr, false, 1, 1);
         for (int g = 0; g < gr.order(); g++) {
             for (int x = 0; x < 2 * gr.order(); x++) {
                 int app = applicator.apply(g, x);
@@ -60,13 +61,13 @@ public class ApplicatorTest {
     @Test
     public void testState() throws IOException {
         try {
-            new GSpace(6, new CyclicProduct(2, 2), 2);
+            new GSpace(6, new CyclicProduct(2, 2), false, 2);
             fail();
         } catch (Exception e) {
             // ok
         }
         Group g = new CyclicGroup(21);
-        GSpace space = new GSpace(7, g, 1);
+        GSpace space = new GSpace(7, g, false, 1);
         State state = space.forInitial(0, 3);
         assertEquals(FixBS.of(space.v(), 0, 3), state.block());
         assertEquals(FixBS.of(g.order(), 0), state.stabilizer());
@@ -79,7 +80,7 @@ public class ApplicatorTest {
         state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 14));
         assertNull(state.acceptElem(space, space.emptyFilter(), 1));
         g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        space = new GSpace(6, g, 1);
+        space = new GSpace(6, g, false, 1);
         state = space.forInitial(0, 1);
         state = Objects.requireNonNull(state.acceptElem(space, space.emptyFilter(), 2));
         assertEquals(FixBS.of(space.v(), 0, 1, 2), state.block());
@@ -88,7 +89,7 @@ public class ApplicatorTest {
         assertEquals(FixBS.of(space.v(), 0, 1, 2, 3, 31, 80), state.block());
         assertEquals(FixBS.of(g.order(), 0, 1, 2), state.stabilizer());
         g = GroupIndex.group(40, 4);
-        space = new GSpace(6, g, 1, 8, 8, 8, 8, 40);
+        space = new GSpace(6, g, false, 1, 8, 8, 8, 8, 40);
         state = space.forInitial(0, 3);
         assertEquals(FixBS.of(g.order(), 0, 3), state.stabilizer());
         assertEquals(FixBS.of(g.order(), 0, 3), state.block());
@@ -102,7 +103,7 @@ public class ApplicatorTest {
     public void testAutomorphisms() {
         int k = 6;
         Group g = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
-        GSpace space = new GSpace(k, g, 1, 3, 3, 39);
+        GSpace space = new GSpace(k, g, true, 1, 3, 3, 39);
         assertEquals(12168, space.authLength());
         int v = space.v();
         System.out.println("Randomized test");
@@ -125,7 +126,7 @@ public class ApplicatorTest {
             }
         });
         g = new CyclicGroup(48);
-        GSpace space1 = new GSpace(k, g, 1, 1);
+        GSpace space1 = new GSpace(k, g, true, 1, 1);
         assertEquals(73728, space1.authLength());
         int ov = space1.v();
         System.out.println("Randomized test");
@@ -150,10 +151,40 @@ public class ApplicatorTest {
     }
 
     @Test
+    public void testAuth() {
+        int k = 5;
+        Group group = new PermutationGroup(5, true);
+        GSpace space = new GSpace(k, group, true, 1, 60, 60, 60, 60, 60);
+        System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
+        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+            System.out.println(arr[0].block());
+            return true;
+        };
+        int val = 1;
+        State state = space.forInitial(0, val);
+        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+        System.out.println(space.minimalBlock(FixBS.of(space.v(), 0, 1, 15, 46, 51)));
+        FixBS[] blocks = {FixBS.of(space.v(), 0, 1, 15, 46, 51),
+                FixBS.of(space.v(), 0, 3, 8, 11, 64),
+                FixBS.of(space.v(), 0, 4, 10, 38, 52),
+                FixBS.of(space.v(), 0, 12, 47, 59, 60),
+                FixBS.of(space.v(), 0, 13, 30, 43, 61),
+                FixBS.of(space.v(), 0, 14, 33, 55, 62),
+                FixBS.of(space.v(), 0, 20, 34, 42, 50),
+                FixBS.of(space.v(), 0, 27, 41, 53, 63),
+                FixBS.of(space.v(), 60, 61, 62, 63, 64)};
+        Liner l1 = new Liner(space.v(), Arrays.stream(blocks).flatMap(space::blocks).toArray(int[][]::new));
+        System.out.println(l1.hyperbolicFreq() + " " + Arrays.toString(blocks));
+        FixBS[] minimal = space.minimalBlocks(blocks);
+        Liner l = new Liner(space.v(), Arrays.stream(minimal).flatMap(space::blocks).toArray(int[][]::new));
+        System.out.println(l.hyperbolicFreq() + " " + Arrays.toString(minimal));
+    }
+
+    @Test
     public void logDesigns() throws IOException {
         int k = 6;
         Group group = GroupIndex.group(39, 1);
-        GSpace space = new GSpace(k, group, 1, 3, 3, 39);
+        GSpace space = new GSpace(k, group, false, 1, 3, 3, 39);
         int v = space.v();
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
@@ -164,43 +195,20 @@ public class ApplicatorTest {
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+        searchDesigns(space, space.emptyFilter(), new State[0], state, val, sCons);
         System.out.println("Singles size: " + singles.size());
-        List<State[]> tuples = Collections.synchronizedList(new ArrayList<>());
         AtomicInteger cnt = new AtomicInteger();
-        BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
-            if (arr.length == 2) {
-                if (space.minimalTwo(arr)) {
-                    tuples.add(arr);
-                }
-                return true;
-            } else {
-                return false;
-            }
-        };
-        singles.stream().parallel().forEach(single -> {
-            searchDesigns(space, space.emptyFilter(), new State[0], single[0], 0, tCons);
-            int vl = cnt.incrementAndGet();
-            if (vl % 100 == 0) {
-                System.out.println(vl);
-            }
-        });
-        System.out.println("Tuples size: " + tuples.size());
-        cnt.set(0);
         AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
             if (ftr.cardinality() < sqr) {
                 return false;
-            }
-            if (!space.minimal(arr)) {
-                return true;
             }
             ai.incrementAndGet();
             Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
             return true;
         };
-        tuples.stream().parallel().forEach(tuple -> {
+        singles.stream().parallel().forEach(tuple -> {
             State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
             FixBS newFilter = space.emptyFilter().copy();
             for (int i = 0; i < tuple.length - 1; i++) {
@@ -274,7 +282,7 @@ public class ApplicatorTest {
         int k = 6;
         Group group = GroupIndex.group(39, 1);
         int[] comps = new int[]{1, 3, 3, 39};
-        GSpace space = new GSpace(k, group, comps);
+        GSpace space = new GSpace(k, group, true, comps);
         File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
                 + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
@@ -316,7 +324,7 @@ public class ApplicatorTest {
         int k = 6;
         Group group = GroupIndex.group(39, 1);
         int[] comps = new int[]{1, 3, 3, 39};
-        GSpace space = new GSpace(k, group, comps);
+        GSpace space = new GSpace(k, group, true, comps);
         File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
                 + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + ".txt");
         File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
@@ -352,9 +360,6 @@ public class ApplicatorTest {
             BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
                 if (ftr.cardinality() < sqr) {
                     return false;
-                }
-                if (!space.minimal(arr)) {
-                    return true;
                 }
                 ai.incrementAndGet();
                 Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));

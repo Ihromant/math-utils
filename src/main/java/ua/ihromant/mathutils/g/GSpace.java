@@ -35,7 +35,7 @@ public class GSpace {
 
     private final int[][] auths;
 
-    public GSpace(int k, Group group, int... comps) {
+    public GSpace(int k, Group group, boolean genAuths, int... comps) {
         this.k = k;
         Group table = group.asTable();
         this.group = table;
@@ -121,14 +121,18 @@ public class GSpace {
             }
         }
 
-        Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Group::compareArr));
-        PartialMap emMap = new PartialMap(empty, empty, new int[v]);
-        IntStream.range(0, v).parallel().forEach(fst -> {
-            PartialMap init = emMap.copy();
-            init.set(0, fst);
-            find(sortedAuths, init);
-        });
-        this.auths = sortedAuths.toArray(int[][]::new);
+        if (genAuths) {
+            Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Group::compareArr));
+            PartialMap emMap = new PartialMap(empty, empty, new int[v]);
+            IntStream.range(0, v).parallel().forEach(fst -> {
+                PartialMap init = emMap.copy();
+                init.set(0, fst);
+                find(sortedAuths, init);
+            });
+            this.auths = sortedAuths.toArray(int[][]::new);
+        } else {
+            this.auths = new int[0][];
+        }
     }
 
     private void find(Set<int[]> auths, PartialMap currMap) {
@@ -324,14 +328,55 @@ public class GSpace {
     public boolean minimal(FixBS block) {
         for (int[] auth : auths) {
             FixBS alt = new FixBS(v);
-            for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
-                alt.set(auth[diff]);
+            for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                alt.set(auth[el]);
             }
             if (alt.compareTo(block) < 0) {
                 return false;
             }
         }
         return true;
+    }
+
+    public FixBS minimalBlock(FixBS block) {
+        FixBS result = block;
+        for (int[] auth : auths) {
+            FixBS alt = new FixBS(v);
+            for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                alt.set(auth[el]);
+            }
+            if (alt.compareTo(result) < 0) {
+                result = alt;
+            }
+        }
+        return result;
+    }
+
+    public FixBS[] minimalBlocks(FixBS[] blocks) {
+        FixBS[] result = blocks;
+        ex: for (int[] auth : auths) {
+            FixBS[] altBlocks = new FixBS[blocks.length];
+            for (int i = 0; i < blocks.length; i++) {
+                FixBS block = blocks[i];
+                FixBS alt = new FixBS(v);
+                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                    alt.set(auth[el]);
+                }
+                altBlocks[i] = alt;
+            }
+            Arrays.sort(altBlocks);
+            for (int i = 0; i < blocks.length; i++) {
+                int cmp = altBlocks[i].compareTo(result[i]);
+                if (cmp < 0) {
+                    result = altBlocks;
+                    break;
+                }
+                if (cmp > 0) {
+                    continue ex;
+                }
+            }
+        }
+        return result;
     }
 
     public boolean minimalTwo(State[] states) {
