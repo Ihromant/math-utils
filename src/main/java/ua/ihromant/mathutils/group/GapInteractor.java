@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.stream.Collectors;
 
 public class GapInteractor {
@@ -16,14 +17,13 @@ public class GapInteractor {
     }
 
     public Group smallGroup(int order, int index) throws IOException {
-        GapInteractor inter = new GapInteractor();
-        inter.process.outputWriter().write("LoadPackage(\"LOOPS\");\n");
-        inter.process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
-        inter.process.outputWriter().write("CayleyTable(IntoLoop(SmallGroup(" + order + "," + index + ")));\n");
-        inter.process.outputWriter().write("quit;\n");
-        inter.process.outputWriter().flush();
-        String joined = inter.process.inputReader().lines().dropWhile(l -> !l.contains("true")).skip(2).map(l -> {
-            int idx = l.indexOf(ANSI_RED);
+        process.outputWriter().write("LoadPackage(\"LOOPS\");\n");
+        process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
+        process.outputWriter().write("CayleyTable(IntoLoop(SmallGroup(" + order + "," + index + ")));\n");
+        process.outputWriter().write("quit;\n");
+        process.outputWriter().flush();
+        String joined = process.inputReader().lines().dropWhile(l -> !l.contains("true")).skip(2).map(l -> {
+            int idx = l.lastIndexOf(ANSI_RED);
             return idx < 0 ? l : l.substring(idx + ANSI_RED.length());
         }).collect(Collectors.joining());
         int[][] arr = om.readValue(joined, int[][].class);
@@ -33,7 +33,22 @@ public class GapInteractor {
                 table[i][j] = arr[i][j] - 1;
             }
         }
-        inter.process.destroyForcibly();
+        process.destroyForcibly();
         return new TableGroup("SG(" + order + "," + index + ")", table);
+    }
+
+    public String identifyGroup(Group g) throws IOException {
+        process.outputWriter().write("LoadPackage(\"LOOPS\");\n");
+        process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
+        String repr = Arrays.deepToString(g.asTable().table());
+        process.outputWriter().write("StructureDescription(IntoGroup(LoopByCayleyTable(" + repr + ")));\n");
+        process.outputWriter().write("quit;\n");
+        process.outputWriter().flush();
+        String joined = process.inputReader().lines().dropWhile(l -> !l.contains("true")).skip(2).map(l -> {
+            int idx = l.lastIndexOf(ANSI_RED);
+            return idx < 0 ? l : l.substring(idx + ANSI_RED.length());
+        }).collect(Collectors.joining());
+        process.destroyForcibly();
+        return joined;
     }
 }

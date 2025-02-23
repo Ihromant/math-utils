@@ -1,14 +1,20 @@
 package ua.ihromant.mathutils.group;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.ApplicatorTest;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.IntBinaryOperator;
 import java.util.stream.IntStream;
 
@@ -245,5 +251,19 @@ public class GroupTest {
     public void testGap() throws IOException {
         Group g = new GapInteractor().smallGroup(40, 7);
         testCorrectness(g, false);
+    }
+
+    private static Group readGroup(String name) throws IOException {
+        try (InputStream is = ApplicatorTest.class.getResourceAsStream("/group/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            return new TableGroup(new ObjectMapper().readValue(br.readLine(), int[][].class));
+        }
+    }
+
+    @Test
+    public void identify() throws IOException {
+        GapInteractor inter = new GapInteractor();
+        System.out.println(inter.identifyGroup(readGroup("hall9")));
     }
 }
