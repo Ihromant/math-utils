@@ -50,12 +50,24 @@ public class BibdFinder5CyclicTest {
         searchDesigns(table, filter, design, state, v, k, val, blocksNeeded, cons);
     }
 
+    private static int[][] auth(Group group) {
+        int ord = group.order();
+        int[][] auth = group.auth();
+        int[][] result = new int[auth.length][ord + 1];
+        for (int i = 0; i < auth.length; i++) {
+            System.arraycopy(auth[i], 0, result[i], 0, auth[i].length);
+            result[i][ord] = ord;
+        }
+        return result;
+    }
+
     @Test
     public void logBlocks() {
+        int fixed = 0;
         Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        int v = group.order();
+        int v = group.order() + fixed;
         int k = 6;
-        int[][] auths = group.auth();
+        int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
         FixBS filter = new FixBS(v);
@@ -69,11 +81,10 @@ public class BibdFinder5CyclicTest {
                 for (int el = base.nextSetBit(0); el >= 0; el = base.nextSetBit(el + 1)) {
                     block.set(auth[el]);
                 }
-                for (int diff = block.nextSetBit(0); diff >= 0; diff = block.nextSetBit(diff + 1)) {
+                for (int diff = block.nextSetBit(0); diff >= 0 && diff < table.order(); diff = block.nextSetBit(diff + 1)) {
                     FixBS altBlock = new FixBS(v);
-                    int inv = table.inv(diff);
                     for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
-                        altBlock.set(table.op(inv, el));
+                        altBlock.set(el == table.order() ? el : table.op(table.inv(diff), el));
                     }
                     if (altBlock.compareTo(base) < 0) {
                         return true;
@@ -162,6 +173,11 @@ public class BibdFinder5CyclicTest {
             FixBS newSelfDiff = selfDiff.copy();
             FixBS newStabilizer = stabilizer.copy();
             FixBS newFilter = filter.copy();
+            if (val == group.order()) {
+                newFilter.set(val);
+                newBlock.set(val);
+                return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz + 1);
+            }
             while (!queue.isEmpty()) {
                 if (++sz > k) {
                     return null;
