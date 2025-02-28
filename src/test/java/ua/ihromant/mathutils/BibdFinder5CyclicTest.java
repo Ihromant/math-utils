@@ -67,6 +67,10 @@ public class BibdFinder5CyclicTest {
         Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         int v = group.order() + fixed;
         int k = 6;
+        generate(group, v, k);
+    }
+
+    private static void generate(Group group, int v, int k) {
         int[][] auths = auth(group);
         System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
