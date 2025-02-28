@@ -7,6 +7,7 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,7 +63,7 @@ public class BibdFinder5CyclicTest {
     }
 
     @Test
-    public void logBlocks() {
+    public void logBlocks() throws IOException {
         int fixed = 0;
         Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         int v = group.order() + fixed;
@@ -160,6 +161,9 @@ public class BibdFinder5CyclicTest {
             searchDesigns(group, nextFilter, nextDesign, nextState, v, k, 0, nextBlocksNeeded, cons);
         } else {
             for (int el = filter.nextClearBit(prev + 1); el >= 0 && el < v; el = filter.nextClearBit(el + 1)) {
+                if (state.block.get(el)) {
+                    continue;
+                }
                 State nextState = state.acceptElem(group, filter, el, v, k);
                 if (nextState != null) {
                     searchDesigns(group, filter, currDesign, nextState, v, k, el, blocksNeeded, cons);
