@@ -64,6 +64,21 @@ public class Liner {
         this.intersections = generateIntersections();
     }
 
+    public Liner byIncidence(boolean[][] flags) {
+        int pointCount = flags[0].length;
+        int[][] lines = new int[flags.length][];
+        for (int l = 0; l < lineCount(); l++) {
+            IntList pts = new IntList(pointCount);
+            for (int p = 0; p < pointCount; p++) {
+                if (flags[l][p]) {
+                    pts.add(p);
+                }
+            }
+            lines[l] = pts.toArray();
+        }
+        return new Liner(pointCount, lines);
+    }
+
     public Liner(BitSet[] lines) {
         this(Arrays.stream(lines).mapToInt(BitSet::length).max().orElseThrow(),
                 Arrays.stream(lines).map(bs -> bs.stream().toArray()).toArray(int[][]::new));
@@ -543,6 +558,25 @@ public class Liner {
         return sets.stream().map(l -> l.stream()
                         .map(pt -> Arrays.binarySearch(pointArray, pt)).filter(pt -> pt >= 0).collect(BitSet::new, BitSet::set, BitSet::or))
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
+    }
+
+    public Liner paraModification(int block, int[] permutation) {
+        boolean[][] newInc = new boolean[lines.length][pointCount];
+        int[] base = lines[block];
+        Map<Integer, Integer> idx = new HashMap<>();
+        for (int i = 0; i < base.length; i++) {
+            idx.put(base[i], permutation[i]);
+        }
+        for (int l = 0; l < lines.length; l++) {
+            for (int p = 0; p < pointCount; p++) {
+                if (intersection(l, block) < 0 || !flags[block][p]) {
+                    newInc[l][p] = flags[l][p];
+                } else {
+                    newInc[l][p] = Arrays.binarySearch(base, p) == idx.get(intersection(l, block));
+                }
+            }
+        }
+        return byIncidence(newInc);
     }
 
     public int triangleCount() {
