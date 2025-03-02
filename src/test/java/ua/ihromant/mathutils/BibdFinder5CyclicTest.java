@@ -65,11 +65,11 @@ public class BibdFinder5CyclicTest {
 
     @Test
     public void logBlocks() throws IOException {
-        for (int i = 1; i < 6; i++) {
-            int fixed = 1;
-            Group group = GroupIndex.group(27, i);
+        for (int i = 1; i < 16; i++) {
+            int fixed = 0;
+            Group group = GroupIndex.group(81, i);
             int v = group.order() + fixed;
-            int k = 4;
+            int k = 5;
             generate(group, v, k);
         }
     }
@@ -137,6 +137,7 @@ public class BibdFinder5CyclicTest {
                 System.out.println(cnt);
             }
         });
+        System.out.println("Results: " + liners.size());
     }
 
     private static Stream<int[]> blocks(int[] block, int v, Group gr) {
