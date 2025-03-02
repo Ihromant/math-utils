@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -64,11 +65,13 @@ public class BibdFinder5CyclicTest {
 
     @Test
     public void logBlocks() throws IOException {
-        int fixed = 0;
-        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        int v = group.order() + fixed;
-        int k = 6;
-        generate(group, v, k);
+        for (int i = 1; i < 6; i++) {
+            int fixed = 1;
+            Group group = GroupIndex.group(27, i);
+            int v = group.order() + fixed;
+            int k = 4;
+            generate(group, v, k);
+        }
     }
 
     private static void generate(Group group, int v, int k) {
@@ -112,7 +115,13 @@ public class BibdFinder5CyclicTest {
             if (blockNeeded != 0) {
                 return false;
             }
-            int[][] ars = Arrays.stream(arr).flatMap(st -> blocks(st.block().toArray(), v, group)).toArray(int[][]::new);
+            int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Group::compareArr).toArray(int[][]::new))) {
+                    return true;
+                }
+            }
+            int[][] ars = Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new);
             Liner l = new Liner(v, ars);
             liners.add(l);
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(", ", "{", "}")));
@@ -395,5 +404,57 @@ public class BibdFinder5CyclicTest {
                 System.out.println(l.autCountOld() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
             }
         });
+    }
+
+    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
+        int k = tuple.length;
+        int[] arr = new int[k];
+        int minDiff = Integer.MAX_VALUE;
+        int ord = gr.order();
+        boolean infty = tuple[k - 1] == ord;
+        int top = infty ? k - 1 : k;
+        for (int j = 1; j < top; j++) {
+            int el = tuple[j];
+            int mapped = auth[el];
+            arr[j] = mapped;
+            if (mapped < minDiff) {
+                minDiff = mapped;
+            }
+        }
+        int[] min = arr;
+        if (infty) {
+            arr[top] = ord;
+        }
+        for (int j = 1; j < top; j++) {
+            int inv = gr.inv(arr[j]);
+            int[] cnd = new int[k];
+            if (infty) {
+                cnd[top] = ord;
+            }
+            for (int i = 0; i < top; i++) {
+                if (i == j) {
+                    continue;
+                }
+                int diff = gr.op(inv, arr[i]);
+                cnd[i] = diff;
+                if (diff < minDiff) {
+                    minDiff = diff;
+                    min = cnd;
+                }
+            }
+        }
+        Arrays.sort(min);
+        return min;
+    }
+
+    private static boolean bigger(int[][] fst, int[][] snd) {
+        int cmp = 0;
+        for (int i = 0; i < fst.length; i++) {
+            cmp = Group.compareArr(snd[i], fst[i]);
+            if (cmp != 0) {
+                break;
+            }
+        }
+        return cmp < 0;
     }
 }
