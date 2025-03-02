@@ -141,7 +141,11 @@ public class BatchLinerTest {
                     pts.union(p1, arr[p1]);
                 }
             }
-            System.out.println(i + " group " + GroupIndex.identify(table) + " elems " + pts.components());
+            try {
+                System.out.println(i + " group " + GroupIndex.identify(table) + " elems " + pts.components());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         });
     }
 
