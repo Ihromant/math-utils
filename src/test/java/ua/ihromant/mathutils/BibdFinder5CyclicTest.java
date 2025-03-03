@@ -111,6 +111,7 @@ public class BibdFinder5CyclicTest {
                     }
                 }
                 ps.println(Arrays.stream(arr).map(st -> st.block).map(Object::toString).collect(Collectors.joining(" ")));
+                ps.flush();
                 return true;
             };
             oneStates.stream().parallel().forEach(st -> {
