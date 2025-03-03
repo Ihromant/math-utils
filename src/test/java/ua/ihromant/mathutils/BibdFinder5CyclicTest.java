@@ -10,9 +10,12 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,6 +122,86 @@ public class BibdFinder5CyclicTest {
                 searchDesigns(group, nextFilter, nextDesign, nextState, v, k, min, nextBlocksNeeded, cons1);
             });
         }
+    }
+
+    @Test
+    public void toFile() throws IOException {
+        int fixed = 1;
+        Group group = new CyclicProduct(8, 8);
+        int v = group.order() + fixed;
+        int k = 5;
+        int[][] auths = auth(group);
+        Group table = group.asTable();
+        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + ".txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
+            List<Liner> liners = new ArrayList<>();
+            br.lines().forEach(l -> {
+                if (l.contains("{{")) {
+                    System.out.println(l);
+                    String[] split = l.substring(2, l.length() - 2).split("}, \\{");
+                    int[][] base = Arrays.stream(split).map(bl -> Arrays.stream(bl.split(", "))
+                            .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                    liners.add(new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
+                } else {
+                    set.remove(readPartial(l, v));
+                }
+            });
+            int blocksNeeded = v * (v - 1) / k / (k - 1);
+            AtomicInteger ai = new AtomicInteger();
+            set.stream().parallel().forEach(lst -> {
+                State[] design = lst.stream().map(bl -> State.fromBlock(table, v, k, bl)).toArray(State[]::new);
+                FixBS filter = new FixBS(v);
+                int bn = blocksNeeded;
+                for (State st : design) {
+                    filter.or(st.filter);
+                    bn = bn - table.order() / st.stabilizer.cardinality();
+                }
+                FixBS zero = FixBS.of(v, 0);
+                State state = Objects.requireNonNull(new State(zero, zero, new FixBS(v), zero, 1).acceptElem(table, filter, filter.nextClearBit(1), v, k));
+                searchDesigns(table, filter, design, state, v, k, 0, bn, (des, bln) -> {
+                    if (bln > 0) {
+                        return false;
+                    }
+                    int[][] base = Arrays.stream(des).map(st -> st.block.toArray()).toArray(int[][]::new);
+                    for (int[] auth : auths) {
+                        if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Group::compareArr).toArray(int[][]::new))) {
+                            return true;
+                        }
+                    }
+                    Liner l = new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl.block.toArray(), v, group)).toArray(int[][]::new));
+                    ps.println(Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+                    ps.flush();
+                    if (ps != System.out) {
+                        System.out.println(l.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+                    }
+                    liners.add(l);
+                    return true;
+                });
+                ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" ")));
+                ps.flush();
+                int cnt = ai.incrementAndGet();
+                if (cnt % 100 == 0) {
+                    System.out.println(cnt);
+                }
+            });
+            System.out.println("Results: " + liners.size());
+        }
+    }
+
+    private static List<FixBS> readPartial(String line, int v) {
+        String[] sp = line.substring(1, line.length() - 1).split("} \\{");
+        return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
 
     @Test
@@ -276,6 +359,19 @@ public class BibdFinder5CyclicTest {
     }
 
     private record State(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int size) {
+        public static State fromBlock(Group g, int v, int k, FixBS block) {
+            FixBS empty = new FixBS(v);
+            FixBS zero = FixBS.of(v, 0);
+            State result = new State(zero, zero, empty, zero, 1);
+            for (int el = block.nextSetBit(1); el >= 0; el = block.nextSetBit(el + 1)) {
+                if (result.block().get(el)) {
+                    continue;
+                }
+                result = Objects.requireNonNull(result.acceptElem(g, empty, el, v, k));
+            }
+            return result;
+        }
+
         private State acceptElem(Group group, FixBS globalFilter, int val, int v, int k) {
             FixBS newBlock = block.copy();
             FixBS queue = new FixBS(v);
