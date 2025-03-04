@@ -74,12 +74,10 @@ public class BibdFinder5CyclicTest {
             };
             int blocksNeeded = (v + 1) * v / k / (k - 1);
             FixBS zero = FixBS.of(v, 0);
-            State state = new State(zero, zero, zero, zero, 1);
+            State state = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, 1, v, k));
             searchDesigns(table, filter, design, state, v, k, 0, blocksNeeded, cons);
             System.out.println("Ones size " + oneStates.size());
             BiPredicate<State[], Integer> cons1 = (arr, bn) -> {
-                FixBS[] base = arr[0].block.nextSetBit(1) > arr[1].block.nextSetBit(1)
-                        ? new FixBS[]{arr[1].block, arr[0].block} : new FixBS[]{arr[0].block, arr[1].block};
                 for (int[] auth : auths) {
                     FixBS[] mapped = new FixBS[arr.length];
                     for (int i = 0; i < arr.length; i++) {
@@ -105,8 +103,8 @@ public class BibdFinder5CyclicTest {
                         mapped[1] = mapped[0];
                         mapped[0] = tmp;
                     }
-                    int cmp = mapped[0].compareTo(base[0]);
-                    if (cmp < 0 || cmp == 0 && mapped[1].compareTo(base[1]) < 0) {
+                    int cmp = mapped[0].compareTo(arr[0].block);
+                    if (cmp < 0 || cmp == 0 && mapped[1].compareTo(arr[1].block) < 0) {
                         return true;
                     }
                 }
