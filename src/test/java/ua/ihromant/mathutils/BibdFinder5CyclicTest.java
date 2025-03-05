@@ -112,6 +112,7 @@ public class BibdFinder5CyclicTest {
                 ps.flush();
                 return true;
             };
+            AtomicInteger ai = new AtomicInteger();
             oneStates.stream().parallel().forEach(st -> {
                 int nextBlocksNeeded = blocksNeeded - group.order() / st.stabilizer().cardinality();
                 State[] nextDesign = new State[]{st};
@@ -119,6 +120,10 @@ public class BibdFinder5CyclicTest {
                 int min = nextFilter.nextClearBit(1);
                 State nextState = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, min, v, k));
                 searchDesigns(group, nextFilter, nextDesign, nextState, v, k, min, nextBlocksNeeded, cons1);
+                int cnt = ai.incrementAndGet();
+                if (cnt % 100 == 0) {
+                    System.out.println(cnt);
+                }
             });
         }
     }
@@ -157,6 +162,7 @@ public class BibdFinder5CyclicTest {
                 }
             });
             int blocksNeeded = v * (v - 1) / k / (k - 1);
+            System.out.println("Processing initial of size " + set.size());
             AtomicInteger ai = new AtomicInteger();
             set.stream().parallel().forEach(lst -> {
                 State[] design = lst.stream().map(bl -> State.fromBlock(table, v, k, bl)).toArray(State[]::new);
