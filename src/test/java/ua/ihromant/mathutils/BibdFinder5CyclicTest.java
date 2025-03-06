@@ -136,7 +136,7 @@ public class BibdFinder5CyclicTest {
         int k = 5;
         int[][] auths = auth(group);
         Group table = group.asTable();
-        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        System.out.println(group.name() + " " + GroupIndex.identify(table) + " " + v + " " + k + " auths: " + auths.length);
         File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + ".txt");
         File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
