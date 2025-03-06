@@ -151,7 +151,7 @@ public class BibdFinder5CyclicTest {
             Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
             List<Liner> liners = new ArrayList<>();
             br.lines().forEach(l -> {
-                if (l.contains("{{")) {
+                if (l.contains("{{") || l.contains("[{") || l.contains("[[")) {
                     System.out.println(l);
                     String[] split = l.substring(2, l.length() - 2).split("}, \\{");
                     int[][] base = Arrays.stream(split).map(bl -> Arrays.stream(bl.split(", "))
