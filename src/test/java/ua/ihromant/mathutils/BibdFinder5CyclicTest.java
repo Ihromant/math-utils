@@ -164,7 +164,7 @@ public class BibdFinder5CyclicTest {
             int blocksNeeded = v * (v - 1) / k / (k - 1);
             System.out.println("Processing initial of size " + set.size());
             AtomicInteger ai = new AtomicInteger();
-            set.stream().parallel().forEach(lst -> {
+            new ArrayList<>(set).stream().parallel().forEach(lst -> {
                 State[] design = lst.stream().map(bl -> State.fromBlock(table, v, k, bl)).toArray(State[]::new);
                 FixBS filter = new FixBS(v);
                 int bn = blocksNeeded;
