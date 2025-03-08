@@ -180,7 +180,7 @@ public class BibdFinder5CyclicTest {
                     }
                     int[][] base = Arrays.stream(des).map(st -> st.block.toArray()).toArray(int[][]::new);
                     for (int[] auth : auths) {
-                        if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Group::compareArr).toArray(int[][]::new))) {
+                        if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
                             return true;
                         }
                     }
@@ -298,7 +298,7 @@ public class BibdFinder5CyclicTest {
             }
             int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
             for (int[] auth : auths) {
-                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Group::compareArr).toArray(int[][]::new))) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
                     return true;
                 }
             }
@@ -523,7 +523,7 @@ public class BibdFinder5CyclicTest {
     private static boolean bigger(int[][] fst, int[][] snd) {
         int cmp = 0;
         for (int i = 0; i < fst.length; i++) {
-            cmp = Group.compareArr(snd[i], fst[i]);
+            cmp = Combinatorics.compareArr(snd[i], fst[i]);
             if (cmp != 0) {
                 break;
             }

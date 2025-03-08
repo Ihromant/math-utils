@@ -306,7 +306,7 @@ public class BibdFinder6Test {
     }
 
     private static int[] multipliers(int v) {
-        return IntStream.range(1, v).filter(m -> Group.gcd(m, v) == 1).toArray();
+        return IntStream.range(1, v).filter(m -> Combinatorics.gcd(m, v) == 1).toArray();
     }
 
     private static int[] minimalTuple(int[] tuple, int multiplier, int v, int k) {

@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.group;
 
-import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
@@ -15,31 +15,19 @@ public class PermutationGroup implements Group {
     private final Map<Map<Integer, Integer>, Integer> lookup;
 
     public PermutationGroup(int cnt, boolean even) {
-        this(GaloisField.permutations(IntStream.range(0, cnt).toArray())
-                .filter(perm -> !even || parity(perm) % 2 == 0).toArray(int[][]::new));
+        this(Combinatorics.permutations(IntStream.range(0, cnt).toArray())
+                .filter(perm -> !even || Combinatorics.parity(perm) % 2 == 0).toArray(int[][]::new));
     }
 
     public PermutationGroup(int[][] permutations) {
         this.permutations = permutations;
-        Arrays.sort(permutations, Group::compareArr);
+        Arrays.sort(permutations, Combinatorics::compareArr);
         this.lookup = new HashMap<>();
         for (int i = 0; i < permutations.length; i++) {
             int[] perm = permutations[i];
             Map<Integer, Integer> map = toMap(perm);
             lookup.put(map, i);
         }
-    }
-
-    public static int parity(int[] arr) {
-        int cnt = 0;
-        for (int i = 0; i < arr.length; i++) {
-            for (int j = i + 1; j < arr.length; j++) {
-                if (arr[i] > arr[j]) {
-                    cnt++;
-                }
-            }
-        }
-        return cnt;
     }
 
     public PermutationGroup subset(FixBS set) {

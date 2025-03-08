@@ -627,7 +627,7 @@ public class BibdFinderTest {
         int cap = variants - variants / needed;
         int[] from = IntStream.concat(IntStream.of(0), IntStream.range(0, cap).filter(i -> !filter.get(i) && !filter.get(variants - i))).toArray();
         int nBits = variants / 2 + 1;
-        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(from.length, ch))
+        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> Combinatorics.nextChoice(from.length, ch))
                 .parallel().mapMulti((perm, sink) -> {
                     int[] choice = Arrays.stream(perm).map(idx -> from[idx]).toArray();
                     BitSet diff = new BitSet(nBits);
@@ -650,7 +650,7 @@ public class BibdFinderTest {
 
     private static Stream<Map.Entry<BitSet, BitSet>> calcCyclesAlt(Group g, int needed, BitSet filter, int expectedCard) {
         int variants = g.order();
-        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(variants, ch))
+        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> Combinatorics.nextChoice(variants, ch))
                 .parallel().mapMulti((choice, sink) -> {
                     BitSet diff = new BitSet(variants);
                     for (int i = 0; i < needed; i++) {
@@ -670,7 +670,7 @@ public class BibdFinderTest {
         int expectedCard = needed * (needed - 1) / 2;
         int cap = variants - variants / needed;
         int nBits = variants / 2 + 1;
-        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))
+        return Stream.iterate(IntStream.range(0, needed).toArray(), ch -> ch[0] == 0, ch -> Combinatorics.nextChoice(cap, ch))
                 .parallel().mapMulti((choice, sink) -> {
                     if (!isMinimal(choice, variants)) {
                         return;
@@ -778,8 +778,8 @@ public class BibdFinderTest {
         int cap = variants - variants / k;
         int cl = curr.length;
         int nBits = variants / 2 + 1;
-        return (needed == cl ? Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch)).parallel()
-                : Stream.iterate(start, ch -> ch[0] == 0, ch -> GaloisField.nextChoice(cap, ch))).mapMulti((perm, sink) -> {
+        return (needed == cl ? Stream.iterate(start, ch -> ch[0] == 0, ch -> Combinatorics.nextChoice(cap, ch)).parallel()
+                : Stream.iterate(start, ch -> ch[0] == 0, ch -> Combinatorics.nextChoice(cap, ch))).mapMulti((perm, sink) -> {
             BitSet diff = new BitSet(nBits);
             for (int i = 0; i < k; i++) {
                 for (int j = i + 1; j < k; j++) {
@@ -800,7 +800,7 @@ public class BibdFinderTest {
             BitSet nextPresent = (BitSet) present.clone();
             nextPresent.or(diff);
             //noinspection ConstantConditions
-            altAllDifferenceSets(existing, variants, GaloisField.nextChoice(cap, start),
+            altAllDifferenceSets(existing, variants, Combinatorics.nextChoice(cap, start),
                     needed - 1, nextCurr, nextPresent, added).forEach(sink);
         });
     }

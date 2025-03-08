@@ -281,7 +281,7 @@ public class BibdFinder5Test {
     }
 
     private static int[] multipliers(int v) {
-        return IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
+        return IntStream.range(2, v).filter(m -> Combinatorics.gcd(m, v) == 1).toArray();
     }
 
     private static void logResultsDepth(PrintStream destination, int v, int k, List<int[][]> unProcessed) {

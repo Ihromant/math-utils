@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.group;
 
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
@@ -31,7 +32,7 @@ public interface Group {
     }
 
     default int expOrder(int a) {
-        int eul = euler(order());
+        int eul = Combinatorics.euler(order());
         int res = a;
         for (int i = 1; i < eul + 1; i++) {
             res = mul(res, a);
@@ -45,16 +46,6 @@ public interface Group {
     String name();
 
     String elementName(int a);
-
-    static int compareArr(int[] fst, int[] snd) {
-        for (int i = 0; i < fst.length; i++) {
-            int cmp = fst[i] - snd[i];
-            if (cmp != 0) {
-                return cmp;
-            }
-        }
-        return 0;
-    }
 
     default int mul(int a, int cff) {
         int result = 0;
@@ -101,74 +92,6 @@ public interface Group {
             }
         }
         return new TableGroup(table);
-    }
-
-    static int[] factorize(int base) {
-        List<Integer> result = new ArrayList<>();
-        int from = 2;
-        while (base != 1) {
-            int factor = factor(from, base);
-            from = factor;
-            base = base / factor;
-            result.add(factor);
-        }
-        return result.stream().mapToInt(Integer::intValue).toArray();
-    }
-
-    private static int factor(int from, int base) {
-        int sqrt = (int) Math.ceil(Math.sqrt(base + 1));
-        for (int i = from; i <= sqrt; i++) {
-            if (base % i == 0) {
-                return i;
-            }
-        }
-        return base;
-    }
-
-    static long[] factorize(long base) {
-        List<Long> result = new ArrayList<>();
-        long from = 2;
-        while (base != 1) {
-            long factor = factor(from, base);
-            from = factor;
-            base = base / factor;
-            result.add(factor);
-        }
-        return result.stream().mapToLong(Long::longValue).toArray();
-    }
-
-    private static long factor(long from, long base) {
-        long sqrt = (long) Math.ceil(Math.sqrt(base + 1));
-        for (long i = from; i <= sqrt; i++) {
-            if (base % i == 0) {
-                return i;
-            }
-        }
-        return base;
-    }
-
-    static int gcd(int a, int b) {
-        if (b == 0) {
-            return a;
-        }
-        return gcd(b, a % b);
-    }
-
-    static int euler(int base) {
-        int[] factors = factorize(base);
-        if (factors.length == 0) {
-            return 0;
-        }
-        int result = 1;
-        int idx = 0;
-        while (idx < factors.length) {
-            int curr = factors[idx];
-            result = result * (curr - 1);
-            while (++idx < factors.length && factors[idx] == curr) {
-                result = result * curr;
-            }
-        }
-        return result;
     }
 
     default int conjugate(int fst, int snd) {
@@ -246,7 +169,7 @@ public interface Group {
     }
 
     default int[][] auth() {
-        Set<int[]> result = new TreeSet<>(Group::compareArr);
+        Set<int[]> result = new TreeSet<>(Combinatorics::compareArr);
         int order = order();
         FixBS init = FixBS.of(order, 0);
         int[] map = new int[order];

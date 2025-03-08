@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.g;
 
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -24,7 +25,7 @@ public class GCosets {
             set.add(coset);
         }
         this.cosets = set.stream().map(FixBS::toArray).toArray(int[][]::new);
-        Arrays.sort(cosets, Group::compareArr);
+        Arrays.sort(cosets, Combinatorics::compareArr);
         this.idx = new int[order];
         for (int i = 0; i < cosets.length; i++) {
             for (int el : cosets[i]) {

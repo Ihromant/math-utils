@@ -293,7 +293,7 @@ public class TaoPointTest {
                 }
                 int[] pts1 = l1.stream().toArray();
                 int[] pts2 = l2.stream().toArray();
-                GaloisField.permutations(pts1).forEach(prm1 -> GaloisField.permutations(pts2).forEach(prm2 -> {
+                Combinatorics.permutations(pts1).forEach(prm1 -> Combinatorics.permutations(pts2).forEach(prm2 -> {
                     if (TaoPoint.parallel(TaoPoint.line(prm1[0], prm2[1]), TaoPoint.line(prm1[2], prm2[1]))
                             && TaoPoint.parallel(TaoPoint.line(prm2[0], prm1[1]), TaoPoint.line(prm2[2], prm1[1]))
                             && !TaoPoint.parallel(TaoPoint.line(prm1[0], prm2[0]), TaoPoint.line(prm1[2], prm2[2]))) {

@@ -1,8 +1,6 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -146,47 +144,6 @@ public class GaloisFieldTest {
         GaloisField fd1 = new GaloisField(4);
         assertArrayEquals(new int[]{2, 3}, fd1.solve(new int[]{1, 1, 1}).toArray());
         assertArrayEquals(new int[]{1}, fd1.solve(new int[]{1, 0, 1}).toArray());
-    }
-
-    @Test
-    public void testPermutations() {
-        assertArrayEquals(new int[][]{{0, 2, 4}, {0, 4, 2}, {2, 0, 4}, {2, 4, 0}, {4, 0, 2}, {4, 2, 0}}, GaloisField.permutations(new int[]{0, 2, 4}).toArray(int[][]::new));
-        assertEquals(120, GaloisField.permutations(IntStream.range(0, 5).toArray()).count());
-        assertEquals(39916800, GaloisField.permutations(IntStream.range(0, 11).toArray()).count());
-    }
-
-    @Test
-    public void testChoices() {
-        assertArrayEquals(new int[][]{{0, 1}, {0, 2}, {0, 3}, {1, 2}, {1, 3}, {2, 3}}, GaloisField.choices(4, 2).toArray(int[][]::new));
-        assertEquals(35, GaloisField.choices(7, 4).count());
-        assertEquals(126, GaloisField.choices(9, 5).count());
-    }
-
-    @Test
-    public void printGood() {
-        for (int p = 1; p < 20; p++) {
-            int k = 6 * p + 1;
-            int v = 18 * p + 7;
-            if (v % 12 == 1) {
-                System.out.println(k + " " + v);
-            }
-        }
-        for (int p = 1; p < 20; p++) {
-            int k = 6 * p + 3;
-            int v = 18 * p + 13;
-            if (v % 12 == 1) {
-                System.out.println(k + " " + v);
-            }
-        }
-    }
-
-    @Test
-    public void testParity() {
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
-        System.out.println(GaloisField.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8}).collect(Collectors.groupingBy(PermutationGroup::parity, Collectors.counting())));
     }
 
     private static BitSet of(int... values) {
@@ -461,7 +418,7 @@ public class GaloisFieldTest {
                     continue;
                 }
                 long planes = af3 / af2;
-                long[] factors = Group.factorize(order);
+                long[] factors = Combinatorics.factorize(order);
                 if (Arrays.stream(factors).anyMatch(f -> f != factors[0]) && bruckRyser(order)) {
                     continue;
                 }
@@ -526,10 +483,10 @@ public class GaloisFieldTest {
 
     @Test
     public void testCombinations() {
-        assertEquals(1, GaloisField.combinations(3, 3));
-        assertEquals(5, GaloisField.combinations(5, 4));
-        assertEquals(20, GaloisField.combinations(6, 3));
-        assertEquals(35, GaloisField.combinations(7, 4));
+        assertEquals(1, Combinatorics.combinations(3, 3));
+        assertEquals(5, Combinatorics.combinations(5, 4));
+        assertEquals(20, Combinatorics.combinations(6, 3));
+        assertEquals(35, Combinatorics.combinations(7, 4));
     }
 
     @Test

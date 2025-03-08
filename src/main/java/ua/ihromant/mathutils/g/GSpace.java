@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.g;
 
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
@@ -122,7 +123,7 @@ public class GSpace {
         }
 
         if (genAuths) {
-            Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Group::compareArr));
+            Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Combinatorics::compareArr));
             PartialMap emMap = new PartialMap(empty, empty, new int[v]);
             IntStream.range(0, v).parallel().forEach(fst -> {
                 PartialMap init = emMap.copy();

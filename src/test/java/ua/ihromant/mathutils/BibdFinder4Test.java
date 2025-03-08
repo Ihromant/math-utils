@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -203,7 +202,7 @@ public class BibdFinder4Test {
     }
 
     private static int[] multipliers(int v) {
-        return IntStream.range(2, v).filter(m -> Group.gcd(m, v) == 1).toArray();
+        return IntStream.range(2, v).filter(m -> Combinatorics.gcd(m, v) == 1).toArray();
     }
 
     private static boolean less(int[] cand, int[] arr) {

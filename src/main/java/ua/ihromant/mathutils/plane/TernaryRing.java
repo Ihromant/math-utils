@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.plane;
 
-import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Liner;
 
 import java.util.ArrayList;
@@ -406,7 +406,7 @@ public interface TernaryRing {
         }
         int[][][] matrix = this.matrix();
         int[][][] tMatrix = that.matrix();
-        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        int[][] permutations = Combinatorics.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
         for (int[] perm : permutations) {
             int[][][] permMatrix = new int[order()][order()][order()];
             for (int i = 0; i < order(); i++) {
@@ -431,7 +431,7 @@ public interface TernaryRing {
         int[][] mulMatrix = this.mulMatrix();
         int[][] tAddMatrix = that.addMatrix();
         int[][] tMulMatrix = that.mulMatrix();
-        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        int[][] permutations = Combinatorics.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
         for (int[] perm : permutations) {
             int[][] permAddMatrix = new int[order()][order()];
             int[][] permMulMatrix = new int[order()][order()];
@@ -454,7 +454,7 @@ public interface TernaryRing {
         }
         int[][] pulsMatrix = this.pulsMatrix();
         int[][] tPulsMatrix = that.pulsMatrix();
-        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        int[][] permutations = Combinatorics.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
         for (int[] perm : permutations) {
             int[][] permPulsMatrix = new int[order()][order()];
             for (int i = 0; i < order(); i++) {
@@ -479,7 +479,7 @@ public interface TernaryRing {
         int[][] tMulMatrix = that.mulMatrix();
         int[][] pulsMatrix = this.pulsMatrix();
         int[][] tPulsMatrix = that.pulsMatrix();
-        int[][] permutations = GaloisField.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
+        int[][] permutations = Combinatorics.permutations(IntStream.range(0, order() - 2).toArray()).toArray(int[][]::new);
         for (int[] perm : permutations) {
             int[][] permAddMatrix = new int[order()][order()];
             int[][] permMulMatrix = new int[order()][order()];

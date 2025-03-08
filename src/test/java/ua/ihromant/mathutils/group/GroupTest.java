@@ -3,6 +3,7 @@ package ua.ihromant.mathutils.group;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.ApplicatorTest;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
@@ -87,17 +88,17 @@ public class GroupTest {
 
     @Test
     public void testEuler() {
-        assertEquals(576, Group.euler(2520));
+        assertEquals(576, Combinatorics.euler(2520));
     }
 
     @Test
     public void testFactorize() {
-        assertArrayEquals(new int[]{2, 2, 2, 3, 3, 5, 7}, Group.factorize(2520));
-        assertArrayEquals(new int[]{17, 19}, Group.factorize(17 * 19));
-        assertArrayEquals(new int[]{333667}, Group.factorize(333667));
-        assertArrayEquals(new int[]{3, 7, 11, 13, 37}, Group.factorize(111111));
-        assertArrayEquals(new int[]{23, 23}, Group.factorize(529));
-        assertArrayEquals(IntStream.range(0, 25).map(i -> 2).toArray(), Group.factorize(1 << 25));
+        assertArrayEquals(new int[]{2, 2, 2, 3, 3, 5, 7}, Combinatorics.factorize(2520));
+        assertArrayEquals(new int[]{17, 19}, Combinatorics.factorize(17 * 19));
+        assertArrayEquals(new int[]{333667}, Combinatorics.factorize(333667));
+        assertArrayEquals(new int[]{3, 7, 11, 13, 37}, Combinatorics.factorize(111111));
+        assertArrayEquals(new int[]{23, 23}, Combinatorics.factorize(529));
+        assertArrayEquals(IntStream.range(0, 25).map(i -> 2).toArray(), Combinatorics.factorize(1 << 25));
     }
 
     @Test

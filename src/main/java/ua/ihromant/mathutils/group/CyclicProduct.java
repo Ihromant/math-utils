@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.group;
 
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
@@ -84,7 +85,7 @@ public record CyclicProduct(int... base) implements Group {
 
     @Override
     public int[][] auth() {
-        int[][] factors = Arrays.stream(base).mapToObj(Group::factorize).toArray(int[][]::new);
+        int[][] factors = Arrays.stream(base).mapToObj(Combinatorics::factorize).toArray(int[][]::new);
         if (Arrays.stream(factors).anyMatch(arr -> arr.length == 0 || arr[0] != arr[arr.length - 1])) {
             throw new IllegalArgumentException("Only prime powers are allowed"); // TODO also require to be sorted
         }
@@ -108,7 +109,7 @@ public record CyclicProduct(int... base) implements Group {
         int order = order();
         int[][] result = new int[helpers.stream().mapToInt(h -> h.helper.gl().length).reduce(1, (a, b) -> a * b)][order];
         calculateAuth(result, helpers);
-        Arrays.parallelSort(result, Group::compareArr);
+        Arrays.parallelSort(result, Combinatorics::compareArr);
         return result;
     }
 

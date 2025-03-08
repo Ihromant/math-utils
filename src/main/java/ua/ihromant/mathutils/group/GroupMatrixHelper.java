@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.group;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Rational;
 import ua.ihromant.mathutils.vector.LinearSpace;
 import ua.ihromant.mathutils.vector.MatrixInverseFiniteField;
@@ -23,7 +24,7 @@ public class GroupMatrixHelper {
     public GroupMatrixHelper(int... sequence) {
         this.mod = sequence[0];
         this.n = sequence.length;
-        this.p = Group.factorize(mod)[0];
+        this.p = Combinatorics.factorize(mod)[0];
         for (int i = 1; i < n; i++) {
             if (sequence[i] % mod != 0) {
                 throw new IllegalArgumentException("Not multipliers");

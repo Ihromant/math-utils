@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Inc;
 import ua.ihromant.mathutils.InversivePlane;
 import ua.ihromant.mathutils.util.FixBS;
@@ -103,7 +103,7 @@ public class InversivesFinderTest {
     public void printAdmissible() {
         int t = 3;
         int k = 7;
-        System.out.println(IntStream.range(0, 200).filter(v -> GaloisField.admissible(t, v, k)).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+        System.out.println(IntStream.range(0, 200).filter(v -> Combinatorics.admissible(t, v, k)).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
     }
 
     private static DumpConfig readLast(String prefix, int v, int k, Supplier<DumpConfig> fallback) {

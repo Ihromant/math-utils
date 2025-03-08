@@ -1,12 +1,9 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.mathutils.group.Group;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -23,7 +20,7 @@ public class GaloisField {
 
     public GaloisField(int base) {
         this.cardinality = base;
-        int[] factors = Group.factorize(base);
+        int[] factors = Combinatorics.factorize(base);
         if (!Arrays.stream(factors).allMatch(f -> f == factors[0])) {
             throw new IllegalArgumentException(base + " contains different factors: " + Arrays.toString(factors));
         }
@@ -418,50 +415,6 @@ public class GaloisField {
         return lines;
     }
 
-    public static Stream<int[]> permutations(int[] base) {
-        int cnt = base.length;
-        if (cnt < 2) {
-            return Stream.of(base);
-        }
-        return Stream.iterate(base, Objects::nonNull, GaloisField::nextPermutation);
-    }
-
-    public static int[] nextPermutation(int[] prev) {
-        int[] next = prev.clone();
-        int last = next.length - 2;
-        while (last >= 0) {
-            if (next[last] < next[last + 1]) {
-                break;
-            }
-            last--;
-        }
-        if (last < 0) {
-            return null;
-        }
-
-        int nextGreater = next.length - 1;
-        for (int i = next.length - 1; i > last; i--) {
-            if (next[i] > next[last]) {
-                nextGreater = i;
-                break;
-            }
-        }
-
-        int temp = next[nextGreater];
-        next[nextGreater] = next[last];
-        next[last] = temp;
-
-        int left = last + 1;
-        int right = next.length - 1;
-        while (left < right) {
-            int temp1 = next[left];
-            next[left++] = next[right];
-            next[right--] = temp1;
-        }
-
-        return next;
-    }
-
     public int determinant(int[][] matrix) {
         int n = matrix.length;
         int det = 1;
@@ -518,58 +471,5 @@ public class GaloisField {
             }
         }
         return result;
-    }
-
-    public static Stream<int[]> choices(int n, int k) {
-        return Stream.iterate(IntStream.range(0, k).toArray(), Objects::nonNull, prev -> nextChoice(n, prev));
-    }
-
-    public static int[] nextChoice(int cap, int[] prev) {
-        int[] next = prev.clone();
-        int last = next.length - 1;
-        int max = cap;
-        while (last >= 0) {
-            if (max - next[last] != 1) {
-                break;
-            }
-            max = next[last];
-            last--;
-        }
-        if (last < 0) {
-            return null;
-        }
-
-        max = next[last];
-        int cnt = next.length - last;
-        for (int i = 0; i < cnt; i++) {
-            next[last + i] = max + i + 1;
-        }
-
-        return next;
-    }
-
-    public static long combinations(int n, int k) {
-        if (n < 2 * k) {
-            return combinations(n, n - k);
-        }
-        if (k == 0) {
-            return 1;
-        }
-        long result = 1;
-        for (int i = 1; i <= k; i++) {
-            result = result * (n - i + 1) / i;
-        }
-        return result;
-    }
-
-    public static boolean admissible(int t, int v, int k) {
-        for (int s = 0; s < t; s++) {
-            long left = combinations(v - s, t - s);
-            long right = combinations(k - s, t - s);
-            if (left % right != 0) {
-                return false;
-            }
-        }
-        return true;
     }
 }
