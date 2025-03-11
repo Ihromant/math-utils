@@ -90,6 +90,10 @@ public class IntList {
         return arr[idx];
     }
 
+    public int getLast() {
+        return arr[size - 1];
+    }
+
     public boolean isEmpty() {
         return size == 0;
     }

@@ -61,7 +61,7 @@ public class CombinatoricsTest {
             lucas[i] = lucas[i - 1] + lucas[i - 2];
         }
         System.out.println(Arrays.toString(lucas));
-        int[] evenLucas = IntStream.range(0, n / 2).map(i -> lucas[2 * i] + 1).toArray();
+        int[] evenLucas = IntStream.range(0, n / 2).map(i -> lucas[2 * i + 1]).toArray();
         boolean[] accessed = new boolean[10_000_000];
         IntStream.range(0, (int) Math.pow(3, n / 2)).parallel().forEach(i -> {
             int[] toTriple = new int[n / 2];
