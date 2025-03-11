@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -48,5 +49,45 @@ public class CombinatoricsTest {
         System.out.println(Combinatorics.permutations(new int[]{0, 1, 2, 3, 4, 5}).collect(Collectors.groupingBy(Combinatorics::parity, Collectors.counting())));
         System.out.println(Combinatorics.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7}).collect(Collectors.groupingBy(Combinatorics::parity, Collectors.counting())));
         System.out.println(Combinatorics.permutations(new int[]{0, 1, 2, 3, 4, 5, 6, 7, 8}).collect(Collectors.groupingBy(Combinatorics::parity, Collectors.counting())));
+    }
+
+    @Test
+    public void testLucas() {
+        int n = 38;
+        int[] lucas = new int[n];
+        lucas[0] = 2;
+        lucas[1] = 1;
+        for (int i = 2; i < n; i++) {
+            lucas[i] = lucas[i - 1] + lucas[i - 2];
+        }
+        System.out.println(Arrays.toString(lucas));
+        int[] evenLucas = IntStream.range(0, n / 2).map(i -> lucas[2 * i] + 1).toArray();
+        boolean[] accessed = new boolean[10_000_000];
+        IntStream.range(0, (int) Math.pow(3, n / 2)).parallel().forEach(i -> {
+            int[] toTriple = new int[n / 2];
+            int b = i;
+            for (int j = 0; j < n / 2; j++) {
+                toTriple[j] = b % 3;
+                b = b / 3;
+            }
+            int sum = 0;
+            for (int j = 0; j < n / 2; j++) {
+                int d = switch (toTriple[j]) {
+                    case 0 -> 0;
+                    case 1 -> evenLucas[j];
+                    case 2 -> -evenLucas[j];
+                    default -> throw new IllegalStateException();
+                };
+                sum = sum + d;
+            }
+            if (sum >= 0 && sum < accessed.length) {
+                accessed[sum] = true;
+            }
+        });
+        for (int i = 0; i < accessed.length; i++) {
+            if (!accessed[i]) {
+                System.out.println(i);
+            }
+        }
     }
 }

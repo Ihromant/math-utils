@@ -193,4 +193,8 @@ public class Combinatorics {
         }
         return result;
     }
+
+    public static int[] multipliers(int v) {
+        return IntStream.range(1, v).filter(m -> gcd(m, v) == 1).toArray();
+    }
 }
