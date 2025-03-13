@@ -22,8 +22,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
@@ -149,14 +151,14 @@ public class BibdFinder5CyclicTest {
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
             Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
-            List<Liner> liners = new ArrayList<>();
+            Map<List<FixBS>, Liner> liners = new ConcurrentHashMap<>();
             br.lines().forEach(l -> {
                 if (l.contains("{{") || l.contains("[{") || l.contains("[[")) {
                     System.out.println(l);
                     String[] split = l.substring(2, l.length() - 2).split("}, \\{");
                     int[][] base = Arrays.stream(split).map(bl -> Arrays.stream(bl.split(", "))
                             .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
-                    liners.add(new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
+                    liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
                 } else {
                     set.remove(readPartial(l, v));
                 }
@@ -190,7 +192,7 @@ public class BibdFinder5CyclicTest {
                     if (ps != System.out) {
                         System.out.println(l.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
                     }
-                    liners.add(l);
+                    liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l);
                     return true;
                 });
                 ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" ")));
