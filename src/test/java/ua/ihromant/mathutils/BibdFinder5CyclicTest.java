@@ -152,15 +152,16 @@ public class BibdFinder5CyclicTest {
              BufferedReader br = new BufferedReader(isr)) {
             Set<List<FixBS>> set = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
             Map<List<FixBS>, Liner> liners = new ConcurrentHashMap<>();
-            br.lines().forEach(l -> {
-                if (l.contains("{{") || l.contains("[{") || l.contains("[[")) {
-                    System.out.println(l);
-                    String[] split = l.substring(2, l.length() - 2).split("}, \\{");
+            br.lines().forEach(str -> {
+                if (str.contains("{{") || str.contains("[{") || str.contains("[[")) {
+                    String[] split = str.substring(2, str.length() - 2).split("}, \\{");
                     int[][] base = Arrays.stream(split).map(bl -> Arrays.stream(bl.split(", "))
                             .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
-                    liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new)));
+                    Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new));
+                    liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l);
+                    System.out.println(l.hyperbolicFreq() + " " + str);
                 } else {
-                    set.remove(readPartial(l, v));
+                    set.remove(readPartial(str, v));
                 }
             });
             int blocksNeeded = v * (v - 1) / k / (k - 1);
