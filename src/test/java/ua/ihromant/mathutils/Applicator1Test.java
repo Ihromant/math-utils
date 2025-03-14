@@ -94,16 +94,18 @@ public class Applicator1Test {
 
     @Test
     public void generate() {
-        int v = 53;
+        int v = 48;
         int k = 6;
         int[][] suitable = getSuitable(v, k).stream().map(IntList::toArray).toArray(int[][]::new);
         int idx = 0;
         int[] freq = new int[k + 1];
-        for (int val : suitable[idx]) {
+        int[] chunks = suitable[idx];
+        for (int val : chunks) {
             if (val > 1) {
                 freq[val]++;
             }
         }
+        int total = Arrays.stream(freq).sum();
         int[] multipliers = Combinatorics.multipliers(v);
         IntList newBlock = new IntList(k);
         newBlock.add(0);
@@ -112,7 +114,7 @@ public class Applicator1Test {
         whiteList.flip(1, v);
         Map<List<FixBS>, Liner> liners = new ConcurrentHashMap<>();
         searchDesigns(new State[0], freq, new State(newBlock, filter, whiteList).acceptElem(1, v), v, k, des -> {
-            if (des[des.length - 1].filter.cardinality() != v - 1) {
+            if (des.length < total) {
                 return false;
             }
             FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
