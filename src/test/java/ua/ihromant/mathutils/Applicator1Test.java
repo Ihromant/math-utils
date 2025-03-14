@@ -6,16 +6,19 @@ import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class Applicator1Test {
@@ -93,13 +96,24 @@ public class Applicator1Test {
     }
 
     @Test
-    public void generate() {
+    public void generate() throws IOException {
         int v = 48;
         int k = 6;
         int[][] suitable = getSuitable(v, k).stream().map(IntList::toArray).toArray(int[][]::new);
-        int idx = 0;
+        for (int[] chunks : suitable) {
+            File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + "-"
+                    + Arrays.stream(chunks).mapToObj(Integer::toString).collect(Collectors.joining("-")) + ".txt");
+            try (FileOutputStream fos = new FileOutputStream(f);
+                 BufferedOutputStream bos = new BufferedOutputStream(fos);
+                 PrintStream ps = new PrintStream(bos)) {
+                generateChunks(ps, chunks, v, k);
+            }
+        }
+    }
+
+    private void generateChunks(PrintStream ps, int[] chunks, int v, int k) {
+        System.out.println("Generate for " + v + " " + k + " " + Arrays.toString(chunks));
         int[] freq = new int[k + 1];
-        int[] chunks = suitable[idx];
         for (int val : chunks) {
             if (val > 1) {
                 freq[val]++;
@@ -127,7 +141,6 @@ public class Applicator1Test {
             return true;
         });
         System.out.println("Triples size: " + triples.size());
-        Map<List<FixBS>, Liner> liners = new ConcurrentHashMap<>();
         triples.stream().parallel().forEach(des -> {
             int[] rem = freq.clone();
             for (State st : des) {
@@ -148,10 +161,7 @@ public class Applicator1Test {
                         return true;
                     }
                 }
-                Liner l = new Liner(v, Arrays.stream(finDes).flatMap(bl -> blocks(bl.block.toArray(), v)).toArray(int[][]::new));
-                if (liners.putIfAbsent(Arrays.stream(base).toList(), l) == null) {
-                    System.out.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
-                }
+                ps.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
                 return true;
             });
         });
