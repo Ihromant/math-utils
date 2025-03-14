@@ -112,22 +112,48 @@ public class Applicator1Test {
         FixBS filter = baseFilter(v, k);
         FixBS whiteList = filter.copy();
         whiteList.flip(1, v);
-        Map<List<FixBS>, Liner> liners = new ConcurrentHashMap<>();
+        List<State[]> triples = new ArrayList<>();
         searchDesigns(new State[0], freq, new State(newBlock, filter, whiteList).acceptElem(1, v), v, k, des -> {
-            if (des.length < total) {
-                return false;
-            }
             FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
             for (int mul : multipliers) {
                 if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
                     return true;
                 }
             }
-            Liner l = new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl.block.toArray(), v)).toArray(int[][]::new));
-            if (liners.putIfAbsent(Arrays.stream(base).toList(), l) == null) {
-                System.out.println(Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+            if (des.length < 3) {
+                return false;
             }
+            triples.add(des);
             return true;
+        });
+        System.out.println("Triples size: " + triples.size());
+        Map<List<FixBS>, Liner> liners = new ConcurrentHashMap<>();
+        triples.stream().parallel().forEach(des -> {
+            int[] rem = freq.clone();
+            for (State st : des) {
+                rem[st.block.size()]--;
+            }
+            FixBS ftr = des[des.length - 1].filter;
+            FixBS whL = ftr.copy();
+            whL.flip(1, v);
+            IntList nwb = new IntList(k);
+            nwb.add(0);
+            searchDesigns(des, rem, new State(nwb, ftr, whL).acceptElem(whL.nextSetBit(0), v), v, k, finDes -> {
+                if (finDes.length < total) {
+                    return false;
+                }
+                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+                for (int mul : multipliers) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+                        return true;
+                    }
+                }
+                Liner l = new Liner(v, Arrays.stream(finDes).flatMap(bl -> blocks(bl.block.toArray(), v)).toArray(int[][]::new));
+                if (liners.putIfAbsent(Arrays.stream(base).toList(), l) == null) {
+                    System.out.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
+                }
+                return true;
+            });
         });
     }
 
