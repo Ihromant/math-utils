@@ -94,7 +94,7 @@ public class Applicator1Test {
 
     @Test
     public void generate() {
-        int v = 48;
+        int v = 53;
         int k = 6;
         int[][] suitable = getSuitable(v, k).stream().map(IntList::toArray).toArray(int[][]::new);
         int idx = 0;
@@ -123,7 +123,7 @@ public class Applicator1Test {
             }
             Liner l = new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl.block.toArray(), v)).toArray(int[][]::new));
             if (liners.putIfAbsent(Arrays.stream(base).toList(), l) == null) {
-                System.out.println(l.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+                System.out.println(Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
             }
             return true;
         });
@@ -159,17 +159,9 @@ public class Applicator1Test {
 
     private static FixBS baseFilter(int v, int k) {
         FixBS filter = new FixBS(v);
-        int rest = v % (k * (k - 1));
-        if (rest == k) {
+        if (v % k == 0) {
             for (int i = 1; i < v; i++) {
                 if (i * k % v == 0) {
-                    filter.set(i);
-                }
-            }
-        }
-        if (rest == (k - 1)) {
-            for (int i = 1; i < v; i++) {
-                if (i * (k - 1) % v == 0) {
                     filter.set(i);
                 }
             }
