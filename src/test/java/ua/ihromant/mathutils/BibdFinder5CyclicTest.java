@@ -158,8 +158,9 @@ public class BibdFinder5CyclicTest {
                     int[][] base = Arrays.stream(split).map(bl -> Arrays.stream(bl.split(", "))
                             .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
                     Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new));
-                    liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l);
-                    System.out.println(l.hyperbolicFreq() + " " + str);
+                    if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
+                        System.out.println(l.hyperbolicFreq() + " " + str);
+                    }
                 } else {
                     set.remove(readPartial(str, v));
                 }
@@ -188,12 +189,13 @@ public class BibdFinder5CyclicTest {
                         }
                     }
                     Liner l = new Liner(v, Arrays.stream(des).flatMap(bl -> blocks(bl.block.toArray(), v, group)).toArray(int[][]::new));
-                    ps.println(Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
-                    ps.flush();
-                    if (ps != System.out) {
-                        System.out.println(l.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+                    if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
+                        ps.println(Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+                        ps.flush();
+                        if (ps != System.out) {
+                            System.out.println(l.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(des).map(State::block).toArray()));
+                        }
                     }
-                    liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l);
                     return true;
                 });
                 ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" ")));
