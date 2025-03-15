@@ -1,15 +1,15 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.GroupIndex;
-import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -19,6 +19,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Applicator1Test {
@@ -162,6 +163,7 @@ public class Applicator1Test {
                     }
                 }
                 ps.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
+                ps.flush();
                 return true;
             });
         });
@@ -260,11 +262,96 @@ public class Applicator1Test {
         return result;
     }
 
+    private record Pair(FixBS left, FixBS right) {
+        private FixBS filter(int v) {
+            FixBS res = new FixBS(v);
+            for (int i = left.nextSetBit(0); i >= 0; i = left.nextSetBit(i + 1)) {
+                for (int j = right.nextSetBit(0); j >= 0; j = right.nextSetBit(j + 1)) {
+                    int diff = j - i;
+                    res.set(diff < 0 ? v + diff : diff);
+                }
+            }
+            return res;
+        }
+
+        @Override
+        public String toString() {
+            return "[" + left + ", " + right + "]";
+        }
+    }
+
     @Test
-    public void test() throws IOException {
-        Liner pr = new Liner(new GaloisField(5).generatePlane());
-        Liner pl = new AffinePlane(pr, 0).toLiner();
-        Group g = pl.automorphisms();
-        System.out.println(GroupIndex.identify(g));
+    public void match() throws IOException {
+        int v = 48;
+        int k = 6;
+        List<IntList> res = getSuitable(v, k);
+        int idx = 0;
+        int[] base = res.get(idx).toArray();
+        int[] opposite = Arrays.stream(base).map(i -> k - i).sorted().toArray();
+        List<List<FixBS>> lefts = readAndEnhance(v, k, base);
+        List<List<FixBS>> rights = readAndEnhance(v, k, opposite);
+        System.out.println(v + " " + k + " " + Arrays.toString(base) + " " + lefts.size() + " " + Arrays.toString(opposite) + " " + rights.size());
+        for (List<FixBS> left : lefts) {
+            for (List<FixBS> right : rights) {
+                FixBS fst = left.getFirst();
+                int lCard = fst.cardinality();
+                IntStream.range(0, right.size()).forEach(i -> {
+                    FixBS snd = right.get(i);
+                    if (snd.cardinality() != k - lCard) {
+                        return;
+                    }
+                    List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
+                    Pair p = new Pair(fst, snd);
+                    tryMatch(left.subList(1, left.size()), rightCp, List.of(new Pair(fst, snd)), p.filter(v), v, k);
+                });
+            }
+        }
+    }
+
+    private static void tryMatch(List<FixBS> left, List<FixBS> right, List<Pair> pairs, FixBS filter, int v, int k) {
+        if (left.isEmpty()) {
+            System.out.println(pairs);
+            return;
+        }
+        FixBS fst = left.getFirst();
+        int lCard = fst.cardinality();
+        IntStream.range(0, right.size()).forEach(i -> {
+            FixBS snd = right.get(i);
+            if (snd.cardinality() != k - lCard) {
+                return;
+            }
+            for (int sh = filter.nextClearBit(0); sh >= 0 && sh < v; sh = filter.nextClearBit(sh + 1)) {
+                FixBS sndSh = new FixBS(v);
+                for (int el = snd.nextSetBit(0); el >= 0; el = snd.nextSetBit(el + 1)) {
+                    sndSh.set((el + sh) % v);
+                }
+                Pair pair = new Pair(fst, sndSh);
+                FixBS ftr = pair.filter(v);
+                if (ftr.intersects(filter)) {
+                    continue;
+                }
+                List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
+                List<Pair> next = Stream.concat(pairs.stream(), Stream.of(pair)).toList();
+                tryMatch(left.subList(1, left.size()), rightCp, next, filter.union(ftr), v, k);
+            }
+        });
+    }
+
+    private static List<List<FixBS>> readAndEnhance(int v, int k, int[] chunks) throws IOException {
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + "-"
+                + Arrays.stream(chunks).mapToObj(Integer::toString).collect(Collectors.joining("-")) + ".txt");
+        int ones = Arrays.stream(chunks).filter(i -> i == 1).sum();
+        try (FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            List<List<FixBS>> result = new ArrayList<>();
+            br.lines().forEach(l -> {
+                String[] spl = l.substring(2, l.length() - 2).split("], \\[");
+                result.add(Stream.concat(
+                        Arrays.stream(spl).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())),
+                        IntStream.range(0, ones).mapToObj(i -> FixBS.of(v, 0))).toList());
+            });
+            return result;
+        }
     }
 }
