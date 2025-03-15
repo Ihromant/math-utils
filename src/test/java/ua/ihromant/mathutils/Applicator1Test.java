@@ -268,7 +268,11 @@ public class Applicator1Test {
             for (int i = left.nextSetBit(0); i >= 0; i = left.nextSetBit(i + 1)) {
                 for (int j = right.nextSetBit(0); j >= 0; j = right.nextSetBit(j + 1)) {
                     int diff = j - i;
-                    res.set(diff < 0 ? v + diff : diff);
+                    int val = diff < 0 ? v + diff : diff;
+                    if (res.get(val)) {
+                        return null;
+                    }
+                    res.set(val);
                 }
             }
             return res;
@@ -290,20 +294,34 @@ public class Applicator1Test {
         int[] opposite = Arrays.stream(base).map(i -> k - i).sorted().toArray();
         List<List<FixBS>> lefts = readAndEnhance(v, k, base);
         List<List<FixBS>> rights = readAndEnhance(v, k, opposite);
+        int[] multipliers = Combinatorics.multipliers(v);
         System.out.println(v + " " + k + " " + Arrays.toString(base) + " " + lefts.size() + " " + Arrays.toString(opposite) + " " + rights.size());
         for (List<FixBS> left : lefts) {
-            for (List<FixBS> right : rights) {
-                FixBS fst = left.getFirst();
-                int lCard = fst.cardinality();
-                IntStream.range(0, right.size()).forEach(i -> {
-                    FixBS snd = right.get(i);
-                    if (snd.cardinality() != k - lCard) {
-                        return;
-                    }
-                    List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
-                    Pair p = new Pair(fst, snd);
-                    tryMatch(left.subList(1, left.size()), rightCp, List.of(new Pair(fst, snd)), p.filter(v), v, k);
-                });
+            for (int mul : multipliers) {
+                for (List<FixBS> bRight : rights) {
+                    List<FixBS> right = bRight.stream().map(bl -> {
+                        FixBS r = new FixBS(v);
+                        for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
+                            r.set((el * mul) % v);
+                        }
+                        return r;
+                    }).toList();
+                    FixBS fst = left.getFirst();
+                    int lCard = fst.cardinality();
+                    IntStream.range(0, right.size()).forEach(i -> {
+                        FixBS snd = right.get(i);
+                        if (snd.cardinality() != k - lCard) {
+                            return;
+                        }
+                        List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
+                        Pair p = new Pair(fst, snd);
+                        FixBS filter = p.filter(v);
+                        if (filter == null) {
+                            return;
+                        }
+                        tryMatch(left.subList(1, left.size()), rightCp, List.of(new Pair(fst, snd)), filter, v, k);
+                    });
+                }
             }
         }
     }
@@ -327,7 +345,7 @@ public class Applicator1Test {
                 }
                 Pair pair = new Pair(fst, sndSh);
                 FixBS ftr = pair.filter(v);
-                if (ftr.intersects(filter)) {
+                if (ftr == null || ftr.intersects(filter)) {
                     continue;
                 }
                 List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
