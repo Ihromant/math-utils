@@ -1,8 +1,17 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.SequencedMap;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -87,6 +96,167 @@ public class CombinatoricsTest {
         for (int i = 0; i < accessed.length; i++) {
             if (!accessed[i]) {
                 System.out.println(i);
+            }
+        }
+    }
+
+    private static final int cnt = 128;
+
+    @Test
+    public void test127() {
+        PlaneSet[][] planes = new PlaneSet[cnt][cnt];
+        for (int i = 1; i < cnt; i++) {
+            for (int j = i + 1; j < cnt; j++) {
+                planes[i][j] = getPlanes(i, j);
+            }
+        }
+        int[] possible = new int[cnt * cnt];
+        for (int i = 1; i < cnt; i++) {
+            for (int j = i + 1; j < cnt; j++) {
+                possible[i * cnt + j] = Integer.MAX_VALUE;
+            }
+        }
+        Planes ps = new Planes(planes, possible);
+        FixBS fst = new FixBS(cnt);
+        fst.set(1, 8);
+        LinkedHashMap<FixBS, Boolean> queue = new LinkedHashMap<>();
+        queue.put(fst, true);
+        ps.update(queue);
+        search(ps, ps.nextFrom(128));
+    }
+
+    private static PlaneSet getPlanes(int i, int j) {
+        int sum = i ^ j;
+        Set<FixBS> planes = new HashSet<>();
+        List<FixBS> lst = new ArrayList<>();
+        Map<FixBS, Integer> rev = new HashMap<>();
+        for (int k = 1; k < cnt; k++) {
+            if (k == i || k == j || k == sum) {
+                continue;
+            }
+            FixBS plane = new FixBS(cnt);
+            plane.set(i);
+            plane.set(j);
+            plane.set(sum);
+            plane.set(k);
+            plane.set(i ^ k);
+            plane.set(j ^ k);
+            plane.set(sum ^ k);
+            if (planes.add(plane)) {
+                rev.put(plane, lst.size());
+                lst.add(plane);
+            }
+        }
+        return new PlaneSet(lst.toArray(FixBS[]::new), rev);
+    }
+
+    private static final int WORD_MASK = 0xffffffff;
+
+    private record PlaneSet(FixBS[] map, Map<FixBS, Integer> rev) {}
+
+    private static boolean empty(int mask, int idx) {
+        return (mask & (1 << idx)) == 0;
+    }
+
+    private static int clear(int mask, int idx) {
+        return mask & ~(1 << idx);
+    }
+
+    private static int nextSetBit(int mask, int from) {
+        mask = mask & (WORD_MASK << from);
+        return mask != 0 ? Integer.numberOfTrailingZeros(mask) : -1;
+    }
+
+    private record Planes(PlaneSet[][] planes, int[] possible) {
+        private Planes copy() {
+            return new Planes(planes, possible.clone());
+        }
+
+        private void update(SequencedMap<FixBS, Boolean> queue) {
+            while (!queue.isEmpty()) {
+                Map.Entry<FixBS, Boolean> e = queue.pollFirstEntry();
+                if (e.getValue()) {
+                    setPlane(e.getKey(), queue);
+                } else {
+                    removePlane(e.getKey(), queue);
+                }
+            }
+        }
+
+        private void removePlane(FixBS plane, SequencedMap<FixBS, Boolean> queue) {
+            for (int i = plane.nextSetBit(0); i >= 0; i = plane.nextSetBit(i + 1)) {
+                for (int j = plane.nextSetBit(i + 1); j >= 0; j = plane.nextSetBit(j + 1)) {
+                    int planeIdx = planes[i][j].rev.get(plane);
+                    int idx = i * cnt + j;
+                    int available = possible[idx];
+                    if (empty(available, planeIdx)) {
+                        continue;
+                    }
+                    int newAvailable = clear(available, planeIdx);
+                    possible[idx] = newAvailable;
+                    int bitCount = Integer.bitCount(newAvailable);
+                    if (bitCount == 0) {
+                        throw new IllegalStateException();
+                    }
+                    if (bitCount == 1) {
+                        queue.putLast(planes[i][j].map[nextSetBit(newAvailable, 0)], true);
+                    }
+                }
+            }
+        }
+
+        private void setPlane(FixBS plane, SequencedMap<FixBS, Boolean> queue) {
+            for (int i = plane.nextSetBit(0); i >= 0; i = plane.nextSetBit(i + 1)) {
+                for (int j = plane.nextSetBit(i + 1); j >= 0; j = plane.nextSetBit(j + 1)) {
+                    int planeIdx = planes[i][j].rev.get(plane);
+                    int idx = i * cnt + j;
+                    int available = possible[idx];
+                    if (empty(available, planeIdx)) {
+                        throw new IllegalStateException();
+                    }
+                    possible[idx] = 1 << planeIdx;
+                    int toClear = clear(available, planeIdx);
+                    for (int k = nextSetBit(toClear, 0); k >= 0; k = nextSetBit(toClear, k + 1)) {
+                        queue.putLast(planes[i][j].map[k], false);
+                    }
+                }
+            }
+        }
+
+        private int nextFrom(int prev) {
+            for (int next = prev + 1; next < cnt * cnt; next++) {
+                int i = next / cnt;
+                int j = next % cnt;
+                if (i >= j) {
+                    continue;
+                }
+                int bCnt = Integer.bitCount(possible[next]);
+                if (bCnt > 1) {
+                    return next;
+                }
+            }
+            return -1;
+        }
+    }
+
+    private static void search(Planes planes, int next) {
+        if (next < 0) {
+            System.out.println(Arrays.toString(planes.possible));
+            return;
+        }
+        int possible = planes.possible[next];
+        int i = next / cnt;
+        int j = next % cnt;
+        FixBS[] map = planes.planes[i][j].map;
+        for (int k = nextSetBit(possible, 0); k >= 0; k = nextSetBit(possible, k + 1)) {
+            try {
+                LinkedHashMap<FixBS, Boolean> queue = new LinkedHashMap<>();
+                queue.put(map[k], true);
+                Planes copy = planes.copy();
+                copy.update(queue);
+                search(copy, copy.nextFrom(next));
+            } catch (IllegalStateException e) {
+                // ok
             }
         }
     }
