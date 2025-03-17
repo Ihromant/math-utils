@@ -129,12 +129,12 @@ public class Applicator1Test {
         whiteList.flip(1, v);
         List<State[]> triples = new ArrayList<>();
         searchDesigns(new State[0], freq, new State(newBlock, filter, whiteList).acceptElem(1, v), v, k, des -> {
-            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
-            for (int mul : multipliers) {
-                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
-                    return true;
-                }
-            }
+//            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+//            for (int mul : multipliers) {
+//                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+//                    return true;
+//                }
+//            }
             if (des.length < 3) {
                 return false;
             }
@@ -156,12 +156,12 @@ public class Applicator1Test {
                 if (finDes.length < total) {
                     return false;
                 }
-                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
-                for (int mul : multipliers) {
-                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
-                        return true;
-                    }
-                }
+//                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+//                for (int mul : multipliers) {
+//                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+//                        return true;
+//                    }
+//                }
                 ps.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
                 ps.flush();
                 return true;
@@ -297,15 +297,15 @@ public class Applicator1Test {
         int[] multipliers = Combinatorics.multipliers(v);
         System.out.println(v + " " + k + " " + Arrays.toString(base) + " " + lefts.size() + " " + Arrays.toString(opposite) + " " + rights.size());
         for (List<FixBS> left : lefts) {
-            for (int mul : multipliers) {
-                for (List<FixBS> bRight : rights) {
-                    List<FixBS> right = bRight.stream().map(bl -> {
-                        FixBS r = new FixBS(v);
-                        for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
-                            r.set((el * mul) % v);
-                        }
-                        return r;
-                    }).toList();
+            //for (int mul : multipliers) {
+                for (List<FixBS> right : rights) {
+//                    List<FixBS> right = bRight.stream().map(bl -> {
+//                        FixBS r = new FixBS(v);
+//                        for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
+//                            r.set((el * mul) % v);
+//                        }
+//                        return r;
+//                    }).toList();
                     FixBS fst = left.getFirst();
                     int lCard = fst.cardinality();
                     IntStream.range(0, right.size()).forEach(i -> {
@@ -321,7 +321,7 @@ public class Applicator1Test {
                         }
                         tryMatch(left.subList(1, left.size()), rightCp, List.of(new Pair(fst, snd)), filter, v, k);
                     });
-                }
+               // }
             }
         }
     }
@@ -338,7 +338,7 @@ public class Applicator1Test {
             if (snd.cardinality() != k - lCard) {
                 return;
             }
-            for (int sh = filter.nextClearBit(0); sh >= 0 && sh < v; sh = filter.nextClearBit(sh + 1)) {
+            for (int sh = 0; sh < v; sh++) {
                 FixBS sndSh = new FixBS(v);
                 for (int el = snd.nextSetBit(0); el >= 0; el = snd.nextSetBit(el + 1)) {
                     sndSh.set((el + sh) % v);
