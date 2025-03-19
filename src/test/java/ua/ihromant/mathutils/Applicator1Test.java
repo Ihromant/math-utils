@@ -372,4 +372,30 @@ public class Applicator1Test {
             return result;
         }
     }
+
+    private static Pair[] example = new Pair[]{new Pair(FixBS.of(48, 0, 1, 14, 18), FixBS.of(48, 0, 6)),
+            new Pair(FixBS.of(48, 0, 2, 21, 28), FixBS.of(48, 15, 45)),
+            new Pair(FixBS.of(48, 0, 3, 39), FixBS.of(48, 14, 28, 41)),
+            new Pair(FixBS.of(48, 0, 5, 11), FixBS.of(48, 9, 31, 32)),
+            new Pair(FixBS.of(48, 0, 10, 33), FixBS.of(48, 1, 18, 29)),
+            new Pair(FixBS.of(48, 0), FixBS.of(48, 3, 7, 10, 12, 22)),
+            new Pair(FixBS.of(48, 0, 8, 16, 24, 32, 40), new FixBS(48)),
+            new Pair(new FixBS(48), FixBS.of(48, 0, 8, 16, 24, 32, 40))};
+
+    @Test
+    public void testExample() {
+        int[][] lines = Arrays.stream(example).flatMap(pr -> {
+            return IntStream.range(0, 48).mapToObj(sh -> {
+                FixBS base = new FixBS(96);
+                for (int i = pr.left.nextSetBit(0); i >= 0; i = pr.left.nextSetBit(i + 1)) {
+                    base.set((i + sh) % 48);
+                }
+                for (int i = pr.right.nextSetBit(0); i >= 0; i = pr.right.nextSetBit(i + 1)) {
+                    base.set(((i + sh) % 48) + 48);
+                }
+                return base;
+            }).distinct().map(FixBS::toArray);
+        }).toArray(int[][]::new);
+        System.out.println(new Liner(96, lines).hyperbolicFreq());
+    }
 }
