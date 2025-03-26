@@ -252,8 +252,8 @@ public class BibdFinder5CyclicTest {
     @Test
     public void logBlocks() throws IOException {
         for (int i = 1; i < 16; i++) {
-            int fixed = 0;
-            Group group = GroupIndex.group(81, i);
+            int fixed = 1;
+            Group group = GroupIndex.group(84, i);
             int v = group.order() + fixed;
             int k = 5;
             generate(group, v, k);
@@ -485,44 +485,23 @@ public class BibdFinder5CyclicTest {
     }
 
     private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
-        int k = tuple.length;
-        int[] arr = new int[k];
-        int minDiff = Integer.MAX_VALUE;
-        int ord = gr.order();
-        boolean infty = tuple[k - 1] == ord;
-        int top = infty ? k - 1 : k;
-        for (int j = 1; j < top; j++) {
-            int el = tuple[j];
-            int mapped = auth[el];
-            arr[j] = mapped;
-            if (mapped < minDiff) {
-                minDiff = mapped;
+        int v = gr.order() + 1;
+        FixBS base = new FixBS(v);
+        for (int val : tuple) {
+            base.set(auth[val]);
+        }
+        FixBS min = base;
+        for (int val = base.nextSetBit(0); val >= 0 && val < gr.order(); val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(v);
+            int inv = gr.inv(val);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                cnd.set(oVal == gr.order() ? oVal : gr.op(inv, oVal));
+            }
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
             }
         }
-        int[] min = arr;
-        if (infty) {
-            arr[top] = ord;
-        }
-        for (int j = 1; j < top; j++) {
-            int inv = gr.inv(arr[j]);
-            int[] cnd = new int[k];
-            if (infty) {
-                cnd[top] = ord;
-            }
-            for (int i = 0; i < top; i++) {
-                if (i == j) {
-                    continue;
-                }
-                int diff = gr.op(inv, arr[i]);
-                cnd[i] = diff;
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    min = cnd;
-                }
-            }
-        }
-        Arrays.sort(min);
-        return min;
+        return min.toArray();
     }
 
     private static boolean bigger(int[][] fst, int[][] snd) {

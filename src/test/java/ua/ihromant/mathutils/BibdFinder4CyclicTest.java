@@ -195,47 +195,6 @@ public class BibdFinder4CyclicTest {
         return 0;
     }
 
-    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
-        int k = tuple.length;
-        int[] arr = new int[k];
-        int minDiff = Integer.MAX_VALUE;
-        int ord = gr.order();
-        boolean infty = tuple[k - 1] == ord;
-        int top = infty ? k - 1 : k;
-        for (int j = 1; j < top; j++) {
-            int el = tuple[j];
-            int mapped = auth[el];
-            arr[j] = mapped;
-            if (mapped < minDiff) {
-                minDiff = mapped;
-            }
-        }
-        int[] min = arr;
-        if (infty) {
-            arr[top] = ord;
-        }
-        for (int j = 1; j < top; j++) {
-            int inv = gr.inv(arr[j]);
-            int[] cnd = new int[k];
-            if (infty) {
-                cnd[top] = ord;
-            }
-            for (int i = 0; i < top; i++) {
-                if (i == j) {
-                    continue;
-                }
-                int diff = gr.op(inv, arr[i]);
-                cnd[i] = diff;
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    min = cnd;
-                }
-            }
-        }
-        Arrays.sort(min);
-        return min;
-    }
-
     private static void calcCycles(List<SubGroup> subGroups, SubGroup currSub, int[][] design, int v, int k, State state, Consumer<int[][]> sink) {
         int idx = state.idx;
         if (idx == k) {

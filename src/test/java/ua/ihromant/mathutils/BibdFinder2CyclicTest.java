@@ -90,7 +90,7 @@ public class BibdFinder2CyclicTest {
                 if (idx >= blockIdx) {
                     return new int[k];
                 }
-                return minimalTuple(baseDesign[idx], aut, group, k);
+                return minimalTuple(baseDesign[idx], aut, group);
             }).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
@@ -105,7 +105,7 @@ public class BibdFinder2CyclicTest {
                 int[] last = nextCurr.design[blockIdx];
                 nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
-                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group, k), blockIdx);
+                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group), blockIdx);
                     if (nextCurr.bigger(nextTransformation)) {
                         return null;
                     }
@@ -237,34 +237,24 @@ public class BibdFinder2CyclicTest {
         return arrays[min];
     }
 
-    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr, int k) {
-        int[] arr = new int[k];
-        int minDiff = Integer.MAX_VALUE;
-        for (int j = 1; j < k; j++) {
-            int mapped = auth[tuple[j]];
-            arr[j] = mapped;
-            if (mapped < minDiff) {
-                minDiff = mapped;
+    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
+        int v = gr.order() + 1;
+        FixBS base = FixBS.of(v);
+        for (int val : tuple) {
+            base.set(auth[val]);
+        }
+        FixBS min = base;
+        for (int val = base.nextSetBit(0); val >= 0; val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(v);
+            int inv = gr.inv(val);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                cnd.set(gr.op(inv, oVal));
+            }
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
             }
         }
-        int[] min = arr;
-        for (int j = 1; j < k; j++) {
-            int inv = gr.inv(arr[j]);
-            int[] cnd = new int[k];
-            for (int i = 0; i < k; i++) {
-                if (i == j) {
-                    continue;
-                }
-                int diff = gr.op(arr[i], inv);
-                cnd[i] = diff;
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    min = cnd;
-                }
-            }
-        }
-        Arrays.sort(min);
-        return min;
+        return min.toArray();
     }
 
     private static void calcCycles(Group group, int[][] auth, int v, int k, State state, Consumer<State> sink) {
@@ -430,7 +420,7 @@ public class BibdFinder2CyclicTest {
                 int[][] des = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
                 int cnt = 0;
                 for (int[] auth : auths) {
-                    int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, auth, gr, k)).toArray(int[][]::new);
+                    int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, auth, gr)).toArray(int[][]::new);
                     Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
                     if (bigger(des, mapped, des.length - 1)) {
                         return;

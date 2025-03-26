@@ -207,26 +207,20 @@ public class BibdFinder1CyclicTest {
     }
 
     private static int[] minimalTuple(int[] arr, Group gr) {
-        int[] min = arr;
-        int len = min.length;
-        int minDiff = arr[1];
-        for (int j = 1; j < len; j++) {
-            int inv = gr.inv(arr[j]);
-            int[] cnd = new int[len];
-            for (int i = 0; i < len; i++) {
-                if (i == j) {
-                    continue;
-                }
-                int diff = gr.op(arr[i], inv);
-                cnd[i] = diff;
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    min = cnd;
-                }
+        int v = gr.order() + 1;
+        FixBS base = FixBS.of(v, arr);
+        FixBS min = base;
+        for (int val = base.nextSetBit(0); val >= 0; val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(v);
+            int inv = gr.inv(val);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                cnd.set(gr.op(inv, oVal));
+            }
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
             }
         }
-        Arrays.sort(min);
-        return min;
+        return min.toArray();
     }
 
     private static void calcCycles(Group group, int[][] auth, int v, int k, State state, Consumer<State> sink) {

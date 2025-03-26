@@ -88,7 +88,7 @@ public class BibdFinder5Test {
                 if (idx >= blockIdx) {
                     return new int[k];
                 }
-                return minimalTuple(baseDesign[idx], m, v, k);
+                return minimalTuple(baseDesign[idx], m, v);
             }).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
             State state = new State(curr, filter, whiteList, transformations);
             return state.acceptElem(multipliers, whiteList.nextSetBit(0), v, k, st -> {});
@@ -103,7 +103,7 @@ public class BibdFinder5Test {
                 int[] last = nextCurr.design[blockIdx];
                 nextTransformations = new int[transformations.length][][];
                 for (int i = 0; i < transformations.length; i++) {
-                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, multipliers[i], v, k), blockIdx);
+                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, multipliers[i], v), blockIdx);
                     if (nextCurr.bigger(nextTransformation)) {
                         return null;
                     }
@@ -180,35 +180,23 @@ public class BibdFinder5Test {
         return 0;
     }
 
-    private static int[] minimalTuple(int[] tuple, int multiplier, int v, int k) {
-        int[] arr = new int[k];
-        int minDiff = Integer.MAX_VALUE;
-        for (int j = 1; j < k; j++) {
-            int mapped = (multiplier * tuple[j]) % v;
-            arr[j] = mapped;
-            if (mapped < minDiff) {
-                minDiff = mapped;
+    private static int[] minimalTuple(int[] tuple, int multiplier, int v) {
+        FixBS base = new FixBS(v);
+        for (int val : tuple) {
+            base.set((val * multiplier) % v);
+        }
+        FixBS min = base;
+        for (int val = base.nextSetBit(0); val >= 0; val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(v);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                int diff = oVal - val;
+                cnd.set(diff < 0 ? v + diff : diff);
+            }
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
             }
         }
-        int[] min = arr;
-        for (int j = 1; j < k; j++) {
-            int el = arr[j];
-            int[] cnd = new int[k];
-            for (int i = 0; i < k; i++) {
-                if (i == j) {
-                    continue;
-                }
-                int iEl = arr[i];
-                int diff = el < iEl ? iEl - el : v + iEl - el;
-                cnd[i] = diff;
-                if (diff < minDiff) {
-                    minDiff = diff;
-                    min = cnd;
-                }
-            }
-        }
-        Arrays.sort(min);
-        return min;
+        return min.toArray();
     }
 
     private static void calcCycles(int[] multipliers, int v, int k, State state, Consumer<State> sink) {
