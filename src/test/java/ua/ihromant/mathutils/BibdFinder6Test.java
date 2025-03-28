@@ -22,6 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class BibdFinder6Test {
     private record State(int[] block, FixBS filter, FixBS whiteList) {
@@ -290,6 +291,9 @@ public class BibdFinder6Test {
         int v = gr.order();
         int k = 6;
         int[] multipliers = multipliers(v);
+        int rest = v % (k * (k - 1));
+        boolean slanted = rest > 1;
+        boolean fixed = rest == k - 1;
         File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
         File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
         try (FileInputStream fis = new FileInputStream(unrefined);
@@ -337,7 +341,11 @@ public class BibdFinder6Test {
                     if (!unique.add(Arrays.stream(minimal).map(arr -> FixBS.of(v, arr)).toList())) {
                         return;
                     }
-                    System.out.println(cnt + " " + Arrays.deepToString(minimal));
+                    int[][] base = Stream.concat(Arrays.stream(minimal), slanted ? Stream.of(
+                            IntStream.concat(IntStream.range(0, fixed ? (k - 1) : k)
+                                            .map(idx -> idx * gr.order() / (fixed ? (k - 1) : k)),
+                            fixed ? IntStream.of(gr.order()) : IntStream.empty()).toArray()) : Stream.empty()).toArray(int[][]::new);
+                    System.out.println(cnt + " " + Liner.byDiffFamily(fixed ? gr.order() + 1 : gr.order(), base).hyperbolicFreq() + " " + Arrays.deepToString(minimal));
                     ps.println(Arrays.deepToString(minimal));
                 });
             });

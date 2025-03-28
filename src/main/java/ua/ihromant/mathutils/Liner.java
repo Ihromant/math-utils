@@ -116,18 +116,22 @@ public class Liner {
     }
 
     public static Liner byDiffFamily(int pointCount, int[]... base) {
-        int k = base[0].length; // assuming that difference set is correct
-        int[][] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
-                .flatMap(arr -> IntStream.range(0, pointCount).mapToObj(idx -> {
+        int[] lastBlock = base[base.length - 1];
+        int k = lastBlock.length; // assuming that difference family is correct
+        boolean slanted = pointCount % k == 0;
+        int groupCard = slanted && lastBlock[k - 1] == pointCount - 1 ? pointCount - 1 : pointCount;
+        boolean hasFixed = groupCard != pointCount;
+        int[][] lines = Stream.concat(Arrays.stream(base, 0, slanted ? base.length - 1 : base.length)
+                .flatMap(arr -> IntStream.range(0, groupCard).mapToObj(idx -> {
                     BitSet res = new BitSet();
                     for (int shift : arr) {
-                        res.set((idx + shift) % pointCount);
+                        res.set((idx + shift) % groupCard);
                     }
                     return res;
-                })), pointCount % k == 0 ? IntStream.range(0, pointCount / k).mapToObj(idx -> {
+                })), slanted ? IntStream.range(0, hasFixed ? groupCard / (k - 1) : groupCard / k).mapToObj(idx -> {
             BitSet res = new BitSet();
-            for (int shift : base[base.length - 1]) {
-                res.set((idx + shift) % pointCount);
+            for (int shift : lastBlock) {
+                res.set(shift == groupCard ? shift : (idx + shift) % groupCard);
             }
             return res;
         }) : Stream.of()).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
