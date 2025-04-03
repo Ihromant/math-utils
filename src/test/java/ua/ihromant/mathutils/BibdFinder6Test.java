@@ -88,8 +88,8 @@ public class BibdFinder6Test {
         int[] currBlock = design[blockIdx];
         int lastVal = currBlock[idx - 1];
         boolean first = idx == 2;
-        boolean last = idx + 1 == k;
         int midCnt = k - idx - 1;
+        boolean last = midCnt == 0;
         int from = 0;
         int minMidSpace = 0;
         while (--midCnt >= 0) {
