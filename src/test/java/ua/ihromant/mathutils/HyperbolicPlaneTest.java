@@ -859,23 +859,19 @@ public class HyperbolicPlaneTest {
     public void generateArc() {
         int q = 16;
         int n = 8;
+        Liner arc = dennistonArc(q, n);
+        System.out.println(arc.isRegular());
+        System.out.println(arc.hyperbolicIndex());
+    }
+
+    public static Liner dennistonArc(int q, int n) {
         int k = (q + 1) * (n - 1) + 1;
         GaloisField fd = new GaloisField(q);
         Liner pl = new Liner(fd.generatePlane());
         BitSet pts = generatePts(fd, q, n, k);
-//        System.out.println(pts);
-//        List<BitSet> lines = new ArrayList<>();
-//        for (int l : pl.lines()) {
-//            BitSet line = of(pl.line(l).stream().filter(p -> pts.get(p)).toArray());
-//            if (line.cardinality() > 1) {
-//                lines.add(line);
-//            }
-//        }
-//        System.out.println(lines);
         Liner arc = pl.subPlane(pts.stream().toArray());
         assertEquals(k, arc.pointCount());
-        System.out.println(arc.isRegular());
-        System.out.println(arc.hyperbolicIndex());
+        return arc;
     }
 
     private static BitSet generatePts(GaloisField fd, int q, int n, int k) {

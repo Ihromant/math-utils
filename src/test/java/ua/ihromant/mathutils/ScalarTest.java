@@ -1,10 +1,12 @@
 package ua.ihromant.mathutils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.group.SimpleLinear;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.NumeratedAffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
@@ -535,5 +537,22 @@ public class ScalarTest {
             }
             System.out.println("Group " + GroupIndex.identify(table) + " elems " + pts.components() + " infty " + Arrays.toString(proj.line(dl)));
         }
+    }
+
+    @Test
+    public void testArc() throws IOException {
+        int[][] auths = new ObjectMapper().readValue(getClass().getResourceAsStream("/denniston.txt"), int[][].class);
+        Liner arc = HyperbolicPlaneTest.dennistonArc(16, 8);
+        int pc = arc.pointCount();
+        QuickFind qf = new QuickFind(pc * pc);
+        for (int[] auth : auths) {
+            for (int p1 = 0; p1 < pc; p1++) {
+                for (int p2 = 0; p2 < pc; p2++) {
+                    qf.union(p1 * pc + p2, auth[p1] * pc + auth[p2]);
+                }
+            }
+        }
+        Arrays.stream(arc.lines()).sorted(Combinatorics::compareArr).forEach(l -> System.out.println(Arrays.toString(l)));
+        qf.components().forEach(l -> System.out.println(l.stream().mapToObj(p -> "(" + p / pc + "," + p % pc + ")").collect(Collectors.joining(", ", "[", "]"))));
     }
 }
