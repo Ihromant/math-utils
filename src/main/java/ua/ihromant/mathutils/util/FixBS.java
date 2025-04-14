@@ -417,6 +417,41 @@ public class FixBS implements Comparable<FixBS> {
         }
     }
 
+    public void orModuleShifted(FixBS that, int v, int cut) {
+        if (cut == 0) {
+            or(that);
+            return;
+        }
+        int vm = (cut & 63) > 0 ? cut & 63 : 64;
+        int nm = (v & 63) > 0 ? v & 63 : 64;
+        int k = words.length;
+        int i = k - 1;
+        int j = ((cut - 1) >>> 6);
+        int need = nm;
+        int have = j != k - 1 ? vm : Math.min(vm, nm);
+        long x = 0;
+        for (int a = 0; a < 2; a++) {
+            while (i >= 0 && j >= 0) {
+                int take = Math.min(need, have);
+                x = (x << take) | (that.words[j] << (64 - have) >>> (64 - take));
+                need -= take;
+                have -= take;
+                if (need == 0) {
+                    words[i] |= x;
+                    x = 0;
+                    need = 64;
+                    --i;
+                }
+                if (have == 0) {
+                    have = 64;
+                    --j;
+                }
+            }
+            j = k - 1;
+            have = nm;
+        }
+    }
+
     public static Stream<FixBS> choices(int n, int k) {
         FixBS base = new FixBS(n);
         base.set(0, k);
