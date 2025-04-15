@@ -555,5 +555,39 @@ public class ScalarTest {
         Arrays.stream(arc.lines()).sorted(Combinatorics::compareArr).forEach(l -> System.out.println(Arrays.toString(l)));
         List<FixBS> components = qf.components();
         components.forEach(l -> System.out.println(l.stream().mapToObj(p -> "(" + p / pc + "," + p % pc + ")").collect(Collectors.joining(", ", "[", "]"))));
+        int x1 = 0;
+        int y1 = 2;
+        int z1 = 8;
+        int x1y1 = idx(x1 * pc + y1, components);
+        int x1z1 = idx(x1 * pc + z1, components);
+        int y1z1 = idx(y1 * pc + z1, components);
+        for (int x = 0; x < pc; x++) {
+            for (int y = x + 1; y < pc; y++) {
+                if (idx(x * pc + y, components) != x1y1) {
+                    continue;
+                }
+                for (int z = y + 1; z < pc; z++) {
+                    if (arc.flag(arc.line(x, y), z)) {
+                        continue;
+                    }
+                    if (idx(x * pc + z, components) != x1z1 || idx(y * pc + z, components) != y1z1) {
+                        continue;
+                    }
+                    int cnt = 0;
+                    for (int[] auth : auths) {
+                        if (auth[x] == x1 && auth[y] == y1 && auth[z] == z1) {
+                            cnt++;
+                        }
+                    }
+                    if (cnt != 1) {
+                        System.out.println(cnt + " " + x + " " + y + " " + z);
+                    }
+                }
+            }
+        }
+    }
+
+    private int idx(int xy, List<FixBS> components) {
+        return IntStream.range(0, components.size()).filter(i -> components.get(i).get(xy)).findAny().orElseThrow();
     }
 }
