@@ -382,6 +382,24 @@ public class FixBS implements Comparable<FixBS> {
         set(b, tmp);
     }
 
+    // this |= other << shift
+    public void or_shifted(FixBS other, int shift) {
+        int di = shift / BITS_PER_WORD;
+        int offset = shift & 63;
+
+        if (offset == 0) {
+            for (int i = words.length - 1; i >= di; --i) {
+                words[i] |= other.words[i - di];
+            }
+        } else {
+            int rShift = BITS_PER_WORD - offset;
+            for (int i = words.length - 1; i > di; --i) {
+                words[i] |= (other.words[i - di] << offset) | (other.words[i - di - 1] >>> rShift);
+            }
+            words[di] |= other.words[0] << offset;
+        }
+    }
+
     public void diffModuleShifted(FixBS that, int v, int cut) {
         if (cut == 0) {
             andNot(that);

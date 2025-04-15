@@ -553,6 +553,7 @@ public class ScalarTest {
             }
         }
         Arrays.stream(arc.lines()).sorted(Combinatorics::compareArr).forEach(l -> System.out.println(Arrays.toString(l)));
-        qf.components().forEach(l -> System.out.println(l.stream().mapToObj(p -> "(" + p / pc + "," + p % pc + ")").collect(Collectors.joining(", ", "[", "]"))));
+        List<FixBS> components = qf.components();
+        components.forEach(l -> System.out.println(l.stream().mapToObj(p -> "(" + p / pc + "," + p % pc + ")").collect(Collectors.joining(", ", "[", "]"))));
     }
 }

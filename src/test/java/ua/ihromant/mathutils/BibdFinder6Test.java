@@ -63,7 +63,7 @@ public class BibdFinder6Test {
                     newBlackList.set((nv + outDiff) % v);
                 }
             }
-            newBlackList.orModuleShifted(newFilter, v, invEl);
+            newBlackList.or_shifted(newFilter, el);
             return new State(block, newFilter, newBlackList);
         }
 
