@@ -6,7 +6,6 @@ import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
-import ua.ihromant.mathutils.group.SimpleLinear;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.NumeratedAffinePlane;
 import ua.ihromant.mathutils.util.FixBS;

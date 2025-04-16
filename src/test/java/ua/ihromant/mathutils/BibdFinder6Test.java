@@ -19,7 +19,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -81,7 +80,7 @@ public class BibdFinder6Test {
         }
     }
 
-    private static void calcCycles(int v, int k, int[][] design, State state, int idx, int blockIdx, Consumer<int[][]> sink) {
+    private static void calcCycles(int v, int k, int[][] design, State state, int idx, int blockIdx, Tst sink) {
         FixBS blackList = state.blackList();
         int[] currBlock = design[blockIdx];
         int lastVal = currBlock[idx - 1];
@@ -97,16 +96,14 @@ public class BibdFinder6Test {
         int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
         for (int el = blackList.nextClearBit(lastVal); el >= 0 && el < max; el = blackList.nextClearBit(el + 1)) {
             if (last) {
-                boolean lastBlock = blockIdx + 1 == design.length;
                 currBlock[idx] = el;
-                if (lastBlock) {
-                    sink.accept(Arrays.stream(design).map(int[]::clone).toArray(int[][]::new));
-                } else {
-                    FixBS newFilter = state.acceptLast(el, v, idx);
-                    State next = new State(design[blockIdx + 1], newFilter, newFilter)
-                            .acceptElem(newFilter.nextClearBit(1), v, 1);
-                    calcCycles(v, k, design, next, 2, blockIdx + 1, sink);
+                if (sink.test(design, blockIdx)) {
+                    continue;
                 }
+                FixBS newFilter = state.acceptLast(el, v, idx);
+                State next = new State(design[blockIdx + 1], newFilter, newFilter)
+                        .acceptElem(newFilter.nextClearBit(1), v, 1);
+                calcCycles(v, k, design, next, 2, blockIdx + 1, sink);
             } else {
                 State next = state.acceptElem(el, v, idx);
                 calcCycles(v, k, design, next, idx + 1, blockIdx, sink);
@@ -183,6 +180,11 @@ public class BibdFinder6Test {
         return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
 
+    @FunctionalInterface
+    private interface Tst {
+        boolean test(int[][] design, int blockIdx);
+    }
+
     private static void logResultsDepth(PrintStream destination, int v, int k, List<int[][]> unProcessed) {
         System.out.println(v + " " + k);
         System.out.println("Initial size " + unProcessed.size());
@@ -190,13 +192,17 @@ public class BibdFinder6Test {
         FixBS baseFilter = baseFilter(v, k);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
-        Consumer<int[][]> designConsumer = design -> {
+        Tst designConsumer = (design, blockIdx) -> {
+            if (blockIdx + 1 != blocksNeeded) {
+                return false;
+            }
             counter.incrementAndGet();
             destination.println(Arrays.deepToString(design));
             destination.flush();
             if (destination != System.out) {
                 System.out.println(Arrays.deepToString(design));
             }
+            return true;
         };
         AtomicInteger cnt = new AtomicInteger();
         unProcessed.stream().parallel().forEach(init -> {
@@ -232,9 +238,12 @@ public class BibdFinder6Test {
         int blocksNeeded = v / k / (k - 1);
         int[][] base = new int[blocksNeeded][k];
         State initial = State.forDesign(v, filter, base, k, 0);
-        calcCycles(v, k, base, initial, 2, 0, design -> {
+        calcCycles(v, k, base, initial, 2, 0, (design, blockIdx) -> {
+            if (blockIdx + 1 != blocksNeeded) {
+                return false;
+            }
             System.out.println(Arrays.deepToString(design));
-            System.out.flush();
+            return true;
         });
     }
 
