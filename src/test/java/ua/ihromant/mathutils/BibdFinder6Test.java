@@ -111,6 +111,29 @@ public class BibdFinder6Test {
         }
     }
 
+    private static void calcFirstCycles(int v, int k, State state, int idx, Tst sink) {
+        FixBS blackList = state.blackList();
+        int[] currBlock = state.block;
+        int lastVal = currBlock[idx - 1];
+        boolean first = idx == 2;
+        int midCnt = k - idx - 1;
+        int from = 0;
+        int minMidSpace = 0;
+        while (--midCnt >= 0) {
+            from = state.filter.nextClearBit(from + 1);
+            minMidSpace = minMidSpace + from;
+        }
+        int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
+        for (int el = blackList.nextClearBit(lastVal); el >= 0 && el < max; el = blackList.nextClearBit(el + 1)) {
+            State next = state.acceptElem(el, v, idx);
+            int nIdx = idx + 1;
+            if (sink.test(new int[][]{currBlock}, nIdx)) {
+                continue;
+            }
+            calcFirstCycles(v, k, next, nIdx, sink);
+        }
+    }
+
     private static FixBS baseFilter(int v, int k) {
         FixBS filter = new FixBS(v);
         int rest = v % (k * (k - 1));
@@ -182,7 +205,7 @@ public class BibdFinder6Test {
 
     @FunctionalInterface
     private interface Tst {
-        boolean test(int[][] design, int blockIdx);
+        boolean test(int[][] design, int idx);
     }
 
     private static void logResultsDepth(PrintStream destination, int v, int k, List<int[][]> unProcessed) {
@@ -247,8 +270,49 @@ public class BibdFinder6Test {
         });
     }
 
+    @Test
+    public void logFirstCycles() {
+        int v = 91;
+        int k = 6;
+        logFirstCycles(v, k, System.out);
+    }
+
+    @Test
+    public void firstCyclesToFile() throws IOException {
+        Group group = new CyclicGroup(225);
+        int k = 8;
+        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logFirstCycles(group.order(), k, ps);
+        }
+    }
+
+    private static void logFirstCycles(int v, int k, PrintStream ps) {
+        System.out.println(v + " " + k);
+        FixBS filter = baseFilter(v, k);
+        int blocksNeeded = v / k / (k - 1);
+        int[] mul = Combinatorics.multipliers(v);
+        State initial = State.forDesign(v, filter, new int[blocksNeeded][k], k, 0);
+        calcFirstCycles(v, k, initial, 2, (design, idx) -> {
+            int[] block = design[0];
+            for (int m : mul) {
+                int[] min = minimalTuple(block, m, v, idx);
+                if (compare(min, block) < 0) {
+                    return true;
+                }
+            }
+            if (idx != k) {
+                return false;
+            }
+            ps.println(Arrays.toString(block));
+            return true;
+        });
+    }
+
     private static int compare(int[] fst, int[] snd) {
-        for (int i = 1; i < fst.length; i++) {
+        for (int i = 0; i < fst.length; i++) {
             int dff = fst[i] - snd[i];
             if (dff != 0) {
                 return dff;
@@ -271,10 +335,10 @@ public class BibdFinder6Test {
         return IntStream.range(1, v).filter(m -> Combinatorics.gcd(m, v) == 1).toArray();
     }
 
-    private static int[] minimalTuple(int[] tuple, int multiplier, int v) {
+    private static int[] minimalTuple(int[] tuple, int multiplier, int v, int len) {
         FixBS base = new FixBS(v);
-        for (int val : tuple) {
-            base.set((val * multiplier) % v);
+        for (int i = 0; i < len; i++) {
+            base.set((tuple[i] * multiplier) % v);
         }
         FixBS min = base;
         for (int val = base.nextSetBit(0); val >= 0; val = base.nextSetBit(val + 1)) {
@@ -332,7 +396,7 @@ public class BibdFinder6Test {
                     int cnt = 0;
                     int[][] minimal = des;
                     for (int m : multipliers) {
-                        int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, v)).toArray(int[][]::new);
+                        int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, v, k)).toArray(int[][]::new);
                         Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
                         int cmp = compare(mapped, minimal);
                         if (cmp < 0) {
