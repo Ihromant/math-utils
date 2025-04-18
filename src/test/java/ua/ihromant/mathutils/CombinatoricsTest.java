@@ -260,4 +260,18 @@ public class CombinatoricsTest {
             }
         }
     }
+
+    @Test
+    public void testAdmissibleArcs() {
+        for (int q = 3; q < 65; q++) {
+            int[] vals = new int[q];
+            for (int n = 3; n < q; n++) {
+                int v = n * q - q + n;
+                if ((v - 1) % (n - 1) == 0 && (v * v - v) % (n * n - n) == 0) {
+                    vals[n] = v;
+                }
+            }
+            System.out.println(q + " " + IntStream.range(0, vals.length).filter(i -> vals[i] != 0).mapToObj(i -> i + ":" + vals[i]).collect(Collectors.joining(" ")));
+        }
+    }
 }
