@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -278,6 +279,12 @@ public class BibdFinder2CyclicTest {
                     filter.set(i);
                 }
             }
+            if (filter.cardinality() != k - 1) {
+                SubGroup sg = gr.subGroups().stream().filter(g -> g.order() == k).findFirst().orElseThrow();
+                filter.clear();
+                filter.or(sg.elems());
+                filter.clear(0);
+            }
         }
         if (rest == (k - 1)) {
             for (int i = 1; i < v; i++) {
@@ -285,6 +292,12 @@ public class BibdFinder2CyclicTest {
                 if (ord != 1 && (k - 1) % ord == 0) {
                     filter.set(i);
                 }
+            }
+            if (filter.cardinality() != k - 2) {
+                SubGroup sg = gr.subGroups().stream().filter(g -> g.order() == k - 1).findFirst().orElseThrow();
+                filter.clear();
+                filter.or(sg.elems());
+                filter.clear(0);
             }
         }
         return filter;
