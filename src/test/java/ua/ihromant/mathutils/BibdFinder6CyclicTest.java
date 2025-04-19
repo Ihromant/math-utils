@@ -15,25 +15,20 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
-import java.util.function.Predicate;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 
 public class BibdFinder6CyclicTest {
     @Test
     public void dumpInitial() throws IOException {
-        Group group = new SemiDirectProduct(new CyclicGroup(117), new CyclicGroup(3));
+        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         int v = group.order();
         int k = 6;
         File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-ntr.txt");
@@ -61,8 +56,8 @@ public class BibdFinder6CyclicTest {
     }
 
     @Test
-    public void testBeginnings() throws IOException {
-        Group group = new SemiDirectProduct(new CyclicGroup(77), new CyclicGroup(3));
+    public void dumpBeginnings() throws IOException {
+        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
         int v = group.order();
         int k = 6;
         List<State> states = new ArrayList<>();
@@ -70,51 +65,54 @@ public class BibdFinder6CyclicTest {
             FixBS block = FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray());
             states.add(State.fromBlock(group, v, k, block));
         });
-        List<List<State>> bases = new ArrayList<>();
-        Predicate<List<State>> pred = lst -> {
-            if (lst.size() < 2) {
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-stab.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
+                if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                    ps.println(lst.stream().map(st -> st.block.toString()).collect(Collectors.joining(" ")));
+                }
                 return false;
-            }
-            bases.add(lst);
-            return true;
-        };
-        find(states, -1, new FixBS(v), new ArrayList<>(), pred);
-        FixBS zero = FixBS.of(v, 0);
-        System.out.println("Initial size " + bases.size());
-        List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger ai = new AtomicInteger();
-        BiPredicate<State[], Integer> fCons = (arr, blockNeeded) -> {
-            if (blockNeeded != 0) {
-                return false;
-            }
-            int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
-            int[][] ars = Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new);
-            Liner l = new Liner(v, ars);
-            liners.add(l);
-            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(", ", "{", "}")));
-            return true;
-        };
-        bases.stream().parallel().forEach(lst -> {
-            State[] des = lst.toArray(State[]::new);
-            FixBS filter = new FixBS(v);
-            int bn = v * (v - 1) / k / (k - 1);
-            for (State st : des) {
-                filter.or(st.filter);
-                bn = bn - group.order() / st.stabilizer.cardinality();
-            }
-            int from = filter.nextClearBit(1);
-            State init = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, from, v, k));
-            searchDesigns(group.asTable(), filter, des, init, v, k, from, bn, fCons);
-            int cnt = ai.incrementAndGet();
-            if (cnt % 100 == 0) {
-                System.out.println(cnt);
-            }
-        });
-        System.out.println("Results: " + liners.size());
+            };
+            find(states, -1, new FixBS(v), new ArrayList<>(), pred);
+        }
     }
 
-    private static void find(List<State> states, int prev, FixBS globalFilter, List<State> curr, Predicate<List<State>> pred) {
-        if (pred.test(curr)) {
+    @Test
+    public void generate() throws IOException {
+        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        Group table = group.asTable();
+        int v = group.order();
+        int k = 6;
+        List<List<State>> states = Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-stab.txt"))
+                .map(l -> Arrays.stream(l.substring(1, l.length() - 1).split("} \\{"))
+                        .map(ln -> State.fromBlock(group, v, k, FixBS.of(v,
+                                Arrays.stream(ln.split(", ")).mapToInt(Integer::parseInt).toArray()))).toList())
+                .limit(10_000_000).toList();
+        System.out.println("Initial size " + states.size());
+        AtomicInteger ai = new AtomicInteger();
+        states.stream().parallel().forEach(lst -> {
+            FixBS filter = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
+            int blocksNeeded = (v - 1 - filter.cardinality()) / k / (k - 1);
+            FixBS whiteList = filter.copy();
+            whiteList.flip(1, v);
+            DiffState initial = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, filter.nextClearBit(1));
+            searchUniqueDesigns(table, k, new int[blocksNeeded][], blocksNeeded, initial, design -> {
+                int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
+                        Arrays.stream(design).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
+                Liner lnr = new Liner(v, lines);
+                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(design));
+            });
+            int inc = ai.incrementAndGet();
+            if (inc % 10000 == 0) {
+                System.out.println(inc);
+            }
+        });
+    }
+
+    private static void find(List<State> states, int prev, FixBS globalFilter, List<State> curr, BiPredicate<List<State>, FixBS> pred) {
+        if (pred.test(curr, globalFilter)) {
             return;
         }
         for (int i = prev + 1; i < states.size(); i++) {
@@ -166,6 +164,27 @@ public class BibdFinder6CyclicTest {
                 if (nextState != null) {
                     searchDesigns(group, filter, currDesign, nextState, v, k, el, blocksNeeded, cons);
                 }
+            }
+        }
+    }
+
+    private static void searchUniqueDesigns(Group group, int k, int[][] design, int blocksNeeded, DiffState state, Consumer<int[][]> sink) {
+        if (state.idx() == k) {
+            int[][] nextDesign = design.clone();
+            nextDesign[nextDesign.length - blocksNeeded] = state.block;
+            if (blocksNeeded == 1) {
+                sink.accept(nextDesign);
+                return;
+            }
+            FixBS nextWhitelist = state.filter.copy();
+            nextWhitelist.flip(1, group.order());
+            DiffState nextState = new DiffState(new int[k], 1, state.filter, nextWhitelist).acceptElem(group, state.filter.nextClearBit(1));
+            searchUniqueDesigns(group, k, nextDesign, blocksNeeded - 1, nextState, sink);
+        } else {
+            FixBS whiteList = state.whiteList;
+            for (int el = whiteList.nextSetBit(state.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
+                DiffState nextState = state.acceptElem(group, el);
+                searchUniqueDesigns(group, k, design, blocksNeeded, nextState, sink);
             }
         }
     }
@@ -249,40 +268,51 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    @Test
-    public void testState() {
-        Group g = new CyclicGroup(21);
-        int v = g.order();
-        int k = 5;
-        FixBS zero = FixBS.of(v, 0);
-        State state = new State(zero, zero, zero, zero, 1);
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 3, v, k));
-        assertEquals(FixBS.of(v, 0, 3), state.block);
-        assertEquals(FixBS.of(v, 0), state.stabilizer);
-        assertEquals(FixBS.of(v, 0, 3, 18), state.selfDiff);
-        assertNull(state.acceptElem(g, new FixBS(v), 6, v, k));
-        assertNull(state.acceptElem(g, new FixBS(v), 12, v, 7));
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 6, v, 7));
-        FixBS bs = FixBS.of(v, IntStream.range(0, 7).map(i -> i * 3).toArray());
-        assertEquals(bs, state.selfDiff);
-        assertEquals(bs, state.stabilizer);
-        assertEquals(bs, state.block);
-        state = new State(zero, zero, zero, zero, 1);
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 7, v, k));
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 14, v, k));
-        assertNull(state.acceptElem(g, new FixBS(v), 1, v, 6));
-        g = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        v = g.order();
-        k = 6;
-        zero = FixBS.of(v, 0);
-        state = new State(zero, zero, zero, zero, 1);
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 1, v, k));
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 2, v, k));
-        assertEquals(FixBS.of(v, 0, 1, 2), state.selfDiff);
-        assertEquals(FixBS.of(v, 0, 1, 2), state.block);
-        assertEquals(FixBS.of(v, 0, 1, 2), state.stabilizer);
-        state = Objects.requireNonNull(state.acceptElem(g, new FixBS(v), 3, v, k));
-        assertEquals(FixBS.of(v, 0, 1, 2, 3, 31, 80), state.block);
-        assertEquals(FixBS.of(v, 0, 1, 2), state.stabilizer);
+    private record DiffState(int[] block, int idx, FixBS filter, FixBS whiteList) {
+        private DiffState acceptElem(Group group, int el) {
+            int[] nextBlock = block.clone();
+            nextBlock[idx] = el;
+            int nextIdx = idx + 1;
+            boolean tupleFinished = nextIdx == block.length;
+            FixBS newFilter = filter.copy();
+            FixBS newWhiteList = whiteList.copy();
+//            if (el == group.order()) {
+//                newFilter.set(el);
+//                newWhiteList.clear(el);
+//                return new DiffState(nextBlock, diffNeeded, nextIdx, newFilter, newWhiteList);
+//            }
+            int invEl = group.inv(el);
+            for (int i = 0; i < idx; i++) {
+                int val = block[i];
+                int diff = group.op(group.inv(val), el);
+                int outDiff = group.op(invEl, val);
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+                if (tupleFinished) {
+                    continue;
+                }
+                for (int rt : group.squareRoots(diff)) {
+                    newWhiteList.clear(group.op(val, rt));
+                }
+                for (int rt : group.squareRoots(outDiff)) {
+                    newWhiteList.clear(group.op(el, rt));
+                }
+                for (int j = 0; j <= idx; j++) {
+                    int nv = nextBlock[j];
+                    newWhiteList.clear(group.op(nv, diff));
+                    newWhiteList.clear(group.op(nv, outDiff));
+                }
+            }
+            if (!tupleFinished) {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0 && diff < group.order(); diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear(group.op(el, diff));
+                }
+            }
+            return new DiffState(nextBlock, nextIdx, newFilter, newWhiteList);
+        }
+
+        public int last() {
+            return block[idx - 1];
+        }
     }
 }
