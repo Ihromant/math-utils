@@ -22,20 +22,10 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class BibdFinder2CyclicTest {
     private record Design(int[][] design, int idx, int blockIdx) {
-        private boolean bigger(int[][] candidate) {
-            int i = 0;
-            int cmp;
-            do {
-                int[] cnd = candidate[i];
-                int[] block = design[i];
-                cmp = compare(cnd, block);
-            } while (cmp == 0 && i++ < blockIdx);
-            return cmp < 0;
-        }
 
         private Design simpleAdd(int el) {
             int[][] cloned = design.clone();
@@ -67,8 +57,8 @@ public class BibdFinder2CyclicTest {
         }
     }
 
-    private record State(Design curr, FixBS filter, FixBS whiteList, int[][][] transformations) {
-        private static State forDesign(Group group, int[][] auths, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
+    private record State(Design curr, FixBS filter, FixBS whiteList) {
+        private static State forDesign(Group group, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
             int v = group.order();
             int[][] nextDesign = baseDesign.clone();
             nextDesign[blockIdx] = new int[k];
@@ -87,34 +77,13 @@ public class BibdFinder2CyclicTest {
             FixBS whiteList = filter.copy();
             whiteList.flip(1, v);
             Design curr = new Design(nextDesign, 1, blockIdx);
-            int[][][] transformations = Arrays.stream(auths).map(aut -> IntStream.range(0, baseDesign.length).mapToObj(idx -> {
-                if (idx >= blockIdx) {
-                    return new int[k];
-                }
-                return minimalTuple(baseDesign[idx], aut, group);
-            }).sorted(Comparator.comparingInt(arr -> arr[1] != 0 ? arr[1] : Integer.MAX_VALUE)).toArray(int[][]::new)).toArray(int[][][]::new);
-            State state = new State(curr, filter, whiteList, transformations);
-            return state.acceptElem(group, auths, whiteList.nextSetBit(0), v, k, st -> {});
+            State state = new State(curr, filter, whiteList);
+            return state.acceptElem(group, whiteList.nextSetBit(0), v, st -> {});
         }
 
-        private State acceptElem(Group group, int[][] auth, int el, int v, int k, Consumer<State> cons) {
+        private State acceptElem(Group group, int el, int v, Consumer<State> cons) {
             Design nextCurr = curr.simpleAdd(el);
             boolean tupleFinished = nextCurr.tupleFinished();
-            int[][][] nextTransformations;
-            if (tupleFinished) {
-                int blockIdx = nextCurr.blockIdx;
-                int[] last = nextCurr.design[blockIdx];
-                nextTransformations = new int[transformations.length][][];
-                for (int i = 0; i < transformations.length; i++) {
-                    int[][] nextTransformation = addBlock(transformations[i], minimalTuple(last, auth[i], group), blockIdx);
-                    if (nextCurr.bigger(nextTransformation)) {
-                        return null;
-                    }
-                    nextTransformations[i] = nextTransformation;
-                }
-            } else {
-                nextTransformations = transformations;
-            }
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
             int[] nextTuple = nextCurr.curr();
@@ -141,14 +110,14 @@ public class BibdFinder2CyclicTest {
                     newWhiteList.clear(group.op(nv, outDiff));
                 }
             }
-            State result = new State(nextCurr, newFilter, newWhiteList, nextTransformations);
+            State result = new State(nextCurr, newFilter, newWhiteList);
             if (tupleFinished) {
                 if (nextCurr.lastBlock()) {
                     cons.accept(result);
                     return null;
                 }
                 result = result.initiateNextTuple(newFilter, v)
-                        .acceptElem(group, auth, newFilter.nextClearBit(1), v, k, st -> {});
+                        .acceptElem(group, newFilter.nextClearBit(1), v, st -> {});
             } else {
                 for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
                     newWhiteList.clear(group.op(el, diff));
@@ -160,32 +129,8 @@ public class BibdFinder2CyclicTest {
         private State initiateNextTuple(FixBS filter, int v) {
             FixBS nextWhiteList = filter.copy();
             nextWhiteList.flip(1, v);
-            return new State(new Design(curr.design, 1, curr.blockIdx + 1), filter, nextWhiteList, transformations);
+            return new State(new Design(curr.design, 1, curr.blockIdx + 1), filter, nextWhiteList);
         }
-    }
-
-    private static int[][] addBlock(int[][] design, int[] block, int blockIdx) {
-        int[][] cloned = design.clone();
-        int newIdx = blockIdx;
-        while (newIdx > 0 && block[1] < cloned[newIdx - 1][1]) {
-            newIdx--;
-        }
-        if (newIdx != blockIdx) {
-            System.arraycopy(cloned, newIdx, cloned, newIdx + 1, blockIdx - newIdx);
-        }
-        cloned[newIdx] = block;
-        return cloned;
-    }
-
-    private boolean bigger(int[][] design, int[][] candidate, int blockIdx) {
-        int i = 0;
-        int cmp;
-        do {
-            int[] cnd = candidate[i];
-            int[] block = design[i];
-            cmp = compare(cnd, block);
-        } while (cmp == 0 && i++ < blockIdx);
-        return cmp < 0;
     }
 
     private static int compare(int[] fst, int[] snd) {
@@ -196,46 +141,6 @@ public class BibdFinder2CyclicTest {
             }
         }
         return 0;
-    }
-
-    private static int[] minimalTupleAlt(int[] tuple, int[] auth, Group gr, int k) {
-        int[][] arrays = new int[k][k];
-        int[] fst = arrays[0];
-        for (int i = 1; i < k; i++) {
-            int mapped = auth[tuple[i]];
-            int newIdx = i;
-            while (newIdx > 1 && mapped < fst[newIdx - 1]) {
-                newIdx--;
-            }
-            if (newIdx != i) {
-                System.arraycopy(fst, newIdx, fst, newIdx + 1, i - newIdx);
-            }
-            fst[newIdx] = mapped;
-        }
-        int min = 0;
-        for (int i = 1; i < k; i++) {
-            int inv = gr.inv(fst[i]);
-            int[] cArr = arrays[i];
-            for (int j = 0; j < k; j++) {
-                if (i == j) {
-                    continue;
-                }
-                int diff = gr.op(fst[j], inv);
-                int base = j < i ? j + 1 : j;
-                int newIdx = base;
-                while (newIdx > 1 && diff < cArr[newIdx - 1]) {
-                    newIdx--;
-                }
-                if (newIdx != base) {
-                    System.arraycopy(cArr, newIdx, cArr, newIdx + 1, base - newIdx);
-                }
-                cArr[newIdx] = diff;
-            }
-            if (cArr[1] < arrays[min][1]) {
-                min = i;
-            }
-        }
-        return arrays[min];
     }
 
     private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
@@ -258,12 +163,12 @@ public class BibdFinder2CyclicTest {
         return min.toArray();
     }
 
-    private static void calcCycles(Group group, int[][] auth, int v, int k, State state, Consumer<State> sink) {
+    private static void calcCycles(Group group, int v, State state, Consumer<State> sink) {
         FixBS whiteList = state.whiteList();
         for (int idx = whiteList.nextSetBit(state.curr.lastVal()); idx >= 0; idx = whiteList.nextSetBit(idx + 1)) {
-            State next = state.acceptElem(group, auth, idx, v, k, sink);
+            State next = state.acceptElem(group, idx, v, sink);
             if (next != null) {
-                calcCycles(group, auth, v, k, next, sink);
+                calcCycles(group, v, next, sink);
             }
         }
     }
@@ -356,7 +261,6 @@ public class BibdFinder2CyclicTest {
         System.out.println(group.name() + " " + k);
         int v = group.order();
         Group table = group.asTable();
-        int[][] auths = group.auth();
         System.out.println("Initial size " + unProcessed.size());
         int blocksNeeded = v / k / (k - 1);
         FixBS baseFilter = baseFilter(group, k);
@@ -376,8 +280,8 @@ public class BibdFinder2CyclicTest {
             for (int i = 0; i < init.length; i++) {
                 System.arraycopy(init[i], 0, design[i], 0, k);
             }
-            State initial = State.forDesign(table, auths, baseFilter, design, k, init.length);
-            calcCycles(table, auths, v, k, initial, designConsumer);
+            State initial = State.forDesign(table, baseFilter, design, k, init.length);
+            calcCycles(table, v, initial, designConsumer);
             if (destination != System.out) {
                 destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
                 destination.flush();
@@ -402,11 +306,10 @@ public class BibdFinder2CyclicTest {
         int v = group.order();
         FixBS filter = baseFilter(group, k);
         int blocksNeeded = v / k / (k - 1);
-        int[][] auths = group.auth();
         Group table = group.asTable();
         int[][] design = new int[blocksNeeded][k];
-        State initial = State.forDesign(table, auths, filter, design, k, 0);
-        calcCycles(table, auths, v, k, initial, cycle -> {
+        State initial = State.forDesign(table, filter, design, k, 0);
+        calcCycles(table, v, initial, cycle -> {
             destination.println(Arrays.deepToString(cycle.curr.design));
             destination.flush();
         });
@@ -417,8 +320,10 @@ public class BibdFinder2CyclicTest {
         Group gr = new CyclicProduct(13, 13);
         int k = 7;
         int[][] auths = gr.auth();
+        FixBS filter = baseFilter(gr, k);
+        filter.set(0);
         File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
-        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "nf.txt");
+        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
         try (FileInputStream fis = new FileInputStream(unrefined);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr);
@@ -442,9 +347,22 @@ public class BibdFinder2CyclicTest {
                         cnt++;
                     }
                 }
-                System.out.println(cnt + " " + l);
+                int[][] desf = filter.cardinality() == 1 ? des : Stream.concat(Arrays.stream(des), Stream.of(filter.toArray())).toArray(int[][]::new);
+                System.out.println(cnt + " " + Liner.byDiffFamily(gr, desf).hyperbolicFreq() + " " + Arrays.stream(desf).map(arr -> Arrays.stream(arr).mapToObj(gr::elementName)
+                        .collect(Collectors.joining(", ", "[", "]"))).collect(Collectors.joining(", ", "[", "]")));
                 ps.println(l);
             });
         }
+    }
+
+    private boolean bigger(int[][] design, int[][] candidate, int blockIdx) {
+        int i = 0;
+        int cmp;
+        do {
+            int[] cnd = candidate[i];
+            int[] block = design[i];
+            cmp = compare(cnd, block);
+        } while (cmp == 0 && i++ < blockIdx);
+        return cmp < 0;
     }
 }
