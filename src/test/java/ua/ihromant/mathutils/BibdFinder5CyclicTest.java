@@ -43,7 +43,7 @@ public class BibdFinder5CyclicTest {
         int v = group.order() + fixed;
         int k = 5;
         int[][] auths = auth(group);
-        System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
+        System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " auths: " + auths.length);
         Group table = group.asTable();
         File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
@@ -159,7 +159,7 @@ public class BibdFinder5CyclicTest {
                             .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
                     Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new));
                     if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
-                        System.out.println(l.hyperbolicFreq() + " " + str);
+                        System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(base));
                     }
                 } else {
                     set.remove(readPartial(str, v));
