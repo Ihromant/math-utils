@@ -84,7 +84,7 @@ public class SemiDirectProduct implements Group {
 
     @Override
     public String elementName(int a) {
-        int alpha = a / k.order();
+        String alpha = h.elementName(a / k.order());
         int beta = a % k.order();
         return "(" + alpha + ", " + beta + ")";
     }
