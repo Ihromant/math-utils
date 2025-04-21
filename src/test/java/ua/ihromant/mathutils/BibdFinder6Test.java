@@ -414,7 +414,7 @@ public class BibdFinder6Test {
                             IntStream.concat(IntStream.range(0, fixed ? (k - 1) : k)
                                             .map(idx -> idx * gr.order() / (fixed ? (k - 1) : k)),
                             fixed ? IntStream.of(gr.order()) : IntStream.empty()).toArray()) : Stream.empty()).toArray(int[][]::new);
-                    System.out.println(cnt + " " + Liner.byDiffFamily(fixed ? gr.order() + 1 : gr.order(), base).hyperbolicFreq() + " " + Arrays.deepToString(minimal));
+                    System.out.println(cnt + " " + Liner.byDiffFamily(fixed ? gr.order() + 1 : gr.order(), base).hyperbolicFreq() + " " + Arrays.deepToString(base));
                     ps.println(Arrays.deepToString(minimal));
                 });
             });
