@@ -139,19 +139,23 @@ public class Liner {
     }
 
     public static Liner byDiffFamily(Group g, int[]... base) {
-        int pointCount = g.order();
-        int k = base[0].length; // assuming that difference set is correct
-        int[][] lines = Stream.concat(Arrays.stream(base, 0, pointCount % k == 0 ? base.length - 1 : base.length)
+        int[] lastBlock = base[base.length - 1];
+        int k = lastBlock.length; // assuming that difference family is correct
+        int gOrd = g.order();
+        int rest = gOrd % k;
+        int pointCount = rest == k - 1 ? gOrd + 1 : gOrd;
+        boolean slanted = rest == 0 || rest == k - 1;
+        int[][] lines = Stream.concat(Arrays.stream(base, 0, slanted ? base.length - 1 : base.length)
                 .flatMap(arr -> g.elements().mapToObj(el -> {
                     BitSet res = new BitSet();
                     for (int shift : arr) {
                         res.set(g.op(el, shift));
                     }
                     return res;
-                })), pointCount % k == 0 ? g.elements().mapToObj(idx -> {
+                })), slanted ? g.elements().mapToObj(idx -> {
             BitSet res = new BitSet();
-            for (int shift : base[base.length - 1]) {
-                res.set(g.op(idx, shift));
+            for (int shift : lastBlock) {
+                res.set(shift == gOrd ? shift : g.op(idx, shift));
             }
             return res;
         }).distinct() : Stream.of()).map(bs -> bs.stream().toArray()).toArray(int[][]::new);
