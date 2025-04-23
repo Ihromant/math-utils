@@ -322,8 +322,12 @@ public class BibdFinder2CyclicTest {
         int[][] auths = gr.auth();
         FixBS filter = baseFilter(gr, k);
         filter.set(0);
+        if (filter.cardinality() == k - 1) {
+            filter.set(gr.order());
+        }
         File refined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "ref.txt");
         File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
+        AtomicInteger ai = new AtomicInteger();
         try (FileInputStream fis = new FileInputStream(unrefined);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr);
@@ -348,10 +352,13 @@ public class BibdFinder2CyclicTest {
                     }
                 }
                 int[][] desf = filter.cardinality() == 1 ? des : Stream.concat(Arrays.stream(des), Stream.of(filter.toArray())).toArray(int[][]::new);
-                System.out.println(cnt + " " + Liner.byDiffFamily(gr, desf).hyperbolicFreq() + " " + Arrays.stream(desf).map(arr -> Arrays.stream(arr).mapToObj(gr::elementName)
-                        .collect(Collectors.joining(", ", "[", "]"))).collect(Collectors.joining(", ", "[", "]")));
+                if (cnt > 1) {
+                    System.out.println(cnt + " " + Liner.byDiffFamily(gr, desf).hyperbolicFreq() + " " + Arrays.deepToString(desf));
+                }
                 ps.println(l);
+                ai.incrementAndGet();
             });
+            System.out.println(ai.get());
         }
     }
 
