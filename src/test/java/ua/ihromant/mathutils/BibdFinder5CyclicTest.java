@@ -310,7 +310,7 @@ public class BibdFinder5CyclicTest {
             int[][] ars = Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new);
             Liner l = new Liner(v, ars);
             liners.add(l);
-            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(", ", "{", "}")));
+            System.out.println(l.hyperbolicFreq() + " " + Arrays.deepToString(base));
             return true;
         };
         states.stream().parallel().forEach(st -> {
@@ -326,7 +326,7 @@ public class BibdFinder5CyclicTest {
         System.out.println("Results: " + liners.size());
     }
 
-    private static Stream<int[]> blocks(int[] block, int v, Group gr) {
+    public static Stream<int[]> blocks(int[] block, int v, Group gr) {
         int ord = gr.order();
         Set<FixBS> set = new HashSet<>(ord);
         List<int[]> res = new ArrayList<>();
