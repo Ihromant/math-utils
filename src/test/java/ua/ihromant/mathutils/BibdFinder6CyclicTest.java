@@ -128,6 +128,7 @@ public class BibdFinder6CyclicTest {
 
     private static void generate(Group group, int fixed, int k) {
         Group table = group.asTable();
+        int[][] auths = auth(table);
         int v = table.order() + fixed;
         State[] design = new State[0];
         List<State> stabilized = new ArrayList<>();
@@ -169,8 +170,14 @@ public class BibdFinder6CyclicTest {
             int next = ftr.nextClearBit(1);
             DiffState initial = new DiffState(new int[k], 1, ftr, whiteList).acceptElem(table, next);
             searchUniqueDesigns(table, k, new int[bn][], bn, initial, des -> {
-                int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
-                        Arrays.stream(des).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
+                int[][] base = Stream.concat(lst.stream().map(st -> st.block.toArray()),
+                        Arrays.stream(des)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
+                for (int[] auth : auths) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                        return;
+                    }
+                }
+                int[][] lines = Arrays.stream(base).flatMap(arr -> blocks(arr, v, table)).toArray(int[][]::new);
                 Liner lnr = new Liner(v, lines);
                 System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(des));
             });
@@ -196,6 +203,37 @@ public class BibdFinder6CyclicTest {
         }
     }
 
+    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
+        int v = gr.order() + 1;
+        FixBS base = new FixBS(v);
+        for (int val : tuple) {
+            base.set(auth[val]);
+        }
+        FixBS min = base;
+        for (int val = base.nextSetBit(0); val >= 0 && val < gr.order(); val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(v);
+            int inv = gr.inv(val);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                cnd.set(oVal == gr.order() ? oVal : gr.op(inv, oVal));
+            }
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
+            }
+        }
+        return min.toArray();
+    }
+
+    private static boolean bigger(int[][] fst, int[][] snd) {
+        int cmp = 0;
+        for (int i = 0; i < fst.length; i++) {
+            cmp = Combinatorics.compareArr(snd[i], fst[i]);
+            if (cmp != 0) {
+                break;
+            }
+        }
+        return cmp < 0;
+    }
+
     private static Stream<int[]> blocks(int[] block, int v, Group gr) {
         int ord = gr.order();
         Set<FixBS> set = new HashSet<>(ord);
@@ -210,6 +248,17 @@ public class BibdFinder6CyclicTest {
             }
         }
         return res.stream();
+    }
+
+    private static int[][] auth(Group group) {
+        int ord = group.order();
+        int[][] auth = group.auth();
+        int[][] result = new int[auth.length][ord + 1];
+        for (int i = 0; i < auth.length; i++) {
+            System.arraycopy(auth[i], 0, result[i], 0, auth[i].length);
+            result[i][ord] = ord;
+        }
+        return result;
     }
 
     private static void searchDesigns(Group group, FixBS filter, State[] currDesign, State state, int v, int k, int prev, int blocksNeeded, BiPredicate<State[], Integer> cons) {
