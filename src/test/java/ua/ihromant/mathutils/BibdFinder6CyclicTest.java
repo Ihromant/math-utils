@@ -1,9 +1,8 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.group.SimpleLinear;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -28,10 +27,11 @@ import java.util.stream.Stream;
 public class BibdFinder6CyclicTest {
     @Test
     public void dumpInitial() throws IOException {
-        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
-        int v = group.order();
-        int k = 6;
-        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-ntr.txt");
+        int fixed = 1;
+        Group group = new SimpleLinear(2, new GaloisField(3));
+        int v = group.order() + fixed;
+        int k = 3;
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-ntr.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
@@ -57,20 +57,23 @@ public class BibdFinder6CyclicTest {
 
     @Test
     public void dumpBeginnings() throws IOException {
-        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        int fixed = 1;
+        Group group = new SimpleLinear(2, new GaloisField(3));
         int v = group.order();
-        int k = 6;
+        int k = 3;
         List<State> states = new ArrayList<>();
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-ntr.txt")).forEach(l -> {
+        Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-ntr.txt")).forEach(l -> {
             FixBS block = FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray());
-            states.add(State.fromBlock(group, v, k, block));
+            State state = State.fromBlock(group, v, k, block);
+            state.filter.clear(group.order());
+            states.add(state);
         });
-        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-stab.txt");
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-                if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                if ((group.order() - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
                     ps.println(lst.stream().map(st -> st.block.toString()).collect(Collectors.joining(" ")));
                 }
                 return false;
@@ -81,22 +84,24 @@ public class BibdFinder6CyclicTest {
 
     @Test
     public void generate() throws IOException {
-        Group group = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
+        int fixed = 1;
+        Group group = new SimpleLinear(2, new GaloisField(3));
         Group table = group.asTable();
-        int v = group.order();
-        int k = 6;
-        List<List<State>> states = Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-stab.txt"))
+        int v = group.order() + fixed;
+        int k = 3;
+        List<List<State>> states = Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab.txt"))
                 .map(l -> Arrays.stream(l.substring(1, l.length() - 1).split("} \\{"))
                         .map(ln -> State.fromBlock(group, v, k, FixBS.of(v,
                                 Arrays.stream(ln.split(", ")).mapToInt(Integer::parseInt).toArray()))).toList())
-                .limit(10_000_000).toList();
+                .toList();
         System.out.println("Initial size " + states.size());
         AtomicInteger ai = new AtomicInteger();
         states.stream().parallel().forEach(lst -> {
             FixBS filter = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
-            int blocksNeeded = (v - 1 - filter.cardinality()) / k / (k - 1);
+            filter.clear(group.order());
+            int blocksNeeded = (group.order() - 1 - filter.cardinality()) / k / (k - 1);
             FixBS whiteList = filter.copy();
-            whiteList.flip(1, v);
+            whiteList.flip(1, group.order());
             DiffState initial = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, filter.nextClearBit(1));
             searchUniqueDesigns(table, k, new int[blocksNeeded][], blocksNeeded, initial, design -> {
                 int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
