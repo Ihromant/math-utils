@@ -35,8 +35,6 @@ public class BibdFinder6CyclicTest {
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            int[][] auths = group.auth();
-            System.out.println(group.name() + " " + v + " " + k + " auths: " + auths.length);
             Group table = group.asTable();
             FixBS filter = new FixBS(v);
             State[] design = new State[0];
@@ -108,6 +106,64 @@ public class BibdFinder6CyclicTest {
                         Arrays.stream(design).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
                 Liner lnr = new Liner(v, lines);
                 System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(design));
+            });
+            int inc = ai.incrementAndGet();
+            if (inc % 10000 == 0) {
+                System.out.println(inc);
+            }
+        });
+    }
+
+    @Test
+    public void toConsole() {
+        int fixed = 1;
+        int k = 3;
+        Group group = new SimpleLinear(2, new GaloisField(3));
+        generate(group, fixed, k);
+    }
+
+    private static void generate(Group group, int fixed, int k) {
+        Group table = group.asTable();
+        int v = table.order() + fixed;
+        FixBS filter = new FixBS(v);
+        State[] design = new State[0];
+        List<State> stabilized = new ArrayList<>();
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            State st = arr[0];
+            if (st.stabilizer.cardinality() > 1) {
+                st.filter.clear(table.order());
+                st.filter.clear(0);
+                stabilized.add(st);
+            }
+            return true;
+        };
+        int blocksNeeded = v * (v - 1) / k / (k - 1);
+        FixBS zero = FixBS.of(v, 0);
+        State state = new State(zero, zero, zero, zero, 1);
+        searchDesigns(table, filter, design, state, v, k, 0, blocksNeeded, cons);
+        System.out.println("Stabilized size " + stabilized.size());
+        List<List<State>> states = new ArrayList<>();
+        BiPredicate<List<State>, FixBS> pred = (lst, ftr) -> {
+            if ((group.order() - 1 - ftr.cardinality()) % (k * (k - 1)) == 0) {
+                states.add(lst);
+            }
+            return false;
+        };
+        find(stabilized, -1, new FixBS(v), new ArrayList<>(), pred);
+        System.out.println("Initial size " + states.size());
+        AtomicInteger ai = new AtomicInteger();
+        states.stream().parallel().forEach(lst -> {
+            FixBS ftr = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
+            ftr.clear(group.order());
+            int bn = (group.order() - 1 - ftr.cardinality()) / k / (k - 1);
+            FixBS whiteList = ftr.copy();
+            whiteList.flip(1, group.order());
+            DiffState initial = new DiffState(new int[k], 1, ftr, whiteList).acceptElem(table, ftr.nextClearBit(1));
+            searchUniqueDesigns(table, k, new int[bn][], bn, initial, des -> {
+                int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
+                        Arrays.stream(des).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
+                Liner lnr = new Liner(v, lines);
+                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(des));
             });
             int inc = ai.incrementAndGet();
             if (inc % 10000 == 0) {
