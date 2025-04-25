@@ -9,6 +9,7 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.group.SimpleLinear;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
@@ -884,6 +885,46 @@ public class BatchLinerTest {
                     }
                 }
             }
+        }
+    }
+
+    private static final int[][][] BASES = {
+            {{0, 1, 2}, {0, 3, 10}, {0, 4, 18}, {0, 5, 20}, {0, 7, 8}, {0, 15, 24}},
+            {{0, 1, 3}, {0, 2, 9}, {0, 4, 10}, {0, 5, 20}, {0, 7, 8}, {0, 15, 24}},
+            {{0, 1, 2}, {0, 3, 14}, {0, 4, 18}, {0, 5, 20}, {0, 7, 8}, {0, 15, 24}},
+            {{0, 1, 2}, {0, 3, 19}, {0, 4, 18}, {0, 5, 20}, {0, 7, 8}, {0, 15, 24}},
+            {{0, 1, 3}, {0, 2, 22}, {0, 4, 19}, {0, 7, 8}, {0, 9, 16}, {0, 15, 24}},
+            {{0, 1, 3}, {0, 2, 22}, {0, 4, 23}, {0, 5, 19}, {0, 9, 12}, {0, 15, 24}},
+            {{0, 1, 3}, {0, 2, 22}, {0, 4, 23}, {0, 5, 20}, {0, 9, 14}, {0, 15, 24}},
+    };
+
+    @Test
+    public void testRot25_3() throws IOException {
+        Group group = new SimpleLinear(2, new GaloisField(3));
+        int v = 25;
+        Liner[] designs = Arrays.stream(BASES).map(base -> new Liner(v, Arrays.stream(base)
+                .flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new))).toArray(Liner[]::new);
+        FixBS[] canon = Arrays.stream(designs).map(Liner::getCanonicalOld).toArray(FixBS[]::new);
+        for (int i = 0; i < designs.length; i++) {
+            for (int j = i + 1; j < designs.length; j++) {
+                if (canon[i].equals(canon[j])) {
+                    System.out.println(i + "<->" + j);
+                }
+            }
+            Liner p = designs[i];
+            assertEquals(25, p.pointCount());
+            assertEquals(100, p.lineCount());
+            PermutationGroup perm = p.automorphisms();
+            QuickFind pts = new QuickFind(p.pointCount());
+            for (int a = 0; a < perm.order(); a++) {
+                int[] arr = perm.permutation(a);
+                for (int p1 = 0; p1 < p.pointCount(); p1++) {
+                    pts.union(p1, arr[p1]);
+                }
+            }
+            System.out.println("Liner " + i + " auths " + GroupIndex.identify(perm) + " base " + Arrays.deepToString(BASES[i]));
+            System.out.println("Subdesigns: " + p.cardSubPlanes(true));
+            System.out.println("Orbits " + pts.components());
         }
     }
 }
