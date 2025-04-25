@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SimpleLinear;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -115,36 +116,43 @@ public class BibdFinder6CyclicTest {
     }
 
     @Test
-    public void toConsole() {
+    public void toConsole() throws IOException {
         int fixed = 1;
         int k = 3;
-        Group group = new SimpleLinear(2, new GaloisField(3));
-        generate(group, fixed, k);
+        int ord = 24;
+        for (int i = 1; i <= 15; i++) {
+            Group group = GroupIndex.group(ord, i);
+            generate(group, fixed, k);
+        }
     }
 
     private static void generate(Group group, int fixed, int k) {
         Group table = group.asTable();
         int v = table.order() + fixed;
-        FixBS filter = new FixBS(v);
         State[] design = new State[0];
         List<State> stabilized = new ArrayList<>();
         BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
             State st = arr[0];
             if (st.stabilizer.cardinality() > 1) {
-                st.filter.clear(table.order());
-                st.filter.clear(0);
                 stabilized.add(st);
             }
             return true;
         };
         int blocksNeeded = v * (v - 1) / k / (k - 1);
         FixBS zero = FixBS.of(v, 0);
-        State state = new State(zero, zero, zero, zero, 1);
-        searchDesigns(table, filter, design, state, v, k, 0, blocksNeeded, cons);
+        State state = new State(zero, zero, new FixBS(v), zero, 1);
+        searchDesigns(table, new FixBS(v), design, state, v, k, 0, blocksNeeded, cons);
         System.out.println("Stabilized size " + stabilized.size());
         List<List<State>> states = new ArrayList<>();
-        BiPredicate<List<State>, FixBS> pred = (lst, ftr) -> {
-            if ((group.order() - 1 - ftr.cardinality()) % (k * (k - 1)) == 0) {
+        BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
+            FixBS ftr = filter.copy();
+            ftr.clear(table.order());
+            if ((table.order() - 1 - ftr.cardinality()) % (k * (k - 1)) == 0) {
+                for (int el = ftr.nextClearBit(1); el >= 0 && el < table.order(); el = ftr.nextClearBit(el + 1)) {
+                    if (el == table.inv(el)) {
+                        return false;
+                    }
+                }
                 states.add(lst);
             }
             return false;
@@ -158,7 +166,8 @@ public class BibdFinder6CyclicTest {
             int bn = (group.order() - 1 - ftr.cardinality()) / k / (k - 1);
             FixBS whiteList = ftr.copy();
             whiteList.flip(1, group.order());
-            DiffState initial = new DiffState(new int[k], 1, ftr, whiteList).acceptElem(table, ftr.nextClearBit(1));
+            int next = ftr.nextClearBit(1);
+            DiffState initial = new DiffState(new int[k], 1, ftr, whiteList).acceptElem(table, next);
             searchUniqueDesigns(table, k, new int[bn][], bn, initial, des -> {
                 int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
                         Arrays.stream(des).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
