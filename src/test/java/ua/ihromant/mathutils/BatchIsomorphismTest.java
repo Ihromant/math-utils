@@ -233,6 +233,18 @@ public class BatchIsomorphismTest {
         }
     }
 
+    @Test
+    public void fingerprintTest() throws IOException {
+        Map<String, String> unique = new HashMap<>();
+        Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt")).forEach(l -> {
+            if (!l.contains("[[")) {
+                return;
+            }
+            unique.putIfAbsent(l.substring(l.indexOf('{'), l.indexOf('}')), l);
+        });
+        unique.values().forEach(System.out::println);
+    }
+
     // 6-Z3xZ3semiZ3xZ5.txt <-> 3
     // 6-Z45semiZ3.txt <-> 4
     @Test
