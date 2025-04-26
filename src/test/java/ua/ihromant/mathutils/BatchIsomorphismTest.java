@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -229,5 +231,41 @@ public class BatchIsomorphismTest {
                 }
             }
         }
+    }
+
+    // 6-Z3xZ3semiZ3xZ5.txt <-> 3
+    // 6-Z45semiZ3.txt <-> 4
+    @Test
+    public void testForCyclic6() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        Map<String, int[][]> lns = new HashMap<>();
+        Group group = GroupIndex.group(135, 4);
+        System.out.println(GroupIndex.identify(group));
+        int[][] auths = BibdFinder6CyclicTest.auth(group);
+        Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z45semiZ3.txt")).forEach(l -> {
+            if (!l.contains("[[")) {
+                return;
+            }
+            int[][] arr1;
+            try {
+                arr1 = om.readValue(l.substring(l.indexOf("[{"), l.indexOf("}]") + 2).replace('{', '[').replace('}', ']'), int[][].class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            int[][] arr2;
+            try {
+                arr2 = om.readValue(l.substring(l.indexOf("[["), l.indexOf("]]") + 2), int[][].class);
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+            int[][] base = Stream.concat(Arrays.stream(arr1), Arrays.stream(arr2)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (BibdFinder6CyclicTest.bigger(base, Arrays.stream(base).map(bl -> BibdFinder6CyclicTest.minimalTuple(bl, auth, group)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    return;
+                }
+            }
+            lns.putIfAbsent(l, base);
+        });
+        lns.keySet().forEach(System.out::println);
     }
 }
