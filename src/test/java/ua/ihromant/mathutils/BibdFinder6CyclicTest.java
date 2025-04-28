@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.group.GapInteractor;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SimpleLinear;
@@ -126,7 +127,7 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private static void generate(Group group, int fixed, int k) {
+    private static void generate(Group group, int fixed, int k) throws IOException {
         Group table = group.asTable();
         int[][] auths = auth(table);
         int v = table.order() + fixed;
@@ -159,7 +160,7 @@ public class BibdFinder6CyclicTest {
             return false;
         };
         find(stabilized, -1, new FixBS(v), new ArrayList<>(), pred);
-        System.out.println("Initial size " + states.size());
+        System.out.println("Initial size " + states.size() + " " + new GapInteractor().identifyGroup(group) + " " + v + " " + k + " auths: " + auths.length);
         AtomicInteger ai = new AtomicInteger();
         states.stream().parallel().forEach(lst -> {
             FixBS ftr = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
@@ -203,7 +204,7 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
+    public static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
         int v = gr.order() + 1;
         FixBS base = new FixBS(v);
         for (int val : tuple) {
@@ -223,7 +224,7 @@ public class BibdFinder6CyclicTest {
         return min.toArray();
     }
 
-    private static boolean bigger(int[][] fst, int[][] snd) {
+    public static boolean bigger(int[][] fst, int[][] snd) {
         int cmp = 0;
         for (int i = 0; i < fst.length; i++) {
             cmp = Combinatorics.compareArr(snd[i], fst[i]);
@@ -250,7 +251,7 @@ public class BibdFinder6CyclicTest {
         return res.stream();
     }
 
-    private static int[][] auth(Group group) {
+    public static int[][] auth(Group group) {
         int ord = group.order();
         int[][] auth = group.auth();
         int[][] result = new int[auth.length][ord + 1];
