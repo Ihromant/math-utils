@@ -251,10 +251,9 @@ public class BatchIsomorphismTest {
     public void testForCyclic6() throws IOException {
         ObjectMapper om = new ObjectMapper();
         Map<String, int[][]> lns = new HashMap<>();
-        Group group = GroupIndex.group(135, 4);
-        System.out.println(GroupIndex.identify(group));
+        Group group = GroupIndex.group(135, 3);
         int[][] auths = BibdFinder6CyclicTest.auth(group);
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z45semiZ3.txt")).forEach(l -> {
+        Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt")).forEach(l -> {
             if (!l.contains("[[")) {
                 return;
             }
@@ -279,5 +278,13 @@ public class BatchIsomorphismTest {
             lns.putIfAbsent(l, base);
         });
         lns.keySet().forEach(System.out::println);
+    }
+
+    private static int[][] read(ObjectMapper om, String val) {
+        try {
+            return om.readValue(val.substring(val.indexOf("[["), val.indexOf("]]") + 2), int[][].class);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
