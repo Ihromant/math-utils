@@ -599,6 +599,22 @@ public class BatchLinerTest {
         return res.stream();
     }
 
+    private static Stream<int[]> blocksRight(int[] block, int v, Group gr) {
+        int ord = gr.order();
+        Set<FixBS> set = new HashSet<>(ord);
+        List<int[]> res = new ArrayList<>();
+        for (int i = 0; i < ord; i++) {
+            FixBS fbs = new FixBS(v);
+            for (int el : block) {
+                fbs.set(el == ord ? ord : gr.op(el, i));
+            }
+            if (set.add(fbs)) {
+                res.add(fbs.toArray());
+            }
+        }
+        return res.stream();
+    }
+
     @Test
     public void testDesigns() throws IOException {
         Group gr = new SemiDirectProduct(new CyclicGroup(37), new CyclicGroup(3));
@@ -898,12 +914,37 @@ public class BatchLinerTest {
             {{0, 1, 3}, {0, 2, 22}, {0, 4, 23}, {0, 5, 20}, {0, 9, 14}, {0, 15, 24}},
     };
 
+    private static final int[][][] GAP_BASES = {
+            {{0, 1, 2}, {0, 3, 13}, {0, 4, 24}, {0, 7, 20}, {0, 8, 18}, {0, 15, 21}},
+            {{0, 1, 5}, {0, 2, 3}, {0, 4, 24}, {0, 6, 12}, {0, 7, 20}, {0, 8, 19}},
+            {{0, 1, 5}, {0, 2, 3}, {0, 4, 24}, {0, 6, 14}, {0, 12, 16}, {0, 15, 21}},
+            {{0, 1, 2}, {0, 3, 16}, {0, 4, 24}, {0, 6, 23}, {0, 8, 22}, {0, 15, 21}},
+            {{0, 1, 5}, {0, 2, 3}, {0, 4, 24}, {0, 6, 20}, {0, 8, 12}, {0, 15, 21}},
+            {{0, 1, 5}, {0, 2, 6}, {0, 3, 17}, {0, 4, 24}, {0, 7, 20}, {0, 8, 22}},
+            {{0, 1, 2}, {0, 3, 19}, {0, 4, 24}, {0, 6, 23}, {0, 7, 20}, {0, 8, 15}}
+    };
+
     @Test
     public void testRot25_3() throws IOException {
-        Group group = new SimpleLinear(2, new GaloisField(3));
+        SimpleLinear sl = new SimpleLinear(2, new GaloisField(3));
         int v = 25;
-        Liner[] designs = Arrays.stream(BASES).map(base -> new Liner(v, Arrays.stream(base)
-                .flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new))).toArray(Liner[]::new);
+        int[][] burattiBase = new int[][]{
+                {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{2, 0}, {0, 2}}), 24},
+                {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{1, 1}, {0, 1}}), sl.asElem(new int[][]{{1, 2}, {0, 1}})},
+                {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{1, 0}, {2, 1}}), sl.asElem(new int[][]{{1, 0}, {1, 1}})},
+                {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{1, 1}, {1, 2}}), sl.asElem(new int[][]{{0, 2}, {1, 0}})},
+                {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{2, 1}, {2, 0}}), sl.asElem(new int[][]{{2, 0}, {2, 2}})},
+                {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{2, 2}, {0, 2}}), sl.asElem(new int[][]{{0, 1}, {2, 1}})},
+        };
+        Arrays.stream(burattiBase).forEach(Arrays::sort);
+        Liner burattiLiner = new Liner(v, Arrays.stream(burattiBase)
+                .flatMap(bl -> blocksRight(bl, v, sl)).toArray(int[][]::new));
+        System.out.println("Buratti liner, auths " + GroupIndex.identify(burattiLiner.automorphisms()));
+        System.out.println("Subdesigns: " + burattiLiner.cardSubPlanes(true) + " fp: " + burattiLiner.hyperbolicFreq());
+        FixBS burattiCanon = burattiLiner.getCanonicalOld();
+        Group gap = GroupIndex.group(24, 3);
+        Liner[] designs = Arrays.stream(GAP_BASES).map(base -> new Liner(v, Arrays.stream(base)
+                .flatMap(bl -> blocks(bl, v, gap)).toArray(int[][]::new))).toArray(Liner[]::new);
         FixBS[] canon = Arrays.stream(designs).map(Liner::getCanonicalOld).toArray(FixBS[]::new);
         for (int i = 0; i < designs.length; i++) {
             for (int j = i + 1; j < designs.length; j++) {
@@ -922,9 +963,10 @@ public class BatchLinerTest {
                     pts.union(p1, arr[p1]);
                 }
             }
-            System.out.println("Liner " + i + " auths " + GroupIndex.identify(perm) + " base " + Arrays.deepToString(BASES[i]));
-            System.out.println("Subdesigns: " + p.cardSubPlanes(true));
+            System.out.println("Liner " + i + " auths " + GroupIndex.identify(perm) + " base " + Arrays.deepToString(GAP_BASES[i]));
+            System.out.println("Subdesigns: " + p.cardSubPlanes(true) + " fp: " + p.hyperbolicFreq());
             System.out.println("Orbits " + pts.components());
         }
+        System.out.println("Buratti liner is isomorphic to liner " + IntStream.range(0, canon.length).filter(i -> canon[i].equals(burattiCanon)).findAny().orElseThrow());
     }
 }
