@@ -37,6 +37,14 @@ public class SimpleLinear implements Group {
         return fromMatrix(result);
     }
 
+    public int[][] asMatrix(int a) {
+        return toMatrix(gl[a]);
+    }
+
+    public int asElem(int[][] matrix) {
+        return mapGl[fromMatrix(matrix)];
+    }
+
     private int[][] toMatrix(int a) {
         int[][] result = new int[dim][dim];
         for (int i = 0; i < dim * dim; i++) {
