@@ -16,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -24,6 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BibdFinder6CyclicTest {
@@ -145,7 +147,7 @@ public class BibdFinder6CyclicTest {
         State state = new State(zero, zero, new FixBS(v), zero, 1);
         searchDesigns(table, new FixBS(v), design, state, v, k, 0, blocksNeeded, cons);
         System.out.println("Stabilized size " + stabilized.size());
-        List<List<State>> states = new ArrayList<>();
+        List<List<State>> states = Collections.synchronizedList(new ArrayList<>());
         BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
             FixBS ftr = filter.copy();
             ftr.clear(table.order());
@@ -159,7 +161,12 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        find(stabilized, -1, new FixBS(v), new ArrayList<>(), pred);
+        IntStream.range(0, stabilized.size()).parallel().forEach(i -> {
+            List<State> init = new ArrayList<>();
+            State st = stabilized.get(i);
+            init.add(st);
+            find(stabilized, i, st.filter, init, pred);
+        });
         System.out.println("Initial size " + states.size() + " " + new GapInteractor().identifyGroup(group) + " " + v + " " + k + " auths: " + auths.length);
         AtomicInteger ai = new AtomicInteger();
         states.stream().parallel().forEach(lst -> {
