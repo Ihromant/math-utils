@@ -966,6 +966,7 @@ public class BatchLinerTest {
             System.out.println("Liner " + i + " auths " + GroupIndex.identify(perm) + " base " + Arrays.deepToString(GAP_BASES[i]));
             System.out.println("Subdesigns: " + p.cardSubPlanes(true) + " fp: " + p.hyperbolicFreq());
             System.out.println("Orbits " + pts.components());
+            System.out.println("Lines " + Arrays.deepToString(p.lines()));
         }
         System.out.println("Buratti liner is isomorphic to liner " + IntStream.range(0, canon.length).filter(i -> canon[i].equals(burattiCanon)).findAny().orElseThrow());
     }
