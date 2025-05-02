@@ -391,6 +391,9 @@ public class BibdFinder6CyclicTest {
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
+            if (sz > k / 2 && newStabilizer.cardinality() == 1) {
+                return null;
+            }
             return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
         }
     }
