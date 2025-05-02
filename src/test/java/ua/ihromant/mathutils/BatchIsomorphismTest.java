@@ -287,4 +287,63 @@ public class BatchIsomorphismTest {
             throw new RuntimeException(e);
         }
     }
+
+    @Test
+    public void authTest() {
+        Liner liner = Liner.byDiffFamily(15, new int[][]{{0, 1, 4}, {0, 2, 9}, {0, 5, 10}});
+        int pc = liner.pointCount();
+        for (int a = 0; a < pc; a++) {
+            for (int b = a + 1; b < pc; b++) {
+                for (int c = b + 1; c < pc; c++) {
+                    if (liner.collinear(a, b, c)) {
+                        continue;
+                    }
+                    for (int d = c + 1; d < pc; d++) {
+                        if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
+                            continue;
+                        }
+                        List<FixBS> cls = closure(liner, a, b, c, d);
+                        System.out.println(a + " " + b + " " + c + " " + d + " " + cls);
+                    }
+                }
+            }
+        }
+    }
+
+    public static List<FixBS> closure(Liner liner, int... points) {
+        FixBS base = new FixBS(liner.pointCount());
+        for (int point : points) {
+            base.set(point);
+        }
+        List<FixBS> result = new ArrayList<>();
+        result.add(base);
+        int card = base.cardinality();
+        while (true) {
+            base = additional(liner, base);
+            int tmp = base.cardinality();
+            if (tmp == card) {
+                break;
+            }
+            result.add(base);
+            card = tmp;
+        }
+        return result;
+    }
+
+    public static FixBS additional(Liner liner, FixBS first) {
+        FixBS result = first.copy();
+        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
+            for (int y = first.nextSetBit(x + 1); y >= 0; y = first.nextSetBit(y + 1)) {
+                for (int z = first.nextSetBit(0); z >= 0; z = first.nextSetBit(z + 1)) {
+                    for (int w = first.nextSetBit(z + 1); w >= 0; w = first.nextSetBit(w + 1)) {
+                        int inter = liner.intersection(liner.line(x, y), liner.line(z, w));
+                        if (inter >= 0) {
+                            result.set(inter);
+                        }
+                    }
+                }
+            }
+        }
+        return result;
+    }
 }
