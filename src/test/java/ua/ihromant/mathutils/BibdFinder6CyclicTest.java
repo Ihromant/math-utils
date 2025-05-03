@@ -16,7 +16,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -147,7 +146,7 @@ public class BibdFinder6CyclicTest {
         State state = new State(zero, zero, new FixBS(v), zero, 1);
         searchDesigns(table, new FixBS(v), design, state, v, k, 0, blocksNeeded, cons);
         System.out.println("Stabilized size " + stabilized.size());
-        List<List<State>> states = Collections.synchronizedList(new ArrayList<>());
+        List<List<State>> states = new ArrayList<>();
         BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
             FixBS ftr = filter.copy();
             ftr.clear(table.order());
@@ -157,7 +156,9 @@ public class BibdFinder6CyclicTest {
                         return false;
                     }
                 }
-                states.add(lst);
+                synchronized (states) {
+                    states.add(lst);
+                }
             }
             return false;
         };
