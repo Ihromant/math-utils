@@ -186,7 +186,7 @@ public class ApplicatorTest {
         Group group = GroupIndex.group(39, 1);
         GSpace space = new GSpace(k, group, false, 1, 3, 3, 39);
         int v = space.v();
-        System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
+        System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
         List<State[]> singles = new ArrayList<>();
         BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
