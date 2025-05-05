@@ -54,7 +54,7 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
                 int compXb = gSpace.diffIdx(xb);
                 IntList existingDiffs = newDiffs[compBx];
                 if (existingDiffs == null) {
-                    existingDiffs = (newDiffs[compBx] = new IntList(3 * k));
+                    existingDiffs = (newDiffs[compBx] = new IntList(k * (k - 1)));
                 }
                 existingDiffs.add(bx);
                 for (int i = 0; i < existingDiffs.size(); i++) {
@@ -65,7 +65,7 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
 
                 existingDiffs = newDiffs[compXb];
                 if (existingDiffs == null) {
-                    existingDiffs = (newDiffs[compXb] = new IntList(3 * k));
+                    existingDiffs = (newDiffs[compXb] = new IntList(k * (k - 1)));
                 }
                 existingDiffs.add(xb);
                 for (int i = 0; i < existingDiffs.size(); i++) {
