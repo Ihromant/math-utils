@@ -851,9 +851,57 @@ public class BatchAffineTest {
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
                 Liner proj = readProj(br);
-                System.out.println(name + " " + checkD31(proj));
+                System.out.println(name + " " + checkP13(proj));
             }
         }
+    }
+
+    public static boolean checkP2(Liner liner) {
+        for (int o = 0; o < liner.pointCount(); o++) {
+            for (int l0 : liner.lines(o)) {
+                for (int l1 : liner.lines(o)) {
+                    if (l0 == l1) {
+                        continue;
+                    }
+                    for (int a : liner.line(l0)) {
+                        if (a == o) {
+                            continue;
+                        }
+                        for (int b : liner.line(l0)) {
+                            if (b == o || b == a) {
+                                continue;
+                            }
+                            for (int c : liner.line(l0)) {
+                                if (c == o || c == a || c == b) {
+                                    continue;
+                                }
+                                for (int a1 : liner.line(l1)) {
+                                    if (a1 == o) {
+                                        continue;
+                                    }
+                                    for (int b1 : liner.line(l1)) {
+                                        if (b1 == o || b1 == a1) {
+                                            continue;
+                                        }
+                                        int x = liner.intersection(liner.line(a, b1), liner.line(b, a1));
+                                        int c1 = liner.intersection(liner.line(x, c), l1);
+                                        int y = liner.intersection(liner.line(b, c1), liner.line(b1, c));
+                                        int z = liner.intersection(liner.line(a, c1), liner.line(a1, c));
+                                        if (!liner.collinear(b, b1, z)) {
+                                            continue;
+                                        }
+                                        if (!liner.collinear(x, y, z)) {
+                                            return false;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
     }
 
     public static boolean checkP31(Liner liner) {
@@ -907,45 +955,88 @@ public class BatchAffineTest {
         return true;
     }
 
-    public static boolean checkP2(Liner liner) {
-        for (int o = 0; o < liner.pointCount(); o++) {
-            for (int l0 : liner.lines(o)) {
-                for (int l1 : liner.lines(o)) {
-                    if (l0 == l1) {
+    public static boolean checkP13(Liner liner) {
+        int pc = liner.pointCount();
+        for (int a = 0; a < pc; a++) {
+            for (int b = a + 1; b < pc; b++) {
+                int ab = liner.line(a, b);
+                for (int a1 = 0; a1 < pc; a1++) {
+                    if (liner.flag(ab, a1)) {
                         continue;
                     }
-                    for (int a : liner.line(l0)) {
-                        if (a == o) {
+                    int aa1 = liner.line(a, a1);
+                    int a1b = liner.line(a1, b);
+                    for (int b1 = 0; b1 < pc; b1++) {
+                        if (liner.flag(ab, b1) || liner.flag(a1b, b1) || liner.flag(aa1, b1)) {
                             continue;
                         }
-                        for (int b : liner.line(l0)) {
-                            if (b == o || b == a) {
+                        int a1b1 = liner.line(a1, b1);
+                        int ab1 = liner.line(a, b1);
+                        int o = liner.intersection(ab, a1b1);
+                        int bb1 = liner.line(b, b1);
+                        int pers = liner.intersection(aa1, bb1);
+                        for (int c : liner.line(ab)) {
+                            if (c == o || c == a || c == b) {
                                 continue;
                             }
-                            for (int c : liner.line(l0)) {
-                                if (c == o || c == a || c == b) {
-                                    continue;
-                                }
-                                for (int a1 : liner.line(l1)) {
-                                    if (a1 == o) {
-                                        continue;
-                                    }
-                                    for (int b1 : liner.line(l1)) {
-                                        if (b1 == o || b1 == a1) {
-                                            continue;
-                                        }
-                                        int x = liner.intersection(liner.line(a, b1), liner.line(b, a1));
-                                        int c1 = liner.intersection(liner.line(x, c), l1);
-                                        int y = liner.intersection(liner.line(b, c1), liner.line(b1, c));
-                                        int z = liner.intersection(liner.line(a, c1), liner.line(a1, c));
-                                        if (!liner.collinear(b, b1, z)) {
-                                            continue;
-                                        }
-                                        if (!liner.collinear(x, y, z)) {
-                                            return false;
-                                        }
-                                    }
-                                }
+                            int c1 = liner.intersection(a1b1, liner.line(pers, c));
+                            int bc1 = liner.line(b, c1);
+                            int b1c = liner.line(b1, c);
+                            int ac1 = liner.line(a, c1);
+                            int a1c = liner.line(a1, c);
+                            int x = liner.intersection(ab1, a1b);
+                            int y = liner.intersection(bc1, b1c);
+                            int z = liner.intersection(ac1, a1c);
+                            int p1 = liner.intersection(ab1, bc1);
+                            int p2 = liner.intersection(a1b, b1c);
+                            if (!liner.collinear(o, p1, p2)) {
+                                continue;
+                            }
+                            if (!liner.collinear(x, y, z)) {
+                                return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    public static boolean checkD11S(Liner liner) {
+        int pc = liner.pointCount();
+        for (int a = 0; a < pc; a++) {
+            for (int a1 = a + 1; a1 < pc; a1++) {
+                int aa1 = liner.line(a, a1);
+                for (int b = 0; b < pc; b++) {
+                    if (liner.flag(aa1, b)) {
+                        continue;
+                    }
+                    int ab = liner.line(a, b);
+                    int a1b = liner.line(a1, b);
+                    for (int b1 = 0; b1 < pc; b1++) {
+                        if (liner.flag(ab, b1) || liner.flag(a1b, b1) || liner.flag(aa1, b1)) {
+                            continue;
+                        }
+                        for (int c1 : liner.line(a1b)) {
+                            if (a1 == c1 || b == c1) {
+                                continue;
+                            }
+                            int a1b1 = liner.line(a1, b1);
+                            int bb1 = liner.line(b, b1);
+                            int o = liner.intersection(aa1, bb1);
+                            int oc1 = liner.line(o, c1);
+                            int ab1 = liner.line(a, b1);
+                            int c = liner.intersection(ab1, oc1);
+                            int ac = liner.line(a, c);
+                            int a1c1 = liner.line(a1, c1);
+                            int bc = liner.line(b, c);
+                            int b1c1 = liner.line(b1, c1);
+                            int x = liner.intersection(ab, a1b1);
+                            int y = liner.intersection(bc, b1c1);
+                            int z = liner.intersection(ac, a1c1);
+                            if (liner.collinear(o, x, z) && !liner.collinear(x, y, z)) {
+                                return false;
                             }
                         }
                     }
