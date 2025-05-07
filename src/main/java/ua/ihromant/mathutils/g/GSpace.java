@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -123,17 +124,81 @@ public class GSpace {
         }
 
         if (genAuths) {
-            Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Combinatorics::compareArr));
-            PartialMap emMap = new PartialMap(empty, empty, new int[v]);
-            IntStream.range(0, v).parallel().forEach(fst -> {
-                PartialMap init = emMap.copy();
-                init.set(0, fst);
-                find(sortedAuths, init);
-            });
-            this.auths = sortedAuths.toArray(int[][]::new);
+            this.auths = genAuthsNew();
         } else {
             this.auths = new int[0][];
         }
+    }
+
+    private int[][] genAuthsNew() {
+        Set<int[]> sortedAuths = new TreeSet<>(Combinatorics::compareArr);
+        int[][] grAuths = group.auth();
+        int[][] baseMappings = generateBaseMappings();
+        for (int[] auth : grAuths) {
+            ex: for (int[] baseMapping : baseMappings) {
+                int[] mapping = baseMapping.clone();
+                for (int g = 0; g < group.order(); g++) {
+                    for (int t : oBeg) {
+                        int from = apply(g, t);
+                        int to = apply(auth[g], baseMapping[t]);
+                        int prev = mapping[from];
+                        if (prev < 0) {
+                            mapping[from] = to;
+                        } else {
+                            if (prev != to) {
+                                continue ex;
+                            }
+                        }
+                    }
+                }
+                sortedAuths.add(mapping);
+            }
+        }
+        return sortedAuths.toArray(int[][]::new);
+    }
+
+    private int[][] generateBaseMappings() {
+        List<int[]> result = new ArrayList<>();
+        FixBS availableOrbits = new FixBS(cosets.length);
+        availableOrbits.set(0, cosets.length);
+        int[] base = new int[v];
+        Arrays.fill(base, -1);
+        recur(base, 0, availableOrbits, result::add);
+        return result.toArray(int[][]::new);
+    }
+
+    private void recur(int[] curr, int orbit, FixBS availableOrbits, Consumer<int[]> cons) {
+        if (orbit == cosets.length) {
+            cons.accept(curr);
+            return;
+        }
+        GCosets from = cosets[orbit];
+        int oLen = from.cosetCount();
+        int start = oBeg[orbit];
+        for (int orb = availableOrbits.nextSetBit(0); orb >= 0; orb = availableOrbits.nextSetBit(orb + 1)) {
+            GCosets coset = cosets[orb];
+            if (coset.cosetCount() != oLen) {
+                continue;
+            }
+            FixBS nextAvailable = availableOrbits.copy();
+            nextAvailable.clear(orb);
+            for (int i = 0; i < oLen; i++) {
+                int[] nextCurr = curr.clone();
+                nextCurr[start] = oBeg[orb] + i;
+                recur(nextCurr, orbit + 1, nextAvailable, cons);
+            }
+        }
+    }
+
+    private int[][] genAuthsOld() {
+        Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Combinatorics::compareArr));
+        PartialMap emMap = new PartialMap(empty, empty, new int[v]);
+        IntStream.range(0, v).parallel().forEach(fst -> {
+            PartialMap init = emMap.copy();
+            init.set(0, fst);
+            find(sortedAuths, init);
+        });
+        return sortedAuths.toArray(int[][]::new);
     }
 
     private void find(Set<int[]> auths, PartialMap currMap) {
