@@ -404,6 +404,30 @@ public class GSpace {
         return true;
     }
 
+    public boolean twoMinimal(State[] states) {
+        for (int[] auth : auths) {
+            FixBS[] mapped = new FixBS[states.length];
+            for (int i = 0; i < states.length; i++) {
+                FixBS bl = states[i].block();
+                FixBS block = new FixBS(v);
+                for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
+                    block.set(auth[el]);
+                }
+                mapped[i] = block;
+            }
+            if (mapped[0].compareTo(mapped[1]) > 0) {
+                FixBS tmp = mapped[1];
+                mapped[1] = mapped[0];
+                mapped[0] = tmp;
+            }
+            int cmp = mapped[0].compareTo(states[0].block());
+            if (cmp < 0 || cmp == 0 && mapped[1].compareTo(states[1].block()) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public FixBS minimalBlock(FixBS block) {
         FixBS result = block;
         for (int[] auth : auths) {

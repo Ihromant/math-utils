@@ -246,7 +246,9 @@ public class ApplicatorTest {
             if (arr.length < 2) {
                 return false;
             }
-            sync.add(arr);
+            if (space.twoMinimal(arr)) {
+                sync.add(arr);
+            }
             return true;
         };
         singles.stream().parallel().forEach(tuple -> {
@@ -255,7 +257,7 @@ public class ApplicatorTest {
             for (int i = 0; i < tuple.length - 1; i++) {
                 tuple[i].updateFilter(newFilter, space);
             }
-            searchDesignsMinimal(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
+            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
         });
         System.out.println("Pairs " + pairs.size());
         AtomicInteger cnt = new AtomicInteger();
