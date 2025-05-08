@@ -129,12 +129,12 @@ public class Applicator1Test {
         whiteList.flip(1, v);
         List<State[]> triples = new ArrayList<>();
         searchDesigns(new State[0], freq, new State(newBlock, filter, whiteList).acceptElem(1, v), v, k, des -> {
-//            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
-//            for (int mul : multipliers) {
-//                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
-//                    return true;
-//                }
-//            }
+            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+            for (int mul : multipliers) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+                    return true;
+                }
+            }
             if (des.length < 3) {
                 return false;
             }
@@ -156,12 +156,12 @@ public class Applicator1Test {
                 if (finDes.length < total) {
                     return false;
                 }
-//                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
-//                for (int mul : multipliers) {
-//                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
-//                        return true;
-//                    }
-//                }
+                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+                for (int mul : multipliers) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+                        return true;
+                    }
+                }
                 ps.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
                 ps.flush();
                 return true;
@@ -399,5 +399,79 @@ public class Applicator1Test {
             }).distinct().map(FixBS::toArray);
         }).toArray(int[][]::new);
         System.out.println(new Liner(96, lines).hyperbolicFreq());
+    }
+
+    @Test
+    public void calculate() throws IOException {
+        int v = 48;
+        int k = 6;
+        List<IntList> res = getSuitable(v, k);
+        int idx = 0;
+        int[] base = res.get(idx).toArray();
+        int[] opposite = Arrays.stream(base).map(i -> k - i).sorted().toArray();
+        FixBS filter = baseFilter(v, k);
+        List<List<FixBS>> lefts = readAndEnhance(v, k, base);
+        for (List<FixBS> left : lefts) {
+            Consumer<int[][]> cons = arr -> {
+                System.out.println(Arrays.deepToString(arr));
+            };
+            List<List<FixBS>> right = new ArrayList<>();
+
+        }
+    }
+
+    private static void find(List<FixBS> lefts, int needed, Consumer<FixBS> cons) {
+//        if (state.idx() == k) {
+//            int[][] nextDesign = design.clone();
+//            nextDesign[nextDesign.length - blocksNeeded] = state.block;
+//            if (blocksNeeded == 1) {
+//                sink.accept(nextDesign);
+//                return;
+//            }
+//            FixBS nextWhitelist = state.filter.copy();
+//            nextWhitelist.flip(1, group.order());
+//            DiffState nextState = new DiffState(new int[k], 1, state.filter, nextWhitelist).acceptElem(group, state.filter.nextClearBit(1));
+//            searchUniqueDesigns(group, k, nextDesign, blocksNeeded - 1, nextState, sink);
+//        } else {
+//            FixBS whiteList = state.whiteList;
+//            for (int el = whiteList.nextSetBit(state.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
+//                DiffState nextState = state.acceptElem(group, el);
+//                searchUniqueDesigns(group, k, design, blocksNeeded, nextState, sink);
+//            }
+//        }
+    }
+
+    private record RightState(IntList block, FixBS filter, FixBS interFilter, FixBS whiteList) {
+        private RightState acceptElem(int el, FixBS left, int v) {
+            int sz = block.size();
+            IntList nextBlock = block.copy();
+            nextBlock.add(el);
+            FixBS newFilter = filter.copy();
+            FixBS newInterFilter = interFilter.copy();
+            FixBS newWhiteList = whiteList.copy();
+            int invEl = v - el;
+            for (int i = 0; i < sz; i++) {
+                int val = nextBlock.get(i);
+                int diff = el - val;
+                int outDiff = invEl + val;
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+                if (outDiff % 2 == 0) {
+                    newWhiteList.clear((el + outDiff / 2) % v);
+                }
+                for (int j = 0; j <= sz; j++) {
+                    int nv = nextBlock.get(j);
+                    newWhiteList.clear((nv + diff) % v);
+                    newWhiteList.clear((nv + outDiff) % v);
+                }
+            }
+            for (int l = left.nextSetBit(0); l >= 0; l = left.nextSetBit(l + 1)) {
+                int diff = el < l ? v + el - l : el - l;
+                newInterFilter.set(diff);
+                newWhiteList.diffModuleShifted(newInterFilter, v, diff);
+            }
+            newWhiteList.diffModuleShifted(newFilter, v, invEl);
+            return new RightState(nextBlock, newFilter, newInterFilter, newWhiteList);
+        }
     }
 }
