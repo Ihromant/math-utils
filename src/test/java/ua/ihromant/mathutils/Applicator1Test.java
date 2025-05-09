@@ -263,99 +263,6 @@ public class Applicator1Test {
         return result;
     }
 
-    private record Pair(FixBS left, FixBS right) {
-        private FixBS filter(int v) {
-            FixBS res = new FixBS(v);
-            for (int i = left.nextSetBit(0); i >= 0; i = left.nextSetBit(i + 1)) {
-                for (int j = right.nextSetBit(0); j >= 0; j = right.nextSetBit(j + 1)) {
-                    int diff = j - i;
-                    int val = diff < 0 ? v + diff : diff;
-                    if (res.get(val)) {
-                        return null;
-                    }
-                    res.set(val);
-                }
-            }
-            return res;
-        }
-
-        @Override
-        public String toString() {
-            return "[" + left + ", " + right + "]";
-        }
-    }
-
-    @Test
-    public void match() throws IOException {
-        int v = 48;
-        int k = 6;
-        List<IntList> res = getSuitable(v, k);
-        int idx = 0;
-        int[] base = res.get(idx).toArray();
-        int[] opposite = Arrays.stream(base).map(i -> k - i).sorted().toArray();
-        List<List<FixBS>> lefts = readAndEnhance(v, k, base);
-        List<List<FixBS>> rights = readAndEnhance(v, k, opposite);
-        int[] multipliers = Combinatorics.multipliers(v);
-        System.out.println(v + " " + k + " " + Arrays.toString(base) + " " + lefts.size() + " " + Arrays.toString(opposite) + " " + rights.size());
-        for (List<FixBS> left : lefts) {
-            //for (int mul : multipliers) {
-                for (List<FixBS> right : rights) {
-//                    List<FixBS> right = bRight.stream().map(bl -> {
-//                        FixBS r = new FixBS(v);
-//                        for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
-//                            r.set((el * mul) % v);
-//                        }
-//                        return r;
-//                    }).toList();
-                    FixBS fst = left.getFirst();
-                    int lCard = fst.cardinality();
-                    IntStream.range(0, right.size()).forEach(i -> {
-                        FixBS snd = right.get(i);
-                        if (snd.cardinality() != k - lCard) {
-                            return;
-                        }
-                        List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
-                        Pair p = new Pair(fst, snd);
-                        FixBS filter = p.filter(v);
-                        if (filter == null) {
-                            return;
-                        }
-                        tryMatch(left.subList(1, left.size()), rightCp, List.of(new Pair(fst, snd)), filter, v, k);
-                    });
-               // }
-            }
-        }
-    }
-
-    private static void tryMatch(List<FixBS> left, List<FixBS> right, List<Pair> pairs, FixBS filter, int v, int k) {
-        if (left.isEmpty()) {
-            System.out.println(pairs);
-            return;
-        }
-        FixBS fst = left.getFirst();
-        int lCard = fst.cardinality();
-        IntStream.range(0, right.size()).forEach(i -> {
-            FixBS snd = right.get(i);
-            if (snd.cardinality() != k - lCard) {
-                return;
-            }
-            for (int sh = 0; sh < v; sh++) {
-                FixBS sndSh = new FixBS(v);
-                for (int el = snd.nextSetBit(0); el >= 0; el = snd.nextSetBit(el + 1)) {
-                    sndSh.set((el + sh) % v);
-                }
-                Pair pair = new Pair(fst, sndSh);
-                FixBS ftr = pair.filter(v);
-                if (ftr == null || ftr.intersects(filter)) {
-                    continue;
-                }
-                List<FixBS> rightCp = IntStream.range(0, right.size()).filter(j -> j != i).mapToObj(right::get).toList();
-                List<Pair> next = Stream.concat(pairs.stream(), Stream.of(pair)).toList();
-                tryMatch(left.subList(1, left.size()), rightCp, next, filter.union(ftr), v, k);
-            }
-        });
-    }
-
     private static List<List<FixBS>> readAndEnhance(int v, int k, int[] chunks) throws IOException {
         File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + "-"
                 + Arrays.stream(chunks).mapToObj(Integer::toString).collect(Collectors.joining("-")) + ".txt");
@@ -374,40 +281,12 @@ public class Applicator1Test {
         }
     }
 
-    private static Pair[] example = new Pair[]{new Pair(FixBS.of(48, 0, 1, 14, 18), FixBS.of(48, 0, 6)),
-            new Pair(FixBS.of(48, 0, 2, 21, 28), FixBS.of(48, 15, 45)),
-            new Pair(FixBS.of(48, 0, 3, 39), FixBS.of(48, 14, 28, 41)),
-            new Pair(FixBS.of(48, 0, 5, 11), FixBS.of(48, 9, 31, 32)),
-            new Pair(FixBS.of(48, 0, 10, 33), FixBS.of(48, 1, 18, 29)),
-            new Pair(FixBS.of(48, 0), FixBS.of(48, 3, 7, 10, 12, 22)),
-            new Pair(FixBS.of(48, 0, 8, 16, 24, 32, 40), new FixBS(48)),
-            new Pair(new FixBS(48), FixBS.of(48, 0, 8, 16, 24, 32, 40))};
-    //[[{0, 1, 14, 18}, {0, 6}], [{0, 2, 21, 28}, {15, 45}], [{0, 3, 39}, {14, 28, 41}], [{0, 5, 11}, {9, 31, 32}], [{0, 10, 33}, {1, 18, 29}], [{0}, {3, 7, 10, 12, 22}]]
-    //[[{0, 1, 31, 35}, {0, 6}], [{0, 2, 22, 29}, {10, 40}], [{0, 3, 12}, {15, 28, 42}], [{0, 5, 42}, {1, 26, 27}], [{0, 10, 25}, {14, 34, 45}], [{0}, {2, 31, 41, 43, 46}]]
-
-    @Test
-    public void testExample() {
-        int[][] lines = Arrays.stream(example).flatMap(pr -> {
-            return IntStream.range(0, 48).mapToObj(sh -> {
-                FixBS base = new FixBS(96);
-                for (int i = pr.left.nextSetBit(0); i >= 0; i = pr.left.nextSetBit(i + 1)) {
-                    base.set((i + sh) % 48);
-                }
-                for (int i = pr.right.nextSetBit(0); i >= 0; i = pr.right.nextSetBit(i + 1)) {
-                    base.set(((i + sh) % 48) + 48);
-                }
-                return base;
-            }).distinct().map(FixBS::toArray);
-        }).toArray(int[][]::new);
-        System.out.println(new Liner(96, lines).hyperbolicFreq());
-    }
-
     @Test
     public void calculate() throws IOException {
         int v = 48;
         int k = 6;
         List<IntList> res = getSuitable(v, k);
-        int idx = 0;
+        int idx = 2;
         int[] base = res.get(idx).toArray();
         FixBS filter = baseFilter(v, k);
         List<List<FixBS>> lefts = readAndEnhance(v, k, base);
@@ -415,8 +294,9 @@ public class Applicator1Test {
         AtomicInteger ai = new AtomicInteger();
         lefts.stream().parallel().forEach(left -> {
             Consumer<RightState[]> cons = arr -> {
-                //System.out.println(left + " " + Arrays.stream(arr).map(RightState::block).toList());
-                System.out.println(left + " " + Arrays.deepToString(arr));
+                System.out.println(IntStream.range(0, left.size()).mapToObj(i -> left.get(i) + " " + arr[i].block)
+                        .collect(Collectors.joining(", ", "[", "]")));
+                //System.out.println(left + " " + Arrays.deepToString(arr));
             };
             RightState[] rights = new RightState[left.size()];
             FixBS whiteList = new FixBS(v);
@@ -442,9 +322,7 @@ public class Applicator1Test {
             FixBS nextWhitelist = new FixBS(v);
             nextWhitelist.flip(0, v);
             for (int el = nextLeft.nextSetBit(0); el >= 0; el = nextLeft.nextSetBit(el + 1)) {
-                for (int od = currState.outerFilter.nextSetBit(0); od >= 0; od = currState.outerFilter.nextSetBit(od + 1)) {
-                    nextWhitelist.clear((el + od) % v);
-                }
+                nextWhitelist.diffModuleShifted(currState.outerFilter, v, el == 0 ? 0 : v - el);
             }
             RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
             find(lefts, nextDesign, nextState, v, k, cons);
@@ -486,9 +364,7 @@ public class Applicator1Test {
                 newOuterFilter.set(diff);
             }
             for (int l = left.nextSetBit(0); l >= 0; l = left.nextSetBit(l + 1)) {
-                for (int od = newOuterFilter.nextSetBit(0); od >= 0; od = newOuterFilter.nextSetBit(od + 1)) {
-                    newWhiteList.clear((l + od) % v);
-                }
+                newWhiteList.diffModuleShifted(newOuterFilter, v, l == 0 ? 0 : v - l);
             }
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
