@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -211,6 +212,12 @@ public class Applicator1Test {
 
     private static void searchDesigns(State[] currDesign, int[] freq, State state, int v, int k, Predicate<State[]> cons) {
         IntList block = state.block;
+        if (hasNext(freq, state.size() + 1)) {
+            for (int el = state.whiteList.nextSetBit(block.getLast()); el >= 0; el = state.whiteList.nextSetBit(el + 1)) {
+                State nextState = state.acceptElem(el, v);
+                searchDesigns(currDesign, freq, nextState, v, k, cons);
+            }
+        }
         if (freq[state.size()] > 0) {
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
             nextDesign[currDesign.length] = state;
@@ -225,12 +232,6 @@ public class Applicator1Test {
             int[] newFreq = freq.clone();
             newFreq[state.size()]--;
             searchDesigns(nextDesign, newFreq, nextState, v, k, cons);
-        }
-        if (hasNext(freq, state.size() + 1)) {
-            for (int el = state.whiteList.nextSetBit(block.getLast()); el >= 0; el = state.whiteList.nextSetBit(el + 1)) {
-                State nextState = state.acceptElem(el, v);
-                searchDesigns(currDesign, freq, nextState, v, k, cons);
-            }
         }
     }
 
@@ -408,46 +409,61 @@ public class Applicator1Test {
         List<IntList> res = getSuitable(v, k);
         int idx = 0;
         int[] base = res.get(idx).toArray();
-        int[] opposite = Arrays.stream(base).map(i -> k - i).sorted().toArray();
         FixBS filter = baseFilter(v, k);
         List<List<FixBS>> lefts = readAndEnhance(v, k, base);
-        for (List<FixBS> left : lefts) {
-            Consumer<int[][]> cons = arr -> {
-                System.out.println(Arrays.deepToString(arr));
+        System.out.println("Lefts size: " + lefts.size());
+        AtomicInteger ai = new AtomicInteger();
+        lefts.stream().parallel().forEach(left -> {
+            Consumer<RightState[]> cons = arr -> {
+                //System.out.println(left + " " + Arrays.stream(arr).map(RightState::block).toList());
+                System.out.println(left + " " + Arrays.deepToString(arr));
             };
-            List<List<FixBS>> right = new ArrayList<>();
+            RightState[] rights = new RightState[left.size()];
+            FixBS whiteList = new FixBS(v);
+            whiteList.set(0, v);
+            RightState state = new RightState(new IntList(k), filter, new FixBS(v), whiteList, 0).acceptElem(0, left.getFirst(), v);
+            find(left, rights, state, v, k, cons);
+            System.out.println(ai.incrementAndGet());
+        });
+    }
 
+    private static void find(List<FixBS> lefts, RightState[] rights, RightState currState, int v, int k, Consumer<RightState[]> cons) {
+        int idx = currState.idx;
+        FixBS left = lefts.get(idx);
+        if (currState.block().size() == k - left.cardinality()) {
+            RightState[] nextDesign = rights.clone();
+            nextDesign[idx] = currState;
+            if (idx == lefts.size() - 1) {
+                cons.accept(nextDesign);
+                return;
+            }
+            int nextIdx = idx + 1;
+            FixBS nextLeft = lefts.get(nextIdx);
+            FixBS nextWhitelist = new FixBS(v);
+            nextWhitelist.flip(0, v);
+            for (int el = nextLeft.nextSetBit(0); el >= 0; el = nextLeft.nextSetBit(el + 1)) {
+                for (int od = currState.outerFilter.nextSetBit(0); od >= 0; od = currState.outerFilter.nextSetBit(od + 1)) {
+                    nextWhitelist.clear((el + od) % v);
+                }
+            }
+            RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
+            find(lefts, nextDesign, nextState, v, k, cons);
+        } else {
+            FixBS whiteList = currState.whiteList;
+            for (int el = whiteList.nextSetBit(currState.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
+                RightState nextState = currState.acceptElem(el, left, v);
+                find(lefts, rights, nextState, v, k, cons);
+            }
         }
     }
 
-    private static void find(List<FixBS> lefts, int needed, Consumer<FixBS> cons) {
-//        if (state.idx() == k) {
-//            int[][] nextDesign = design.clone();
-//            nextDesign[nextDesign.length - blocksNeeded] = state.block;
-//            if (blocksNeeded == 1) {
-//                sink.accept(nextDesign);
-//                return;
-//            }
-//            FixBS nextWhitelist = state.filter.copy();
-//            nextWhitelist.flip(1, group.order());
-//            DiffState nextState = new DiffState(new int[k], 1, state.filter, nextWhitelist).acceptElem(group, state.filter.nextClearBit(1));
-//            searchUniqueDesigns(group, k, nextDesign, blocksNeeded - 1, nextState, sink);
-//        } else {
-//            FixBS whiteList = state.whiteList;
-//            for (int el = whiteList.nextSetBit(state.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
-//                DiffState nextState = state.acceptElem(group, el);
-//                searchUniqueDesigns(group, k, design, blocksNeeded, nextState, sink);
-//            }
-//        }
-    }
-
-    private record RightState(IntList block, FixBS filter, FixBS interFilter, FixBS whiteList) {
+    private record RightState(IntList block, FixBS filter, FixBS outerFilter, FixBS whiteList, int idx) {
         private RightState acceptElem(int el, FixBS left, int v) {
             int sz = block.size();
             IntList nextBlock = block.copy();
             nextBlock.add(el);
             FixBS newFilter = filter.copy();
-            FixBS newInterFilter = interFilter.copy();
+            FixBS newOuterFilter = outerFilter.copy();
             FixBS newWhiteList = whiteList.copy();
             int invEl = v - el;
             for (int i = 0; i < sz; i++) {
@@ -467,11 +483,19 @@ public class Applicator1Test {
             }
             for (int l = left.nextSetBit(0); l >= 0; l = left.nextSetBit(l + 1)) {
                 int diff = el < l ? v + el - l : el - l;
-                newInterFilter.set(diff);
-                newWhiteList.diffModuleShifted(newInterFilter, v, diff);
+                newOuterFilter.set(diff);
+            }
+            for (int l = left.nextSetBit(0); l >= 0; l = left.nextSetBit(l + 1)) {
+                for (int od = newOuterFilter.nextSetBit(0); od >= 0; od = newOuterFilter.nextSetBit(od + 1)) {
+                    newWhiteList.clear((l + od) % v);
+                }
             }
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
-            return new RightState(nextBlock, newFilter, newInterFilter, newWhiteList);
+            return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
+        }
+
+        public int last() {
+            return block.isEmpty() ? -1 : block.getLast();
         }
     }
 }
