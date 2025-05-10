@@ -356,7 +356,7 @@ public class Applicator1Test {
                     throw new IllegalArgumentException();
                 }
                 int div = k / traceLength;
-                if ((v % 2 == 1 ? k - 1 : k) % traceLength != 0 || div != 1 && div != 2) {
+                if ((k % 2 == 1 ? k - 1 : k) % traceLength != 0 || div != 1 && div != 2) {
                     throw new IllegalArgumentException();
                 }
             }
@@ -424,5 +424,8 @@ public class Applicator1Test {
         OrbitConfig oc4 = new OrbitConfig(133, 7, 6);
         assertEquals(FixBS.of(66), oc4.outerFilter());
         assertEquals(FixBS.of(66, 11, 22, 33, 44, 55), oc4.innerFilter());
+        OrbitConfig oc5 = new OrbitConfig(65, 5, 2);
+        assertEquals(FixBS.of(32, 0, 16), oc5.outerFilter());
+        assertEquals(FixBS.of(32, 16), oc5.innerFilter());
     }
 }
