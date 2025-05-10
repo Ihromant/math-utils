@@ -344,38 +344,38 @@ public class Applicator1Test {
         }
     }
 
-    private record OrbitConfig(int v, int k, int traceLength, boolean infinity) {
+    private record OrbitConfig(int v, int k, int traceLength) {
         public OrbitConfig {
-            int pc = infinity ? 2 * v + 1 : 2 * v;
-            if ((pc - 1) % (k - 1) != 0 || (pc * pc - pc) % (k * k - k) != 0) {
+            if ((v - 1) % (k - 1) != 0 || (v * v - v) % (k * k - k) != 0) {
                 throw new IllegalArgumentException();
             }
-            if (v % 2 == 0 && traceLength % 2 != 0) {
+            int ol = v / 2;
+            if (ol % 2 == 0 && traceLength % 2 != 0) {
                 throw new IllegalArgumentException();
             }
             if (traceLength != 0) {
-                if (v % traceLength != 0) {
+                if (ol % traceLength != 0) {
                     throw new IllegalArgumentException();
                 }
                 int div = k / traceLength;
-                if ((infinity ? k - 1 : k) % traceLength != 0 || div != 1 && div != 2) {
+                if ((v % 2 == 1 ? k - 1 : k) % traceLength != 0 || div != 1 && div != 2) {
                     throw new IllegalArgumentException();
                 }
             }
         }
 
         public FixBS innerFilter() {
-            FixBS filter = new FixBS(v);
+            FixBS filter = new FixBS(orbitSize());
             if (traceLength != 0) {
-                for (int i = 1; i < v; i++) {
-                    if (i * traceLength % v == 0) {
+                for (int i = 1; i < orbitSize(); i++) {
+                    if (i * traceLength % orbitSize() == 0) {
                         filter.set(i);
                     }
                 }
             }
-            if (traceLength == 0 && infinity) {
-                for (int i = 1; i < v; i++) {
-                    if (i * (k - 1) % v == 0) {
+            if (traceLength == 0 && infinity()) {
+                for (int i = 1; i < orbitSize(); i++) {
+                    if (i * (k - 1) % orbitSize() == 0) {
                         filter.set(i);
                     }
                 }
@@ -383,11 +383,19 @@ public class Applicator1Test {
             return filter;
         }
 
+        public int orbitSize() {
+            return v / 2;
+        }
+
+        public boolean infinity() {
+            return v % 2 == 1;
+        }
+
         public FixBS outerFilter() {
-            FixBS filter = new FixBS(v);
+            FixBS filter = new FixBS(orbitSize());
             if (traceLength != 0 && k / traceLength != 1) {
-                for (int i = 0; i < v; i++) {
-                    if (i * traceLength % v == 0) {
+                for (int i = 0; i < orbitSize(); i++) {
+                    if (i * traceLength % orbitSize() == 0) {
                         filter.set(i);
                     }
                 }
@@ -403,16 +411,16 @@ public class Applicator1Test {
 
     @Test
     public void testOrbitConfig() {
-        OrbitConfig oc = new OrbitConfig(8, 4, 4, false);
+        OrbitConfig oc = new OrbitConfig(16, 4, 4);
         assertEquals(FixBS.of(8), oc.outerFilter());
         assertEquals(FixBS.of(8, 2, 4, 6), oc.innerFilter());
-        OrbitConfig oc1 = new OrbitConfig(8, 4, 2, false);
+        OrbitConfig oc1 = new OrbitConfig(16, 4, 2);
         assertEquals(FixBS.of(8, 0, 4), oc1.outerFilter());
         assertEquals(FixBS.of(8, 4), oc1.innerFilter());
-        OrbitConfig oc2 = new OrbitConfig(45, 6, 0, true);
+        OrbitConfig oc2 = new OrbitConfig(91, 6, 0);
         assertEquals(FixBS.of(45), oc2.outerFilter());
         assertEquals(FixBS.of(45, 9, 18, 27, 36), oc2.innerFilter());
-        OrbitConfig oc3 = new OrbitConfig(45, 7, 3, true);
+        OrbitConfig oc3 = new OrbitConfig(91, 7, 3);
         assertEquals(FixBS.of(45, 0, 15, 30), oc3.outerFilter());
         assertEquals(FixBS.of(45, 15, 30), oc3.innerFilter());
     }
