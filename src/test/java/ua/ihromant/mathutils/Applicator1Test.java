@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class Applicator1Test {
     @Test
     public void findPossible() {
-        OrbitConfig conf = new OrbitConfig(133, 7, 6);
+        OrbitConfig conf = new OrbitConfig(65, 5, 2);
         List<IntList> res = getSuitable(conf);
         res.forEach(System.out::println);
     }
@@ -87,7 +87,7 @@ public class Applicator1Test {
 
     @Test
     public void generate() throws IOException {
-        OrbitConfig conf = new OrbitConfig(48, 6, 6);
+        OrbitConfig conf = new OrbitConfig(65, 5, 2);
         int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
@@ -170,18 +170,6 @@ public class Applicator1Test {
         return false;
     }
 
-    private static FixBS baseFilter(int v, int k) {
-        FixBS filter = new FixBS(v);
-        if (v % k == 0) {
-            for (int i = 1; i < v; i++) {
-                if (i * k % v == 0) {
-                    filter.set(i);
-                }
-            }
-        }
-        return filter;
-    }
-
     private static void searchDesigns(State[] currDesign, int[] freq, State state, int v, int k, Predicate<State[]> cons) {
         IntList block = state.block;
         int size = state.size();
@@ -236,8 +224,8 @@ public class Applicator1Test {
         return result;
     }
 
-    private static List<int[][]> read(int v, int k) throws IOException {
-        File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + ".txt");
+    private static List<int[][]> read(OrbitConfig conf) throws IOException {
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
@@ -253,31 +241,38 @@ public class Applicator1Test {
 
     @Test
     public void calculate() throws IOException {
-        int v = 48;
-        int k = 6;
-        FixBS filter = baseFilter(v, k);
-        List<int[][]> lefts = read(v, k);
+        OrbitConfig conf = new OrbitConfig(65, 5, 2);
+        List<int[][]> lefts = read(conf);
         System.out.println("Lefts size: " + lefts.size());
         AtomicInteger ai = new AtomicInteger();
         lefts.stream().parallel().forEach(left -> {
             Consumer<RightState[]> cons = arr -> {
                 System.out.println(IntStream.range(0, left.length).mapToObj(i -> Arrays.toString(left[i]) + " " + arr[i].block)
                         .collect(Collectors.joining(", ", "[", "]")));
-                //System.out.println(left + " " + Arrays.deepToString(arr));
+                //System.out.println(Arrays.deepToString(left) + " " + Arrays.deepToString(arr));
             };
+            int[] fstLeft = left[0];
             RightState[] rights = new RightState[left.length];
-            FixBS whiteList = new FixBS(v);
-            whiteList.set(0, v);
-            RightState state = new RightState(new IntList(k), filter, new FixBS(v), whiteList, 0).acceptElem(0, left[0], v);
-            find(left, rights, state, v, k, cons);
+            FixBS whiteList = new FixBS(conf.orbitSize());
+            whiteList.set(0, conf.orbitSize());
+            FixBS outerFilter = conf.outerFilter();
+            for (int el : fstLeft) {
+                whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), el == 0 ? 0 : conf.orbitSize() - el);
+            }
+            RightState state = new RightState(new IntList(conf.k()), conf.innerFilter(), outerFilter, whiteList, 0);
+            if (outerFilter.isEmpty()) {
+                state = state.acceptElem(0, fstLeft, conf.orbitSize());
+            }
+            find(left, rights, state, conf, cons);
             System.out.println(ai.incrementAndGet());
         });
     }
 
-    private static void find(int[][] lefts, RightState[] rights, RightState currState, int v, int k, Consumer<RightState[]> cons) {
+    private static void find(int[][] lefts, RightState[] rights, RightState currState, OrbitConfig conf, Consumer<RightState[]> cons) {
         int idx = currState.idx;
         int[] left = lefts[idx];
-        if (currState.block().size() == k - left.length) {
+        int ol = conf.orbitSize();
+        if (currState.block().size() == conf.k() - left.length) {
             RightState[] nextDesign = rights.clone();
             nextDesign[idx] = currState;
             if (idx == lefts.length - 1) {
@@ -286,18 +281,18 @@ public class Applicator1Test {
             }
             int nextIdx = idx + 1;
             int[] nextLeft = lefts[nextIdx];
-            FixBS nextWhitelist = new FixBS(v);
-            nextWhitelist.flip(0, v);
+            FixBS nextWhitelist = new FixBS(ol);
+            nextWhitelist.flip(0, ol);
             for (int el : nextLeft) {
-                nextWhitelist.diffModuleShifted(currState.outerFilter, v, el == 0 ? 0 : v - el);
+                nextWhitelist.diffModuleShifted(currState.outerFilter, ol, el == 0 ? 0 : ol - el);
             }
-            RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
-            find(lefts, nextDesign, nextState, v, k, cons);
+            RightState nextState = new RightState(new IntList(conf.k()), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
+            find(lefts, nextDesign, nextState, conf, cons);
         } else {
             FixBS whiteList = currState.whiteList;
             for (int el = whiteList.nextSetBit(currState.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
-                RightState nextState = currState.acceptElem(el, left, v);
-                find(lefts, rights, nextState, v, k, cons);
+                RightState nextState = currState.acceptElem(el, left, ol);
+                find(lefts, rights, nextState, conf, cons);
             }
         }
     }
