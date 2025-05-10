@@ -25,16 +25,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class Applicator1Test {
     @Test
     public void findPossible() {
-        int v = 53;
-        int k = 6;
-        List<IntList> res = getSuitable(v, k);
+        OrbitConfig conf = new OrbitConfig(133, 7, 6);
+        List<IntList> res = getSuitable(conf);
         res.forEach(System.out::println);
     }
 
-    private static List<IntList> getSuitable(int v, int k) {
-        IntList il = new IntList(v);
+    private static List<IntList> getSuitable(OrbitConfig conf) {
+        IntList il = new IntList(conf.v());
         List<IntList> res = new ArrayList<>();
-        find(v, k, v % k == 0 ? k - 1 : 0, v % k == 0 ? k - 1 : 0, 0, il, res::add);
+        find(conf.orbitSize(), conf.k(), conf.innerFilter().cardinality(), conf.innerFilter().cardinality(), conf.outerFilter().cardinality(), il, res::add);
         return res;
     }
 
@@ -88,37 +87,36 @@ public class Applicator1Test {
 
     @Test
     public void generate() throws IOException {
-        int v = 48;
-        int k = 6;
-        int[][] suitable = getSuitable(v, k).stream().map(IntList::toArray).toArray(int[][]::new);
-        File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + ".txt");
+        OrbitConfig conf = new OrbitConfig(48, 6, 6);
+        int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             for (int[] chunks : suitable) {
-                generateChunks(ps, chunks, v, k);
+                generateChunks(ps, chunks, conf);
             }
         }
     }
 
-    private void generateChunks(PrintStream ps, int[] chunks, int v, int k) {
-        int[] freq = new int[k + 1];
+    private void generateChunks(PrintStream ps, int[] chunks, OrbitConfig conf) {
+        int[] freq = new int[conf.k() + 1];
         for (int val : chunks) {
             freq[val]++;
         }
         int total = Arrays.stream(freq, 2, freq.length).sum();
-        System.out.println("Generate for " + v + " " + k + " " + Arrays.toString(chunks) + " " + total);
-        int[] multipliers = Combinatorics.multipliers(v);
-        IntList newBlock = new IntList(k);
+        System.out.println("Generate for " + conf.v() + " " + conf.k() + " " + Arrays.toString(chunks) + " " + total);
+        int[] multipliers = Combinatorics.multipliers(conf.orbitSize());
+        IntList newBlock = new IntList(conf.k());
         newBlock.add(0);
-        FixBS filter = baseFilter(v, k);
+        FixBS filter = conf.innerFilter();
         FixBS whiteList = filter.copy();
-        whiteList.flip(1, v);
+        whiteList.flip(1, conf.orbitSize());
         List<State[]> triples = new ArrayList<>();
-        searchDesigns(new State[0], freq, new State(newBlock, filter, whiteList).acceptElem(1, v), v, k, des -> {
-            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+        searchDesigns(new State[0], freq, new State(newBlock, filter, whiteList).acceptElem(1, conf.orbitSize()), conf.orbitSize(), conf.k(), des -> {
+            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(conf.orbitSize(), st.block.toArray())).toArray(FixBS[]::new);
             for (int mul : multipliers) {
-                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, conf.orbitSize())).sorted().toArray(FixBS[]::new))) {
                     return true;
                 }
             }
@@ -136,16 +134,16 @@ public class Applicator1Test {
             }
             FixBS ftr = des[des.length - 1].filter;
             FixBS whL = ftr.copy();
-            whL.flip(1, v);
-            IntList nwb = new IntList(k);
+            whL.flip(1, conf.orbitSize());
+            IntList nwb = new IntList(conf.k());
             nwb.add(0);
-            searchDesigns(des, rem, new State(nwb, ftr, whL).acceptElem(whL.nextSetBit(0), v), v, k, finDes -> {
+            searchDesigns(des, rem, new State(nwb, ftr, whL).acceptElem(whL.nextSetBit(0), conf.orbitSize()), conf.orbitSize(), conf.k(), finDes -> {
                 if (finDes.length < total) {
                     return false;
                 }
-                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(v, st.block.toArray())).toArray(FixBS[]::new);
+                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(conf.orbitSize(), st.block.toArray())).toArray(FixBS[]::new);
                 for (int mul : multipliers) {
-                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, v)).sorted().toArray(FixBS[]::new))) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, mul, conf.orbitSize())).sorted().toArray(FixBS[]::new))) {
                         return true;
                     }
                 }
@@ -350,7 +348,7 @@ public class Applicator1Test {
                 throw new IllegalArgumentException();
             }
             int ol = v / 2;
-            if (ol % 2 == 0 && traceLength % 2 != 0) {
+            if (ol % 2 == 0 && (traceLength == 0 || traceLength % 2 != 0)) {
                 throw new IllegalArgumentException();
             }
             if (traceLength != 0) {
@@ -423,5 +421,8 @@ public class Applicator1Test {
         OrbitConfig oc3 = new OrbitConfig(91, 7, 3);
         assertEquals(FixBS.of(45, 0, 15, 30), oc3.outerFilter());
         assertEquals(FixBS.of(45, 15, 30), oc3.innerFilter());
+        OrbitConfig oc4 = new OrbitConfig(133, 7, 6);
+        assertEquals(FixBS.of(66), oc4.outerFilter());
+        assertEquals(FixBS.of(66, 11, 22, 33, 44, 55), oc4.innerFilter());
     }
 }
