@@ -20,6 +20,8 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class Applicator1Test {
     @Test
     public void findPossible() {
@@ -340,5 +342,78 @@ public class Applicator1Test {
         public int last() {
             return block.isEmpty() ? -1 : block.getLast();
         }
+    }
+
+    private record OrbitConfig(int v, int k, int traceLength, boolean infinity) {
+        public OrbitConfig {
+            int pc = infinity ? 2 * v + 1 : 2 * v;
+            if ((pc - 1) % (k - 1) != 0 || (pc * pc - pc) % (k * k - k) != 0) {
+                throw new IllegalArgumentException();
+            }
+            if (v % 2 == 0 && traceLength % 2 != 0) {
+                throw new IllegalArgumentException();
+            }
+            if (traceLength != 0) {
+                if (v % traceLength != 0) {
+                    throw new IllegalArgumentException();
+                }
+                int div = k / traceLength;
+                if ((infinity ? k - 1 : k) % traceLength != 0 || div != 1 && div != 2) {
+                    throw new IllegalArgumentException();
+                }
+            }
+        }
+
+        public FixBS innerFilter() {
+            FixBS filter = new FixBS(v);
+            if (traceLength != 0) {
+                for (int i = 1; i < v; i++) {
+                    if (i * traceLength % v == 0) {
+                        filter.set(i);
+                    }
+                }
+            }
+            if (traceLength == 0 && infinity) {
+                for (int i = 1; i < v; i++) {
+                    if (i * (k - 1) % v == 0) {
+                        filter.set(i);
+                    }
+                }
+            }
+            return filter;
+        }
+
+        public FixBS outerFilter() {
+            FixBS filter = new FixBS(v);
+            if (traceLength != 0 && k / traceLength != 1) {
+                for (int i = 0; i < v; i++) {
+                    if (i * traceLength % v == 0) {
+                        filter.set(i);
+                    }
+                }
+            }
+            return filter;
+        }
+
+        @Override
+        public String toString() {
+            return traceLength == 0 ? v + "-" + k : v + "-" + k + "-" + traceLength;
+        }
+    }
+
+    @Test
+    public void testOrbitConfig() {
+        OrbitConfig oc = new OrbitConfig(8, 4, 4, false);
+        assertEquals(FixBS.of(8), oc.outerFilter());
+        assertEquals(FixBS.of(8, 2, 4, 6), oc.innerFilter());
+        OrbitConfig oc1 = new OrbitConfig(8, 4, 2, false);
+        assertEquals(FixBS.of(8, 0, 4), oc1.outerFilter());
+        assertEquals(FixBS.of(8, 4), oc1.innerFilter());
+        OrbitConfig oc2 = new OrbitConfig(45, 6, 0, true);
+        assertEquals(FixBS.of(45), oc2.outerFilter());
+        assertEquals(FixBS.of(45, 9, 18, 27, 36), oc2.innerFilter());
+        OrbitConfig oc3 = new OrbitConfig(45, 7, 3, true);
+        assertEquals(FixBS.of(45, 0, 15, 30), oc3.outerFilter());
+        assertEquals(FixBS.of(45, 15, 30), oc3.innerFilter());
     }
 }
