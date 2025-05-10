@@ -13,15 +13,12 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 public class Applicator1Test {
     @Test
@@ -56,16 +53,6 @@ public class Applicator1Test {
     }
 
     private record State(IntList block, FixBS filter, FixBS whiteList) {
-        public static State fromBlock(int[] block, int v, int k) {
-            FixBS whiteList = new FixBS(v);
-            whiteList.set(1, v);
-            State result = new State(new IntList(k), new FixBS(v), whiteList);
-            for (int el : block) {
-                result = result.acceptElem(el, v);
-            }
-            return result;
-        }
-
         private State acceptElem(int el, int v) {
             int sz = block.size();
             IntList nextBlock = block.copy();
@@ -102,26 +89,23 @@ public class Applicator1Test {
         int v = 48;
         int k = 6;
         int[][] suitable = getSuitable(v, k).stream().map(IntList::toArray).toArray(int[][]::new);
-        for (int[] chunks : suitable) {
-            File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + "-"
-                    + Arrays.stream(chunks).mapToObj(Integer::toString).collect(Collectors.joining("-")) + ".txt");
-            try (FileOutputStream fos = new FileOutputStream(f);
-                 BufferedOutputStream bos = new BufferedOutputStream(fos);
-                 PrintStream ps = new PrintStream(bos)) {
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            for (int[] chunks : suitable) {
                 generateChunks(ps, chunks, v, k);
             }
         }
     }
 
     private void generateChunks(PrintStream ps, int[] chunks, int v, int k) {
-        System.out.println("Generate for " + v + " " + k + " " + Arrays.toString(chunks));
         int[] freq = new int[k + 1];
         for (int val : chunks) {
-            if (val > 1) {
-                freq[val]++;
-            }
+            freq[val]++;
         }
-        int total = Arrays.stream(freq).sum();
+        int total = Arrays.stream(freq, 2, freq.length).sum();
+        System.out.println("Generate for " + v + " " + k + " " + Arrays.toString(chunks) + " " + total);
         int[] multipliers = Combinatorics.multipliers(v);
         IntList newBlock = new IntList(k);
         newBlock.add(0);
@@ -163,26 +147,14 @@ public class Applicator1Test {
                         return true;
                     }
                 }
-                ps.println(Arrays.toString(Arrays.stream(finDes).map(State::block).toArray()));
+                List<int[]> res = Arrays.stream(base).map(FixBS::toArray).collect(Collectors.toList());
+                IntStream.range(0, freq[1]).forEach(i -> res.add(new int[]{0}));
+                IntStream.range(0, freq[0]).forEach(i -> res.add(new int[]{}));
+                ps.println(Arrays.deepToString(res.toArray(int[][]::new)));
                 ps.flush();
                 return true;
             });
         });
-    }
-
-    private static Stream<int[]> blocks(int[] block, int v) {
-        Set<FixBS> set = new HashSet<>(2 * v);
-        List<int[]> res = new ArrayList<>();
-        for (int i = 0; i < v; i++) {
-            FixBS fbs = new FixBS(v);
-            for (int el : block) {
-                fbs.set((el + i) % v);
-            }
-            if (set.add(fbs)) {
-                res.add(fbs.toArray());
-            }
-        }
-        return res.stream();
     }
 
     private boolean bigger(FixBS[] base, FixBS[] cand) {
@@ -212,13 +184,14 @@ public class Applicator1Test {
 
     private static void searchDesigns(State[] currDesign, int[] freq, State state, int v, int k, Predicate<State[]> cons) {
         IntList block = state.block;
-        if (hasNext(freq, state.size() + 1)) {
+        int size = state.size();
+        if (hasNext(freq, size + 1)) {
             for (int el = state.whiteList.nextSetBit(block.getLast()); el >= 0; el = state.whiteList.nextSetBit(el + 1)) {
                 State nextState = state.acceptElem(el, v);
                 searchDesigns(currDesign, freq, nextState, v, k, cons);
             }
         }
-        if (freq[state.size()] > 0) {
+        if (freq[size] > 0) {
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
             nextDesign[currDesign.length] = state;
             if (cons.test(nextDesign)) {
@@ -230,7 +203,7 @@ public class Applicator1Test {
             whiteList.flip(1, v);
             State nextState = new State(newBlock, state.filter, whiteList).acceptElem(whiteList.nextSetBit(0), v);
             int[] newFreq = freq.clone();
-            newFreq[state.size()]--;
+            newFreq[size]--;
             searchDesigns(nextDesign, newFreq, nextState, v, k, cons);
         }
     }
@@ -263,19 +236,16 @@ public class Applicator1Test {
         return result;
     }
 
-    private static List<int[][]> readAndEnhance(int v, int k, int[] chunks) throws IOException {
-        File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + "-"
-                + Arrays.stream(chunks).mapToObj(Integer::toString).collect(Collectors.joining("-")) + ".txt");
-        int ones = Arrays.stream(chunks).filter(i -> i == 1).sum();
+    private static List<int[][]> read(int v, int k) throws IOException {
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", k + "-" + v + ".txt");
         try (FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
             List<int[][]> result = new ArrayList<>();
             br.lines().forEach(l -> {
                 String[] spl = l.substring(2, l.length() - 2).split("], \\[");
-                result.add(Stream.concat(
-                        Arrays.stream(spl).map(p -> Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray()),
-                        IntStream.range(0, ones).mapToObj(i -> new int[]{0})).toArray(int[][]::new));
+                result.add(Arrays.stream(spl).map(p -> p.isEmpty() ? new int[]{} : Arrays.stream(p.split(", "))
+                        .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new));
             });
             return result;
         }
@@ -285,11 +255,8 @@ public class Applicator1Test {
     public void calculate() throws IOException {
         int v = 48;
         int k = 6;
-        List<IntList> res = getSuitable(v, k);
-        int idx = 2;
-        int[] base = res.get(idx).toArray();
         FixBS filter = baseFilter(v, k);
-        List<int[][]> lefts = readAndEnhance(v, k, base);
+        List<int[][]> lefts = read(v, k);
         System.out.println("Lefts size: " + lefts.size());
         AtomicInteger ai = new AtomicInteger();
         lefts.stream().parallel().forEach(left -> {
