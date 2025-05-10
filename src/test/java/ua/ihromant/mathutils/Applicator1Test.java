@@ -351,7 +351,7 @@ public class Applicator1Test {
                     throw new IllegalArgumentException();
                 }
                 int div = k / traceLength;
-                if ((k % 2 == 1 ? k - 1 : k) % traceLength != 0 || div != 1 && div != 2) {
+                if (k % 2 == 1 && (k % traceLength != 1 || div != 1 && div != 2)) {
                     throw new IllegalArgumentException();
                 }
             }
@@ -365,10 +365,29 @@ public class Applicator1Test {
                         filter.set(i);
                     }
                 }
+                if (k == traceLength * 2 && infinity()) {
+                    for (int i = 1; i < orbitSize(); i++) {
+                        if (i * (k - 1) % orbitSize() == 0) {
+                            filter.set(i);
+                        }
+                    }
+                }
             }
             if (traceLength == 0 && infinity()) {
                 for (int i = 1; i < orbitSize(); i++) {
                     if (i * (k - 1) % orbitSize() == 0) {
+                        filter.set(i);
+                    }
+                }
+            }
+            return filter;
+        }
+
+        public FixBS outerFilter() {
+            FixBS filter = new FixBS(orbitSize());
+            if (traceLength != 0 && k / traceLength != 1) {
+                for (int i = 0; i < orbitSize(); i++) {
+                    if (i * traceLength % orbitSize() == 0) {
                         filter.set(i);
                     }
                 }
@@ -382,18 +401,6 @@ public class Applicator1Test {
 
         public boolean infinity() {
             return v % 2 == 1;
-        }
-
-        public FixBS outerFilter() {
-            FixBS filter = new FixBS(orbitSize());
-            if (traceLength != 0 && k / traceLength != 1) {
-                for (int i = 0; i < orbitSize(); i++) {
-                    if (i * traceLength % orbitSize() == 0) {
-                        filter.set(i);
-                    }
-                }
-            }
-            return filter;
         }
 
         @Override
@@ -422,5 +429,14 @@ public class Applicator1Test {
         OrbitConfig oc5 = new OrbitConfig(65, 5, 2);
         assertEquals(FixBS.of(32, 0, 16), oc5.outerFilter());
         assertEquals(FixBS.of(32, 16), oc5.innerFilter());
+        OrbitConfig oc6 = new OrbitConfig(25, 4, 2);
+        assertEquals(FixBS.of(12, 0, 6), oc6.outerFilter());
+        assertEquals(FixBS.of(12, 4, 6, 8), oc6.innerFilter());
+        OrbitConfig oc7 = new OrbitConfig(91, 6, 3);
+        assertEquals(FixBS.of(45, 0, 15, 30), oc7.outerFilter());
+        assertEquals(FixBS.of(45, 9, 15, 18, 27, 30, 36), oc7.innerFilter());
+        OrbitConfig oc8 = new OrbitConfig(113, 8, 4);
+        assertEquals(FixBS.of(56, 0, 14, 28, 42), oc8.outerFilter());
+        assertEquals(FixBS.of(56, 8, 14, 16, 24, 28, 32, 40, 42, 48), oc8.innerFilter());
     }
 }
