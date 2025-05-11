@@ -303,6 +303,9 @@ public class Applicator1Test {
             Consumer<RightState[]> cons = arr -> {
                 int[][][] res = IntStream.range(0, left.length).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
                 ps.println(Arrays.deepToString(res));
+                if (ps != System.out) {
+                    System.out.println(Arrays.deepToString(res));
+                }
             };
             int[] fstLeft = left[0];
             RightState[] rights = new RightState[left.length];
