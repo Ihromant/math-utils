@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -14,6 +16,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -243,17 +246,63 @@ public class Applicator1Test {
     public void calculate() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, 2);
         List<int[][]> lefts = read(conf);
-        calculate(lefts, conf);
+        calculate(lefts, conf, System.out);
     }
 
-    private static void calculate(List<int[][]> lefts, OrbitConfig conf) {
-        System.out.println("Lefts size: " + lefts.size());
+    private record ArrWrap(int[][] arr) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ArrWrap(int[][] arr1))) return false;
+
+            return Arrays.deepEquals(arr, arr1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.deepHashCode(arr);
+        }
+    }
+
+    private static final ObjectMapper om = new ObjectMapper();
+
+    @SneakyThrows
+    private static ArrWrap readArr(String s) {
+        return new ArrWrap(om.readValue(s, int[][].class));
+    }
+
+    @Test
+    public void calculateFile() throws IOException {
+        OrbitConfig conf = new OrbitConfig(96, 6, 6);
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Set<ArrWrap> set = allBr.lines().map(Applicator1Test::readArr).collect(Collectors.toSet());
+            br.lines().forEach(l -> {
+                if (l.contains("[[[")) {
+                    System.out.println(l);
+                } else {
+                    set.remove(readArr(l));
+                }
+            });
+            calculate(set.stream().map(ArrWrap::arr).collect(Collectors.toList()), conf, ps);
+        }
+    }
+
+    private static void calculate(List<int[][]> lefts, OrbitConfig conf, PrintStream ps) {
+        System.out.println("Lefts size: " + lefts.size() + " for conf " + conf);
         AtomicInteger ai = new AtomicInteger();
         lefts.stream().parallel().forEach(left -> {
             Consumer<RightState[]> cons = arr -> {
                 int[][][] res = IntStream.range(0, left.length).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
-                System.out.println(Arrays.deepToString(res));
-                //System.out.println(Arrays.deepToString(left) + " " + Arrays.deepToString(arr));
+                ps.println(Arrays.deepToString(res));
             };
             int[] fstLeft = left[0];
             RightState[] rights = new RightState[left.length];
@@ -268,7 +317,12 @@ public class Applicator1Test {
                 state = state.acceptElem(0, fstLeft, conf.orbitSize());
             }
             find(left, rights, state, conf, cons);
-            System.out.println(ai.incrementAndGet());
+            if (ps != System.out) {
+                ps.println(Arrays.deepToString(left));
+                ps.flush();
+            } else {
+                ps.println(ai.incrementAndGet());
+            }
         });
     }
 
