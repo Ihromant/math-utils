@@ -438,5 +438,14 @@ public class Applicator1Test {
         OrbitConfig oc8 = new OrbitConfig(113, 8, 4);
         assertEquals(FixBS.of(56, 0, 14, 28, 42), oc8.outerFilter());
         assertEquals(FixBS.of(56, 8, 14, 16, 24, 28, 32, 40, 42, 48), oc8.innerFilter());
+        OrbitConfig oc9 = new OrbitConfig(176, 8, 4);
+        assertEquals(FixBS.of(88, 0, 22, 44, 66), oc9.outerFilter());
+        assertEquals(FixBS.of(88, 22, 44, 66), oc9.innerFilter());
+        OrbitConfig oc10 = new OrbitConfig(176, 8, 8);
+        assertEquals(FixBS.of(88), oc10.outerFilter());
+        assertEquals(FixBS.of(88, 11, 22, 33, 44, 55, 66, 77), oc10.innerFilter());
+        OrbitConfig oc11 = new OrbitConfig(169, 8, 4);
+        assertEquals(FixBS.of(84, 0, 21, 42, 63), oc11.outerFilter());
+        assertEquals(FixBS.of(84, 12, 21, 24, 36, 42, 48, 60, 63, 72), oc11.innerFilter());
     }
 }
