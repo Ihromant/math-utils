@@ -243,12 +243,16 @@ public class Applicator1Test {
     public void calculate() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, 2);
         List<int[][]> lefts = read(conf);
+        calculate(lefts, conf);
+    }
+
+    private static void calculate(List<int[][]> lefts, OrbitConfig conf) {
         System.out.println("Lefts size: " + lefts.size());
         AtomicInteger ai = new AtomicInteger();
         lefts.stream().parallel().forEach(left -> {
             Consumer<RightState[]> cons = arr -> {
-                System.out.println(IntStream.range(0, left.length).mapToObj(i -> Arrays.toString(left[i]) + " " + arr[i].block)
-                        .collect(Collectors.joining(", ", "[", "]")));
+                int[][][] res = IntStream.range(0, left.length).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
+                System.out.println(Arrays.deepToString(res));
                 //System.out.println(Arrays.deepToString(left) + " " + Arrays.deepToString(arr));
             };
             int[] fstLeft = left[0];
