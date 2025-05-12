@@ -23,7 +23,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -62,14 +61,12 @@ public class BibdFinder6CyclicTest {
         Group group = new SimpleLinear(2, new GaloisField(3));
         Group table = group.asTable();
         int v = table.order() + fixed;
-        int k = 3;
+        int k = 6;
+        int[][] auths = auth(table);
         List<State> states = new ArrayList<>();
         BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
             State st = arr[0];
             if (st.stabilizer.cardinality() > 1) {
-                if (fixed > 0) {
-                    st.filter.clear(group.order());
-                }
                 states.add(st);
             }
             return true;
@@ -79,18 +76,29 @@ public class BibdFinder6CyclicTest {
         FixBS empty = new FixBS(v);
         State state = new State(zero, zero, empty, zero, 1);
         searchDesigns(table, empty, new State[0], state, v, k, 0, blocksNeeded, cons);
-        System.out.println("Stabilized " + states.size());
+        System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
         File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-                if ((table.order() - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
-                    ps.println(lst.stream().map(st -> st.block.toString()).collect(Collectors.joining(" ")));
+                int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+                for (int[] auth : auths) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                        return true;
+                    }
+                }
+                if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                    ps.println(Arrays.deepToString(base));
                 }
                 return false;
             };
-            find(states, -1, new FixBS(v), new ArrayList<>(), pred);
+            IntStream.range(0, states.size()).parallel().forEach(i -> {
+                List<State> init = new ArrayList<>();
+                State st = states.get(i);
+                init.add(st);
+                find(states, i, st.filter, init, pred);
+            });
         }
     }
 
