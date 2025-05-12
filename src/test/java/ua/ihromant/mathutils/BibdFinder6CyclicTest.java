@@ -60,21 +60,32 @@ public class BibdFinder6CyclicTest {
     public void dumpBeginnings() throws IOException {
         int fixed = 1;
         Group group = new SimpleLinear(2, new GaloisField(3));
-        int v = group.order();
+        Group table = group.asTable();
+        int v = table.order() + fixed;
         int k = 3;
         List<State> states = new ArrayList<>();
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-ntr.txt")).forEach(l -> {
-            FixBS block = FixBS.of(v, Arrays.stream(l.substring(1, l.length() - 1).split(", ")).mapToInt(Integer::parseInt).toArray());
-            State state = State.fromBlock(group, v, k, block);
-            state.filter.clear(group.order());
-            states.add(state);
-        });
-        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab.txt");
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            State st = arr[0];
+            if (st.stabilizer.cardinality() > 1) {
+                if (fixed > 0) {
+                    st.filter.clear(group.order());
+                }
+                states.add(st);
+            }
+            return true;
+        };
+        int blocksNeeded = v * (v - 1) / k / (k - 1);
+        FixBS zero = FixBS.of(v, 0);
+        FixBS empty = new FixBS(v);
+        State state = new State(zero, zero, empty, zero, 1);
+        searchDesigns(table, empty, new State[0], state, v, k, 0, blocksNeeded, cons);
+        System.out.println("Stabilized " + states.size());
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-                if ((group.order() - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                if ((table.order() - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
                     ps.println(lst.stream().map(st -> st.block.toString()).collect(Collectors.joining(" ")));
                 }
                 return false;
@@ -392,7 +403,7 @@ public class BibdFinder6CyclicTest {
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
-            if (sz > k / 2 && newStabilizer.cardinality() == 1) {
+            if (sz > 2 && sz > k / 2 && newStabilizer.cardinality() == 1) {
                 return null;
             }
             return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
