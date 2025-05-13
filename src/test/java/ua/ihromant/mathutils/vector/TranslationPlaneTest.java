@@ -1,13 +1,10 @@
 package ua.ihromant.mathutils.vector;
 
-import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.module.SimpleAbstractTypeResolver;
-import com.fasterxml.jackson.databind.module.SimpleModule;
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.Version;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.module.SimpleAbstractTypeResolver;
+import tools.jackson.databind.module.SimpleModule;
 import ua.ihromant.mathutils.BatchAffineTest;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.auto.CharVals;
@@ -534,8 +531,8 @@ public class TranslationPlaneTest {
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
         ObjectMapper om = new ObjectMapper();
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        // TODO om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        // TODO om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         Map<Characteristic, List<ProjChar>> projData = new ConcurrentHashMap<>(readKnown(order));
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
@@ -591,11 +588,7 @@ public class TranslationPlaneTest {
                     if (projData.values().stream().flatMap(List::stream).noneMatch(pd -> pd == chr)) {
                         projData.computeIfAbsent(chr.ternars().getFirst().chr(), k -> new CopyOnWriteArrayList<>()).add(chr);
                         counter.incrementAndGet();
-                        try {
-                            System.out.println(om.writeValueAsString(chr));
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
-                        }
+                        System.out.println(om.writeValueAsString(chr));
                         System.out.println("New " + Arrays.toString(start) + " " + Arrays.toString(arr));
                         System.out.println("Spread " + Arrays.deepToString(finalBase));
                     } else {
@@ -697,8 +690,8 @@ public class TranslationPlaneTest {
                     }
                     ProjChar chr = fromProj(name, proj, transLine);
                     ObjectMapper om = new ObjectMapper();
-                    om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-                    om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+                    // TODO fix om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+                    // TODO fix om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
                     ps.println(om.writeValueAsString(chr));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
@@ -721,7 +714,7 @@ public class TranslationPlaneTest {
 
             module.setAbstractTypes(resolver);
 
-            om.registerModule(module);
+            // TODO fix om.registerModule(module);
             while ((line = br.readLine()) != null) {
                 ProjChar chr = om.readValue(line, ProjChar.class);
                 chars.add(chr);

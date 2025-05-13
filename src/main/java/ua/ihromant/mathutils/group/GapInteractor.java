@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.group;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.File;
 import java.io.IOException;

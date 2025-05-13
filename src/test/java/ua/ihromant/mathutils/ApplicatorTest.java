@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
 import ua.ihromant.mathutils.group.CyclicGroup;

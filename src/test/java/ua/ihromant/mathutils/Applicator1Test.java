@@ -1,8 +1,8 @@
 package ua.ihromant.mathutils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -13,8 +13,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.BitSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -123,7 +127,7 @@ public class Applicator1Test {
                     return true;
                 }
             }
-            if (des.length < 3) {
+            if (des.length < 2) {
                 return false;
             }
             triples.add(des);
@@ -468,6 +472,64 @@ public class Applicator1Test {
         public String toString() {
             return traceLength == 0 ? v + "-" + k : v + "-" + k + "-" + traceLength;
         }
+
+        public Liner fromChunks(int[][][] chunks) {
+            Set<BitSet> result = new HashSet<>();
+            int ol = orbitSize();
+            if (v % 2 == 1) {
+                if (k % 2 == 1) {
+
+                } else {
+
+                }
+            } else {
+                if (traceLength != 0) {
+                    if (traceLength == k) {
+                        for (int i = 0; i < ol; i++) {
+                            BitSet lBlock = new BitSet(v);
+                            for (int j = 0; j < traceLength; j++) {
+                                lBlock.set((j * ol / traceLength + i) % ol);
+                            }
+                            result.add(lBlock);
+                        }
+                        for (int i = 0; i < ol; i++) {
+                            BitSet rBlock = new BitSet(v);
+                            for (int j = 0; j < traceLength; j++) {
+                                rBlock.set((j * ol / traceLength + i) % ol + ol);
+                            }
+                            result.add(rBlock);
+                        }
+                    }
+                    if (traceLength == k / 2) {
+                        for (int i = 0; i < ol; i++) {
+                            BitSet block = new BitSet(v);
+                            for (int j = 0; j < traceLength; j++) {
+                                block.set((j * ol / traceLength + i) % ol);
+                            }
+                            for (int j = 0; j < traceLength; j++) {
+                                block.set((j * ol / traceLength + i) % ol + ol);
+                            }
+                            result.add(block);
+                        }
+                    }
+                }
+            }
+            for (int[][] chunk : chunks) {
+                int[] left = chunk[0];
+                int[] right = chunk[1];
+                for (int i = 0; i < ol; i++) {
+                    BitSet block = new BitSet(v);
+                    for (int l : left) {
+                        block.set((l + i) % ol);
+                    }
+                    for (int r : right) {
+                        block.set((r + i) % ol + ol);
+                    }
+                    result.add(block);
+                }
+            }
+            return new Liner(result.toArray(BitSet[]::new));
+        }
     }
 
     @Test
@@ -508,5 +570,19 @@ public class Applicator1Test {
         OrbitConfig oc11 = new OrbitConfig(169, 8, 4);
         assertEquals(FixBS.of(84, 0, 21, 42, 63), oc11.outerFilter());
         assertEquals(FixBS.of(84, 12, 21, 24, 36, 42, 48, 60, 63, 72), oc11.innerFilter());
+    }
+
+    @Test
+    public void inspect() throws IOException {
+        OrbitConfig conf = new OrbitConfig(106, 6, 0);
+        ObjectMapper om = new ObjectMapper();
+        Files.lines(Path.of("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt")).forEach(l -> {
+            if (!l.contains("[[[")) {
+                return;
+            }
+            int[][][] chunks = om.readValue(l, int[][][].class);
+            Liner lnr = conf.fromChunks(chunks);
+            System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(chunks));
+        });
     }
 }

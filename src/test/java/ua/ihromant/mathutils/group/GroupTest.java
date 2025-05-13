@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils.group;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.ApplicatorTest;
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.GaloisField;

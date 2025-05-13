@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
@@ -539,7 +539,7 @@ public class ScalarTest {
     }
 
     @Test
-    public void testArc() throws IOException {
+    public void testArc() {
         int[][] auths = new ObjectMapper().readValue(getClass().getResourceAsStream("/denniston.txt"), int[][].class);
         Liner arc = HyperbolicPlaneTest.dennistonArc(16, 8);
         int pc = arc.pointCount();

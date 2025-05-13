@@ -1,8 +1,7 @@
 package ua.ihromant.mathutils;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
@@ -118,23 +117,15 @@ public class BatchIsomorphismTest {
         ObjectMapper om = new ObjectMapper();
         Group ccl = new CyclicGroup(126);
         Arrays.stream(CYCLIC.split("\n")).forEach(str -> {
-            try {
-                int[][] base = om.readValue(str, int[][].class);
-                Liner lnr = Liner.byDiffFamily(ccl, base);
-                grouped.computeIfAbsent(lnr.hyperbolicFreq(), ky -> new ArrayList<>()).add(new DesignData(6, base));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+            int[][] base = om.readValue(str, int[][].class);
+            Liner lnr = Liner.byDiffFamily(ccl, base);
+            grouped.computeIfAbsent(lnr.hyperbolicFreq(), ky -> new ArrayList<>()).add(new DesignData(6, base));
         });
         Group comm = new CyclicProduct(2, 3, 3, 7);
         Arrays.stream(COMM.split("\n")).forEach(str -> {
-            try {
-                int[][] base = om.readValue(str, int[][].class);
-                Liner lnr = Liner.byDiffFamily(comm, base);
-                grouped.computeIfAbsent(lnr.hyperbolicFreq(), ky -> new ArrayList<>()).add(new DesignData(16, base));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+            int[][] base = om.readValue(str, int[][].class);
+            Liner lnr = Liner.byDiffFamily(comm, base);
+            grouped.computeIfAbsent(lnr.hyperbolicFreq(), ky -> new ArrayList<>()).add(new DesignData(16, base));
         });
         int k = 6;
         int fixed = 0;
@@ -257,18 +248,8 @@ public class BatchIsomorphismTest {
             if (!l.contains("[[")) {
                 return;
             }
-            int[][] arr1;
-            try {
-                arr1 = om.readValue(l.substring(l.indexOf("[{"), l.indexOf("}]") + 2).replace('{', '[').replace('}', ']'), int[][].class);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-            int[][] arr2;
-            try {
-                arr2 = om.readValue(l.substring(l.indexOf("[["), l.indexOf("]]") + 2), int[][].class);
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
+            int[][] arr1 = om.readValue(l.substring(l.indexOf("[{"), l.indexOf("}]") + 2).replace('{', '[').replace('}', ']'), int[][].class);
+            int[][] arr2 = om.readValue(l.substring(l.indexOf("[["), l.indexOf("]]") + 2), int[][].class);
             int[][] base = Stream.concat(Arrays.stream(arr1), Arrays.stream(arr2)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
             for (int[] auth : auths) {
                 if (BibdFinder6CyclicTest.bigger(base, Arrays.stream(base).map(bl -> BibdFinder6CyclicTest.minimalTuple(bl, auth, group)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
@@ -281,11 +262,7 @@ public class BatchIsomorphismTest {
     }
 
     private static int[][] read(ObjectMapper om, String val) {
-        try {
-            return om.readValue(val.substring(val.indexOf("[["), val.indexOf("]]") + 2), int[][].class);
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException(e);
-        }
+        return om.readValue(val.substring(val.indexOf("[["), val.indexOf("]]") + 2), int[][].class);
     }
 
     @Test
