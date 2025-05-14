@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils;
 
-import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.util.FixBS;
@@ -267,16 +266,10 @@ public class Applicator1Test {
         }
     }
 
-    private static final ObjectMapper om = new ObjectMapper();
-
-    @SneakyThrows
-    private static ArrWrap readArr(String s) {
-        return new ArrWrap(om.readValue(s, int[][].class));
-    }
-
     @Test
     public void calculateFile() throws IOException {
         OrbitConfig conf = new OrbitConfig(96, 6, 6);
+        ObjectMapper om = new ObjectMapper();
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt");
         File beg = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
@@ -288,12 +281,12 @@ public class Applicator1Test {
              FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
-            Set<ArrWrap> set = allBr.lines().map(Applicator1Test::readArr).collect(Collectors.toSet());
+            Set<ArrWrap> set = allBr.lines().map(s -> new ArrWrap(om.readValue(s, int[][].class))).collect(Collectors.toSet());
             br.lines().forEach(l -> {
                 if (l.contains("[[[")) {
                     System.out.println(l);
                 } else {
-                    set.remove(readArr(l));
+                    set.remove(new ArrWrap(om.readValue(l, int[][].class)));
                 }
             });
             calculate(set.stream().map(ArrWrap::arr).collect(Collectors.toList()), conf, ps);
