@@ -17,6 +17,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -92,15 +93,40 @@ public class Applicator1Test {
     }
 
     @Test
-    public void generate() throws IOException {
+    public void generate() {
+        OrbitConfig conf = new OrbitConfig(40, 4, 4);
+        int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
+        List<int[][]> chunks = new ArrayList<>();
+        List<int[][]> snc = Collections.synchronizedList(chunks);
+        for (int[] sizes : suitable) {
+            generateChunks(sizes, conf, snc::add);
+        }
+        AtomicInteger ai = new AtomicInteger();
+        ChunkCallback cb = new ChunkCallback() {
+            @Override
+            public void onDesign(int[][][] design) {
+                Liner liner = conf.fromChunks(design);
+                System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+            }
+
+            @Override
+            public void onFinish(int[][] chunk) {
+                System.out.println(ai.incrementAndGet());
+            }
+        };
+        calculate(chunks, conf, cb);
+    }
+
+    @Test
+    public void chunksToFile() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, 2);
         int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            Consumer<int[][]> cons = chunks -> {
-                ps.println(Arrays.deepToString(chunks));
+            Consumer<int[][]> cons = chunk -> {
+                ps.println(Arrays.deepToString(chunk));
                 ps.flush();
             };
             for (int[] sizes : suitable) {
@@ -130,7 +156,7 @@ public class Applicator1Test {
                     return true;
                 }
             }
-            if (des.length < 2) {
+            if (des.length < Math.min(total / 2, 3)) {
                 return false;
             }
             triples.add(des);
@@ -252,7 +278,20 @@ public class Applicator1Test {
     public void calculate() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, 2);
         List<int[][]> lefts = read(conf);
-        calculate(lefts, conf, System.out);
+        AtomicInteger ai = new AtomicInteger();
+        ChunkCallback cb = new ChunkCallback() {
+            @Override
+            public void onDesign(int[][][] design) {
+                Liner liner = conf.fromChunks(design);
+                System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+            }
+
+            @Override
+            public void onFinish(int[][] chunk) {
+                System.out.println(ai.incrementAndGet());
+            }
+        };
+        calculate(lefts, conf, cb);
     }
 
     private record ArrWrap(int[][] arr) {
@@ -292,20 +331,41 @@ public class Applicator1Test {
                     set.remove(new ArrWrap(om.readValue(l, int[][].class)));
                 }
             });
-            calculate(set.stream().map(ArrWrap::arr).collect(Collectors.toList()), conf, ps);
+            AtomicInteger ai = new AtomicInteger();
+            ChunkCallback cb = new ChunkCallback() {
+                @Override
+                public void onDesign(int[][][] design) {
+                    Liner liner = conf.fromChunks(design);
+                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+                    ps.println(Arrays.deepToString(design));
+                    ps.flush();
+                }
+
+                @Override
+                public void onFinish(int[][] chunk) {
+                    ps.println(Arrays.deepToString(chunk));
+                    ps.flush();
+                    int val = ai.incrementAndGet();
+                    if (val % 100 == 0) {
+                        System.out.println(val);
+                    }
+                }
+            };
+            calculate(set.stream().map(ArrWrap::arr).collect(Collectors.toList()), conf, cb);
         }
     }
 
-    private static void calculate(List<int[][]> lefts, OrbitConfig conf, PrintStream ps) {
+    private interface ChunkCallback {
+        void onDesign(int[][][] design);
+        void onFinish(int[][] chunk);
+    }
+
+    private static void calculate(List<int[][]> lefts, OrbitConfig conf, ChunkCallback cb) {
         System.out.println("Lefts size: " + lefts.size() + " for conf " + conf);
-        AtomicInteger ai = new AtomicInteger();
         lefts.stream().parallel().forEach(left -> {
             Consumer<RightState[]> cons = arr -> {
                 int[][][] res = IntStream.range(0, left.length).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
-                ps.println(Arrays.deepToString(res));
-                if (ps != System.out) {
-                    System.out.println(Arrays.deepToString(res));
-                }
+                cb.onDesign(res);
             };
             int[] fstLeft = left[0];
             RightState[] rights = new RightState[left.length];
@@ -320,12 +380,7 @@ public class Applicator1Test {
                 state = state.acceptElem(0, fstLeft, conf.orbitSize());
             }
             find(left, rights, state, conf, cons);
-            if (ps != System.out) {
-                ps.println(Arrays.deepToString(left));
-                ps.flush();
-            } else {
-                ps.println(ai.incrementAndGet());
-            }
+            cb.onFinish(left);
         });
     }
 
