@@ -156,7 +156,7 @@ public class Applicator1Test {
                     return true;
                 }
             }
-            if (des.length < Math.min(total / 2, 3)) {
+            if (des.length < Math.min(total / 2, 2)) {
                 return false;
             }
             triples.add(des);
@@ -373,7 +373,7 @@ public class Applicator1Test {
             whiteList.set(0, conf.orbitSize());
             FixBS outerFilter = conf.outerFilter();
             for (int el : fstLeft) {
-                whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), el == 0 ? 0 : conf.orbitSize() - el);
+                whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), conf.orbitSize() - el);
             }
             RightState state = new RightState(new IntList(conf.k()), conf.innerFilter(), outerFilter, whiteList, 0);
             if (outerFilter.isEmpty()) {
@@ -400,7 +400,7 @@ public class Applicator1Test {
             FixBS nextWhitelist = new FixBS(ol);
             nextWhitelist.flip(0, ol);
             for (int el : nextLeft) {
-                nextWhitelist.diffModuleShifted(currState.outerFilter, ol, el == 0 ? 0 : ol - el);
+                nextWhitelist.diffModuleShifted(currState.outerFilter, ol, ol - el);
             }
             RightState nextState = new RightState(new IntList(conf.k()), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
             find(lefts, nextDesign, nextState, conf, cons);
@@ -442,7 +442,7 @@ public class Applicator1Test {
                 newOuterFilter.set(diff);
             }
             for (int l : left) {
-                newWhiteList.diffModuleShifted(newOuterFilter, v, l == 0 ? 0 : v - l);
+                newWhiteList.diffModuleShifted(newOuterFilter, v, v - l);
             }
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
