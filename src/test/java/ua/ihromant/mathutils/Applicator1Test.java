@@ -99,19 +99,23 @@ public class Applicator1Test {
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            for (int[] chunks : suitable) {
-                generateChunks(ps, chunks, conf);
+            Consumer<int[][]> cons = chunks -> {
+                ps.println(Arrays.deepToString(chunks));
+                ps.flush();
+            };
+            for (int[] sizes : suitable) {
+                generateChunks(sizes, conf, cons);
             }
         }
     }
 
-    private void generateChunks(PrintStream ps, int[] chunks, OrbitConfig conf) {
+    private void generateChunks(int[] sizes, OrbitConfig conf, Consumer<int[][]> cons) {
         int[] freq = new int[conf.k() + 1];
-        for (int val : chunks) {
+        for (int val : sizes) {
             freq[val]++;
         }
         int total = Arrays.stream(freq, 2, freq.length).sum();
-        System.out.println("Generate for " + conf.v() + " " + conf.k() + " " + Arrays.toString(chunks) + " " + total);
+        System.out.println("Generate for " + conf.v() + " " + conf.k() + " " + Arrays.toString(sizes) + " " + total);
         int[] multipliers = Combinatorics.multipliers(conf.orbitSize());
         IntList newBlock = new IntList(conf.k());
         newBlock.add(0);
@@ -156,8 +160,7 @@ public class Applicator1Test {
                 List<int[]> res = Arrays.stream(base).map(FixBS::toArray).collect(Collectors.toList());
                 IntStream.range(0, freq[1]).forEach(i -> res.add(new int[]{0}));
                 IntStream.range(0, freq[0]).forEach(i -> res.add(new int[]{}));
-                ps.println(Arrays.deepToString(res.toArray(int[][]::new)));
-                ps.flush();
+                cons.accept(res.toArray(int[][]::new));
                 return true;
             });
         });
