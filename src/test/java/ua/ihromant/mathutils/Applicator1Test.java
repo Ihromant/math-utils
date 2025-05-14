@@ -423,7 +423,7 @@ public class Applicator1Test {
                         filter.set(i);
                     }
                 }
-                if (k == traceLength * 2 && infinity()) {
+                if ((k == traceLength * 2 || k == traceLength) && infinity()) {
                     for (int i = 1; i < orbitSize(); i++) {
                         if (i * (k - 1) % orbitSize() == 0) {
                             filter.set(i);
@@ -470,26 +470,66 @@ public class Applicator1Test {
             Set<BitSet> result = new HashSet<>();
             int ol = orbitSize();
             if (v % 2 == 1) {
-                if (k % 2 == 1) {
-
-                } else {
-
+                int div = k / traceLength;
+                boolean exact = div * traceLength == k;
+                if (div == 1) {
+                    for (int i = 0; i < ol; i++) {
+                        BitSet lBlock = new BitSet(v);
+                        BitSet rBlock = new BitSet(v);
+                        if (!exact) {
+                            lBlock.set(v - 1);
+                            rBlock.set(v - 1);
+                        }
+                        for (int j = 0; j < traceLength; j++) {
+                            int sh = (j * ol / traceLength + i) % ol;
+                            lBlock.set(sh);
+                            rBlock.set(sh + ol);
+                        }
+                        result.add(lBlock);
+                        result.add(rBlock);
+                    }
+                }
+                if (div == 2) {
+                    for (int i = 0; i < ol; i++) {
+                        BitSet block = new BitSet(v);
+                        if (!exact) {
+                            block.set(v - 1);
+                        }
+                        for (int j = 0; j < traceLength; j++) {
+                            int sh = (j * ol / traceLength + i) % ol;
+                            block.set(sh);
+                            block.set(sh + ol);
+                        }
+                        result.add(block);
+                    }
+                }
+                if (exact) {
+                    for (int i = 0; i < ol; i++) {
+                        BitSet lBlock = new BitSet(v);
+                        BitSet rBlock = new BitSet(v);
+                        lBlock.set(v - 1);
+                        rBlock.set(v - 1);
+                        for (int j = 0; j < k - 1; j++) {
+                            int sh = (j * ol / (k - 1) + i) % ol;
+                            lBlock.set(sh);
+                            rBlock.set(sh + ol);
+                        }
+                        result.add(lBlock);
+                        result.add(rBlock);
+                    }
                 }
             } else {
                 if (traceLength != 0) {
                     if (traceLength == k) {
                         for (int i = 0; i < ol; i++) {
                             BitSet lBlock = new BitSet(v);
-                            for (int j = 0; j < traceLength; j++) {
-                                lBlock.set((j * ol / traceLength + i) % ol);
-                            }
-                            result.add(lBlock);
-                        }
-                        for (int i = 0; i < ol; i++) {
                             BitSet rBlock = new BitSet(v);
                             for (int j = 0; j < traceLength; j++) {
-                                rBlock.set((j * ol / traceLength + i) % ol + ol);
+                                int sh = (j * ol / traceLength + i) % ol;
+                                lBlock.set(sh);
+                                rBlock.set(sh + ol);
                             }
+                            result.add(lBlock);
                             result.add(rBlock);
                         }
                     }
@@ -497,10 +537,9 @@ public class Applicator1Test {
                         for (int i = 0; i < ol; i++) {
                             BitSet block = new BitSet(v);
                             for (int j = 0; j < traceLength; j++) {
-                                block.set((j * ol / traceLength + i) % ol);
-                            }
-                            for (int j = 0; j < traceLength; j++) {
-                                block.set((j * ol / traceLength + i) % ol + ol);
+                                int sh = (j * ol / traceLength + i) % ol;
+                                block.set(sh);
+                                block.set(sh + ol);
                             }
                             result.add(block);
                         }
@@ -563,6 +602,9 @@ public class Applicator1Test {
         OrbitConfig oc11 = new OrbitConfig(169, 8, 4);
         assertEquals(FixBS.of(84, 0, 21, 42, 63), oc11.outerFilter());
         assertEquals(FixBS.of(84, 12, 21, 24, 36, 42, 48, 60, 63, 72), oc11.innerFilter());
+        OrbitConfig oc12 = new OrbitConfig(25, 4, 4);
+        assertEquals(FixBS.of(12), oc12.outerFilter());
+        assertEquals(FixBS.of(12, 3, 4, 6, 8, 9), oc12.innerFilter());
     }
 
     @Test

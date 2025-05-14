@@ -266,6 +266,9 @@ public class ApplicatorTest {
             if (ftr.cardinality() < sqr) {
                 return false;
             }
+            if (!space.minimal(arr)) {
+                return true;
+            }
             ai.incrementAndGet();
             Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
