@@ -90,6 +90,7 @@ public class BibdFinder6CyclicTest {
                 }
                 if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
                     ps.println(Arrays.deepToString(base));
+                    ps.flush();
                 }
                 return false;
             };
@@ -109,8 +110,8 @@ public class BibdFinder6CyclicTest {
         Group table = group.asTable();
         int v = group.order() + fixed;
         int k = 3;
-        List<List<State>> states = Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab.txt"))
-                .map(l -> Arrays.stream(l.substring(1, l.length() - 1).split("} \\{"))
+        List<List<State>> states = Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1.txt"))
+                .map(l -> Arrays.stream(l.substring(2, l.length() - 2).split("], \\["))
                         .map(ln -> State.fromBlock(group, v, k, FixBS.of(v,
                                 Arrays.stream(ln.split(", ")).mapToInt(Integer::parseInt).toArray()))).toList())
                 .toList();
