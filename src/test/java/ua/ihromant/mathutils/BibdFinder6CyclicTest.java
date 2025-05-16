@@ -8,12 +8,13 @@ import ua.ihromant.mathutils.group.SimpleLinear;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -23,6 +24,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -110,31 +112,58 @@ public class BibdFinder6CyclicTest {
         Group table = group.asTable();
         int v = group.order() + fixed;
         int k = 3;
-        List<List<State>> states = Files.lines(Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1.txt"))
-                .map(l -> Arrays.stream(l.substring(2, l.length() - 2).split("], \\["))
-                        .map(ln -> State.fromBlock(group, v, k, FixBS.of(v,
-                                Arrays.stream(ln.split(", ")).mapToInt(Integer::parseInt).toArray()))).toList())
-                .toList();
-        System.out.println("Initial size " + states.size());
-        AtomicInteger ai = new AtomicInteger();
-        states.stream().parallel().forEach(lst -> {
-            FixBS filter = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
-            filter.clear(group.order());
-            int blocksNeeded = (group.order() - 1 - filter.cardinality()) / k / (k - 1);
-            FixBS whiteList = filter.copy();
-            whiteList.flip(1, group.order());
-            DiffState initial = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, filter.nextClearBit(1));
-            searchUniqueDesigns(table, k, new int[blocksNeeded][], blocksNeeded, initial, design -> {
-                int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
-                        Arrays.stream(design).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
-                Liner lnr = new Liner(v, lines);
-                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(design));
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1fin.txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1.txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Set<List<FixBS>> set = allBr.lines().map(l -> readInitial(l, v)).collect(Collectors.toSet());
+            br.lines().forEach(l -> {
+                if (l.contains("[[[")) {
+                    System.out.println(l);
+                } else {
+                    set.remove(readInitial(l, v));
+                }
             });
-            int inc = ai.incrementAndGet();
-            if (inc % 10000 == 0) {
-                System.out.println(inc);
-            }
-        });
+            List<List<State>> states = set.stream().map(blocks -> blocks.stream()
+                    .map(bl -> State.fromBlock(group, v, k, bl)).toList()).toList();
+            System.out.println("Initial size " + states.size());
+            AtomicInteger ai = new AtomicInteger();
+            states.stream().parallel().forEach(lst -> {
+                FixBS filter = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
+                filter.clear(group.order());
+                int blocksNeeded = (group.order() - 1 - filter.cardinality()) / k / (k - 1);
+                FixBS whiteList = filter.copy();
+                whiteList.flip(1, group.order());
+                DiffState initial = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, filter.nextClearBit(1));
+                searchUniqueDesigns(table, k, new int[blocksNeeded][], blocksNeeded, initial, design -> {
+                    int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
+                            Arrays.stream(design).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
+                    Liner lnr = new Liner(v, lines);
+                    System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(design));
+                    ps.println(Arrays.deepToString(new int[][][]{lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new), design}));
+                    ps.flush();
+                });
+                ps.println(Arrays.deepToString(lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
+                ps.flush();
+                int inc = ai.incrementAndGet();
+                if (inc % 10000 == 0) {
+                    System.out.println(inc);
+                }
+            });
+        }
+    }
+
+    private List<FixBS> readInitial(String l, int v) {
+        return Arrays.stream(l.substring(2, l.length() - 2).split("], \\["))
+                .map(ln -> FixBS.of(v,
+                        Arrays.stream(ln.split(", ")).mapToInt(Integer::parseInt).toArray())).toList();
     }
 
     @Test
