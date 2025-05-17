@@ -266,5 +266,7 @@ public class GroupTest {
     public void identify() throws IOException {
         GapInteractor inter = new GapInteractor();
         System.out.println(inter.identifyGroup(readGroup("hall9")));
+        inter = new GapInteractor();
+        System.out.println(inter.groupCount(64));
     }
 }

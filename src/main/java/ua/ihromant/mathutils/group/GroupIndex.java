@@ -11,4 +11,8 @@ public class GroupIndex {
     public static String identify(Group g) throws IOException {
         return new GapInteractor().identifyGroup(g);
     }
+
+    public static int groupCount(int order) throws IOException {
+        return new GapInteractor().groupCount(order);
+    }
 }

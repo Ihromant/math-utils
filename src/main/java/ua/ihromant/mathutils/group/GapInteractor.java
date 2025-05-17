@@ -51,4 +51,17 @@ public class GapInteractor {
         process.destroyForcibly();
         return joined;
     }
+
+    public int groupCount(int order) throws IOException {
+        process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
+        process.outputWriter().write("NumberSmallGroups(" + order + ");\n");
+        process.outputWriter().write("quit;\n");
+        process.outputWriter().flush();
+        int result = Integer.parseInt(process.inputReader().lines().dropWhile(l -> !l.contains("false")).skip(1).map(l -> {
+            int idx = l.lastIndexOf(ANSI_RED);
+            return idx < 0 ? l : l.substring(idx + ANSI_RED.length());
+        }).findFirst().orElseThrow());
+        process.destroyForcibly();
+        return result;
+    }
 }
