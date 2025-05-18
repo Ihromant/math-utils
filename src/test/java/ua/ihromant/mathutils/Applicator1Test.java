@@ -20,9 +20,12 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -683,5 +686,116 @@ public class Applicator1Test {
             Liner lnr = conf.fromChunks(chunks);
             System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(chunks));
         });
+    }
+
+    @Test
+    public void calculateFileAlt() throws IOException {
+        OrbitConfig conf = new OrbitConfig(96, 6, 6);
+        ObjectMapper om = new ObjectMapper();
+        File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + "alt.txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Set<ArrWrap> set = allBr.lines().map(s -> new ArrWrap(om.readValue(s, int[][].class))).collect(Collectors.toSet());
+            br.lines().forEach(l -> {
+                if (l.contains("[[[")) {
+                    int[][][] design = om.readValue(l, int[][][].class);
+                    Liner liner = conf.fromChunks(design);
+                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+                } else {
+                    set.remove(new ArrWrap(om.readValue(l, int[][].class)));
+                }
+            });
+            Map<FixBS, List<RightState>> suitables = new ConcurrentHashMap<>();
+            AtomicInteger ai = new AtomicInteger();
+            ChunkCallback cb = new ChunkCallback() {
+                @Override
+                public void onDesign(int[][][] design) {
+                    Liner liner = conf.fromChunks(design);
+                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+                    ps.println(Arrays.deepToString(design));
+                    ps.flush();
+                }
+
+                @Override
+                public void onFinish(int[][] chunk) {
+                    ps.println(Arrays.deepToString(chunk));
+                    ps.flush();
+                    int val = ai.incrementAndGet();
+                    if (val % 100 == 0) {
+                        System.out.println(val);
+                    }
+                }
+            };
+            FixBS innerFilter = conf.innerFilter();
+            FixBS outerFilter = conf.outerFilter();
+            Function<FixBS, List<RightState>> calc = fbs -> suitables.computeIfAbsent(fbs, key -> {
+                List<RightState> result = new ArrayList<>();
+                Predicate<RightState[]> cons = arr -> {
+                    RightState st = arr[0];
+                    st.filter.andNot(innerFilter);
+                    st.outerFilter.andNot(outerFilter);
+                    result.add(st);
+                    return true;
+                };
+                int os = conf.orbitSize();
+                FixBS wl = new FixBS(os);
+                wl.set(0, os);
+                for (int el = fbs.nextSetBit(0); el >= 0; el = fbs.nextSetBit(el + 1)) {
+                    wl.diffModuleShifted(outerFilter, os, os - el);
+                }
+                RightState state = new RightState(new IntList(conf.k()), innerFilter, outerFilter, wl, 0);
+                find(new int[][]{fbs.toArray()}, new RightState[1], state, conf, cons);
+                return result;
+            });
+            calculateAlt(set.stream().map(aw -> Arrays.stream(aw.arr())
+                    .map(bl -> FixBS.of(conf.v(), bl)).toList()).collect(Collectors.toList()), calc, conf, cb);
+        }
+    }
+
+    private static void calculateAlt(List<List<FixBS>> lefts, Function<FixBS, List<RightState>> calc, OrbitConfig conf, ChunkCallback cb) {
+        System.out.println("Lefts size: " + lefts.size() + " for conf " + conf);
+        lefts.stream().parallel().forEach(left -> {
+            int ll = left.size();
+            Predicate<RightState[]> cons = arr -> {
+                if (arr[ll - 1] == null) {
+                    return false;
+                }
+                int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left.get(i).toArray(), arr[i].block.toArray()}).toArray(int[][][]::new);
+                cb.onDesign(res);
+                return true;
+            };
+            FixBS fstLeft = left.getFirst();
+            FixBS innerFilter = conf.innerFilter();
+            FixBS outerFilter = conf.outerFilter();
+            for (RightState st : calc.apply(fstLeft)) {
+                RightState[] rights = new RightState[ll];
+                rights[0] = st;
+                findAlt(left, rights, 1, innerFilter.union(st.filter), outerFilter.union(st.outerFilter), calc, cons);
+            }
+            cb.onFinish(left.stream().map(FixBS::toArray).toArray(int[][]::new));
+        });
+    }
+
+    private static void findAlt(List<FixBS> lefts, RightState[] rights, int idx, FixBS innerFilter, FixBS outerFilter,
+                                Function<FixBS, List<RightState>> calc, Predicate<RightState[]> cons) {
+        if (cons.test(rights)) {
+            return;
+        }
+        for (RightState st : calc.apply(lefts.get(idx))) {
+            if (st.filter.intersects(innerFilter) || st.outerFilter.intersects(outerFilter)) {
+                continue;
+            }
+            RightState[] nextRights = rights.clone();
+            nextRights[idx] = st;
+            findAlt(lefts, nextRights, idx + 1, innerFilter.union(st.filter), outerFilter.union(st.outerFilter), calc, cons);
+        }
     }
 }
