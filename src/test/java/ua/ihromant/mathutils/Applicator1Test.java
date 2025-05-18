@@ -326,7 +326,9 @@ public class Applicator1Test {
             Set<ArrWrap> set = allBr.lines().map(s -> new ArrWrap(om.readValue(s, int[][].class))).collect(Collectors.toSet());
             br.lines().forEach(l -> {
                 if (l.contains("[[[")) {
-                    System.out.println(l);
+                    int[][][] design = om.readValue(l, int[][][].class);
+                    Liner liner = conf.fromChunks(design);
+                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
                 } else {
                     set.remove(new ArrWrap(om.readValue(l, int[][].class)));
                 }
@@ -363,12 +365,17 @@ public class Applicator1Test {
     private static void calculate(List<int[][]> lefts, OrbitConfig conf, ChunkCallback cb) {
         System.out.println("Lefts size: " + lefts.size() + " for conf " + conf);
         lefts.stream().parallel().forEach(left -> {
-            Consumer<RightState[]> cons = arr -> {
-                int[][][] res = IntStream.range(0, left.length).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
+            int ll = left.length;
+            Predicate<RightState[]> cons = arr -> {
+                if (arr[ll - 1] == null) {
+                    return false;
+                }
+                int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
                 cb.onDesign(res);
+                return true;
             };
             int[] fstLeft = left[0];
-            RightState[] rights = new RightState[left.length];
+            RightState[] rights = new RightState[ll];
             FixBS whiteList = new FixBS(conf.orbitSize());
             whiteList.set(0, conf.orbitSize());
             FixBS outerFilter = conf.outerFilter();
@@ -384,15 +391,14 @@ public class Applicator1Test {
         });
     }
 
-    private static void find(int[][] lefts, RightState[] rights, RightState currState, OrbitConfig conf, Consumer<RightState[]> cons) {
+    private static void find(int[][] lefts, RightState[] rights, RightState currState, OrbitConfig conf, Predicate<RightState[]> cons) {
         int idx = currState.idx;
         int[] left = lefts[idx];
         int ol = conf.orbitSize();
         if (currState.block().size() == conf.k() - left.length) {
             RightState[] nextDesign = rights.clone();
             nextDesign[idx] = currState;
-            if (idx == lefts.length - 1) {
-                cons.accept(nextDesign);
+            if (cons.test(nextDesign)) {
                 return;
             }
             int nextIdx = idx + 1;
