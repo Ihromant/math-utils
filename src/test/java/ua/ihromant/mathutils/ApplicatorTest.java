@@ -211,8 +211,8 @@ public class ApplicatorTest {
         singles.stream().parallel().forEach(tuple -> {
             State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
             FixBS newFilter = space.emptyFilter().copy();
-            for (int i = 0; i < tuple.length - 1; i++) {
-                tuple[i].updateFilter(newFilter, space);
+            for (State st : pr) {
+                st.updateFilter(newFilter, space);
             }
             searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
             int vl = cnt.incrementAndGet();
@@ -254,8 +254,8 @@ public class ApplicatorTest {
         singles.stream().parallel().forEach(tuple -> {
             State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
             FixBS newFilter = space.emptyFilter().copy();
-            for (int i = 0; i < tuple.length - 1; i++) {
-                tuple[i].updateFilter(newFilter, space);
+            for (State st : pr) {
+                st.updateFilter(newFilter, space);
             }
             searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
         });
@@ -277,8 +277,8 @@ public class ApplicatorTest {
         pairs.stream().parallel().forEach(tuple -> {
             State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
             FixBS newFilter = space.emptyFilter().copy();
-            for (int i = 0; i < tuple.length - 1; i++) {
-                tuple[i].updateFilter(newFilter, space);
+            for (State st : pr) {
+                st.updateFilter(newFilter, space);
             }
             searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, tCons);
             int vl = cnt.incrementAndGet();
