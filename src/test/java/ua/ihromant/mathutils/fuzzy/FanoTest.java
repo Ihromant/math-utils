@@ -116,4 +116,27 @@ public class FanoTest {
         base.printChars();
         ContradictionUtil.printContradiction(base, op);
     }
+
+    @Test
+    public void moufangFanoNotDesargues() {
+        int[][] antiDesargues = {
+                {0, 1, 2},
+                {0, 3, 4},
+                {0, 5, 6},
+                {1, 3, 7},
+                {1, 5, 8},
+                {2, 4, 7},
+                {2, 6, 8},
+                {3, 5, 9},
+                {4, 6, 9}
+        };
+        FuzzyLiner base = FuzzyLiner.of(antiDesargues, new Triple[]{new Triple(1, 3, 5), new Triple(2, 4, 6),
+                new Triple(0, 1, 3), new Triple(0, 1, 5), new Triple(0, 3, 5),
+                new Triple(7, 8, 9)});
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano, ContradictionUtil::processD1));
+        base.printChars();
+        base = base.intersectLines();
+        base.printChars();
+        ContradictionUtil.printContradiction(base, op);
+    }
 }
