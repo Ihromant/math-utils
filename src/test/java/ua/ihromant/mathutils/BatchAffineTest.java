@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.SequencedMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -541,6 +542,42 @@ public class BatchAffineTest {
     }
 
     @Test
+    public void testGolden() throws IOException {
+        String name = "hughes9";
+        int k = 9;
+        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readProj(br);
+            int dl = 3;
+            System.out.println(name + "-" + dl + "-" + k);
+            Liner liner = new AffinePlane(proj, dl).toLiner();
+            for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
+                TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
+                TreeMap<Integer, Boolean> elems = new TreeMap<>();
+                for (int el : tr.elements()) {
+                    if (tr.mul(el, el) != tr.add(1, el)) {
+                        continue;
+                    }
+                    boolean leftDistr = true;
+                    ex: for (int x : tr.elements()) {
+                        for (int y : tr.elements()) {
+                            if (tr.mul(el, tr.add(x, y)) != tr.add(tr.mul(el, x), tr.mul(el, y))) {
+                                leftDistr = false;
+                                break ex;
+                            }
+                        }
+                    }
+                    elems.put(el, leftDistr);
+                }
+                if (!elems.isEmpty()) {
+                    System.out.println("Triangle " + triangle + " " + elems);
+                }
+            }
+        }
+    }
+
+    @Test
     public void testEquality() throws IOException {
         String name = "dhall9";
         int k = 9;
@@ -552,14 +589,17 @@ public class BatchAffineTest {
             TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
             TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
             assertFalse(tr0.trEquals(tr1));
+            assertFalse(tr0.isotopicBiLoops(tr1));
             TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
             assertTrue(tr1.trEquals(tr2));
+            assertTrue(tr1.isotopicBiLoops(tr2));
             TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
             TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
             assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
             assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
             TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
             assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
+            assertTrue(tr0.isotopicBiLoops(tr17) && !tr1.isotopicBiLoops(tr17));
         }
     }
 
@@ -821,6 +861,57 @@ public class BatchAffineTest {
                     Arrays.stream(ring.mulMatrix()).forEach(arr -> System.out.println(Arrays.toString(arr)));
                 }
                 System.out.println("Equal triangles " + e.getValue().keySet().size() + ": " + String.join(" ", e.getValue().keySet()));
+            }
+        }
+    }
+
+    @Test
+    public void isotopicTest() throws IOException {
+        IsotopyProcessor processor = new IsotopyProcessor();
+        for (String plName : dropped.keySet()) {
+            int k = 9;
+            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = readProj(br);
+                for (int dl : dropped.get(plName)) {
+                    Liner liner = new AffinePlane(proj, dl).toLiner();
+                    String name = plName + "-" + dl + "-" + k;
+                    System.out.println(name + " dropped line " + dl);
+                    for (int triangle : uniqueTriangles.get(name)) {
+                        AffineTernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
+                        processor.accept(name, ring);
+                    }
+                    System.out.println();
+                }
+            }
+        }
+        processor.finish();
+    }
+
+    private static class IsotopyProcessor implements BiConsumer<String, AffineTernaryRing> {
+        private final Map<String, SequencedMap<String, AffineTernaryRing>> grouped = new LinkedHashMap<>();
+
+        @Override
+        public void accept(String name, AffineTernaryRing ring) {
+            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
+                if (e.getValue().firstEntry().getValue().isotopicBiLoops(ring)) {
+                    e.getValue().put(name + "-" + ring.trIdx(), ring);
+                    return;
+                }
+            }
+            SequencedMap<String, AffineTernaryRing> map = new LinkedHashMap<>();
+            map.put(name + "-" + ring.trIdx(), ring);
+            grouped.put(name + "-" + ring.trIdx(), map);
+        }
+
+        public void finish() {
+            System.out.println("Isotopic size: " + grouped.size());
+            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
+                if (e.getValue().size() == 1) {
+                    continue;
+                }
+                System.out.println("Isotopic triangles " + e.getValue().keySet().size() + ": " + String.join(" ", e.getValue().keySet()));
             }
         }
     }
@@ -1095,12 +1186,12 @@ public class BatchAffineTest {
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
-            "hughes9", new int[]{0, 3},
-            "bbh1", new int[]{0, 192, 193, 269},
-            "bbh2", new int[]{0, 28},
-            "dbbh2", new int[]{0, 1, 21},
-            "bbs4", new int[]{0, 108, 270},
-            "dbbs4", new int[]{0, 228, 241}
+            "hughes9", new int[]{0, 3}
+//            "bbh1", new int[]{0, 192, 193, 269},
+//            "bbh2", new int[]{0, 28},
+//            "dbbh2", new int[]{0, 1, 21},
+//            "bbs4", new int[]{0, 108, 270},
+//            "dbbs4", new int[]{0, 228, 241}
             //"", new int[]{}
     );
 
