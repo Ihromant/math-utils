@@ -1,9 +1,11 @@
 package ua.ihromant.mathutils.fuzzy;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.Combinatorics;
 
 import java.util.List;
 import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public class FanoTest {
     @Test
@@ -135,6 +137,31 @@ public class FanoTest {
                 new Triple(7, 8, 9)});
         UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano, ContradictionUtil::processD1));
         base.printChars();
+        base = base.intersectLines();
+        base.printChars();
+        ContradictionUtil.printContradiction(base, op);
+    }
+
+    @Test
+    public void fanoNoPentagon() {
+        int[][] antiPentagon = {
+                {0, 1, 5},
+                {2, 4, 5},
+                {1, 2, 6},
+                {0, 3, 6},
+                {1, 4, 7},
+                {2, 3, 7},
+                {0, 2, 8},
+                {3, 4, 8},
+                {0, 4, 9},
+                {1, 3, 9},
+                {5, 6, 7, 8}
+        };
+        FuzzyLiner base = FuzzyLiner.of(antiPentagon, Stream.concat(Stream.of(new Triple(7, 8, 9)),
+                Combinatorics.choices(5, 3).map(ch -> new Triple(ch[0], ch[1], ch[2]))).toArray(Triple[]::new));
+        base.printChars();
+        UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano));
+        ContradictionUtil.printContradiction(base, op);
         base = base.intersectLines();
         base.printChars();
         ContradictionUtil.printContradiction(base, op);
