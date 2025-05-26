@@ -584,22 +584,23 @@ public class BatchAffineTest {
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
+            int[][] hBijections = Combinatorics.permutations(IntStream.range(0, k).toArray()).toArray(int[][]::new);
             Liner proj = readProj(br);
             Liner liner = new AffinePlane(proj, 0).toLiner();
             TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
             TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
             assertFalse(tr0.trEquals(tr1));
-            assertFalse(tr0.isotopicBiLoops(tr1));
+            assertFalse(tr0.isotopicBiLoops(tr1, hBijections));
             TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
             assertTrue(tr1.trEquals(tr2));
-            assertTrue(tr1.isotopicBiLoops(tr2));
+            assertTrue(tr1.isotopicBiLoops(tr2, hBijections));
             TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
             TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
             assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
             assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
             TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
             assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
-            assertTrue(tr0.isotopicBiLoops(tr17) && !tr1.isotopicBiLoops(tr17));
+            assertTrue(tr0.isotopicBiLoops(tr17, hBijections) && !tr1.isotopicBiLoops(tr17, hBijections));
         }
     }
 
@@ -867,9 +868,9 @@ public class BatchAffineTest {
 
     @Test
     public void isotopicTest() throws IOException {
-        IsotopyProcessor processor = new IsotopyProcessor();
+        int k = 9;
+        IsotopyProcessor processor = new IsotopyProcessor(k);
         for (String plName : dropped.keySet()) {
-            int k = 9;
             try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
@@ -891,11 +892,16 @@ public class BatchAffineTest {
 
     private static class IsotopyProcessor implements BiConsumer<String, AffineTernaryRing> {
         private final Map<String, SequencedMap<String, AffineTernaryRing>> grouped = new LinkedHashMap<>();
+        private final int[][] hBijections;
+
+        private IsotopyProcessor(int ord) {
+            this.hBijections = Combinatorics.permutations(IntStream.range(0, ord).toArray()).toArray(int[][]::new);
+        }
 
         @Override
         public void accept(String name, AffineTernaryRing ring) {
             for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
-                if (e.getValue().firstEntry().getValue().isotopicBiLoops(ring)) {
+                if (e.getValue().firstEntry().getValue().isotopicBiLoops(ring, hBijections)) {
                     e.getValue().put(name + "-" + ring.trIdx(), ring);
                     return;
                 }
@@ -1185,8 +1191,8 @@ public class BatchAffineTest {
     private static final Map<String, int[]> dropped = Map.of(
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
-            "hall9", new int[]{0, 81},
-            "hughes9", new int[]{0, 3}
+            "hall9", new int[]{0, 81}
+//            "hughes9", new int[]{0, 3}
 //            "bbh1", new int[]{0, 192, 193, 269},
 //            "bbh2", new int[]{0, 28},
 //            "dbbh2", new int[]{0, 1, 21},

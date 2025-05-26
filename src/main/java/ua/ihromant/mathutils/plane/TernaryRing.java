@@ -448,7 +448,7 @@ public interface TernaryRing {
         return false;
     }
 
-    default boolean isotopicBiLoops(TernaryRing that) {
+    default boolean isotopicBiLoops(TernaryRing that, int[][] hBijections) {
         int ord = order();
         if (ord != that.order()) {
             return false;
@@ -457,7 +457,6 @@ public interface TernaryRing {
         int[][] mulMatrix = this.mulMatrix();
         int[][] tAddMatrix = that.addMatrix();
         int[][] tMulMatrix = that.mulMatrix();
-        int[][] hBijections = Combinatorics.permutations(IntStream.range(0, ord).toArray()).toArray(int[][]::new);
         int[] g1s = IntStream.range(1, ord).toArray();
         for (int[] h : hBijections) {
             for (int g1 : g1s) {
