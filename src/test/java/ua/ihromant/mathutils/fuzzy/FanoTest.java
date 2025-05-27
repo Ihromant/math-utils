@@ -161,7 +161,6 @@ public class FanoTest {
                 Combinatorics.choices(5, 3).map(ch -> new Triple(ch[0], ch[1], ch[2]))).toArray(Triple[]::new));
         base.printChars();
         UnaryOperator<FuzzyLiner> op = lnr -> ContradictionUtil.process(lnr, List.of(ContradictionUtil::processFullFano));
-        ContradictionUtil.printContradiction(base, op);
         base = base.intersectLines();
         base.printChars();
         ContradictionUtil.printContradiction(base, op);
