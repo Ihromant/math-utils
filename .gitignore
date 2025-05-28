@@ -1,3 +1,6 @@
 .idea/
 target/
 *.iml
+
+### Shade ###
+/dependency-reduced-pom.xml
