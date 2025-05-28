@@ -594,6 +594,7 @@ public class BatchAffineTest {
             TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
             assertTrue(tr1.trEquals(tr2));
             assertTrue(tr1.isotopicBiLoops(tr2, hBijections));
+            assertEquals(tr0.characteristic(), tr1.characteristic());
             TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
             TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
             assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
@@ -601,6 +602,7 @@ public class BatchAffineTest {
             TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
             assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
             assertTrue(tr0.isotopicBiLoops(tr17, hBijections) && !tr1.isotopicBiLoops(tr17, hBijections));
+            assertTrue(tr0.characteristic().equals(tr17.characteristic()));
         }
     }
 
@@ -891,7 +893,7 @@ public class BatchAffineTest {
     }
 
     private static class IsotopyProcessor implements BiConsumer<String, AffineTernaryRing> {
-        private final Map<String, SequencedMap<String, AffineTernaryRing>> grouped = new LinkedHashMap<>();
+        private final Map<Map<Map<Integer, Integer>, Integer>, Map<String, SequencedMap<String, AffineTernaryRing>>> grouped = new HashMap<>();
         private final int[][] hBijections;
 
         private IsotopyProcessor(int ord) {
@@ -900,7 +902,9 @@ public class BatchAffineTest {
 
         @Override
         public void accept(String name, AffineTernaryRing ring) {
-            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
+            Map<Map<Integer, Integer>, Integer> ch = ring.characteristic();
+            Map<String, SequencedMap<String, AffineTernaryRing>> gr = grouped.computeIfAbsent(ch, k -> new HashMap<>());
+            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : gr.entrySet()) {
                 if (e.getValue().firstEntry().getValue().isotopicBiLoops(ring, hBijections)) {
                     e.getValue().put(name + "-" + ring.trIdx(), ring);
                     return;
@@ -908,16 +912,18 @@ public class BatchAffineTest {
             }
             SequencedMap<String, AffineTernaryRing> map = new LinkedHashMap<>();
             map.put(name + "-" + ring.trIdx(), ring);
-            grouped.put(name + "-" + ring.trIdx(), map);
+            gr.put(name + "-" + ring.trIdx(), map);
         }
 
         public void finish() {
-            System.out.println("Isotopic size: " + grouped.size());
-            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : grouped.entrySet()) {
-                if (e.getValue().size() == 1) {
-                    continue;
+            System.out.println("Isotopic size: " + grouped.values().stream().mapToInt(Map::size).sum());
+            for (Map<String, SequencedMap<String, AffineTernaryRing>> gr : grouped.values()) {
+                for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : gr.entrySet()) {
+                    if (e.getValue().size() == 1) {
+                        continue;
+                    }
+                    System.out.println("Isotopic triangles " + e.getValue().size() + ": " + String.join(" ", e.getValue().keySet()));
                 }
-                System.out.println("Isotopic triangles " + e.getValue().keySet().size() + ": " + String.join(" ", e.getValue().keySet()));
             }
         }
     }

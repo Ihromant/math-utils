@@ -6,7 +6,9 @@ import ua.ihromant.mathutils.Liner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalInt;
 import java.util.stream.IntStream;
 
@@ -496,6 +498,35 @@ public interface TernaryRing {
             }
         }
         return false;
+    }
+
+    default Map<Map<Integer, Integer>, Integer> characteristic() {
+        int ord = order();
+        int[][][] matrix = matrix();
+        Map<Map<Integer, Integer>, Integer> result = new HashMap<>();
+        for (int a = 1; a < ord; a++) {
+            for (int b = 1; b < ord; b++) {
+                result.compute(cycles(matrix[a][b]), (k, v) -> v == null ? 1 : v + 1);
+            }
+        }
+        return result;
+    }
+
+    private static Map<Integer, Integer> cycles(int[] arr) {
+        Map<Integer, Integer> result = new HashMap<>();
+        ex: for (int i = 0; i < arr.length; i++) {
+            int next = arr[i];
+            int len = 1;
+            while (next != i) {
+                if (next < i) {
+                    continue ex;
+                }
+                next = arr[next];
+                len++;
+            }
+            result.compute(len, (k, v) -> v == null ? 1 : v + 1);
+        }
+        return result;
     }
 
     default boolean pulsEquals(TernaryRing that) {
