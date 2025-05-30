@@ -863,7 +863,7 @@ public class BatchAffineTest {
                     System.out.println("Multiplication");
                     Arrays.stream(ring.mulMatrix()).forEach(arr -> System.out.println(Arrays.toString(arr)));
                 }
-                System.out.println("Equal triangles " + e.getValue().keySet().size() + ": " + String.join(" ", e.getValue().keySet()));
+                System.out.println("Equal triangles " + e.getValue().size() + ": " + String.join(" ", e.getValue().keySet()));
             }
         }
     }
