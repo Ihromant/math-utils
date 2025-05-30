@@ -251,6 +251,7 @@ public class ApplicatorTest {
             }
             return true;
         };
+        AtomicInteger cnt = new AtomicInteger();
         singles.stream().parallel().forEach(tuple -> {
             State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
             FixBS newFilter = space.emptyFilter().copy();
@@ -258,10 +259,14 @@ public class ApplicatorTest {
                 st.updateFilter(newFilter, space);
             }
             searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
+            int vl = cnt.incrementAndGet();
+            if (vl % 10 == 0) {
+                System.out.println(vl);
+            }
         });
         System.out.println("Pairs " + pairs.size());
-        AtomicInteger cnt = new AtomicInteger();
         AtomicInteger ai = new AtomicInteger();
+        cnt.set(0);
         BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
             if (ftr.cardinality() < sqr) {
                 return false;
