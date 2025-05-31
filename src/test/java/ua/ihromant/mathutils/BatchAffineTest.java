@@ -25,6 +25,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.SequencedMap;
 import java.util.Set;
 import java.util.TreeMap;
@@ -904,15 +905,16 @@ public class BatchAffineTest {
         public void accept(String name, AffineTernaryRing ring) {
             Map<Map<Integer, Integer>, Integer> ch = ring.characteristic();
             Map<String, SequencedMap<String, AffineTernaryRing>> gr = grouped.computeIfAbsent(ch, k -> new HashMap<>());
-            for (Map.Entry<String, SequencedMap<String, AffineTernaryRing>> e : gr.entrySet()) {
-                if (e.getValue().firstEntry().getValue().isotopicBiLoops(ring, hBijections)) {
-                    e.getValue().put(name + "-" + ring.trIdx(), ring);
-                    return;
-                }
+            Optional<SequencedMap<String, AffineTernaryRing>> vals = new ArrayList<>(gr.values()).stream().parallel()
+                    .filter(val -> val.firstEntry().getValue().isotopicBiLoops(ring, hBijections))
+                    .findAny();
+            if (vals.isPresent()) {
+                vals.get().put(name + "-" + ring.trIdx(), ring);
+            } else {
+                SequencedMap<String, AffineTernaryRing> map = new LinkedHashMap<>();
+                map.put(name + "-" + ring.trIdx(), ring);
+                gr.put(name + "-" + ring.trIdx(), map);
             }
-            SequencedMap<String, AffineTernaryRing> map = new LinkedHashMap<>();
-            map.put(name + "-" + ring.trIdx(), ring);
-            gr.put(name + "-" + ring.trIdx(), map);
         }
 
         public void finish() {
@@ -1197,8 +1199,8 @@ public class BatchAffineTest {
     private static final Map<String, int[]> dropped = Map.of(
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
-            "hall9", new int[]{0, 81}
-//            "hughes9", new int[]{0, 3}
+            "hall9", new int[]{0, 81},
+            "hughes9", new int[]{0, 3}
 //            "bbh1", new int[]{0, 192, 193, 269},
 //            "bbh2", new int[]{0, 28},
 //            "dbbh2", new int[]{0, 1, 21},
