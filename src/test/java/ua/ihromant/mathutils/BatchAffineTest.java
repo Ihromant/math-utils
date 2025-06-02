@@ -591,10 +591,10 @@ public class BatchAffineTest {
             TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
             TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
             assertFalse(tr0.trEquals(tr1));
-            assertFalse(tr0.isotopicBiLoops(tr1, hBijections));
+            assertFalse(tr0.isotopic(tr1, hBijections));
             TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
             assertTrue(tr1.trEquals(tr2));
-            assertTrue(tr1.isotopicBiLoops(tr2, hBijections));
+            assertTrue(tr1.isotopic(tr2, hBijections));
             assertEquals(tr0.characteristic(), tr1.characteristic());
             TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
             TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
@@ -602,8 +602,8 @@ public class BatchAffineTest {
             assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
             TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
             assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
-            assertTrue(tr0.isotopicBiLoops(tr17, hBijections) && !tr1.isotopicBiLoops(tr17, hBijections));
-            assertTrue(tr0.characteristic().equals(tr17.characteristic()));
+            assertTrue(tr0.isotopic(tr17, hBijections) && !tr1.isotopic(tr17, hBijections));
+            assertEquals(tr0.characteristic(), tr17.characteristic());
         }
     }
 
@@ -906,7 +906,7 @@ public class BatchAffineTest {
             Map<Map<Integer, Integer>, Integer> ch = ring.characteristic();
             Map<String, SequencedMap<String, AffineTernaryRing>> gr = grouped.computeIfAbsent(ch, k -> new HashMap<>());
             Optional<SequencedMap<String, AffineTernaryRing>> vals = new ArrayList<>(gr.values()).stream().parallel()
-                    .filter(val -> val.firstEntry().getValue().isotopicBiLoops(ring, hBijections))
+                    .filter(val -> val.firstEntry().getValue().isotopic(ring, hBijections))
                     .findAny();
             if (vals.isPresent()) {
                 vals.get().put(name + "-" + ring.trIdx(), ring);

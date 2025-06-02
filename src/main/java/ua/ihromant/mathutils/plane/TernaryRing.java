@@ -450,22 +450,18 @@ public interface TernaryRing {
         return false;
     }
 
-    default boolean isotopicBiLoops(TernaryRing that, int[][] hBijections) {
+    default boolean isotopic(TernaryRing that, int[][] hBijections) {
         int ord = order();
         if (ord != that.order()) {
             return false;
         }
-        int[][] addMatrix = this.addMatrix();
-        int[][] mulMatrix = this.mulMatrix();
-        int[][] tAddMatrix = that.addMatrix();
-        int[][] tMulMatrix = that.mulMatrix();
         int[] g1s = IntStream.range(1, ord).toArray();
         for (int[] h : hBijections) {
             for (int g1 : g1s) {
                 int[] f = new int[ord];
                 for (int x = 0; x < ord; x++) {
                     for (int i = 0; i < ord; i++) {
-                        if (h[addMatrix[mulMatrix[x][1]][0]] == tAddMatrix[tMulMatrix[i][g1]][h[0]]) {
+                        if (h[this.op(x, 1, 0)] == that.op(i, g1, h[0])) {
                             f[x] = i;
                             break;
                         }
@@ -475,7 +471,7 @@ public interface TernaryRing {
                 int[] g = new int[ord];
                 for (int x = 0; x < ord; x++) {
                     for (int i = 0; i < ord; i++) {
-                        if (h[addMatrix[mulMatrix[1][x]][0]] == tAddMatrix[tMulMatrix[f1][i]][h[0]]) {
+                        if (h[this.op(1, x, 0)] == that.op(f1, i, h[0])) {
                             g[x] = i;
                             break;
                         }
@@ -485,7 +481,7 @@ public interface TernaryRing {
                 ex: for (int x = 0; x < ord; x++) {
                     for (int y = 0; y < ord; y++) {
                         for (int z = 0; z < ord; z++) {
-                            if (h[addMatrix[mulMatrix[x][y]][z]] != tAddMatrix[tMulMatrix[f[x]][g[y]]][h[z]]) {
+                            if (h[this.op(x, y, z)] != that.op(f[x], g[y], h[z])) {
                                 eq = false;
                                 break ex;
                             }
