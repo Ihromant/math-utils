@@ -8,6 +8,7 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,11 +19,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -287,7 +291,7 @@ public class Applicator1Test {
         for (int i = mapped.nextSetBit(1); i >= 0; i = mapped.nextSetBit(i + 1)) {
             FixBS cand = new FixBS(v);
             for (int j = mapped.nextSetBit(0); j >= 0; j = mapped.nextSetBit(j + 1)) {
-                int dff = i - j;
+                int dff = j - i;
                 cand.set(dff < 0 ? v + dff : dff);
             }
             if (cand.compareTo(result) < 0) {
@@ -348,50 +352,58 @@ public class Applicator1Test {
 
     @Test
     public void calculateFile() throws IOException {
-        OrbitConfig conf = new OrbitConfig(96, 6, 6);
-        ObjectMapper om = new ObjectMapper();
-        File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt");
-        File beg = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
-        try (FileOutputStream fos = new FileOutputStream(f, true);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos);
-             FileInputStream allFis = new FileInputStream(beg);
-             InputStreamReader allIsr = new InputStreamReader(allFis);
-             BufferedReader allBr = new BufferedReader(allIsr);
-             FileInputStream fis = new FileInputStream(f);
-             InputStreamReader isr = new InputStreamReader(fis);
-             BufferedReader br = new BufferedReader(isr)) {
-            Set<ArrWrap> set = allBr.lines().map(s -> new ArrWrap(om.readValue(s, int[][].class))).collect(Collectors.toSet());
-            br.lines().forEach(l -> {
-                if (l.contains("[[[")) {
-                    int[][][] design = om.readValue(l, int[][][].class);
-                    Liner liner = conf.fromChunks(design);
-                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
-                } else {
-                    set.remove(new ArrWrap(om.readValue(l, int[][].class)));
+        try (ForkJoinPool ex = new ForkJoinPool(22)) {
+            ex.submit(() -> {
+                OrbitConfig conf = new OrbitConfig(96, 6, 6);
+                ObjectMapper om = new ObjectMapper();
+                File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt");
+                File beg = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
+                try (FileOutputStream fos = new FileOutputStream(f, true);
+                     BufferedOutputStream bos = new BufferedOutputStream(fos);
+                     PrintStream ps = new PrintStream(bos);
+                     FileInputStream allFis = new FileInputStream(beg);
+                     InputStreamReader allIsr = new InputStreamReader(allFis);
+                     BufferedReader allBr = new BufferedReader(allIsr);
+                     FileInputStream fis = new FileInputStream(f);
+                     InputStreamReader isr = new InputStreamReader(fis);
+                     BufferedReader br = new BufferedReader(isr)) {
+                    Set<ArrWrap> set = allBr.lines().map(s -> new ArrWrap(om.readValue(s, int[][].class))).collect(Collectors.toSet());
+                    br.lines().forEach(l -> {
+                        if (l.contains("[[[")) {
+                            int[][][] design = om.readValue(l, int[][][].class);
+                            Liner liner = conf.fromChunks(design);
+                            System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+                        } else {
+                            set.remove(new ArrWrap(om.readValue(l, int[][].class)));
+                        }
+                    });
+                    AtomicInteger ai = new AtomicInteger();
+                    ChunkCallback cb = new ChunkCallback() {
+                        @Override
+                        public void onDesign(int[][][] design) {
+                            Liner liner = conf.fromChunks(design);
+                            System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
+                            ps.println(Arrays.deepToString(design));
+                            ps.flush();
+                        }
+
+                        @Override
+                        public void onFinish(int[][] chunk) {
+                            ps.println(Arrays.deepToString(chunk));
+                            ps.flush();
+                            int val = ai.incrementAndGet();
+                            if (val % 100 == 0) {
+                                System.out.println(val);
+                            }
+                        }
+                    };
+                    calculate(set.stream().map(ArrWrap::arr).collect(Collectors.toList()), conf, cb);
+                } catch (FileNotFoundException e) {
+                    throw new RuntimeException(e);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
                 }
             });
-            AtomicInteger ai = new AtomicInteger();
-            ChunkCallback cb = new ChunkCallback() {
-                @Override
-                public void onDesign(int[][][] design) {
-                    Liner liner = conf.fromChunks(design);
-                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
-                    ps.println(Arrays.deepToString(design));
-                    ps.flush();
-                }
-
-                @Override
-                public void onFinish(int[][] chunk) {
-                    ps.println(Arrays.deepToString(chunk));
-                    ps.flush();
-                    int val = ai.incrementAndGet();
-                    if (val % 100 == 0) {
-                        System.out.println(val);
-                    }
-                }
-            };
-            calculate(set.stream().map(ArrWrap::arr).collect(Collectors.toList()), conf, cb);
         }
     }
 
@@ -713,13 +725,19 @@ public class Applicator1Test {
     public void inspect() throws IOException {
         OrbitConfig conf = new OrbitConfig(106, 6, 0);
         ObjectMapper om = new ObjectMapper();
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt")).forEach(l -> {
+        Map<FixBS, int[][][]> map = new HashMap<>();
+        Files.lines(Path.of("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt")).parallel().forEach(l -> {
             if (!l.contains("[[[")) {
                 return;
             }
             int[][][] chunks = om.readValue(l, int[][][].class);
             Liner lnr = conf.fromChunks(chunks);
-            System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(chunks));
+            map.putIfAbsent(lnr.getCanonicalOld(), chunks);
+        });
+        System.out.println(map.size());
+        new ArrayList<>(map.values()).stream().parallel().forEach(ch -> {
+            Liner lnr = conf.fromChunks(ch);
+            System.out.println(lnr.autCountOld() + " " + lnr.hyperbolicFreq() + " " + Arrays.deepToString(ch));
         });
     }
 
@@ -832,5 +850,75 @@ public class Applicator1Test {
             nextRights[idx] = st;
             findAlt(lefts, nextRights, idx + 1, innerFilter.union(st.filter), outerFilter.union(st.outerFilter), calc, cons);
         }
+    }
+
+    @Test
+    public void observe() {
+        OrbitConfig conf = new OrbitConfig(96, 6, 6);
+        int ol = conf.orbitSize();
+        int[][][] chunks = new ObjectMapper().readValue("[[[0, 1, 3, 13, 28], [0]], [[0, 4, 11], [17, 36, 38]], [[0, 5, 19], [1, 24, 42]], [[0, 6], [8, 9, 18, 22]], [[0, 9, 26], [4, 7, 40]], [[0, 18], [11, 28, 33, 39]]]", int[][][].class);
+        System.out.println(conf.fromChunks(chunks).hyperbolicFreq() + " " + Arrays.deepToString(chunks));
+        int[][][] swap = Arrays.stream(chunks).map(arr -> new int[][]{arr[1], arr[0]}).toArray(int[][][]::new);
+        System.out.println(conf.fromChunks(swap).hyperbolicFreq() + " " + Arrays.deepToString(swap));
+        int[][][] reorder = Arrays.stream(swap).map(arr -> {
+            int min = 0;
+            int[] minArr = arr[0];
+            for (int i = 1; i < ol; i++) {
+                int[] newArr = new int[minArr.length];
+                for (int j = 0; j < minArr.length; j++) {
+                    newArr[j] = (ol + arr[0][j] - i) % ol;
+                }
+                Arrays.sort(newArr);
+                if (Combinatorics.compareArr(newArr, minArr) < 0) {
+                    min = i;
+                    minArr = newArr;
+                }
+            }
+            int[] left = new int[arr[0].length];
+            int[] right = new int[arr[1].length];
+            for (int i = 0; i < left.length; i++) {
+                left[i] = (ol + arr[0][i] - min) % ol;
+            }
+            for (int i = 0; i < right.length; i++) {
+                right[i] = (ol + arr[1][i] - min) % ol;
+            }
+            Arrays.sort(left);
+            Arrays.sort(right);
+            return new int[][]{left, right};
+        }).toArray(int[][][]::new);
+        System.out.println(conf.fromChunks(reorder).hyperbolicFreq() + " " + Arrays.deepToString(reorder));
+        int[][][] sorted = Arrays.stream(reorder).sorted(Comparator.comparing(arr -> FixBS.of(ol, arr[0]))).toArray(int[][][]::new);
+        System.out.println(conf.fromChunks(sorted).hyperbolicFreq() + " " + Arrays.deepToString(sorted));
+        int[][] lefts = Arrays.stream(sorted).map(arr -> arr[0]).toArray(int[][]::new);
+        int minMul = 1;
+        FixBS[] minLefts = Arrays.stream(lefts).map(arr -> FixBS.of(ol, arr)).toArray(FixBS[]::new);
+        for (int mul : Combinatorics.multipliers(ol)) {
+            int[][] nextLefts = new int[minLefts.length][];
+            for (int i = 0; i < lefts.length; i++) {
+                int[] oldLeft = lefts[i];
+                nextLefts[i] = new int[oldLeft.length];
+                for (int j = 0; j < oldLeft.length; j++) {
+                    nextLefts[i][j] = (mul * oldLeft[j]) % ol;
+                }
+                int[] minLeft = nextLefts[i];
+                for (int j = 1; j < ol; j++) {
+                    int[] newArr = new int[nextLefts[i].length];
+                    for (int k = 0; k < minLeft.length; k++) {
+                        newArr[k] = (ol + nextLefts[i][k] - j) % ol;
+                    }
+                    Arrays.sort(newArr);
+                    if (Combinatorics.compareArr(newArr, minLeft) < 0) {
+                        minLeft = newArr;
+                    }
+                }
+                nextLefts[i] = minLeft;
+            }
+            FixBS[] alt = Arrays.stream(nextLefts).map(arr -> FixBS.of(ol, arr)).sorted().toArray(FixBS[]::new);
+            if (Combinatorics.compareArr(alt, minLefts, Comparator.naturalOrder()) < 0) {
+                minMul = mul;
+                minLefts = alt;
+            }
+        }
+        System.out.println(minMul);
     }
 }

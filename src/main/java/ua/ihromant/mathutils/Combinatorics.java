@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.IntStream;
@@ -119,6 +120,16 @@ public class Combinatorics {
     public static int compareArr(int[] fst, int[] snd) {
         for (int i = 0; i < fst.length; i++) {
             int cmp = fst[i] - snd[i];
+            if (cmp != 0) {
+                return cmp;
+            }
+        }
+        return 0;
+    }
+
+    public static <T> int compareArr(T[] fst, T[] snd, Comparator<T> comp) {
+        for (int i = 0; i < fst.length; i++) {
+            int cmp = comp.compare(fst[i], snd[i]);
             if (cmp != 0) {
                 return cmp;
             }

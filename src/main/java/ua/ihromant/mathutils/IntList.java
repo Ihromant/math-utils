@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 public class IntList {
     private final int[] arr;
@@ -100,6 +101,10 @@ public class IntList {
     
     public int[] toArray() {
         return Arrays.copyOf(arr, size);
+    }
+
+    public IntStream stream() {
+        return Arrays.stream(arr, 0, size);
     }
 
     public IntList copy() {
