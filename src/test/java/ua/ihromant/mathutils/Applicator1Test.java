@@ -900,8 +900,9 @@ public class Applicator1Test {
                 for (int j = 0; j < oldLeft.length; j++) {
                     nextLefts[i][j] = (mul * oldLeft[j]) % ol;
                 }
+                Arrays.sort(nextLefts[i]);
                 int[] minLeft = nextLefts[i];
-                for (int j = 1; j < ol; j++) {
+                for (int j : nextLefts[i]) {
                     int[] newArr = new int[nextLefts[i].length];
                     for (int k = 0; k < minLeft.length; k++) {
                         newArr[k] = (ol + nextLefts[i][k] - j) % ol;
