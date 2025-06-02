@@ -153,7 +153,10 @@ public class Applicator1Test {
 
             @Override
             public void onFinish(int[][] chunk) {
-                System.out.println(ai.incrementAndGet());
+                int val = ai.incrementAndGet();
+                if (val % 10 == 0) {
+                    System.out.println(val);
+                }
             }
         };
         calculate(chunks, conf, cb);
@@ -424,35 +427,36 @@ public class Applicator1Test {
                 cb.onDesign(res);
                 return true;
             };
-            int[] fstLeft = left[0];
+            LeftCalc[] calcs = Arrays.stream(left).map(arr -> fromBlock(arr, conf.orbitSize())).toArray(LeftCalc[]::new);
+            LeftCalc fstLeft = calcs[0];
             RightState[] rights = new RightState[ll];
             FixBS whiteList = new FixBS(conf.orbitSize());
             whiteList.set(0, conf.orbitSize());
             FixBS outerFilter = conf.outerFilter();
-            for (int el : fstLeft) {
+            for (int el : fstLeft.block()) {
                 whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), conf.orbitSize() - el);
             }
             RightState state = new RightState(new IntList(conf.k()), conf.innerFilter(), outerFilter, whiteList, 0);
             if (outerFilter.isEmpty()) {
                 state = state.acceptElem(0, fstLeft, conf.orbitSize());
             }
-            find(left, rights, state, conf, cons);
+            find(calcs, rights, state, conf, cons);
             cb.onFinish(left);
         });
     }
 
-    private static void find(int[][] lefts, RightState[] rights, RightState currState, OrbitConfig conf, Predicate<RightState[]> cons) {
+    private static void find(LeftCalc[] lefts, RightState[] rights, RightState currState, OrbitConfig conf, Predicate<RightState[]> cons) {
         int idx = currState.idx;
-        int[] left = lefts[idx];
+        LeftCalc left = lefts[idx];
         int ol = conf.orbitSize();
-        if (currState.block().size() == conf.k() - left.length) {
+        if (currState.block().size() == conf.k() - left.len()) {
             RightState[] nextDesign = rights.clone();
             nextDesign[idx] = currState;
             if (cons.test(nextDesign)) {
                 return;
             }
             int nextIdx = idx + 1;
-            int[] nextLeft = lefts[nextIdx];
+            int[] nextLeft = lefts[nextIdx].block();
             FixBS nextWhitelist = new FixBS(ol);
             nextWhitelist.flip(0, ol);
             for (int el : nextLeft) {
@@ -469,8 +473,22 @@ public class Applicator1Test {
         }
     }
 
+    private record LeftCalc(int[] block, FixBS inv, FixBS diff, int len) {}
+
+    private static LeftCalc fromBlock(int[] block, int v) {
+        FixBS inv = new FixBS(v);
+        FixBS diff = new FixBS(v);
+        for (int i : block) {
+            inv.set((v - i) % v);
+            for (int j : block) {
+                diff.set((v + i - j) % v);
+            }
+        }
+        return new LeftCalc(block, inv, diff, block.length);
+    }
+
     private record RightState(IntList block, FixBS filter, FixBS outerFilter, FixBS whiteList, int idx) {
-        private RightState acceptElem(int el, int[] left, int v) {
+        private RightState acceptElem(int el, LeftCalc left, int v) {
             int sz = block.size();
             IntList nextBlock = block.copy();
             nextBlock.add(el);
@@ -493,13 +511,8 @@ public class Applicator1Test {
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
-            for (int l : left) {
-                int diff = el < l ? v + el - l : el - l;
-                newOuterFilter.set(diff);
-            }
-            for (int l : left) {
-                newWhiteList.diffModuleShifted(newOuterFilter, v, v - l);
-            }
+            newOuterFilter.orModuleShifted(left.inv(), v, invEl);
+            newWhiteList.diffModuleShifted(left.diff(), v, invEl);
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
         }
@@ -805,7 +818,7 @@ public class Applicator1Test {
                     wl.diffModuleShifted(outerFilter, os, os - el);
                 }
                 RightState state = new RightState(new IntList(conf.k()), innerFilter, outerFilter, wl, 0);
-                find(new int[][]{fbs.toArray()}, new RightState[1], state, conf, cons);
+                find(new LeftCalc[]{fromBlock(fbs.toArray(), conf.orbitSize())}, new RightState[1], state, conf, cons);
                 return result;
             });
             calculateAlt(set.stream().map(aw -> Arrays.stream(aw.arr())
