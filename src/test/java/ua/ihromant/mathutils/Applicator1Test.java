@@ -175,6 +175,13 @@ public class Applicator1Test {
                 ps.flush();
             };
             for (int[] sizes : suitable) {
+                int[] rev = new int[sizes.length];
+                for (int i = 0; i < rev.length; i++) {
+                    rev[i] = conf.k() - sizes[rev.length - i - 1];
+                }
+                if (Combinatorics.compareArr(rev, sizes) < 0) {
+                    continue;
+                }
                 generateChunks(sizes, conf, cons);
             }
         }
