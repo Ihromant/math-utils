@@ -7,6 +7,7 @@ import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
@@ -166,12 +167,16 @@ public class OrbitConfig {
     }
 
     public int[][] getSuitable() {
-        List<IntList> res = new ArrayList<>();
-        find(innerFilter.cardinality() + 1, innerFilter.cardinality() + 1, outerFilter.cardinality(), new IntList(orbitSize), res::add);
-        return res.stream().map(IntList::toArray).toArray(int[][]::new);
+        return Arrays.stream(suitable()).map(arr -> Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray()).toArray(int[][]::new);
     }
 
-    private void find(int left, int right, int inter, IntList lst, Consumer<IntList> cons) {
+    private int[][][] suitable() {
+        List<List<int[]>> res = new ArrayList<>();
+        find(innerFilter.cardinality() + 1, innerFilter.cardinality() + 1, outerFilter.cardinality(), new ArrayList<>(), res::add);
+        return res.stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
+    }
+
+    private void find(int left, int right, int inter, List<int[]> lst, Consumer<List<int[]>> cons) {
         if (left == orbitSize && right == orbitSize && inter == orbitSize) {
             cons.accept(lst);
             return;
@@ -179,10 +184,10 @@ public class OrbitConfig {
         if (left > orbitSize || right > orbitSize || inter > orbitSize) {
             return;
         }
-        int prev = lst.isEmpty() ? 0 : lst.get(lst.size() - 1);
-        for (int i = prev; i <= k; i++) {
-            IntList nextLst = lst.copy();
-            nextLst.add(i);
+        int[] prev = lst.isEmpty() ? new int[]{0} : lst.getLast();
+        for (int i = prev[0]; i <= k; i++) {
+            List<int[]> nextLst = new ArrayList<>(lst);
+            nextLst.add(new int[]{i, k - i});
             find(left + i * (i - 1), right + (k - i) * (k - i - 1), inter + i * (k - i), nextLst, cons);
         }
     }
