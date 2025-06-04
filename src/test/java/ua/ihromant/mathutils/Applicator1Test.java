@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import lombok.Getter;
+import lombok.experimental.Accessors;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.util.FixBS;
@@ -24,12 +26,11 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -39,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class Applicator1Test {
     @Test
     public void findPossible() {
-        OrbitConfig conf = new OrbitConfig(65, 5, 2);
+        OrbitConfig conf = new OrbitConfig(65, 5, true);
         System.out.println(conf + " " + conf.innerFilter() + " " + conf.outerFilter());
         List<IntList> res = getSuitable(conf);
         res.forEach(System.out::println);
@@ -165,7 +166,7 @@ public class Applicator1Test {
 
     @Test
     public void chunksToFile() throws IOException {
-        OrbitConfig conf = new OrbitConfig(65, 5, 2);
+        OrbitConfig conf = new OrbitConfig(65, 5, true);
         int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
@@ -329,7 +330,7 @@ public class Applicator1Test {
 
     @Test
     public void calculate() throws IOException {
-        OrbitConfig conf = new OrbitConfig(65, 5, 2);
+        OrbitConfig conf = new OrbitConfig(65, 5, true);
         List<int[][]> lefts = read(conf);
         AtomicInteger ai = new AtomicInteger();
         ChunkCallback cb = new ChunkCallback() {
@@ -530,155 +531,138 @@ public class Applicator1Test {
         }
     }
 
-    private record OrbitConfig(int v, int k, int traceLength) {
-        public OrbitConfig {
+    @Getter
+    @Accessors(fluent = true)
+    private static class OrbitConfig {
+        private final int v;
+        private final int k;
+        private final int traceLength;
+        private final boolean outer;
+        private final int orbitSize;
+        private final Integer infinity;
+        private final List<FixBS> innerBlocks = new ArrayList<>();
+        private final FixBS outerBlock;
+        private final FixBS innerFilter;
+        private final FixBS outerFilter;
+
+        public OrbitConfig(int v, int k, int traceLength, boolean outer) {
             if ((v - 1) % (k - 1) != 0 || (v * v - v) % (k * k - k) != 0) {
                 throw new IllegalArgumentException();
             }
-            int ol = v / 2;
-            if (ol % 2 == 0 && (traceLength == 0 || traceLength % 2 != 0)) {
+            this.v = v;
+            this.k = k;
+            this.traceLength = traceLength;
+            this.outer = outer;
+            this.orbitSize = v / 2;
+            this.infinity = v % 2 == 1 ? v - 1 : null;
+            this.innerFilter = new FixBS(orbitSize);
+            this.outerFilter = new FixBS(orbitSize);
+            boolean infUsed = false;
+            if (traceLength != 0) {
+                if (orbitSize % traceLength != 0) {
+                    throw new IllegalArgumentException();
+                }
+                if (infinity != null && traceLength != k && traceLength != k - 1 || infinity == null && traceLength != k) {
+                    throw new IllegalArgumentException();
+                }
+                infUsed = infinity != null && traceLength == k - 1;
+                FixBS left = new FixBS(v);
+                FixBS right = new FixBS(v);
+                for (int i = 0; i < traceLength; i++) {
+                    int val = orbitSize * i / traceLength;
+                    left.set(val);
+                    right.set(val + orbitSize);
+                    if (i != 0) {
+                        innerFilter.set(val);
+                    }
+                }
+                if (infUsed) {
+                    left.set(infinity);
+                    right.set(infinity);
+                }
+                innerBlocks.add(left);
+                innerBlocks.add(right);
+            }
+            this.outerBlock = outer ? new FixBS(v) : null;
+            if (outer) {
+                boolean inf = k % 2 == 1;
+                if (infUsed && inf || inf && infinity == null) {
+                    throw new IllegalArgumentException();
+                }
+                infUsed = infUsed || inf;
+                int half = k / 2;
+                for (int i = 0; i < half; i++) {
+                    int val = orbitSize * i / half;
+                    outerBlock.set(val);
+                    outerBlock.set(val + orbitSize);
+                    outerFilter.set(val);
+                    if (i != 0) {
+                        if (innerFilter.get(val)) {
+                            throw new IllegalArgumentException();
+                        }
+                        innerFilter.set(val);
+                    }
+                }
+                if (inf) {
+                    outerBlock.set(infinity);
+                }
+            }
+            if (orbitSize % 2 == 0 && innerBlocks.stream().noneMatch(bl -> bl.get(orbitSize / 2)) && (outerBlock == null || !outerBlock.get(orbitSize / 2))) {
                 throw new IllegalArgumentException();
             }
-            if (traceLength != 0) {
-                if (ol % traceLength != 0) {
-                    throw new IllegalArgumentException();
-                }
-                int div = k / traceLength;
-                if (k % 2 == 1 && (k % traceLength != 1 || div != 1 && div != 2)) {
-                    throw new IllegalArgumentException();
-                }
+            if (infinity != null && !infUsed) {
+                throw new IllegalArgumentException();
             }
         }
 
-        public FixBS innerFilter() {
-            FixBS filter = new FixBS(orbitSize());
-            if (traceLength != 0) {
-                for (int i = 1; i < orbitSize(); i++) {
-                    if (i * traceLength % orbitSize() == 0) {
-                        filter.set(i);
-                    }
-                }
-                if ((k == traceLength * 2 || k == traceLength) && infinity()) {
-                    for (int i = 1; i < orbitSize(); i++) {
-                        if (i * (k - 1) % orbitSize() == 0) {
-                            filter.set(i);
-                        }
-                    }
-                }
-            }
-            if (traceLength == 0 && infinity()) {
-                for (int i = 1; i < orbitSize(); i++) {
-                    if (i * (k - 1) % orbitSize() == 0) {
-                        filter.set(i);
-                    }
-                }
-            }
-            return filter;
+        public OrbitConfig(int v, int k, int traceLength) {
+            this(v, k, traceLength, false);
         }
 
-        public FixBS outerFilter() {
-            FixBS filter = new FixBS(orbitSize());
-            if (traceLength != 0 && k / traceLength != 1) {
-                for (int i = 0; i < orbitSize(); i++) {
-                    if (i * traceLength % orbitSize() == 0) {
-                        filter.set(i);
-                    }
-                }
-            }
-            return filter;
+        public OrbitConfig(int v, int k, boolean outer) {
+            this(v, k, 0, outer);
         }
 
-        public int orbitSize() {
-            return v / 2;
-        }
-
-        public boolean infinity() {
-            return v % 2 == 1;
+        public OrbitConfig(int v, int k) {
+            this(v, k, 0, false);
         }
 
         @Override
         public String toString() {
-            return traceLength == 0 ? v + "-" + k : v + "-" + k + "-" + traceLength;
+            return v + "-" + k + (traceLength == 0 ? "" :"-" + traceLength) + (infinity != null ? "o" : "");
         }
 
         public Liner fromChunks(int[][][] chunks) {
             Set<BitSet> result = new HashSet<>();
             int ol = orbitSize();
-            if (v % 2 == 1) {
-                int div = k / traceLength;
-                boolean exact = div * traceLength == k;
-                if (div == 1) {
-                    for (int i = 0; i < ol; i++) {
-                        BitSet lBlock = new BitSet(v);
-                        BitSet rBlock = new BitSet(v);
-                        if (!exact) {
-                            lBlock.set(v - 1);
-                            rBlock.set(v - 1);
+            for (FixBS bl : innerBlocks) {
+                for (int i = 0; i < orbitSize; i++) {
+                    BitSet block = new BitSet(v);
+                    for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
+                        if (Objects.equals(el, infinity)) {
+                            block.set(el);
+                        } else {
+                            int rest = el % orbitSize;
+                            int base = el - rest;
+                            block.set(base + ((rest + i) % orbitSize));
                         }
-                        for (int j = 0; j < traceLength; j++) {
-                            int sh = (j * ol / traceLength + i) % ol;
-                            lBlock.set(sh);
-                            rBlock.set(sh + ol);
-                        }
-                        result.add(lBlock);
-                        result.add(rBlock);
                     }
+                    result.add(block);
                 }
-                if (div == 2) {
-                    for (int i = 0; i < ol; i++) {
-                        BitSet block = new BitSet(v);
-                        if (!exact) {
-                            block.set(v - 1);
-                        }
-                        for (int j = 0; j < traceLength; j++) {
-                            int sh = (j * ol / traceLength + i) % ol;
-                            block.set(sh);
-                            block.set(sh + ol);
-                        }
-                        result.add(block);
-                    }
-                }
-                if (exact) {
-                    for (int i = 0; i < ol; i++) {
-                        BitSet lBlock = new BitSet(v);
-                        BitSet rBlock = new BitSet(v);
-                        lBlock.set(v - 1);
-                        rBlock.set(v - 1);
-                        for (int j = 0; j < k - 1; j++) {
-                            int sh = (j * ol / (k - 1) + i) % ol;
-                            lBlock.set(sh);
-                            rBlock.set(sh + ol);
-                        }
-                        result.add(lBlock);
-                        result.add(rBlock);
-                    }
-                }
-            } else {
-                if (traceLength != 0) {
-                    if (traceLength == k) {
-                        for (int i = 0; i < ol; i++) {
-                            BitSet lBlock = new BitSet(v);
-                            BitSet rBlock = new BitSet(v);
-                            for (int j = 0; j < traceLength; j++) {
-                                int sh = (j * ol / traceLength + i) % ol;
-                                lBlock.set(sh);
-                                rBlock.set(sh + ol);
-                            }
-                            result.add(lBlock);
-                            result.add(rBlock);
+            }
+            if (outerBlock != null) {
+                for (int i = 0; i < orbitSize; i++) {
+                    BitSet block = new BitSet(v);
+                    for (int el = outerBlock.nextSetBit(0); el >= 0; el = outerBlock.nextSetBit(el + 1)) {
+                        if (Objects.equals(el, infinity)) {
+                            block.set(el);
+                        } else {
+                            int rest = el % orbitSize;
+                            int base = el - rest;
+                            block.set(base + ((rest + i) % orbitSize));
                         }
                     }
-                    if (traceLength == k / 2) {
-                        for (int i = 0; i < ol; i++) {
-                            BitSet block = new BitSet(v);
-                            for (int j = 0; j < traceLength; j++) {
-                                int sh = (j * ol / traceLength + i) % ol;
-                                block.set(sh);
-                                block.set(sh + ol);
-                            }
-                            result.add(block);
-                        }
-                    }
+                    result.add(block);
                 }
             }
             for (int[][] chunk : chunks) {
@@ -704,47 +688,83 @@ public class Applicator1Test {
         OrbitConfig oc = new OrbitConfig(16, 4, 4);
         assertEquals(FixBS.of(8), oc.outerFilter());
         assertEquals(FixBS.of(8, 2, 4, 6), oc.innerFilter());
-        OrbitConfig oc1 = new OrbitConfig(16, 4, 2);
+        testSuitable(oc);
+        OrbitConfig oc1 = new OrbitConfig(16, 4, true);
         assertEquals(FixBS.of(8, 0, 4), oc1.outerFilter());
         assertEquals(FixBS.of(8, 4), oc1.innerFilter());
-        OrbitConfig oc2 = new OrbitConfig(91, 6, 0);
+        testSuitable(oc1);
+        OrbitConfig oc2 = new OrbitConfig(91, 6, 5);
         assertEquals(FixBS.of(45), oc2.outerFilter());
         assertEquals(FixBS.of(45, 9, 18, 27, 36), oc2.innerFilter());
-        OrbitConfig oc3 = new OrbitConfig(91, 7, 3);
+        testSuitable(oc2);
+        OrbitConfig oc3 = new OrbitConfig(91, 7, true);
         assertEquals(FixBS.of(45, 0, 15, 30), oc3.outerFilter());
         assertEquals(FixBS.of(45, 15, 30), oc3.innerFilter());
+        testSuitable(oc3);
         OrbitConfig oc4 = new OrbitConfig(133, 7, 6);
         assertEquals(FixBS.of(66), oc4.outerFilter());
         assertEquals(FixBS.of(66, 11, 22, 33, 44, 55), oc4.innerFilter());
-        OrbitConfig oc5 = new OrbitConfig(65, 5, 2);
+        testSuitable(oc4);
+        OrbitConfig oc5 = new OrbitConfig(65, 5, true);
         assertEquals(FixBS.of(32, 0, 16), oc5.outerFilter());
         assertEquals(FixBS.of(32, 16), oc5.innerFilter());
-        OrbitConfig oc6 = new OrbitConfig(25, 4, 2);
+        testSuitable(oc5);
+        OrbitConfig oc6 = new OrbitConfig(25, 4, 3, true);
         assertEquals(FixBS.of(12, 0, 6), oc6.outerFilter());
         assertEquals(FixBS.of(12, 4, 6, 8), oc6.innerFilter());
-        OrbitConfig oc7 = new OrbitConfig(91, 6, 3);
+        testSuitable(oc6);
+        OrbitConfig oc7 = new OrbitConfig(91, 6, 5, true);
         assertEquals(FixBS.of(45, 0, 15, 30), oc7.outerFilter());
         assertEquals(FixBS.of(45, 9, 15, 18, 27, 30, 36), oc7.innerFilter());
-        OrbitConfig oc8 = new OrbitConfig(113, 8, 4);
+        testSuitable(oc7);
+        OrbitConfig oc8 = new OrbitConfig(113, 8, 7, true);
         assertEquals(FixBS.of(56, 0, 14, 28, 42), oc8.outerFilter());
         assertEquals(FixBS.of(56, 8, 14, 16, 24, 28, 32, 40, 42, 48), oc8.innerFilter());
-        OrbitConfig oc9 = new OrbitConfig(176, 8, 4);
+        testSuitable(oc8);
+        OrbitConfig oc9 = new OrbitConfig(176, 8, true);
         assertEquals(FixBS.of(88, 0, 22, 44, 66), oc9.outerFilter());
         assertEquals(FixBS.of(88, 22, 44, 66), oc9.innerFilter());
+        testSuitable(oc9);
         OrbitConfig oc10 = new OrbitConfig(176, 8, 8);
         assertEquals(FixBS.of(88), oc10.outerFilter());
         assertEquals(FixBS.of(88, 11, 22, 33, 44, 55, 66, 77), oc10.innerFilter());
-        OrbitConfig oc11 = new OrbitConfig(169, 8, 4);
+        testSuitable(oc10);
+        OrbitConfig oc11 = new OrbitConfig(169, 8, 7, true);
         assertEquals(FixBS.of(84, 0, 21, 42, 63), oc11.outerFilter());
         assertEquals(FixBS.of(84, 12, 21, 24, 36, 42, 48, 60, 63, 72), oc11.innerFilter());
-        OrbitConfig oc12 = new OrbitConfig(25, 4, 4);
-        assertEquals(FixBS.of(12), oc12.outerFilter());
-        assertEquals(FixBS.of(12, 3, 4, 6, 8, 9), oc12.innerFilter());
+        testSuitable(oc11);
+        OrbitConfig oc12 = new OrbitConfig(145, 9, 8);
+        assertEquals(FixBS.of(72), oc12.outerFilter());
+        assertEquals(FixBS.of(72, 9, 18, 27, 36, 45, 54, 63), oc12.innerFilter());
+        testSuitable(oc12);
+        OrbitConfig oc13 = new OrbitConfig(145, 9, 9, true);
+        assertEquals(FixBS.of(72, 0, 18, 36, 54), oc13.outerFilter());
+        assertEquals(FixBS.of(72, 8, 16, 18, 24, 32, 36, 40, 48, 54, 56, 64), oc13.innerFilter());
+        testSuitable(oc13);
+    }
+
+    private void testSuitable(OrbitConfig conf) {
+        List<IntList> suitable = getSuitable(conf);
+        for (IntList s : suitable) {
+            int[] arr = s.toArray();
+            int left = conf.innerFilter().cardinality() + 1;
+            int right = conf.innerFilter().cardinality() + 1;
+            int inter = conf.outerFilter().cardinality();
+            for (int i : arr) {
+                int o = conf.k() - i;
+                left = left + i * (i - 1);
+                right = right + o * (o - 1);
+                inter = inter + i * o;
+            }
+            assertEquals(conf.orbitSize(), left);
+            assertEquals(conf.orbitSize(), right);
+            assertEquals(conf.orbitSize, inter);
+        }
     }
 
     @Test
     public void inspect() throws IOException {
-        OrbitConfig conf = new OrbitConfig(106, 6, 0);
+        OrbitConfig conf = new OrbitConfig(106, 6);
         ObjectMapper om = new ObjectMapper();
         Map<FixBS, int[][][]> map = new HashMap<>();
         Files.lines(Path.of("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt")).parallel().forEach(l -> {
@@ -760,117 +780,6 @@ public class Applicator1Test {
             Liner lnr = conf.fromChunks(ch);
             System.out.println(lnr.autCountOld() + " " + lnr.hyperbolicFreq() + " " + Arrays.deepToString(ch));
         });
-    }
-
-    @Test
-    public void calculateFileAlt() throws IOException {
-        OrbitConfig conf = new OrbitConfig(96, 6, 6);
-        ObjectMapper om = new ObjectMapper();
-        File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + "alt.txt");
-        File beg = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
-        try (FileOutputStream fos = new FileOutputStream(f, true);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos);
-             FileInputStream allFis = new FileInputStream(beg);
-             InputStreamReader allIsr = new InputStreamReader(allFis);
-             BufferedReader allBr = new BufferedReader(allIsr);
-             FileInputStream fis = new FileInputStream(f);
-             InputStreamReader isr = new InputStreamReader(fis);
-             BufferedReader br = new BufferedReader(isr)) {
-            Set<ArrWrap> set = allBr.lines().map(s -> new ArrWrap(om.readValue(s, int[][].class))).collect(Collectors.toSet());
-            br.lines().forEach(l -> {
-                if (l.contains("[[[")) {
-                    int[][][] design = om.readValue(l, int[][][].class);
-                    Liner liner = conf.fromChunks(design);
-                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
-                } else {
-                    set.remove(new ArrWrap(om.readValue(l, int[][].class)));
-                }
-            });
-            Map<FixBS, List<RightState>> suitables = new ConcurrentHashMap<>();
-            AtomicInteger ai = new AtomicInteger();
-            ChunkCallback cb = new ChunkCallback() {
-                @Override
-                public void onDesign(int[][][] design) {
-                    Liner liner = conf.fromChunks(design);
-                    System.out.println(liner.hyperbolicFreq() + " " + Arrays.deepToString(design));
-                    ps.println(Arrays.deepToString(design));
-                    ps.flush();
-                }
-
-                @Override
-                public void onFinish(int[][] chunk) {
-                    ps.println(Arrays.deepToString(chunk));
-                    ps.flush();
-                    int val = ai.incrementAndGet();
-                    if (val % 100 == 0) {
-                        System.out.println(val);
-                    }
-                }
-            };
-            FixBS innerFilter = conf.innerFilter();
-            FixBS outerFilter = conf.outerFilter();
-            Function<FixBS, List<RightState>> calc = fbs -> suitables.computeIfAbsent(fbs, key -> {
-                List<RightState> result = new ArrayList<>();
-                Predicate<RightState[]> cons = arr -> {
-                    RightState st = arr[0];
-                    st.filter.andNot(innerFilter);
-                    st.outerFilter.andNot(outerFilter);
-                    result.add(st);
-                    return true;
-                };
-                int os = conf.orbitSize();
-                FixBS wl = new FixBS(os);
-                wl.set(0, os);
-                for (int el = fbs.nextSetBit(0); el >= 0; el = fbs.nextSetBit(el + 1)) {
-                    wl.diffModuleShifted(outerFilter, os, os - el);
-                }
-                RightState state = new RightState(new IntList(conf.k()), innerFilter, outerFilter, wl, 0);
-                find(new LeftCalc[]{fromBlock(fbs.toArray(), conf.orbitSize())}, new RightState[1], state, conf, cons);
-                return result;
-            });
-            calculateAlt(set.stream().map(aw -> Arrays.stream(aw.arr())
-                    .map(bl -> FixBS.of(conf.v(), bl)).toList()).collect(Collectors.toList()), calc, conf, cb);
-        }
-    }
-
-    private static void calculateAlt(List<List<FixBS>> lefts, Function<FixBS, List<RightState>> calc, OrbitConfig conf, ChunkCallback cb) {
-        System.out.println("Lefts size: " + lefts.size() + " for conf " + conf);
-        lefts.stream().parallel().forEach(left -> {
-            int ll = left.size();
-            Predicate<RightState[]> cons = arr -> {
-                if (arr[ll - 1] == null) {
-                    return false;
-                }
-                int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left.get(i).toArray(), arr[i].block.toArray()}).toArray(int[][][]::new);
-                cb.onDesign(res);
-                return true;
-            };
-            FixBS fstLeft = left.getFirst();
-            FixBS innerFilter = conf.innerFilter();
-            FixBS outerFilter = conf.outerFilter();
-            for (RightState st : calc.apply(fstLeft)) {
-                RightState[] rights = new RightState[ll];
-                rights[0] = st;
-                findAlt(left, rights, 1, innerFilter.union(st.filter), outerFilter.union(st.outerFilter), calc, cons);
-            }
-            cb.onFinish(left.stream().map(FixBS::toArray).toArray(int[][]::new));
-        });
-    }
-
-    private static void findAlt(List<FixBS> lefts, RightState[] rights, int idx, FixBS innerFilter, FixBS outerFilter,
-                                Function<FixBS, List<RightState>> calc, Predicate<RightState[]> cons) {
-        if (cons.test(rights)) {
-            return;
-        }
-        for (RightState st : calc.apply(lefts.get(idx))) {
-            if (st.filter.intersects(innerFilter) || st.outerFilter.intersects(outerFilter)) {
-                continue;
-            }
-            RightState[] nextRights = rights.clone();
-            nextRights[idx] = st;
-            findAlt(lefts, nextRights, idx + 1, innerFilter.union(st.filter), outerFilter.union(st.outerFilter), calc, cons);
-        }
     }
 
     @Test
