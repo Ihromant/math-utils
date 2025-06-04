@@ -40,6 +40,7 @@ public class Applicator1Test {
     @Test
     public void findPossible() {
         OrbitConfig conf = new OrbitConfig(65, 5, 2);
+        System.out.println(conf + " " + conf.innerFilter() + " " + conf.outerFilter());
         List<IntList> res = getSuitable(conf);
         res.forEach(System.out::println);
     }
