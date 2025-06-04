@@ -174,58 +174,64 @@ public class OrbitConfig {
         return Arrays.stream(suitable()).map(arr -> Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray()).toArray(int[][]::new);
     }
 
-    private int[][][] suitable() {
+    public int[][][] suitable() {
+        return find().stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
+    }
+
+    private List<List<int[]>> find() {
         List<List<int[]>> res = new ArrayList<>();
-        find(innerFilter.cardinality() + 1, innerFilter.cardinality() + 1, outerFilter.cardinality(), new ArrayList<>(), res::add);
-        return res.stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
+        int[][] used = new int[orbitCount][orbitCount];
+        for (int i = 0; i < orbitCount; i++) {
+            for (int j = 0; j < orbitCount; j++) {
+                used[i][j] = i == j ? innerFilter.cardinality() + 1 : outerFilter.cardinality();
+            }
+        }
+        int[][] splits = generateSplits();
+        find(used, new ArrayList<>(), splits, 0, res::add);
+        return res;
     }
 
-    private void find(int left, int right, int inter, List<int[]> lst, Consumer<List<int[]>> cons) {
-        if (left == orbitSize && right == orbitSize && inter == orbitSize) {
-            cons.accept(lst);
-            return;
+    private int[][] generateSplits() {
+        List<int[]> res = new ArrayList<>();
+        generateSplits(new int[orbitCount], 0, 0, res::add);
+        return res.toArray(int[][]::new);
+    }
+
+    private void generateSplits(int[] curr, int idx, int sum, Consumer<int[]> cons) {
+        for (int i = 0; i <= k - sum; i++) {
+            int[] nextCurr = curr.clone();
+            nextCurr[idx] = i;
+            if (idx < curr.length - 2) {
+                generateSplits(nextCurr, idx + 1, sum + i, cons);
+            } else {
+                nextCurr[curr.length - 1] = k - sum - i;
+                cons.accept(nextCurr);
+            }
         }
-        if (left > orbitSize || right > orbitSize || inter > orbitSize) {
-            return;
-        }
-        int[] prev = lst.isEmpty() ? new int[]{0} : lst.getLast();
-        for (int i = prev[0]; i <= k; i++) {
+    }
+
+    private void find(int[][] used, List<int[]> lst, int[][] splits, int idx, Consumer<List<int[]>> cons) {
+        ex: for (int i = idx; i < splits.length; i++) {
+            int[] split = splits[i];
+            int[][] nextUsed = new int[orbitCount][orbitCount];
+            boolean allSize = true;
+            for (int j = 0; j < orbitCount; j++) {
+                for (int k = 0; k < orbitCount; k++) {
+                    int addition = j == k ? split[j] * (split[j] - 1) : split[j] * split[k];
+                    int nextVal = used[j][k] + addition;
+                    if (nextVal > orbitSize) {
+                        continue ex;
+                    }
+                    allSize = allSize && nextVal == orbitSize;
+                    nextUsed[j][k] = nextVal;
+                }
+            }
             List<int[]> nextLst = new ArrayList<>(lst);
-            nextLst.add(new int[]{i, k - i});
-            find(left + i * (i - 1), right + (k - i) * (k - i - 1), inter + i * (k - i), nextLst, cons);
-        }
-    }
-
-    private record Triple(int left, int mid, int right) {
-        @Override
-        public String toString() {
-            return "(" + left + "," + mid + "," + right + ")";
-        }
-    }
-
-    public static void main(String[] args) {
-        List<List<Triple>> result = new ArrayList<>();
-        find(30, 7, 5, 5, 5, 0, 0, 0, new ArrayList<>(), result::add);
-        result.forEach(System.out::println);
-    }
-
-    private static void find(int v, int k, int left, int mid, int right, int interLeftRight, int interLeftMid, int interMidRight, List<Triple> lst, Consumer<List<Triple>> cons) {
-        if (left == v - 1 && right == v - 1 && mid == v - 1 && interLeftRight == v && interLeftMid == v && interMidRight == v) {
-            cons.accept(lst);
-            return;
-        }
-        if (left >= v || mid >= v || right >= v || interLeftRight > v || interLeftMid > v || interMidRight > v) {
-            return;
-        }
-        Triple prev = lst.isEmpty() ? null : lst.getLast();
-        int leftLast = prev == null ? 0 : prev.left();
-        for (int l = leftLast; l <= k; l++) {
-            int midLast = !lst.isEmpty() && l == leftLast ? prev.mid() : 0;
-            for (int m = midLast; m <= k - l; m++) {
-                List<Triple> nextLst = new ArrayList<>(lst);
-                int r = k - l - m;
-                nextLst.add(new Triple(l, m, r));
-                find(v, k, left + l * (l - 1), mid + m * (m - 1), right + r * (r - 1), interLeftRight + l * r, interLeftMid + l * m, interMidRight + m * r, nextLst, cons);
+            nextLst.add(split);
+            if (allSize) {
+                cons.accept(nextLst);
+            } else {
+                find(nextUsed, nextLst, splits, i, cons);
             }
         }
     }

@@ -532,20 +532,23 @@ public class Applicator1Test {
     }
 
     private void testSuitable(OrbitConfig conf) {
-        int[][] suitable = conf.getSuitable();
-        for (int[] arr : suitable) {
-            int left = conf.innerFilter().cardinality() + 1;
-            int right = conf.innerFilter().cardinality() + 1;
-            int inter = conf.outerFilter().cardinality();
-            for (int i : arr) {
-                int o = conf.k() - i;
-                left = left + i * (i - 1);
-                right = right + o * (o - 1);
-                inter = inter + i * o;
+        int[][][] suitable = conf.suitable();
+        int oc = conf.orbitCount();
+        for (int[][] arr : suitable) {
+            int[][] used = new int[oc][oc];
+            for (int i = 0; i < oc; i++) {
+                for (int j = 0; j < oc; j++) {
+                    used[i][j] = i == j ? conf.innerFilter().cardinality() + 1 : conf.outerFilter().cardinality();
+                }
             }
-            assertEquals(conf.orbitSize(), left);
-            assertEquals(conf.orbitSize(), right);
-            assertEquals(conf.orbitSize(), inter);
+            for (int[] split : arr) {
+                for (int i = 0; i < oc; i++) {
+                    for (int j = 0; j < oc; j++) {
+                        used[i][j] = used[i][j] + (i == j ? split[i] * (split[i] - 1) : split[i] * split[j]);
+                    }
+                }
+            }
+            Arrays.stream(used).forEach(a -> Arrays.stream(a).forEach(i -> assertEquals(conf.orbitSize(), i)));
         }
     }
 
