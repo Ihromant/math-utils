@@ -642,4 +642,74 @@ public class Applicator1Test {
         }
         System.out.println(minMul);
     }
+
+    @Test
+    public void printPossible() {
+        for (int o = 2; o < 6; o++) {
+            for (int v = 31; v < 257; v++) {
+                for (int k = 6; k < 12; k++) {
+                    try {
+                        OrbitConfig oc = new OrbitConfig(v, k, 0, true, o);
+                        int[][][] s = oc.suitable();
+                        if (s.length > 0) {
+                            System.out.println(oc);
+                            Arrays.stream(s).limit(5).forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // ok
+                    }
+                    try {
+                        OrbitConfig oc = new OrbitConfig(v, k, 0, false, o);
+                        int[][][] s = oc.suitable();
+                        if (s.length > 0) {
+                            System.out.println(oc);
+                            Arrays.stream(s).limit(5).forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // ok
+                    }
+                    try {
+                        OrbitConfig oc = new OrbitConfig(v, k, k, true, o);
+                        int[][][] s = oc.suitable();
+                        if (s.length > 0) {
+                            System.out.println(oc);
+                            Arrays.stream(s).limit(5).forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // ok
+                    }
+                    try {
+                        OrbitConfig oc = new OrbitConfig(v, k, k - 1, true, o);
+                        int[][][] s = oc.suitable();
+                        if (s.length > 0) {
+                            System.out.println(oc);
+                            Arrays.stream(s).limit(5).forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // ok
+                    }
+                    try {
+                        OrbitConfig oc = new OrbitConfig(v, k, k, false, o);
+                        int[][][] s = oc.suitable();
+                        if (s.length > 0) {
+                            System.out.println(oc);
+                            Arrays.stream(s).limit(5).forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // ok
+                    }
+                    try {
+                        OrbitConfig oc = new OrbitConfig(v, k, k - 1, false, o);
+                        int[][][] s = oc.suitable();
+                        if (s.length > 0) {
+                            System.out.println(oc);
+                            Arrays.stream(s).limit(5).forEach(arr -> System.out.println(Arrays.deepToString(arr)));
+                        }
+                    } catch (IllegalArgumentException e) {
+                        // ok
+                    }
+                }
+            }
+        }
+    }
 }
