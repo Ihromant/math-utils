@@ -39,35 +39,12 @@ public class Applicator1Test {
     public void findPossible() {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
         System.out.println(conf + " " + conf.innerFilter() + " " + conf.outerFilter());
-        int[][] res = getSuitable(conf);
+        int[][] res = conf.getSuitable();
         for (int[] arr : res) {
             System.out.println(Arrays.toString(arr));
         }
-        assertArrayEquals(new int[][]{{1, 3, 3, 3, 4, 4}, {2, 2, 2, 4, 4, 4}, {2, 2, 3, 3, 3, 5}}, getSuitable(new OrbitConfig(96, 6, 6)));
-        assertArrayEquals(new int[][]{{1, 2, 2, 4, 4, 4, 4}, {1, 2, 3, 3, 3, 4, 5}, {2, 2, 2, 2, 4, 4, 5}}, getSuitable(new OrbitConfig(106, 6)));
-    }
-
-    private static int[][] getSuitable(OrbitConfig conf) {
-        IntList il = new IntList(conf.v());
-        List<IntList> res = new ArrayList<>();
-        find(conf.orbitSize(), conf.k(), conf.innerFilter().cardinality(), conf.innerFilter().cardinality(), conf.outerFilter().cardinality(), il, res::add);
-        return res.stream().map(IntList::toArray).toArray(int[][]::new);
-    }
-
-    private static void find(int v, int k, int left, int right, int inter, IntList lst, Consumer<IntList> cons) {
-        if (left == v - 1 && right == v - 1 && inter == v) {
-            cons.accept(lst);
-            return;
-        }
-        if (left >= v || right >= v || inter > v) {
-            return;
-        }
-        int prev = lst.isEmpty() ? 0 : lst.get(lst.size() - 1);
-        for (int i = prev; i <= k; i++) {
-            IntList nextLst = lst.copy();
-            nextLst.add(i);
-            find(v, k, left + i * (i - 1), right + (k - i) * (k - i - 1), inter + i * (k - i), nextLst, cons);
-        }
+        assertArrayEquals(new int[][]{{1, 3, 3, 3, 4, 4}, {2, 2, 2, 4, 4, 4}, {2, 2, 3, 3, 3, 5}}, new OrbitConfig(96, 6, 6).getSuitable());
+        assertArrayEquals(new int[][]{{1, 2, 2, 4, 4, 4, 4}, {1, 2, 3, 3, 3, 4, 5}, {2, 2, 2, 2, 4, 4, 5}}, new OrbitConfig(106, 6).getSuitable());
     }
 
     private record Triple(int left, int mid, int right) {
@@ -140,7 +117,7 @@ public class Applicator1Test {
     @Test
     public void generate() {
         OrbitConfig conf = new OrbitConfig(40, 4, 4);
-        int[][] suitable = getSuitable(conf);
+        int[][] suitable = conf.getSuitable();
         List<int[][]> chunks = new ArrayList<>();
         List<int[][]> snc = Collections.synchronizedList(chunks);
         for (int[] sizes : suitable) {
@@ -168,7 +145,7 @@ public class Applicator1Test {
     @Test
     public void chunksToFile() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
-        int[][] suitable = getSuitable(conf);
+        int[][] suitable = conf.getSuitable();
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
@@ -593,7 +570,7 @@ public class Applicator1Test {
     }
 
     private void testSuitable(OrbitConfig conf) {
-        int[][] suitable = getSuitable(conf);
+        int[][] suitable = conf.getSuitable();
         for (int[] arr : suitable) {
             int left = conf.innerFilter().cardinality() + 1;
             int right = conf.innerFilter().cardinality() + 1;

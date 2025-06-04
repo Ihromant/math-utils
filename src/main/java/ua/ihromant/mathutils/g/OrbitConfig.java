@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.g;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -11,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 
 @Getter
 @Accessors(fluent = true)
@@ -161,5 +163,27 @@ public class OrbitConfig {
             }
         }
         return new Liner(result.toArray(BitSet[]::new));
+    }
+
+    public int[][] getSuitable() {
+        List<IntList> res = new ArrayList<>();
+        find(innerFilter.cardinality() + 1, innerFilter.cardinality() + 1, outerFilter.cardinality(), new IntList(orbitSize), res::add);
+        return res.stream().map(IntList::toArray).toArray(int[][]::new);
+    }
+
+    private void find(int left, int right, int inter, IntList lst, Consumer<IntList> cons) {
+        if (left == orbitSize && right == orbitSize && inter == orbitSize) {
+            cons.accept(lst);
+            return;
+        }
+        if (left > orbitSize || right > orbitSize || inter > orbitSize) {
+            return;
+        }
+        int prev = lst.isEmpty() ? 0 : lst.get(lst.size() - 1);
+        for (int i = prev; i <= k; i++) {
+            IntList nextLst = lst.copy();
+            nextLst.add(i);
+            find(left + i * (i - 1), right + (k - i) * (k - i - 1), inter + i * (k - i), nextLst, cons);
+        }
     }
 }
