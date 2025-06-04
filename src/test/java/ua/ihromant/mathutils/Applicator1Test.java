@@ -42,15 +42,17 @@ public class Applicator1Test {
     public void findPossible() {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
         System.out.println(conf + " " + conf.innerFilter() + " " + conf.outerFilter());
-        List<IntList> res = getSuitable(conf);
-        res.forEach(System.out::println);
+        int[][] res = getSuitable(conf);
+        for (int[] arr : res) {
+            System.out.println(Arrays.toString(arr));
+        }
     }
 
-    private static List<IntList> getSuitable(OrbitConfig conf) {
+    private static int[][] getSuitable(OrbitConfig conf) {
         IntList il = new IntList(conf.v());
         List<IntList> res = new ArrayList<>();
         find(conf.orbitSize(), conf.k(), conf.innerFilter().cardinality(), conf.innerFilter().cardinality(), conf.outerFilter().cardinality(), il, res::add);
-        return res;
+        return res.stream().map(IntList::toArray).toArray(int[][]::new);
     }
 
     private static void find(int v, int k, int left, int right, int inter, IntList lst, Consumer<IntList> cons) {
@@ -139,7 +141,7 @@ public class Applicator1Test {
     @Test
     public void generate() {
         OrbitConfig conf = new OrbitConfig(40, 4, 4);
-        int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
+        int[][] suitable = getSuitable(conf);
         List<int[][]> chunks = new ArrayList<>();
         List<int[][]> snc = Collections.synchronizedList(chunks);
         for (int[] sizes : suitable) {
@@ -167,7 +169,7 @@ public class Applicator1Test {
     @Test
     public void chunksToFile() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
-        int[][] suitable = getSuitable(conf).stream().map(IntList::toArray).toArray(int[][]::new);
+        int[][] suitable = getSuitable(conf);
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
@@ -744,9 +746,8 @@ public class Applicator1Test {
     }
 
     private void testSuitable(OrbitConfig conf) {
-        List<IntList> suitable = getSuitable(conf);
-        for (IntList s : suitable) {
-            int[] arr = s.toArray();
+        int[][] suitable = getSuitable(conf);
+        for (int[] arr : suitable) {
             int left = conf.innerFilter().cardinality() + 1;
             int right = conf.innerFilter().cardinality() + 1;
             int inter = conf.outerFilter().cardinality();
