@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 public class OrbitConfig {
     private final int v;
     private final int k;
-    private final int orbitCount = 2;
+    private final int orbitCount;
     private final int traceLength;
     private final boolean outer;
     private final int orbitSize;
@@ -29,12 +29,13 @@ public class OrbitConfig {
     private final FixBS innerFilter;
     private final FixBS outerFilter;
 
-    public OrbitConfig(int v, int k, int traceLength, boolean outer) {
+    public OrbitConfig(int v, int k, int traceLength, boolean outer, int orbitCount) {
         if ((v - 1) % (k - 1) != 0 || (v * v - v) % (k * k - k) != 0 || v % orbitCount > 1) {
             throw new IllegalArgumentException();
         }
         this.v = v;
         this.k = k;
+        this.orbitCount = orbitCount;
         this.traceLength = traceLength;
         this.outer = outer;
         this.orbitSize = v / orbitCount;
@@ -99,6 +100,10 @@ public class OrbitConfig {
         if (infinity != null && !infUsed) {
             throw new IllegalArgumentException();
         }
+    }
+
+    public OrbitConfig(int v, int k, int traceLength, boolean outer) {
+        this(v, k, traceLength, outer, 2);
     }
 
     public OrbitConfig(int v, int k, int traceLength) {
