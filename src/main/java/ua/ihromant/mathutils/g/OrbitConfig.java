@@ -157,15 +157,12 @@ public class OrbitConfig {
             }
         }
         for (int[][] chunk : chunks) {
-            int[] left = chunk[0];
-            int[] right = chunk[1];
             for (int i = 0; i < ol; i++) {
                 BitSet block = new BitSet(v);
-                for (int l : left) {
-                    block.set((l + i) % ol);
-                }
-                for (int r : right) {
-                    block.set((r + i) % ol + ol);
+                for (int orb = 0; orb < orbitCount; orb++) {
+                    for (int p : chunk[orb]) {
+                        block.set((p + i) % ol + orb * ol);
+                    }
                 }
                 result.add(block);
             }
