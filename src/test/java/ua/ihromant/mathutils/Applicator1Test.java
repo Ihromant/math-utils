@@ -646,7 +646,7 @@ public class Applicator1Test {
     @Test
     public void printPossible() {
         for (int o = 2; o < 6; o++) {
-            for (int v = 31; v < 257; v++) {
+            for (int v = 31; v < 514 / o; v++) {
                 for (int k = 6; k < 12; k++) {
                     try {
                         OrbitConfig oc = new OrbitConfig(v, k, 0, true, o);

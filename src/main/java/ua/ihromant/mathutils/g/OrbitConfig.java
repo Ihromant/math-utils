@@ -68,7 +68,8 @@ public class OrbitConfig {
         }
         this.outerBlock = outer ? new FixBS(v) : null;
         if (outer) {
-            if (k % orbitCount > 1) {
+            int part = k / orbitCount;
+            if (k % orbitCount > 1 || orbitSize % part != 0) {
                 throw new IllegalArgumentException();
             }
             boolean inf = k % orbitCount == 1;
@@ -76,7 +77,6 @@ public class OrbitConfig {
                 throw new IllegalArgumentException();
             }
             infUsed = infUsed || inf;
-            int part = k / orbitCount;
             for (int i = 0; i < part; i++) {
                 int val = orbitSize * i / part;
                 for (int orb = 0; orb < orbitCount; orb++) {
@@ -120,7 +120,7 @@ public class OrbitConfig {
 
     @Override
     public String toString() {
-        return v + "-" + k + (traceLength == 0 ? "" : "-" + traceLength) + (infinity != null ? "o" : "");
+        return v + "-" + k + (traceLength == 0 ? "" : "-" + traceLength) + (outer ? "o" : "");
     }
 
     public Liner fromChunks(int[][][] chunks) {
