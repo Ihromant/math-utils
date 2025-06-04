@@ -19,6 +19,7 @@ import java.util.function.Consumer;
 public class OrbitConfig {
     private final int v;
     private final int k;
+    private final int orbitCount = 2;
     private final int traceLength;
     private final boolean outer;
     private final int orbitSize;
@@ -29,15 +30,15 @@ public class OrbitConfig {
     private final FixBS outerFilter;
 
     public OrbitConfig(int v, int k, int traceLength, boolean outer) {
-        if ((v - 1) % (k - 1) != 0 || (v * v - v) % (k * k - k) != 0) {
+        if ((v - 1) % (k - 1) != 0 || (v * v - v) % (k * k - k) != 0 || v % orbitCount > 1) {
             throw new IllegalArgumentException();
         }
         this.v = v;
         this.k = k;
         this.traceLength = traceLength;
         this.outer = outer;
-        this.orbitSize = v / 2;
-        this.infinity = v % 2 == 1 ? v - 1 : null;
+        this.orbitSize = v / orbitCount;
+        this.infinity = v % orbitCount == 1 ? v - 1 : null;
         this.innerFilter = new FixBS(orbitSize);
         this.outerFilter = new FixBS(orbitSize);
         boolean infUsed = false;
@@ -49,35 +50,37 @@ public class OrbitConfig {
                 throw new IllegalArgumentException();
             }
             infUsed = infinity != null && traceLength == k - 1;
-            FixBS left = new FixBS(v);
-            FixBS right = new FixBS(v);
-            for (int i = 0; i < traceLength; i++) {
-                int val = orbitSize * i / traceLength;
-                left.set(val);
-                right.set(val + orbitSize);
-                if (i != 0) {
-                    innerFilter.set(val);
+            for (int orb = 0; orb < orbitCount; orb++) {
+                FixBS block = new FixBS(v);
+                for (int i = 0; i < traceLength; i++) {
+                    int val = orbitSize * i / traceLength;
+                    block.set(val + orb * orbitSize);
+                    if (i != 0) {
+                        innerFilter.set(val);
+                    }
                 }
+                if (infUsed) {
+                    block.set(infinity);
+                }
+                innerBlocks.add(block);
             }
-            if (infUsed) {
-                left.set(infinity);
-                right.set(infinity);
-            }
-            innerBlocks.add(left);
-            innerBlocks.add(right);
         }
         this.outerBlock = outer ? new FixBS(v) : null;
         if (outer) {
-            boolean inf = k % 2 == 1;
+            if (k % orbitCount > 1) {
+                throw new IllegalArgumentException();
+            }
+            boolean inf = k % orbitCount == 1;
             if (infUsed && inf || inf && infinity == null) {
                 throw new IllegalArgumentException();
             }
             infUsed = infUsed || inf;
-            int half = k / 2;
-            for (int i = 0; i < half; i++) {
-                int val = orbitSize * i / half;
-                outerBlock.set(val);
-                outerBlock.set(val + orbitSize);
+            int part = k / orbitCount;
+            for (int i = 0; i < part; i++) {
+                int val = orbitSize * i / part;
+                for (int orb = 0; orb < orbitCount; orb++) {
+                    outerBlock.set(val + orbitSize * orb);
+                }
                 outerFilter.set(val);
                 if (i != 0) {
                     if (innerFilter.get(val)) {
