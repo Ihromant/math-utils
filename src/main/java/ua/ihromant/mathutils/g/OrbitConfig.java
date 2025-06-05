@@ -120,7 +120,7 @@ public class OrbitConfig {
 
     @Override
     public String toString() {
-        return v + "-" + k + (traceLength == 0 ? "" : "-" + traceLength) + (outer ? "o" : "");
+        return (orbitCount == 2 ? "" : orbitCount + "-") + v + "-" + k + (traceLength == 0 ? "" : "-" + traceLength) + (outer ? "o" : "");
     }
 
     public Liner fromChunks(int[][][] chunks) {
