@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.g;
 
 import lombok.Getter;
 import lombok.experimental.Accessors;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -12,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.Consumer;
 
 @Getter
@@ -171,7 +174,9 @@ public class OrbitConfig {
     }
 
     public int[][] getSuitable() {
-        return Arrays.stream(suitable()).map(arr -> Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray()).toArray(int[][]::new);
+        TreeSet<int[]> result = new TreeSet<>(Combinatorics::compareArr);
+        Arrays.stream(suitable()).map(arr -> Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray()).forEach(result::add);
+        return result.toArray(int[][]::new);
     }
 
     public int[][][] suitable() {
