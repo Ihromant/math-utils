@@ -11,6 +11,7 @@ import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
@@ -172,13 +173,17 @@ public class OrbitConfig {
         return new Liner(result.toArray(BitSet[]::new));
     }
 
-    public int[][] getSuitable() {
+    public int[][] firstSuitable() {
+        return groupedSuitable().keySet().toArray(int[][]::new);
+    }
+
+    public Map<int[], List<int[][]>> groupedSuitable() {
         TreeMap<int[], List<int[][]>> result = new TreeMap<>(Combinatorics::compareArr);
         Arrays.stream(suitable()).forEach(arr -> {
             int[] fst = Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray();
             result.computeIfAbsent(fst, k -> new ArrayList<>()).add(arr);
         });
-        return result.keySet().toArray(int[][]::new);
+        return result;
     }
 
     public int[][][] suitable() {

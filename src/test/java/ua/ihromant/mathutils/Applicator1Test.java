@@ -38,12 +38,12 @@ public class Applicator1Test {
     public void findPossible() {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
         System.out.println(conf + " " + conf.innerFilter() + " " + conf.outerFilter());
-        int[][] res = conf.getSuitable();
+        int[][] res = conf.firstSuitable();
         for (int[] arr : res) {
             System.out.println(Arrays.toString(arr));
         }
-        assertArrayEquals(new int[][]{{1, 3, 3, 3, 4, 4}, {2, 2, 2, 4, 4, 4}, {2, 2, 3, 3, 3, 5}}, new OrbitConfig(96, 6, 6).getSuitable());
-        assertArrayEquals(new int[][]{{1, 2, 2, 4, 4, 4, 4}, {1, 2, 3, 3, 3, 4, 5}, {2, 2, 2, 2, 4, 4, 5}}, new OrbitConfig(106, 6).getSuitable());
+        assertArrayEquals(new int[][]{{1, 3, 3, 3, 4, 4}, {2, 2, 2, 4, 4, 4}, {2, 2, 3, 3, 3, 5}}, new OrbitConfig(96, 6, 6).firstSuitable());
+        assertArrayEquals(new int[][]{{1, 2, 2, 4, 4, 4, 4}, {1, 2, 3, 3, 3, 4, 5}, {2, 2, 2, 2, 4, 4, 5}}, new OrbitConfig(106, 6).firstSuitable());
     }
 
     private record State(IntList block, FixBS filter, FixBS whiteList) {
@@ -81,7 +81,7 @@ public class Applicator1Test {
     @Test
     public void generate() {
         OrbitConfig conf = new OrbitConfig(40, 4, 4);
-        int[][] suitable = conf.getSuitable();
+        int[][] suitable = conf.firstSuitable();
         List<int[][]> chunks = new ArrayList<>();
         List<int[][]> snc = Collections.synchronizedList(chunks);
         for (int[] sizes : suitable) {
@@ -109,7 +109,7 @@ public class Applicator1Test {
     @Test
     public void chunksToFile() throws IOException {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
-        int[][] suitable = conf.getSuitable();
+        int[][] suitable = conf.firstSuitable();
         File f = new File("/home/ihromant/maths/g-spaces/chunks", conf + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
