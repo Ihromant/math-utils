@@ -14,7 +14,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.Consumer;
 
 @Getter
@@ -174,9 +173,12 @@ public class OrbitConfig {
     }
 
     public int[][] getSuitable() {
-        TreeSet<int[]> result = new TreeSet<>(Combinatorics::compareArr);
-        Arrays.stream(suitable()).map(arr -> Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray()).forEach(result::add);
-        return result.toArray(int[][]::new);
+        TreeMap<int[], List<int[][]>> result = new TreeMap<>(Combinatorics::compareArr);
+        Arrays.stream(suitable()).forEach(arr -> {
+            int[] fst = Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray();
+            result.computeIfAbsent(fst, k -> new ArrayList<>()).add(arr);
+        });
+        return result.keySet().toArray(int[][]::new);
     }
 
     public int[][][] suitable() {
