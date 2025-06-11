@@ -38,9 +38,16 @@ public class Applicator1Test {
     public void findPossible() {
         OrbitConfig conf = new OrbitConfig(65, 5, true);
         System.out.println(conf + " " + conf.innerFilter() + " " + conf.outerFilter());
-        int[][] res = conf.firstSuitable();
-        for (int[] arr : res) {
-            System.out.println(Arrays.toString(arr));
+        if (conf.orbitCount() == 2) {
+            int[][] res = conf.firstSuitable();
+            for (int[] arr : res) {
+                System.out.println(Arrays.toString(arr));
+            }
+        } else {
+            int[][][] res = conf.suitable();
+            for (int[][] arr : res) {
+                System.out.println(Arrays.deepToString(arr));
+            }
         }
         assertArrayEquals(new int[][]{{1, 3, 3, 3, 4, 4}, {2, 2, 2, 4, 4, 4}, {2, 2, 3, 3, 3, 5}}, new OrbitConfig(96, 6, 6).firstSuitable());
         assertArrayEquals(new int[][]{{1, 2, 2, 4, 4, 4, 4}, {1, 2, 3, 3, 3, 4, 5}, {2, 2, 2, 2, 4, 4, 5}}, new OrbitConfig(106, 6).firstSuitable());
