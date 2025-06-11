@@ -164,7 +164,7 @@ public class Applicator2Test {
             Calc[] nextMids = mids.clone();
             Calc mid = fromBlock(currState.block.toArray(), ol);
             nextMids[idx] = mid;
-            RightState prev = idx > 0 ? rights[idx - 1] : new RightState(null, conf.innerFilter(), conf.outerFilter(), conf.outerFilter(), null, 0);
+            RightState prev = idx > 0 ? rights[idx - 1] : new RightState(null, conf.innerFilter(), conf.outerFilter(), conf.outerFilter(), null, -1);
             if (conf.k() == leftSize + midSize) {
                 RightState[] nextRights = rights.clone();
                 nextRights[idx] = new RightState(new IntList(0), prev.filter(), prev.leftOuterFilter(), prev.midOuterFilter(), null, idx);
@@ -190,6 +190,9 @@ public class Applicator2Test {
                     whiteList.diffModuleShifted(prev.midOuterFilter(), ol, ol - el);
                 }
                 RightState nextState = new RightState(new IntList(conf.k()), prev.filter(), prev.leftOuterFilter(), prev.midOuterFilter(), whiteList, idx);
+                if (prev.idx() < 0 && prev.midOuterFilter().isEmpty()) {
+                    nextState = nextState.acceptElem(0, left, mid, ol);
+                }
                 findRight(lefts, nextMids, rights, currState, nextState, conf, nextVariant, cons);
             }
         }
