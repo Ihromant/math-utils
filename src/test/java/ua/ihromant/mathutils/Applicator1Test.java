@@ -130,7 +130,7 @@ public class Applicator1Test {
                 for (int i = 0; i < rev.length; i++) {
                     rev[i] = conf.k() - sizes[rev.length - i - 1];
                 }
-                if (Combinatorics.compareArr(rev, sizes) < 0) {
+                if (conf.orbitSize() == 2 && Combinatorics.compareArr(rev, sizes) < 0) {
                     continue;
                 }
                 generateChunks(sizes, conf, cons);
