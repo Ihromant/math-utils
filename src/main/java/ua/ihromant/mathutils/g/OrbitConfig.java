@@ -126,6 +126,16 @@ public class OrbitConfig {
         return (orbitCount == 2 ? "" : orbitCount + "-") + v + "-" + k + (traceLength == 0 ? "" : "-" + traceLength) + (outer ? "o" : "");
     }
 
+    public int shiftEl(int el, int sh) {
+        if (Objects.equals(el, infinity)) {
+            return el;
+        } else {
+            int rest = el % orbitSize;
+            int base = el - rest;
+            return base + ((rest + sh) % orbitSize);
+        }
+    }
+
     public Liner fromChunks(int[][][] chunks) {
         Set<BitSet> result = new HashSet<>();
         int ol = orbitSize();
@@ -133,13 +143,7 @@ public class OrbitConfig {
             for (int i = 0; i < orbitSize; i++) {
                 BitSet block = new BitSet(v);
                 for (int el = bl.nextSetBit(0); el >= 0; el = bl.nextSetBit(el + 1)) {
-                    if (Objects.equals(el, infinity)) {
-                        block.set(el);
-                    } else {
-                        int rest = el % orbitSize;
-                        int base = el - rest;
-                        block.set(base + ((rest + i) % orbitSize));
-                    }
+                    block.set(shiftEl(el, i));
                 }
                 result.add(block);
             }
@@ -148,13 +152,7 @@ public class OrbitConfig {
             for (int i = 0; i < orbitSize; i++) {
                 BitSet block = new BitSet(v);
                 for (int el = outerBlock.nextSetBit(0); el >= 0; el = outerBlock.nextSetBit(el + 1)) {
-                    if (Objects.equals(el, infinity)) {
-                        block.set(el);
-                    } else {
-                        int rest = el % orbitSize;
-                        int base = el - rest;
-                        block.set(base + ((rest + i) % orbitSize));
-                    }
+                    block.set(shiftEl(el, i));
                 }
                 result.add(block);
             }
