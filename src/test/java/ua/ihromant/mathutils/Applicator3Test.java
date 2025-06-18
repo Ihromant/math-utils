@@ -3,7 +3,6 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.g.OrbitConfig;
-import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -19,13 +18,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.ThreadLocalRandom;
+
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class Applicator3Test {
     @Test
@@ -129,14 +126,14 @@ public class Applicator3Test {
                 Calc fstLeft = calcs[0];
                 Calc[] mids = new Calc[ll];
                 RightState[] rights = new RightState[ll];
-                FixBS whiteList = new FixBS(conf.orbitSize());
-                whiteList.set(0, conf.orbitSize());
-                FixBS outerFilter = conf.outerFilter();
+                long whiteList = 0;
+                whiteList = flip(whiteList, 0, conf.orbitSize());
+                long outerFilter = conf.outerFilter().words()[0];
                 for (int el : fstLeft.block()) {
-                    whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), conf.orbitSize() - el);
+                    whiteList = diffShift(whiteList, outerFilter, conf.orbitSize(), el);
                 }
-                MidState state = new MidState(new IntList(conf.k()), conf.innerFilter().words()[0], outerFilter.words()[0], whiteList.words()[0], 0);
-                if (outerFilter.isEmpty()) {
+                MidState state = new MidState(new IntList(conf.k()), conf.innerFilter().words()[0], outerFilter, whiteList, 0);
+                if (outerFilter == 0) {
                     state = state.acceptElem(0, fstLeft, conf.orbitSize());
                 }
                 findMid(calcs, mids, rights, state, conf, variant, cons);
@@ -390,22 +387,4 @@ public class Applicator3Test {
     private static final long WORD_MASK = 0xffffffffffffffffL;
     private static final int ADDRESS_BITS_PER_WORD = 6;
     private static final int BITS_PER_WORD = 1 << ADDRESS_BITS_PER_WORD;
-
-    @Test
-    public void test() {
-        for (int i = 0; i < 1000000; i++) {
-            FixBS fbs = new FixBS(64);
-            long aFbs = 0;
-            int val = ThreadLocalRandom.current().nextInt(0, 64);
-            fbs.set(val);
-            aFbs = set(aFbs, val);
-            assertEquals(fbs.words()[0], aFbs);
-            int o = ThreadLocalRandom.current().nextInt(0, 64);
-            assertEquals(fbs.nextSetBit(o), nextSetBit(aFbs, o));
-            int oo = ThreadLocalRandom.current().nextInt(0, 64);
-            fbs.flip(0, oo);
-            aFbs = flip(aFbs, 0, oo);
-            assertEquals(fbs.words()[0], aFbs);
-        }
-    }
 }
