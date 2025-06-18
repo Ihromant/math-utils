@@ -230,15 +230,15 @@ public class Applicator3Test {
         }
     }
 
-    private record Calc(int[] block, FixBS inv, FixBS diff, int len) {}
+    private record Calc(int[] block, long inv, long diff, int len) {}
 
     private static Calc fromBlock(int[] block, int v) {
-        FixBS inv = new FixBS(v);
-        FixBS diff = new FixBS(v);
+        long inv = 0;
+        long diff = 0;
         for (int i : block) {
-            inv.set((v - i) % v);
+            inv = set(inv, (v - i) % v);
             for (int j : block) {
-                diff.set((v + i - j) % v);
+                diff = set(diff, (v + i - j) % v);
             }
         }
         return new Calc(block, inv, diff, block.length);
@@ -277,8 +277,8 @@ public class Applicator3Test {
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
-            newOuterFilter.orModuleShifted(left.inv(), v, invEl);
-            newWhiteList.diffModuleShifted(left.diff(), v, invEl);
+            newOuterFilter.orModuleShifted(new FixBS(new long[]{left.inv()}), v, invEl);
+            newWhiteList.diffModuleShifted(new FixBS(new long[]{left.diff()}), v, invEl);
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new MidState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
         }
@@ -313,10 +313,10 @@ public class Applicator3Test {
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
-            newLeftOuterFilter.orModuleShifted(left.inv(), v, invEl);
-            newMidOuterFilter.orModuleShifted(mid.inv(), v, invEl);
-            newWhiteList.diffModuleShifted(left.diff(), v, invEl);
-            newWhiteList.diffModuleShifted(mid.diff(), v, invEl);
+            newLeftOuterFilter.orModuleShifted(new FixBS(new long[]{left.inv()}), v, invEl);
+            newMidOuterFilter.orModuleShifted(new FixBS(new long[]{mid.inv()}), v, invEl);
+            newWhiteList.diffModuleShifted(new FixBS(new long[]{left.diff()}), v, invEl);
+            newWhiteList.diffModuleShifted(new FixBS(new long[]{mid.diff()}), v, invEl);
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new RightState(nextBlock, newFilter, newLeftOuterFilter, newMidOuterFilter, newWhiteList, idx);
         }
