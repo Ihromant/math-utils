@@ -115,4 +115,20 @@ public class IntList {
     public String toString() {
         return Arrays.toString(Arrays.copyOf(arr, size));
     }
+
+    @Override
+    public final boolean equals(Object o) {
+        if (!(o instanceof IntList intList)) return false;
+
+        return size == intList.size && Arrays.equals(arr, 0, size, intList.arr, 0, size);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = 0;
+        for (int i = 0; i < size; i++) {
+            result = 31 * result + arr[i];
+        }
+        return result;
+    }
 }
