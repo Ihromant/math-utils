@@ -114,7 +114,7 @@ public class TernaryRingTest {
                     continue;
                 }
                 AtomicReference<TernarMapping> induced = new AtomicReference<>();
-                Optional<Integer> iso = ternars(name, proj, dl).flatMap(rng -> {
+                Optional<Integer> iso = ternars(name, proj, dl).parallel().flatMap(rng -> {
                     if (induced.get() == null) {
                         TernarMapping tm = TernaryAutomorphisms.findTernarMapping(rng);
                         if (tm.isInduced()) {
