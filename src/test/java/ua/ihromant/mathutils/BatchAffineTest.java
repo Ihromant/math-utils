@@ -350,7 +350,7 @@ public class BatchAffineTest {
             case 0 -> "0";
             case 1 -> "1";
             case Integer i when i == k || i == k + 1 -> "2";
-            default -> throw new IllegalStateException();
+            default -> "Number " + dirs.cardinality();
         };
         String lineRank = switch ((Integer) lines.cardinality()) {
             case 0 -> "0";
@@ -358,7 +358,7 @@ public class BatchAffineTest {
             case Integer i when i == k -> "2par";
             case Integer i when i == k + 1 -> "2beam";
             case Integer i when i == k * k + k -> "3";
-            default -> throw new IllegalStateException();
+            default -> "Number " + lines.cardinality();
         };
         return dirRank + " " + lineRank;
     }
