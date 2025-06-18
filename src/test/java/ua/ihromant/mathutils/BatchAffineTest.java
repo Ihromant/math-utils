@@ -31,8 +31,10 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -122,11 +124,9 @@ public class BatchAffineTest {
             int cnt = k * k + k + 1;
             int[] arr = IntStream.range(0, cnt).toArray();
             for (int dl : dropped.getOrDefault(name, arr)) {
-                String shear = shearRank(proj, k, dl);
-                String central = centralRank(proj, k, dl);
-                String translation = translationRank(proj, k, dl);
-                String hyperScale = hyperScaleRank(proj, k, dl);
-                System.out.println(dl + " " + translation + " " + shear + " " + central + " " + hyperScale);
+                String[] ranks = Stream.<Supplier<String>>of(() -> translationRank(proj, k, dl), () -> shearRank(proj, k, dl), () -> centralRank(proj, k, dl),
+                        () -> hyperScaleRank(proj, k, dl)).parallel().map(Supplier::get).toArray(String[]::new);
+                System.out.println(dl + " " + ranks[0] + " " + ranks[1] + " " + ranks[2] + " " + ranks[3]);
             }
         }
     }
