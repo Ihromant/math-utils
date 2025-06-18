@@ -190,7 +190,7 @@ public class Applicator3Test {
                     whiteList = diffShift(whiteList, prev.leftOuterFilter(), ol, el);
                 }
                 for (int el : mid.block()) {
-                    whiteList = diffShift(whiteList, prev.midOuterFilter(), ol, ol - el);
+                    whiteList = diffShift(whiteList, prev.midOuterFilter(), ol, el);
                 }
                 RightState nextState = new RightState(new IntList(conf.k()), prev.filter(), prev.leftOuterFilter(), prev.midOuterFilter(), whiteList, idx);
                 if (prev.idx() < 0 && prev.midOuterFilter() == 0) {
@@ -313,11 +313,11 @@ public class Applicator3Test {
                     newWhiteList = clear(newWhiteList, (nv + outDiff) % v);
                 }
             }
-            newLeftOuterFilter = orShift(newLeftOuterFilter, left.inv(), v, invEl);
-            newMidOuterFilter = orShift(newMidOuterFilter, mid.inv(), v, invEl);
-            newWhiteList = diffShift(newWhiteList, left.diff(), v, invEl);
-            newWhiteList = diffShift(newWhiteList, mid.diff(), v, invEl);
-            newWhiteList = diffShift(newWhiteList, newFilter, v, invEl);
+            newLeftOuterFilter = orShift(newLeftOuterFilter, left.inv(), v, el);
+            newMidOuterFilter = orShift(newMidOuterFilter, mid.inv(), v, el);
+            newWhiteList = diffShift(newWhiteList, left.diff(), v, el);
+            newWhiteList = diffShift(newWhiteList, mid.diff(), v, el);
+            newWhiteList = diffShift(newWhiteList, newFilter, v, el);
             return new RightState(nextBlock, newFilter, newLeftOuterFilter, newMidOuterFilter, newWhiteList, idx);
         }
 
