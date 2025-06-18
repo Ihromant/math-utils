@@ -6,6 +6,8 @@ import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.plane.AffineTernaryRing;
+import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
+import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.plane.TernaryRing;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
@@ -131,6 +133,66 @@ public class BatchAffineTest {
         }
     }
 
+    @Test
+    public void testLenzBarlotti() throws IOException {
+        int k = 25;
+        Arrays.stream(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()).parallel().forEach(f -> {
+            try (InputStream is = new FileInputStream(f);
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = readProj(br);
+                LenzBarlotti lb = lenzBarlotti(proj, k);
+                System.out.println(f.getName().replace(".txt", "") + " Lenz points: " + lb.lenzPts.cardinality() + ", lenz lines: " + lb.lenzLns.cardinality() + ", barlotti points: " + lb.barPts.cardinality() + ", barlotti lines: " + lb.barLns.cardinality());
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
+    private record LenzBarlotti(FixBS lenzPts, FixBS lenzLns, FixBS barPts, FixBS barLns) { }
+
+    private static LenzBarlotti lenzBarlotti(Liner proj, int k) {
+        int pc = k * k + k + 1;
+        LenzBarlotti result = new LenzBarlotti(new FixBS(pc), new FixBS(pc), new FixBS(pc), new FixBS(pc));
+        for (int p = 0; p < pc; p++) {
+            for (int l = 0; l < pc; l++) {
+                boolean inc = proj.flag(l, p);
+                if (inc) {
+                    int infL = l;
+                    int v = p;
+                    int h = Arrays.stream(proj.line(l)).filter(pt -> pt != v).findAny().orElseThrow();
+                    int o = IntStream.range(0, pc).filter(pt -> !proj.flag(infL, pt)).findAny().orElseThrow();
+                    int oh = proj.line(o, h);
+                    int ov = proj.line(o, v);
+                    int e = IntStream.range(0, pc).filter(pt -> !proj.flag(oh, pt) && !proj.flag(ov, pt) && !proj.flag(infL, pt)).findAny().orElseThrow();
+                    int u = proj.intersection(oh, proj.line(v, e));
+                    int w = proj.intersection(ov, proj.line(h, e));
+                    TernaryRing rng = new ProjectiveTernaryRing("", proj, new Quad(o, u, w, e)).toMatrix();
+                    if (rng.isLinear() && rng.addAssoc()) {
+                        result.lenzPts.set(p);
+                        result.lenzLns.set(l);
+                    }
+                } else {
+                    int h = p;
+                    int v = Arrays.stream(proj.line(l)).findAny().orElseThrow();
+                    int infL = proj.line(v, h);
+                    int o = Arrays.stream(proj.line(l)).filter(pt -> pt != v).findAny().orElseThrow();
+                    int oh = proj.line(o, h);
+                    int ov = proj.line(o, v);
+                    int e = IntStream.range(0, pc).filter(pt -> !proj.flag(oh, pt) && !proj.flag(ov, pt) && !proj.flag(infL, pt)).findAny().orElseThrow();
+                    int u = proj.intersection(oh, proj.line(v, e));
+                    int w = proj.intersection(ov, proj.line(h, e));
+                    TernaryRing rng = new ProjectiveTernaryRing("", proj, new Quad(o, u, w, e)).toMatrix();
+                    if (rng.isLinear() && rng.mulAssoc()) {
+                        result.barPts.set(p);
+                        result.barLns.set(l);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
     private static String translationRank(Liner proj, int k, int dl) {
         int cnt = k * k + k + 1;
         BitSet result = new BitSet(cnt);
@@ -232,7 +294,6 @@ public class BatchAffineTest {
             default -> throw new IllegalStateException();
         };
     }
-
 
     private static String shearRank(Liner proj, int k, int dl) {
         int cnt = k * k + k + 1;
