@@ -19,6 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -96,22 +98,44 @@ public class TernaryRingTest {
     }
 
     @Test
-    public void testRecursive() throws IOException {
+    public void orbitLines() throws IOException {
         String name = "hughes9";
         int k = 9;
         try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = BatchAffineTest.readProj(br);
-            for (int dl1 = 0; dl1 < proj.lineCount(); dl1++) {
-                for (int dl2 = 0; dl2 < proj.lineCount(); dl2++) {
-                    TernarMapping map = ternars(name, proj, dl1).map(TernaryAutomorphisms::findTernarMapping).filter(TernarMapping::isInduced).findAny().orElseThrow();
-                    boolean isomorphic = ternars(name, proj, dl2).anyMatch(m -> ringIsomorphic(map, m));
-                    System.out.println(dl1 + " " + " " + dl2 + " " + isomorphic);
+            Map<Integer, Iso> grouped = new HashMap<>();
+            int trans = TernaryAutomorphisms.findTranslationLine(proj);
+            for (int dl = 0; dl < proj.lineCount(); dl++) {
+                System.out.println(dl);
+                if (dl == trans) {
+                    grouped.put(dl, new Iso(null, List.of(dl)));
+                    continue;
+                }
+                AtomicReference<TernarMapping> induced = new AtomicReference<>();
+                Optional<Integer> iso = ternars(name, proj, dl).flatMap(rng -> {
+                    if (induced.get() == null) {
+                        TernarMapping tm = TernaryAutomorphisms.findTernarMapping(rng);
+                        if (tm.isInduced()) {
+                            induced.set(tm);
+                        }
+                    }
+                    return grouped.entrySet().stream().filter(e -> e.getValue().tm() != null && ringIsomorphic(e.getValue().tm(), rng)).map(Map.Entry::getKey).findAny().stream();
+                }).findAny();
+                if (iso.isPresent()) {
+                    grouped.get(iso.get()).ints().add(dl);
+                } else {
+                    List<Integer> lst = new ArrayList<>();
+                    lst.add(dl);
+                    grouped.put(dl, new Iso(induced.get(), lst));
                 }
             }
+            grouped.forEach((key, v) -> System.out.println(key + " " + v.ints()));
         }
     }
+
+    private record Iso(TernarMapping tm, List<Integer> ints) {}
 
     private static Stream<TernaryRing> ternars(String name, Liner plane, int dl) {
         int pc = plane.pointCount();
