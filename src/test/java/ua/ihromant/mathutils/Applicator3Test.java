@@ -135,7 +135,7 @@ public class Applicator3Test {
                 for (int el : fstLeft.block()) {
                     whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), conf.orbitSize() - el);
                 }
-                MidState state = new MidState(new IntList(conf.k()), conf.innerFilter(), outerFilter, whiteList, 0);
+                MidState state = new MidState(new IntList(conf.k()), conf.innerFilter().words()[0], outerFilter.words()[0], whiteList.words()[0], 0);
                 if (outerFilter.isEmpty()) {
                     state = state.acceptElem(0, fstLeft, conf.orbitSize());
                 }
@@ -153,8 +153,8 @@ public class Applicator3Test {
         int midSize = currState.block().size();
         int[] freq = variant[leftSize];
         if (hasNext(freq, midSize + 1)) {
-            FixBS whiteList = currState.whiteList;
-            for (int el = whiteList.nextSetBit(currState.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
+            long whiteList = currState.whiteList;
+            for (int el = nextSetBit(whiteList, currState.last() + 1); el >= 0; el = nextSetBit(whiteList, el + 1)) {
                 MidState nextState = currState.acceptElem(el, left, ol);
                 findMid(lefts, mids, rights, nextState, conf, variant, cons);
             }
@@ -176,10 +176,10 @@ public class Applicator3Test {
                 }
                 int nextIdx = idx + 1;
                 int[] nextLeft = lefts[nextIdx].block();
-                FixBS whiteList = new FixBS(ol);
-                whiteList.flip(0, ol);
+                long whiteList = 0;
+                whiteList = flip(whiteList, 0, ol);
                 for (int el : nextLeft) {
-                    whiteList.diffModuleShifted(currState.outerFilter, ol, ol - el);
+                    whiteList = diffShift(whiteList, currState.outerFilter, ol, el);
                 }
                 MidState nextState = new MidState(new IntList(conf.k()), currState.filter, currState.outerFilter, whiteList, nextIdx);
                 findMid(lefts, nextMids, nextRights, nextState, conf, variant, cons);
@@ -214,10 +214,10 @@ public class Applicator3Test {
             }
             int nextIdx = idx + 1;
             int[] nextLeft = lefts[nextIdx].block();
-            FixBS nextWhitelist = new FixBS(ol);
-            nextWhitelist.flip(0, ol);
+            long nextWhitelist = 0;
+            nextWhitelist = flip(nextWhitelist, 0, ol);
             for (int el : nextLeft) {
-                nextWhitelist.diffModuleShifted(currMid.outerFilter, ol, ol - el);
+                nextWhitelist = diffShift(nextWhitelist, currMid.outerFilter, ol, el);
             }
             MidState nextState = new MidState(new IntList(conf.k()), currMid.filter, currMid.outerFilter, nextWhitelist, nextIdx);
             findMid(lefts, mids, nextRights, nextState, conf, variant, cons);
@@ -253,33 +253,33 @@ public class Applicator3Test {
         return false;
     }
 
-    private record MidState(IntList block, FixBS filter, FixBS outerFilter, FixBS whiteList, int idx) {
+    private record MidState(IntList block, long filter, long outerFilter, long whiteList, int idx) {
         private MidState acceptElem(int el, Calc left, int v) {
             int sz = block.size();
             IntList nextBlock = block.copy();
             nextBlock.add(el);
-            FixBS newFilter = filter.copy();
-            FixBS newOuterFilter = outerFilter.copy();
-            FixBS newWhiteList = whiteList.copy();
+            long newFilter = filter;
+            long newOuterFilter = outerFilter;
+            long newWhiteList = whiteList;
             int invEl = v - el;
             for (int i = 0; i < sz; i++) {
                 int val = nextBlock.get(i);
                 int diff = el - val;
                 int outDiff = invEl + val;
-                newFilter.set(diff);
-                newFilter.set(outDiff);
+                newFilter = set(newFilter, diff);
+                newFilter = set(newFilter, outDiff);
                 if (outDiff % 2 == 0) {
-                    newWhiteList.clear((el + outDiff / 2) % v);
+                    newWhiteList = clear(newWhiteList, (el + outDiff / 2) % v);
                 }
                 for (int j = 0; j <= sz; j++) {
                     int nv = nextBlock.get(j);
-                    newWhiteList.clear((nv + diff) % v);
-                    newWhiteList.clear((nv + outDiff) % v);
+                    newWhiteList = clear(newWhiteList, (nv + diff) % v);
+                    newWhiteList = clear(newWhiteList, (nv + outDiff) % v);
                 }
             }
-            newOuterFilter.orModuleShifted(new FixBS(new long[]{left.inv()}), v, invEl);
-            newWhiteList.diffModuleShifted(new FixBS(new long[]{left.diff()}), v, invEl);
-            newWhiteList.diffModuleShifted(newFilter, v, invEl);
+            newOuterFilter = orShift(newOuterFilter, left.inv(), v, el);
+            newWhiteList = diffShift(newWhiteList, left.diff(), v, el);
+            newWhiteList = diffShift(newWhiteList, newFilter, v, el);
             return new MidState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
         }
 
