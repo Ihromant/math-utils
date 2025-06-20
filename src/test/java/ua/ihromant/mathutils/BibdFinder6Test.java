@@ -58,7 +58,7 @@ public class BibdFinder6Test {
                 }
                 for (int j = 0; j <= idx; j++) {
                     int nv = block[j];
-                    newBlackList.set((nv + diff) % v);
+                    //newBlackList.set((nv + diff) % v);
                     newBlackList.set((nv + outDiff) % v);
                 }
             }
@@ -83,7 +83,7 @@ public class BibdFinder6Test {
     private static void calcCycles(int v, int k, int[][] design, State state, int idx, int blockIdx, Tst sink) {
         FixBS blackList = state.blackList();
         int[] currBlock = design[blockIdx];
-        int lastVal = currBlock[idx - 1];
+        int nextVal = currBlock[idx - 1] + 1;
         boolean first = idx == 2;
         int midCnt = k - idx - 1;
         boolean last = midCnt == 0;
@@ -93,8 +93,8 @@ public class BibdFinder6Test {
             from = state.filter.nextClearBit(from + 1);
             minMidSpace = minMidSpace + from;
         }
-        int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
-        for (int el = blackList.nextClearBit(lastVal); el >= 0 && el < max; el = blackList.nextClearBit(el + 1)) {
+        int max = first ? (v + nextVal - minMidSpace) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
+        for (int el = blackList.nextClearBit(nextVal); el >= 0 && el < max; el = blackList.nextClearBit(el + 1)) {
             if (last) {
                 currBlock[idx] = el;
                 if (sink.test(design, blockIdx)) {
