@@ -73,7 +73,7 @@ public class Applicator1Test {
                 }
                 for (int j = 0; j <= sz; j++) {
                     int nv = nextBlock.get(j);
-                    newWhiteList.clear((nv + diff) % v);
+                    //newWhiteList.clear((nv + diff) % v);
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
@@ -93,6 +93,13 @@ public class Applicator1Test {
         List<int[][]> chunks = new ArrayList<>();
         List<int[][]> snc = Collections.synchronizedList(chunks);
         for (int[] sizes : suitable) {
+            int[] rev = new int[sizes.length];
+            for (int i = 0; i < rev.length; i++) {
+                rev[i] = conf.k() - sizes[rev.length - i - 1];
+            }
+            if (conf.orbitCount() == 2 && Combinatorics.compareArr(rev, sizes) < 0) {
+                continue;
+            }
             generateChunks(sizes, conf, snc::add);
         }
         AtomicInteger ai = new AtomicInteger();
@@ -131,7 +138,7 @@ public class Applicator1Test {
                 for (int i = 0; i < rev.length; i++) {
                     rev[i] = conf.k() - sizes[rev.length - i - 1];
                 }
-                if (conf.orbitSize() == 2 && Combinatorics.compareArr(rev, sizes) < 0) {
+                if (conf.orbitCount() == 2 && Combinatorics.compareArr(rev, sizes) < 0) {
                     continue;
                 }
                 generateChunks(sizes, conf, cons);
@@ -213,7 +220,7 @@ public class Applicator1Test {
         IntList block = state.block;
         int size = state.size();
         if (hasNext(freq, size + 1)) {
-            for (int el = state.whiteList.nextSetBit(block.getLast()); el >= 0; el = state.whiteList.nextSetBit(el + 1)) {
+            for (int el = state.whiteList.nextSetBit(block.getLast() + 1); el >= 0; el = state.whiteList.nextSetBit(el + 1)) {
                 State nextState = state.acceptElem(el, v);
                 searchDesigns(currDesign, freq, nextState, v, k, cons);
             }
@@ -466,7 +473,7 @@ public class Applicator1Test {
                 }
                 for (int j = 0; j <= sz; j++) {
                     int nv = nextBlock.get(j);
-                    newWhiteList.clear((nv + diff) % v);
+                    //newWhiteList.clear((nv + diff) % v);
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
