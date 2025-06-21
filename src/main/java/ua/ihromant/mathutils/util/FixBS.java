@@ -96,7 +96,7 @@ public class FixBS implements Comparable<FixBS> {
 
     public void set(int bitIndex) {
         int wordIndex = wordIndex(bitIndex);
-        words[wordIndex] |= (1L << bitIndex); // Restores invariants
+        words[wordIndex] |= (1L << bitIndex);
     }
 
     public void clear(int bitIndex) {
