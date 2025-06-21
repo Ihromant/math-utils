@@ -28,6 +28,8 @@ public class BibdFinder7Test {
     private static final int HALVES_ODD_OFFSET = v / 2 + 1;
     private static final int HALVES_EVEN_SHIFT = v % 2 == 0 ? (v / 2) : 0;
     private static final int HALVES_ODD_SHIFT = v % 2 == 0 ? 0 : (v / 2 + 1);
+    private static final int diff_even = v - HALVES_EVEN_SHIFT;
+    private static final int diff_odd = v - HALVES_ODD_SHIFT;
 
     private record State(FixBS block, FixBS inv, FixBS halves, FixBS selfSum, FixBS filter, FixBS whiteList, int size) {
         private static State forBlock(FixBS block) {
@@ -60,7 +62,7 @@ public class BibdFinder7Test {
             newWhiteList.diffModuleShifted(nextSelfSum, v, el);
             FixBS newHalves = halves.copy();
             newHalves.set((el >>> 1) + (((el & 1) != 0) ? HALVES_ODD_OFFSET : HALVES_EVEN_OFFSET));
-            newWhiteList.diffModuleShifted(halves, v, v - (el >>> 1) - (((el & 1) != 0) ? HALVES_ODD_SHIFT : HALVES_EVEN_SHIFT));
+            newWhiteList.diffModuleShifted(halves, v, (((el & 1) != 0) ? diff_odd : diff_even) - (el >>> 1));
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new State(nextBlock, nextInv, newHalves, nextSelfSum, newFilter, newWhiteList, size + 1);
         }
