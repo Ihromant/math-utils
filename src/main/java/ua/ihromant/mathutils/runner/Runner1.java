@@ -183,7 +183,7 @@ public class Runner1 {
                 }
                 for (int j = 0; j <= sz; j++) {
                     int nv = nextBlock.get(j);
-                    newWhiteList.clear((nv + diff) % v);
+                    //newWhiteList.clear((nv + diff) % v);
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
