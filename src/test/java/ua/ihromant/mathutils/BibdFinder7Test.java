@@ -32,14 +32,6 @@ public class BibdFinder7Test {
     private static final int diff_odd = v - HALVES_ODD_SHIFT;
 
     private record State(FixBS block, FixBS inv, FixBS halves, FixBS selfSum, FixBS filter, FixBS whiteList, int size) {
-        private static State forBlock(FixBS block) {
-            State state = next(baseFilter);
-            for (int el = block.nextSetBit(2); el >= 0; el = block.nextSetBit(el + 1)) {
-                state = state.acceptElem(el);
-            }
-            return state;
-        }
-
         private static State next(FixBS filter) {
             FixBS base = FixBS.of(v, 0);
             FixBS whiteList = filter.copy();
@@ -119,6 +111,17 @@ public class BibdFinder7Test {
         return filter;
     }
 
+    private static FixBS filter(FixBS block) {
+        FixBS result = baseFilter.copy();
+        for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
+            for (int j = block.nextSetBit(i + 1); j >= 0; j = block.nextSetBit(j + 1)) {
+                result.set(j - i);
+                result.set(v + i - j);
+            }
+        }
+        return result;
+    }
+
     @Test
     public void toConsole() throws IOException {
         Group gr = new CyclicGroup(v);
@@ -180,9 +183,8 @@ public class BibdFinder7Test {
         };
         AtomicInteger cnt = new AtomicInteger();
         Arrays.stream(unProcessed).parallel().forEach(init -> {
-            State fst = State.forBlock(init);
             FixBS[] design = new FixBS[]{init};
-            State initial = State.next(fst.filter());
+            State initial = State.next(filter(init));
             calcCycles(design, initial, designConsumer);
             if (destination != System.out) {
                 destination.println(init);
