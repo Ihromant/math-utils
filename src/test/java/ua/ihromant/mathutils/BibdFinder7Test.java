@@ -66,7 +66,7 @@ public class BibdFinder7Test {
         }
     }
 
-    private static void calcCycles(State[] design, State state, Predicate<State[]> sink) {
+    private static void calcCycles(FixBS[] design, State state, Predicate<FixBS[]> sink) {
         FixBS whiteList = state.whiteList();
         FixBS currBlock = state.block();
         int idx = state.size();
@@ -84,8 +84,8 @@ public class BibdFinder7Test {
         for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
             State next = state.acceptElem(el);
             if (next.size() == k) {
-                State[] nextDesign = Arrays.copyOf(design, design.length + 1);
-                nextDesign[design.length] = next;
+                FixBS[] nextDesign = Arrays.copyOf(design, design.length + 1);
+                nextDesign[design.length] = next.block();
                 if (sink.test(nextDesign)) {
                     return;
                 }
@@ -164,12 +164,12 @@ public class BibdFinder7Test {
         System.out.println("Initial size " + unProcessed.length);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
-        Predicate<State[]> designConsumer = design -> {
+        Predicate<FixBS[]> designConsumer = design -> {
             if (design.length < blocksNeeded) {
                 return false;
             }
             counter.incrementAndGet();
-            destination.println(Arrays.deepToString(Arrays.stream(design).map(State::block).toArray(FixBS[]::new)));
+            destination.println(Arrays.deepToString(design));
             destination.flush();
             if (destination != System.out) {
                 System.out.println(Arrays.deepToString(design));
@@ -179,7 +179,7 @@ public class BibdFinder7Test {
         AtomicInteger cnt = new AtomicInteger();
         Arrays.stream(unProcessed).parallel().forEach(init -> {
             State fst = State.forBlock(init);
-            State[] design = new State[]{fst};
+            FixBS[] design = new FixBS[]{init};
             State initial = State.next(fst.filter());
             calcCycles(design, initial, designConsumer);
             if (destination != System.out) {
@@ -202,7 +202,7 @@ public class BibdFinder7Test {
 
     private static void logAllCycles(Group group) {
         System.out.println(group.name() + " " + k);
-        State[] base = new State[0];
+        FixBS[] base = new FixBS[0];
         FixBS whiteList = baseFilter.copy();
         whiteList.flip(1, v);
         State initial = State.next(baseFilter);
@@ -210,7 +210,7 @@ public class BibdFinder7Test {
             if (design.length < blocksNeeded) {
                 return false;
             }
-            System.out.println(Arrays.deepToString(Arrays.stream(design).map(State::block).toArray(FixBS[]::new)));
+            System.out.println(Arrays.deepToString(design));
             System.out.flush();
             return true;
         });
