@@ -207,8 +207,6 @@ public class BibdFinder7Test {
     private static void logAllCycles(Group group) {
         System.out.println(group.name() + " " + k);
         FixBS[] base = new FixBS[0];
-        FixBS whiteList = baseFilter.copy();
-        whiteList.flip(1, v);
         State initial = State.next(baseFilter);
         calcCycles(base, initial, design -> {
             if (design.length < blocksNeeded) {
