@@ -31,62 +31,60 @@ public class BibdFinder7Test {
     private static final int diff_even = v - HALVES_EVEN_SHIFT;
     private static final int diff_odd = v - HALVES_ODD_SHIFT;
 
-    private record State(FixBS block, FixBS inv, FixBS halves, FixBS selfSum, FixBS filter, FixBS whiteList, int size) {
-        private static State next(FixBS filter) {
-            FixBS base = FixBS.of(v, 0);
-            FixBS whiteList = filter.copy();
-            whiteList.flip(1, v);
-            return new State(base, base, base, base, filter, whiteList, 1).acceptElem(filter.nextClearBit(1));
+    private static void calcCycles(FixBS[] design, FixBS block, FixBS inv, FixBS halves, FixBS selfSum, FixBS filter, FixBS whiteList, int size, Predicate<FixBS[]> sink) {
+        int lastVal = block.previousSetBit(v);
+        boolean first = size == 2;
+        int midCnt = k - size - 1;
+        int from = 0;
+        int minMidSpace = 0;
+        int fst = block.nextSetBit(1);
+        while (--midCnt >= 0) {
+            from = filter.nextClearBit(from + 1);
+            minMidSpace = minMidSpace + from;
         }
-
-        private State acceptElem(int el) {
+        int max = first ? (v + fst - minMidSpace + 1) / 2 : v - block.nextSetBit(fst + 1) + fst - minMidSpace;
+        int newSize = size + 1;
+        for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
             int invEl = v - el;
             FixBS nextBlock = block.copy();
             nextBlock.set(el);
             FixBS nextInv = inv.copy();
             nextInv.set(invEl);
-            FixBS nextSelfSum = selfSum.copy();
-            nextSelfSum.orModuleShifted(nextBlock, v, invEl);
-            FixBS newFilter = filter.copy();
-            FixBS newWhiteList = whiteList.copy();
-            newFilter.orModuleShifted(block, v, el);
-            newFilter.orModuleShifted(inv, v, invEl);
-            newWhiteList.diffModuleShifted(nextSelfSum, v, el);
-            FixBS newHalves = halves.copy();
-            newHalves.set((el >>> 1) + (((el & 1) != 0) ? HALVES_ODD_OFFSET : HALVES_EVEN_OFFSET));
-            newWhiteList.diffModuleShifted(halves, v, (((el & 1) != 0) ? diff_odd : diff_even) - (el >>> 1));
-            newWhiteList.diffModuleShifted(newFilter, v, invEl);
-            return new State(nextBlock, nextInv, newHalves, nextSelfSum, newFilter, newWhiteList, size + 1);
-        }
-    }
-
-    private static void calcCycles(FixBS[] design, State state, Predicate<FixBS[]> sink) {
-        FixBS whiteList = state.whiteList();
-        FixBS currBlock = state.block();
-        int idx = state.size();
-        int lastVal = currBlock.previousSetBit(v);
-        boolean first = idx == 2;
-        int midCnt = k - idx - 1;
-        int from = 0;
-        int minMidSpace = 0;
-        int fst = currBlock.nextSetBit(1);
-        while (--midCnt >= 0) {
-            from = state.filter.nextClearBit(from + 1);
-            minMidSpace = minMidSpace + from;
-        }
-        int max = first ? (v + fst - minMidSpace + 1) / 2 : v - currBlock.nextSetBit(fst + 1) + fst - minMidSpace;
-        for (int el = whiteList.nextSetBit(lastVal); el >= 0 && el < max; el = whiteList.nextSetBit(el + 1)) {
-            State next = state.acceptElem(el);
-            if (next.size() == k) {
+            FixBS nextFilter = filter.copy();
+            nextFilter.orModuleShifted(block, v, el);
+            nextFilter.orModuleShifted(inv, v, invEl);
+            if (newSize == k) {
                 FixBS[] nextDesign = Arrays.copyOf(design, design.length + 1);
-                nextDesign[design.length] = next.block();
+                nextDesign[design.length] = nextBlock;
                 if (sink.test(nextDesign)) {
                     return;
                 }
-                next = State.next(next.filter());
-                calcCycles(nextDesign, next, sink);
+                int nextClear = nextFilter.nextClearBit(1);
+                int nextClearInv = v - nextClear;
+                nextBlock = FixBS.of(v, 0, nextClear);
+                nextInv = FixBS.of(v, 0, nextClearInv);
+                nextFilter.set(nextClear);
+                nextFilter.set(nextClearInv);
+                FixBS nextHalves = FixBS.of(v, 0, (nextClear >>> 1) + (((nextClear & 1) != 0) ? HALVES_ODD_OFFSET : HALVES_EVEN_OFFSET));
+                FixBS nextSelfSum = FixBS.of(v, 0, nextClear, 2 * nextClear);
+                FixBS nextWhiteList = nextFilter.copy();
+                nextWhiteList.flip(1, v);
+                if (nextClearInv % 2 == 0) {
+                    nextWhiteList.clear(nextClear + nextClearInv / 2);
+                }
+                nextWhiteList.clear(2 * nextClear);
+                nextWhiteList.diffModuleShifted(nextFilter, v, nextClearInv);
+                calcCycles(nextDesign, nextBlock, nextInv, nextHalves, nextSelfSum, nextFilter, nextWhiteList, 2, sink);
             } else {
-                calcCycles(design, next, sink);
+                FixBS nextSelfSum = selfSum.copy();
+                nextSelfSum.orModuleShifted(nextBlock, v, invEl);
+                FixBS nextWhiteList = whiteList.copy();
+                nextWhiteList.diffModuleShifted(nextSelfSum, v, el);
+                FixBS nextHalves = halves.copy();
+                nextHalves.set((el >>> 1) + (((el & 1) != 0) ? HALVES_ODD_OFFSET : HALVES_EVEN_OFFSET));
+                nextWhiteList.diffModuleShifted(halves, v, (((el & 1) != 0) ? diff_odd : diff_even) - (el >>> 1));
+                nextWhiteList.diffModuleShifted(nextFilter, v, invEl);
+                calcCycles(design, nextBlock, nextInv, nextHalves, nextSelfSum, nextFilter, nextWhiteList, newSize, sink);
             }
         }
     }
@@ -184,8 +182,23 @@ public class BibdFinder7Test {
         AtomicInteger cnt = new AtomicInteger();
         Arrays.stream(unProcessed).parallel().forEach(init -> {
             FixBS[] design = new FixBS[]{init};
-            State initial = State.next(filter(init));
-            calcCycles(design, initial, designConsumer);
+            FixBS nextFilter = filter(init);
+            int nextClear = nextFilter.nextClearBit(1);
+            int nextClearInv = v - nextClear;
+            FixBS nextBlock = FixBS.of(v, 0, nextClear);
+            FixBS nextInv = FixBS.of(v, 0, nextClearInv);
+            nextFilter.set(nextClear);
+            nextFilter.set(nextClearInv);
+            FixBS nextHalves = FixBS.of(v, 0, (nextClear >>> 1) + (((nextClear & 1) != 0) ? HALVES_ODD_OFFSET : HALVES_EVEN_OFFSET));
+            FixBS nextSelfSum = FixBS.of(v, 0, nextClear, 2 * nextClear);
+            FixBS nextWhiteList = nextFilter.copy();
+            nextWhiteList.flip(1, v);
+            if (nextClearInv % 2 == 0) {
+                nextWhiteList.clear(nextClear + nextClearInv / 2);
+            }
+            nextWhiteList.clear(2 * nextClear);
+            nextWhiteList.diffModuleShifted(nextFilter, v, nextClearInv);
+            calcCycles(design, nextBlock, nextInv, nextHalves, nextSelfSum, nextFilter, nextWhiteList, 2, designConsumer);
             if (destination != System.out) {
                 destination.println(init);
                 destination.flush();
@@ -207,8 +220,23 @@ public class BibdFinder7Test {
     private static void logAllCycles(Group group) {
         System.out.println(group.name() + " " + k);
         FixBS[] base = new FixBS[0];
-        State initial = State.next(baseFilter);
-        calcCycles(base, initial, design -> {
+        FixBS nextFilter = baseFilter.copy();
+        int nextClear = nextFilter.nextClearBit(1);
+        int nextClearInv = v - nextClear;
+        FixBS nextBlock = FixBS.of(v, 0, nextClear);
+        FixBS nextInv = FixBS.of(v, 0, nextClearInv);
+        nextFilter.set(nextClear);
+        nextFilter.set(nextClearInv);
+        FixBS nextHalves = FixBS.of(v, 0, (nextClear >>> 1) + (((nextClear & 1) != 0) ? HALVES_ODD_OFFSET : HALVES_EVEN_OFFSET));
+        FixBS nextSelfSum = FixBS.of(v, 0, nextClear, 2 * nextClear);
+        FixBS nextWhiteList = nextFilter.copy();
+        nextWhiteList.flip(1, v);
+        if (nextClearInv % 2 == 0) {
+            nextWhiteList.clear(nextClear + nextClearInv / 2);
+        }
+        nextWhiteList.clear(2 * nextClear);
+        nextWhiteList.diffModuleShifted(nextFilter, v, nextClearInv);
+        calcCycles(base, nextBlock, nextInv, nextHalves, nextSelfSum, nextFilter, nextWhiteList, 2, design -> {
             if (design.length < blocksNeeded) {
                 return false;
             }
