@@ -15,12 +15,10 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -346,14 +344,14 @@ public class BibdFinder6Test {
         State initial = new State(new int[k - 1], filter, filter).acceptElem(1, v, 1);
         calcFirstCycles(v, k - 1, initial, 2, (design, idx) -> {
             int[] block = design[0];
-            if (idx != k - 1) {
-                return false;
-            }
             for (int m : mul) {
                 int[] min = minimalTuple(block, m, v, idx);
                 if (compare(min, block) < 0) {
                     return true;
                 }
+            }
+            if (idx != k - 1) {
+                return false;
             }
             FixBS rests = new FixBS(k);
             for (int val : block) {
@@ -363,6 +361,7 @@ public class BibdFinder6Test {
                 return true;
             }
             ps.println(Arrays.toString(block));
+            ps.flush();
             return true;
         });
     }
