@@ -15,10 +15,12 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -309,6 +311,62 @@ public class BibdFinder6Test {
             ps.println(Arrays.toString(block));
             return true;
         });
+    }
+
+    @Test
+    public void firstCyclesToFileOther() throws IOException {
+        Group group = new CyclicGroup(60);
+        int k = 5;
+        int v = group.order();
+        if (v % k != 0 || v % (k - 1) != 0) {
+            throw new IllegalArgumentException();
+        }
+        File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            logFirstCyclesOther(group.order(), k, ps);
+        }
+    }
+
+    private static void logFirstCyclesOther(int v, int k, PrintStream ps) {
+        System.out.println(v + " " + k);
+        FixBS filter = new FixBS(v);
+        for (int i = 1; i < v; i++) {
+            if (i * k % v == 0 || i * (k - 1) % v == 0) {
+                filter.set(i);
+            }
+        }
+        State initial = new State(new int[k - 1], filter, filter);
+        Set<FixBS> filters = new HashSet<>();
+        calcFirstCyclesOther(v, initial, 1, (design, idx) -> {
+            int[] block = design.block();
+            if (idx != k - 1) {
+                return false;
+            }
+            FixBS rests = new FixBS(k);
+            for (int val : block) {
+                rests.set(val % k);
+            }
+            if (rests.cardinality() != k - 1 || !filters.add(design.filter)) {
+                return true;
+            }
+            ps.println(Arrays.toString(block));
+            return true;
+        });
+    }
+
+    private static void calcFirstCyclesOther(int v, State state, int idx, BiPredicate<State, Integer> sink) {
+        FixBS blackList = state.blackList();
+        int[] currBlock = state.block;
+        for (int el = blackList.nextClearBit(currBlock[idx - 1] + 1); el >= 0 && el < v; el = blackList.nextClearBit(el + 1)) {
+            State next = state.acceptElem(el, v, idx);
+            int nIdx = idx + 1;
+            if (sink.test(next, nIdx)) {
+                continue;
+            }
+            calcFirstCyclesOther(v, next, nIdx, sink);
+        }
     }
 
     private static int compare(int[] fst, int[] snd) {
