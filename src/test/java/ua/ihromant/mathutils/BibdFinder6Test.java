@@ -337,36 +337,29 @@ public class BibdFinder6Test {
                 filter.set(i);
             }
         }
-        State initial = new State(new int[k - 1], filter, filter);
-        Set<FixBS> filters = new HashSet<>();
-        calcFirstCyclesOther(v, initial, 1, (design, idx) -> {
-            int[] block = design.block();
+        int[] mul = Combinatorics.multipliers(v);
+        State initial = new State(new int[k - 1], filter, filter).acceptElem(1, v, 1);
+        calcFirstCycles(v, k - 1, initial, 2, (design, idx) -> {
+            int[] block = design[0];
             if (idx != k - 1) {
                 return false;
+            }
+            for (int m : mul) {
+                int[] min = minimalTuple(block, m, v, idx);
+                if (compare(min, block) < 0) {
+                    return true;
+                }
             }
             FixBS rests = new FixBS(k);
             for (int val : block) {
                 rests.set(val % k);
             }
-            if (rests.cardinality() != k - 1 || !filters.add(design.filter)) {
+            if (rests.cardinality() != k - 1) {
                 return true;
             }
             ps.println(Arrays.toString(block));
             return true;
         });
-    }
-
-    private static void calcFirstCyclesOther(int v, State state, int idx, BiPredicate<State, Integer> sink) {
-        FixBS blackList = state.blackList();
-        int[] currBlock = state.block;
-        for (int el = blackList.nextClearBit(currBlock[idx - 1] + 1); el >= 0 && el < v; el = blackList.nextClearBit(el + 1)) {
-            State next = state.acceptElem(el, v, idx);
-            int nIdx = idx + 1;
-            if (sink.test(next, nIdx)) {
-                continue;
-            }
-            calcFirstCyclesOther(v, next, nIdx, sink);
-        }
     }
 
     private static int compare(int[] fst, int[] snd) {
