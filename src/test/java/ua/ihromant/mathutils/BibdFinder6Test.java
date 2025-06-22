@@ -195,8 +195,13 @@ public class BibdFinder6Test {
                     set.remove(readPartial(l, v));
                 }
             });
-            logResultsDepth(ps, v, k, set.stream().map(st -> st.stream()
-                    .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
+            if (v % k == 0 && v % (k - 1) == 0) {
+                logResultsOther(ps, v, k, set.stream().map(st -> st.stream()
+                        .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
+            } else {
+                logResultsDepth(ps, v, k, set.stream().map(st -> st.stream()
+                        .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
+            }
         }
     }
 
@@ -360,6 +365,49 @@ public class BibdFinder6Test {
             ps.println(Arrays.toString(block));
             return true;
         });
+    }
+
+    private static void logResultsOther(PrintStream destination, int v, int k, List<int[][]> unProcessed) {
+        System.out.println(v + " " + k);
+        System.out.println("Initial size " + unProcessed.size());
+        int blocksNeeded = v / k / (k - 1);
+        FixBS baseFilter = new FixBS(v);
+        for (int i = 1; i < v; i++) {
+            if (i * k % v == 0 || i * (k - 1) % v == 0) {
+                baseFilter.set(i);
+            }
+        }
+        AtomicInteger counter = new AtomicInteger();
+        long time = System.currentTimeMillis();
+        Tst designConsumer = (design, blockIdx) -> {
+            if (blockIdx + 1 != blocksNeeded) {
+                return false;
+            }
+            counter.incrementAndGet();
+            destination.println(Arrays.deepToString(design));
+            destination.flush();
+            if (destination != System.out) {
+                System.out.println(Arrays.deepToString(design));
+            }
+            return true;
+        };
+        AtomicInteger cnt = new AtomicInteger();
+        unProcessed.stream().parallel().forEach(init -> {
+            int[][] design = new int[blocksNeeded][k];
+            design[0] = new int[k - 1];
+            System.arraycopy(init[0], 0, design[0], 0, k - 1);
+            State initial = State.forDesign(v, baseFilter, design, k - 1, init.length);
+            calcCycles(v, k, design, initial, 2, init.length, designConsumer);
+            if (destination != System.out) {
+                destination.println(Arrays.stream(init).map(Arrays::toString).collect(Collectors.joining(" ")));
+                destination.flush();
+            }
+            int val = cnt.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val);
+            }
+        });
+        System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
     private static int compare(int[] fst, int[] snd) {
