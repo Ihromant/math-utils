@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
@@ -514,6 +515,75 @@ public class BibdFinder6Test {
                             fixed ? IntStream.of(gr.order()) : IntStream.empty()).toArray()) : Stream.empty()).toArray(int[][]::new);
                     System.out.println(cnt + " " + Liner.byDiffFamily(fixed ? gr.order() + 1 : gr.order(), base).hyperbolicFreq() + " " + Arrays.deepToString(base));
                     ps.println(Arrays.deepToString(minimal));
+                });
+            });
+        }
+    }
+
+    @Test
+    public void refineOther() throws IOException {
+        Group gr = new CyclicGroup(120);
+        int v = gr.order();
+        int k = 6;
+        if (v % k != 0 || v % (k - 1) != 0) {
+            throw new IllegalArgumentException();
+        }
+        File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
+        try (FileInputStream fis = new FileInputStream(unrefined);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            br.lines().forEach(l -> {
+                if (!l.contains("[[")) {
+                    return;
+                }
+                String[] sp = l.substring(2, l.length() - 2).split("], \\[");
+                int[][] bDes = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                int pow = 1 << (bDes.length - 1);
+                IntStream.range(0, pow).forEach(i -> {
+                    int[][] des = IntStream.range(0, bDes.length).mapToObj(j -> {
+                        boolean keep = j == 0 || (i & (1 << (j - 1))) == 0;
+                        int[] base = bDes[j];
+                        if (keep) {
+                            return base;
+                        }
+                        int[] res = new int[k];
+                        res[1] = base[1];
+                        for (int idx = 2; idx < k; idx++) {
+                            res[k - idx + 1] = base[1] + v - base[idx];
+                        }
+                        return res;
+                    }).toArray(int[][]::new);
+                    FixBS rests = new FixBS(k);
+                    for (int val : des[0]) {
+                        rests.set(val % k);
+                    }
+                    int unused = rests.nextClearBit(0);
+                    Set<int[]> lines = new TreeSet<>(Combinatorics::compareArr);
+                    IntStream.range(1, des.length).forEach(j -> {
+                        IntStream.range(0, v).forEach(m -> {
+                            lines.add(Arrays.stream(des[j]).map(p -> (p + m) % v).sorted().toArray());
+                        });
+                    });
+                    int[] fst = IntStream.concat(Arrays.stream(des[0]), IntStream.of(v + unused)).toArray();
+                    int[] slanted = IntStream.concat(IntStream.range(0, k - 1).map(j -> v * j / (k - 1)), IntStream.of(v)).toArray();
+                    IntStream.range(0, v).forEach(j -> {
+                        lines.add(IntStream.range(0, k).map(m -> (v * m / k + j) % v).sorted().toArray());
+                        int[] fstTr = new int[k];
+                        int[] slantedTr = new int[k];
+                        for (int m = 0; m < k - 1; m++) {
+                            fstTr[m] = (fst[m] + j) % v;
+                            slantedTr[m] = (slanted[m] + j) % v;
+                        }
+                        fstTr[k - 1] = v + ((unused + j) % k);
+                        slantedTr[k - 1] = v + (j % k);
+                        Arrays.sort(fstTr);
+                        Arrays.sort(slantedTr);
+                        lines.add(fstTr);
+                        lines.add(slantedTr);
+                    });
+                    lines.add(IntStream.range(0, k).map(j -> j + v).toArray());
+                    Liner lnr = new Liner(v + k, lines.toArray(int[][]::new));
+                    System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(des));
                 });
             });
         }
