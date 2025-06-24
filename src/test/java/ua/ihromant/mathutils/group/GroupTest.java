@@ -15,8 +15,10 @@ import java.io.InputStreamReader;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntBinaryOperator;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -72,6 +74,12 @@ public class GroupTest {
         gr = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
         subGroups = gr.subGroups();
         assertEquals(10, subGroups.size());
+    }
+
+    @Test
+    public void testGroupedSubgroups() {
+        Group gr = new PermutationGroup(5, false);
+        System.out.println(gr.groupedSubGroups().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
     }
 
     @Test

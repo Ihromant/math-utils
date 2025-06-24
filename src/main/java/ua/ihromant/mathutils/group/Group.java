@@ -7,11 +7,13 @@ import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public interface Group {
@@ -121,11 +123,11 @@ public interface Group {
         FixBS init = new FixBS(order);
         init.set(0);
         result.add(new SubGroup(this, init));
-        find(result, init, 0, order);
+        find(init, 0, order, result::add);
         return result;
     }
 
-    private void find(List<SubGroup> result, FixBS currGroup, int prev, int order) {
+    private void find(FixBS currGroup, int prev, int order, Consumer<SubGroup> cons) {
         ex: for (int gen = currGroup.nextClearBit(prev + 1); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
             FixBS nextGroup = currGroup.copy();
             FixBS additional = new FixBS(order);
@@ -136,9 +138,34 @@ public interface Group {
                 }
                 nextGroup.or(additional);
             } while (!(additional = additional(nextGroup, additional, order)).isEmpty());
-            result.add(new SubGroup(this, nextGroup));
-            find(result, nextGroup, gen, order);
+            cons.accept(new SubGroup(this, nextGroup));
+            find(nextGroup, gen, order, cons);
         }
+    }
+
+    default Map<Integer, List<SubGroup>> groupedSubGroups() {
+        Map<Integer, List<SubGroup>> result = new HashMap<>();
+        int order = order();
+        FixBS all = new FixBS(order);
+        all.set(0, order);
+        FixBS init = new FixBS(order);
+        init.set(0);
+        result.put(1, List.of(new SubGroup(this, init)));
+        find(init, 0, order, sg -> {
+            FixBS elems = sg.elems();
+            for (int i = 1; i < order; i++) {
+                FixBS oElems = new FixBS(order);
+                int inv = inv(i);
+                for (int el = elems.nextSetBit(0); el >= 0; el = elems.nextSetBit(el + 1)) {
+                    oElems.set(op(inv, op(el, i)));
+                }
+                if (oElems.compareTo(elems) < 0) {
+                    return;
+                }
+            }
+            result.computeIfAbsent(elems.cardinality(), k -> new ArrayList<>()).add(sg);
+        });
+        return result;
     }
 
     private int[] gens(IntList genList, FixBS currGroup) {
