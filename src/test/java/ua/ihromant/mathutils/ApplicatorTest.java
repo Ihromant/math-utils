@@ -224,6 +224,49 @@ public class ApplicatorTest {
     }
 
     @Test
+    public void logSpecific() throws IOException {
+        int k = 7;
+        Group group = new PermutationGroup(new CyclicProduct(2, 2, 2).auth());
+        GSpace space = new GSpace(k, group, true, new int[][]{{4, 0}, {4, 0}, {168, 0}});
+        int v = space.v();
+        System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
+        int sqr = v * v;
+        List<State[]> singles = new ArrayList<>();
+        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+            singles.add(arr);
+            return true;
+        };
+        int val = 1;
+        State state = space.forInitial(0, val);
+        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+        System.out.println("Singles size: " + singles.size());
+        AtomicInteger cnt = new AtomicInteger();
+        AtomicInteger ai = new AtomicInteger();
+        BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+            if (ftr.cardinality() < sqr) {
+                return false;
+            }
+            ai.incrementAndGet();
+            Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+            return true;
+        };
+        singles.stream().parallel().forEach(tuple -> {
+            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
+            FixBS newFilter = space.emptyFilter().copy();
+            for (State st : pr) {
+                st.updateFilter(newFilter, space);
+            }
+            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
+            int vl = cnt.incrementAndGet();
+            if (vl % 100 == 0) {
+                System.out.println(vl);
+            }
+        });
+        System.out.println("Results " + ai);
+    }
+
+    @Test
     public void twoStage() throws IOException {
         int k = 6;
         Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));

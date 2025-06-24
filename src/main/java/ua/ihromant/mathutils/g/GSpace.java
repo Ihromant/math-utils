@@ -16,6 +16,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -35,8 +36,18 @@ public class GSpace {
 
     private final int[][] auths;
 
+    public GSpace(int k, Group group, boolean genAuths, int[][] comps) {
+        this(k, group.asTable(), genAuths, sgs(group, comps));
+    }
+
     public GSpace(int k, Group group, boolean genAuths, int... comps) {
         this(k, group.asTable(), genAuths, sgs(group, comps));
+    }
+
+    private static SubGroup[] sgs(Group gr, int[][] comps) {
+        Map<Integer, List<SubGroup>> subGroups = gr.asTable().groupedSubGroups();
+        System.out.println(subGroups.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
+        return Arrays.stream(comps).map(pr -> subGroups.get(pr[0]).get(pr[1])).toArray(SubGroup[]::new);
     }
 
     private static SubGroup[] sgs(Group gr, int... comps) {
