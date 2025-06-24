@@ -9,7 +9,6 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -26,7 +25,6 @@ public class GSpace {
     private final int[] oBeg;
     private final int[] orbIdx;
     private final int v;
-    private final FixBS empty;
     private final FixBS emptyFilter;
     private final int k;
     private final int[][] cayley;
@@ -38,11 +36,17 @@ public class GSpace {
     private final int[][] auths;
 
     public GSpace(int k, Group group, boolean genAuths, int... comps) {
-        this.k = k;
-        Group table = group.asTable();
+        this(k, group.asTable(), genAuths, sgs(group, comps));
+    }
+
+    private static SubGroup[] sgs(Group gr, int... comps) {
+        List<SubGroup> subGroups = gr.asTable().subGroups();
+        return Arrays.stream(comps).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
+    }
+
+    private GSpace(int k, Group table, boolean genAuths, SubGroup... subs) {
         this.group = table;
-        List<SubGroup> subGroups = table.subGroups();
-        SubGroup[] subs = Arrays.stream(comps).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
+        this.k = k;
         this.cosets = new GCosets[subs.length];
         this.oBeg = new int[subs.length];
         int min = 0;
@@ -53,7 +57,6 @@ public class GSpace {
             min = min + conf.cosetCount();
         }
         this.v = min;
-        this.empty = new FixBS(v);
         this.orbIdx = new int[v];
         for (int i = 0; i < oBeg.length; i++) {
             int beg = oBeg[i];
@@ -190,120 +193,6 @@ public class GSpace {
         }
     }
 
-    private int[][] genAuthsOld() {
-        Set<int[]> sortedAuths = Collections.synchronizedSet(new TreeSet<>(Combinatorics::compareArr));
-        PartialMap emMap = new PartialMap(empty, empty, new int[v]);
-        IntStream.range(0, v).parallel().forEach(fst -> {
-            PartialMap init = emMap.copy();
-            init.set(0, fst);
-            find(sortedAuths, init);
-        });
-        return sortedAuths.toArray(int[][]::new);
-    }
-
-    private void find(Set<int[]> auths, PartialMap currMap) {
-        FixBS keys = currMap.keys();
-        int nextKey = keys.nextClearBit(0);
-        if (nextKey == v) {
-            if (autToDiffAut(currMap.map) != null) {
-                auths.add(currMap.map);
-            }
-            return;
-        }
-        FixBS possVals = empty.copy();
-        possVals.set(0, v);
-        possVals.andNot(currMap.values);
-        ex: for (int a = keys.nextSetBit(0); a >= 0; a = keys.nextSetBit(a + 1)) {
-            int aVal = currMap.val(a);
-            for (int b = keys.nextSetBit(a + 1); b >= 0; b = keys.nextSetBit(b + 1)) {
-                int bVal = currMap.val(b);
-                Relation rel = relation(a, b);
-                Relation relVal = relation(aVal, bVal);
-                FixBS secondKeys = forFirst(rel, nextKey).intersection(keys);
-                for (int sndKey = secondKeys.nextSetBit(0); sndKey >= 0; sndKey = secondKeys.nextSetBit(sndKey + 1)) {
-                    int sndVal = currMap.val(sndKey);
-                    possVals.and(forSecond(relVal, sndVal));
-                }
-                FixBS firstKeys = forSecond(rel, nextKey).intersection(keys);
-                for (int fstKey = firstKeys.nextSetBit(0); fstKey >= 0; fstKey = firstKeys.nextSetBit(fstKey + 1)) {
-                    int fstVal = currMap.val(fstKey);
-                    possVals.and(forFirst(relVal, fstVal));
-                }
-                int card = possVals.cardinality();
-                if (card <= 1) {
-                    break ex;
-                }
-            }
-        }
-        for (int nextVal = possVals.nextSetBit(0); nextVal >= 0; nextVal = possVals.nextSetBit(nextVal + 1)) {
-            PartialMap nextMap = currMap.copy();
-            nextMap.set(nextKey, nextVal);
-            find(auths, nextMap);
-        }
-    }
-
-    private FixBS forFirst(Relation rel, int fst) {
-        FixBS vals = rel.secondFor(fst);
-        return vals == null ? empty : vals;
-    }
-
-    private FixBS forSecond(Relation rel, int snd) {
-        FixBS vals = rel.firstFor(snd);
-        return vals == null ? empty : vals;
-    }
-
-    private int[] autToDiffAut(int[] auth) {
-        int[] diffAut = new int[diffLength()];
-        Arrays.fill(diffAut, -1);
-        for (int x : oBeg) {
-            for (int y = x + 1; y < v; y++) {
-                int basePair = x * v + y;
-                int mapPair = auth[x] * v + auth[y];
-                if (connect(diffAut, diffMap[basePair], diffMap[mapPair])) {
-                    return null;
-                }
-                int inv = y * v + x;
-                int invMap = auth[y] * v + auth[x];
-                if (connect(diffAut, diffMap[inv], diffMap[invMap])) {
-                    return null;
-                }
-            }
-        }
-        return diffAut;
-    }
-
-    private boolean connect(int[] arr, int from, int to) {
-        int prev = arr[from];
-        if (prev >= 0) {
-            return prev != to;
-        } else {
-            arr[from] = to;
-            return false;
-        }
-    }
-
-    private record PartialMap(FixBS keys, FixBS values, int[] map) {
-        private PartialMap copy() {
-            return new PartialMap(keys.copy(), values.copy(), map.clone());
-        }
-
-        private void set(int k, int v) {
-            if (keys.get(k)) {
-                if (map[k] != v) {
-                    throw new IllegalStateException();
-                }
-            } else {
-                keys.set(k);
-                values.set(v);
-                map[k] = v;
-            }
-        }
-
-        private int val(int key) {
-            return map[key];
-        }
-    }
-
     public int v() {
         return v;
     }
@@ -324,16 +213,8 @@ public class GSpace {
         return auths[i];
     }
 
-    public int diffLength() {
-        return relations.size();
-    }
-
     public FixBS difference(int idx) {
         return relations.get(idx).diffs();
-    }
-
-    public Relation relation(int a, int b) {
-        return relations.get(diffMap[a * v + b]);
     }
 
     public int diffIdx(int xy) {
