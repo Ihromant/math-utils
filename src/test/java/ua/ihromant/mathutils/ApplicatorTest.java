@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
 import ua.ihromant.mathutils.group.CyclicGroup;
@@ -10,7 +9,7 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
-import ua.ihromant.mathutils.group.TableGroup;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -19,13 +18,13 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
@@ -225,45 +224,51 @@ public class ApplicatorTest {
 
     @Test
     public void logSpecific() throws IOException {
-        int k = 7;
-        Group group = new PermutationGroup(new CyclicProduct(2, 2, 2).auth());
-        GSpace space = new GSpace(k, group, true, new int[][]{{4, 0}, {4, 0}, {168, 0}});
-        int v = space.v();
-        System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
-        int sqr = v * v;
-        List<State[]> singles = new ArrayList<>();
-        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
-            singles.add(arr);
-            return true;
-        };
-        int val = 1;
-        State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
-        System.out.println("Singles size: " + singles.size());
-        AtomicInteger cnt = new AtomicInteger();
-        AtomicInteger ai = new AtomicInteger();
-        BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-            if (ftr.cardinality() < sqr) {
-                return false;
+        int k = 5;
+        for (int j = 1; j <= 52; j++) {
+            Group group = GroupIndex.group(48, j);
+            Map<Integer, List<SubGroup>> sgr = group.groupedSubGroups();
+            for (int t = 0; t < sgr.get(4).size(); t++) {
+                int[][] conf = new int[][]{{1, 0}, {4, t}, {48, 0}};
+                GSpace space = new GSpace(k, group, true, conf);
+                int v = space.v();
+                System.out.println(GroupIndex.identify(group) + " " + Arrays.deepToString(conf) + " " + space.v() + " " + k + " auths: " + space.authLength());
+                int sqr = v * v;
+                List<State[]> singles = new ArrayList<>();
+                BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+                    singles.add(arr);
+                    return true;
+                };
+                int val = 1;
+                State state = space.forInitial(0, val);
+                searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+                System.out.println("Singles size: " + singles.size());
+                AtomicInteger cnt = new AtomicInteger();
+                AtomicInteger ai = new AtomicInteger();
+                BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+                    if (ftr.cardinality() < sqr) {
+                        return false;
+                    }
+                    ai.incrementAndGet();
+                    Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+                    System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+                    return true;
+                };
+                singles.stream().parallel().forEach(tuple -> {
+                    State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
+                    FixBS newFilter = space.emptyFilter().copy();
+                    for (State st : pr) {
+                        st.updateFilter(newFilter, space);
+                    }
+                    searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
+                    int vl = cnt.incrementAndGet();
+                    if (vl % 100 == 0) {
+                        System.out.println(vl);
+                    }
+                });
+                System.out.println("Results " + ai);
             }
-            ai.incrementAndGet();
-            Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
-            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
-            return true;
-        };
-        singles.stream().parallel().forEach(tuple -> {
-            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-            FixBS newFilter = space.emptyFilter().copy();
-            for (State st : pr) {
-                st.updateFilter(newFilter, space);
-            }
-            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
-            int vl = cnt.incrementAndGet();
-            if (vl % 100 == 0) {
-                System.out.println(vl);
-            }
-        });
-        System.out.println("Results " + ai);
+        }
     }
 
     @Test
@@ -505,13 +510,5 @@ public class ApplicatorTest {
     private static List<FixBS> readPartial(String line, int v) {
         String[] sp = line.substring(1, line.length() - 1).split("} \\{");
         return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
-    }
-
-    private static Group readGroup(String name) throws IOException {
-        try (InputStream is = ApplicatorTest.class.getResourceAsStream("/group/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            return new TableGroup(new ObjectMapper().readValue(br.readLine(), int[][].class));
-        }
     }
 }
