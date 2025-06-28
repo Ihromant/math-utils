@@ -354,11 +354,13 @@ public class BibdFinder6Test {
             if (idx != k - 1) {
                 return false;
             }
-            FixBS rests = new FixBS(k);
+            FixBS restsK = new FixBS(k);
+            FixBS restsK1 = new FixBS(k);
             for (int val : block) {
-                rests.set(val % k);
+                restsK.set(val % k);
+                restsK1.set(val % (k - 1));
             }
-            if (rests.cardinality() != k - 1) {
+            if (restsK.cardinality() != k - 1 && restsK1.cardinality() != k - 1) {
                 return true;
             }
             ps.println(Arrays.toString(block));
