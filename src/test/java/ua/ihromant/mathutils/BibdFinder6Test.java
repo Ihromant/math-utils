@@ -559,15 +559,16 @@ public class BibdFinder6Test {
                     for (int val : des[0]) {
                         rests.set(val % k);
                     }
-                    int unused = rests.nextClearBit(0);
                     Set<int[]> lines = new TreeSet<>(Combinatorics::compareArr);
                     IntStream.range(1, des.length).forEach(j -> {
                         IntStream.range(0, v).forEach(m -> {
                             lines.add(Arrays.stream(des[j]).map(p -> (p + m) % v).sorted().toArray());
                         });
                     });
-                    int[] fst = IntStream.concat(Arrays.stream(des[0]), IntStream.of(v + unused)).toArray();
-                    int[] slanted = IntStream.concat(IntStream.range(0, k - 1).map(j -> v * j / (k - 1)), IntStream.of(v)).toArray();
+                    boolean fullOrbit = rests.cardinality() == k - 1;
+                    int unused = rests.nextClearBit(0);
+                    int[] fst = IntStream.concat(Arrays.stream(des[0]), IntStream.of(v + (fullOrbit ? unused : 0))).toArray();
+                    int[] slanted = IntStream.concat(IntStream.range(0, k - 1).map(j -> v * j / (k - 1)), IntStream.of(fullOrbit ? v : v + k - 1)).toArray();
                     IntStream.range(0, v).forEach(j -> {
                         lines.add(IntStream.range(0, k).map(m -> (v * m / k + j) % v).sorted().toArray());
                         int[] fstTr = new int[k];
@@ -576,8 +577,8 @@ public class BibdFinder6Test {
                             fstTr[m] = (fst[m] + j) % v;
                             slantedTr[m] = (slanted[m] + j) % v;
                         }
-                        fstTr[k - 1] = v + ((unused + j) % k);
-                        slantedTr[k - 1] = v + (j % k);
+                        fstTr[k - 1] = v + (((fullOrbit ? unused : 0) + j) % (fullOrbit ? k : k - 1));
+                        slantedTr[k - 1] = fullOrbit ? v + (j % k) : v + k - 1;
                         Arrays.sort(fstTr);
                         Arrays.sort(slantedTr);
                         lines.add(fstTr);
