@@ -420,7 +420,7 @@ public class ApplicatorTest {
             AtomicInteger cnt = new AtomicInteger();
             BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
                 if (arr.length == 2) {
-                    if (space.minimalTwo(arr)) {
+                    if (space.twoMinimal(arr)) {
                         ps.println(Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(" ")));
                     }
                     return true;
@@ -484,6 +484,7 @@ public class ApplicatorTest {
                 Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
                 liners.add(l);
                 ps.println(Arrays.stream(arr).map(State::block).toList());
+                ps.flush();
                 System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
                 return true;
             };
@@ -502,6 +503,7 @@ public class ApplicatorTest {
                     System.out.println(vl);
                 }
                 ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" ")));
+                ps.flush();
             });
             System.out.println("Results " + liners.size());
         }

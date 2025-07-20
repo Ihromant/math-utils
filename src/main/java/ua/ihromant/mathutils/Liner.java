@@ -844,8 +844,8 @@ public class Liner {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
         GraphWrapper wrap = GraphWrapper.forFull(this);
-        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
-        NautyAlgoNew.search(wrap, aut);
+        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
+        NautyAlgo.search(wrap, aut);
         return new PermutationGroup(res.toArray(int[][]::new));
     }
 
