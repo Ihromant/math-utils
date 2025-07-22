@@ -151,13 +151,13 @@ public interface Group {
         FixBS init = new FixBS(order);
         init.set(0);
         result.put(1, List.of(new SubGroup(this, init)));
+        int[][] auths = auth();
         find(init, 0, order, sg -> {
             FixBS elems = sg.elems();
-            for (int i = 1; i < order; i++) {
+            for (int[] arr : auths) {
                 FixBS oElems = new FixBS(order);
-                int inv = inv(i);
                 for (int el = elems.nextSetBit(0); el >= 0; el = elems.nextSetBit(el + 1)) {
-                    oElems.set(op(inv, op(el, i)));
+                    oElems.set(arr[el]);
                 }
                 if (oElems.compareTo(elems) < 0) {
                     return;
