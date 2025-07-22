@@ -46,7 +46,7 @@ public class GSpace {
 
     private static SubGroup[] sgs(Group gr, int[][] comps) {
         Map<Integer, List<SubGroup>> subGroups = gr.asTable().groupedSubGroups();
-        System.out.println(subGroups.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
+        //System.out.println(subGroups.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
         return Arrays.stream(comps).map(pr -> subGroups.get(pr[0]).get(pr[1])).toArray(SubGroup[]::new);
     }
 
