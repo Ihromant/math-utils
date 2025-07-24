@@ -189,6 +189,7 @@ public class BibdFinder6Test {
         Group gr = new CyclicGroup(156);
         int v = gr.order();
         int k = 6;
+        int rest = v % (k * (k - 1));
         File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
         File beg = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
@@ -208,7 +209,7 @@ public class BibdFinder6Test {
                     set.remove(readPartial(l, v));
                 }
             });
-            if (v % k == 0 && v % (k - 1) == 0) {
+            if (rest == 0 || rest == (k - 1) * (k - 1)) {
                 logResultsOther(ps, v, k, set.stream().map(st -> st.stream()
                         .map(bs -> bs.stream().toArray()).toArray(int[][]::new)).toList());
             } else {
@@ -388,13 +389,8 @@ public class BibdFinder6Test {
     private static void logResultsOther(PrintStream destination, int v, int k, List<int[][]> unProcessed) {
         System.out.println(v + " " + k);
         System.out.println("Initial size " + unProcessed.size());
-        int blocksNeeded = v / k / (k - 1);
-        FixBS baseFilter = new FixBS(v);
-        for (int i = 1; i < v; i++) {
-            if (i * k % v == 0 || i * (k - 1) % v == 0) {
-                baseFilter.set(i);
-            }
-        }
+        int blocksNeeded = (v + k) / k / (k - 1);
+        FixBS baseFilter = baseFilter(v, k);
         AtomicInteger counter = new AtomicInteger();
         long time = System.currentTimeMillis();
         Tst designConsumer = (design, blockIdx) -> {
