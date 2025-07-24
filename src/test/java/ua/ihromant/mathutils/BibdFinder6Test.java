@@ -115,7 +115,7 @@ public class BibdFinder6Test {
     private static void calcFirstCycles(int v, int k, State state, int idx, Tst sink) {
         FixBS blackList = state.blackList();
         int[] currBlock = state.block;
-        int lastVal = currBlock[idx - 1];
+        int nextVal = currBlock[idx - 1] + 1;
         boolean first = idx == 2;
         int midCnt = k - idx - 1;
         int from = 0;
@@ -124,8 +124,8 @@ public class BibdFinder6Test {
             from = state.filter.nextClearBit(from + 1);
             minMidSpace = minMidSpace + from;
         }
-        int max = first ? (v + lastVal - minMidSpace + 1) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
-        for (int el = blackList.nextClearBit(lastVal); el >= 0 && el < max; el = blackList.nextClearBit(el + 1)) {
+        int max = first ? (v + nextVal - minMidSpace) / 2 : v - currBlock[2] + currBlock[1] - minMidSpace;
+        for (int el = blackList.nextClearBit(nextVal); el >= 0 && el < max; el = blackList.nextClearBit(el + 1)) {
             State next = state.acceptElem(el, v, idx);
             int nIdx = idx + 1;
             if (sink.test(new int[][]{currBlock}, nIdx)) {
@@ -145,7 +145,21 @@ public class BibdFinder6Test {
                 }
             }
         }
-        if (rest == (k - 1)) {
+        if (rest == k - 1) {
+            for (int i = 1; i < v; i++) {
+                if (i * (k - 1) % v == 0) {
+                    filter.set(i);
+                }
+            }
+        }
+        if (rest == 0) {
+            for (int i = 1; i < v; i++) {
+                if (i * k % v == 0 || i * (k - 1) % v == 0) {
+                    filter.set(i);
+                }
+            }
+        }
+        if (rest == (k - 1) * (k - 1)) {
             for (int i = 1; i < v; i++) {
                 if (i * (k - 1) % v == 0) {
                     filter.set(i);
@@ -322,25 +336,21 @@ public class BibdFinder6Test {
         Group group = new CyclicGroup(60);
         int k = 5;
         int v = group.order();
-        if (v % k != 0 || v % (k - 1) != 0) {
+        int rest = v % (k * (k - 1));
+        if (rest != 0 && rest != (k - 1) * (k - 1)) {
             throw new IllegalArgumentException();
         }
         File f = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + group.name() + "beg.txt");
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            logFirstCyclesOther(group.order(), k, ps);
+            logFirstCyclesOther(group.order(), k, rest, ps);
         }
     }
 
-    private static void logFirstCyclesOther(int v, int k, PrintStream ps) {
+    private static void logFirstCyclesOther(int v, int k, int rest, PrintStream ps) {
         System.out.println(v + " " + k);
-        FixBS filter = new FixBS(v);
-        for (int i = 1; i < v; i++) {
-            if (i * k % v == 0 || i * (k - 1) % v == 0) {
-                filter.set(i);
-            }
-        }
+        FixBS filter = baseFilter(v, k);
         int[] mul = Combinatorics.multipliers(v);
         State initial = new State(new int[k - 1], filter, filter).acceptElem(1, v, 1);
         calcFirstCycles(v, k - 1, initial, 2, (design, idx) -> {
@@ -360,8 +370,14 @@ public class BibdFinder6Test {
                 restsK.set(val % k);
                 restsK1.set(val % (k - 1));
             }
-            if (restsK.cardinality() != k - 1 && restsK1.cardinality() != k - 1) {
-                return true;
+            if (rest == 0) {
+                if (restsK.cardinality() != k - 1 && restsK1.cardinality() != k - 1) {
+                    return true;
+                }
+            } else { // (k - 1) * (k - 1)
+                if (restsK1.cardinality() != k - 1) {
+                    return true;
+                }
             }
             ps.println(Arrays.toString(block));
             ps.flush();
