@@ -2,9 +2,11 @@ package ua.ihromant.mathutils;
 
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.group.CyclicGroup;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.FinderTest;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
@@ -950,14 +952,88 @@ public class BatchLinerTest {
 
     @SneakyThrows
     private static void orbits(Liner p, int i) {
-        PermutationGroup perm = p.automorphisms();
+        PermutationGroup aut = p.automorphisms();
+        FixBS elems = new FixBS(aut.order());
+        elems.set(0, aut.order());
+        orbits(p, new SubGroup(aut, elems), i);
+    }
+
+    @SneakyThrows
+    private static void orbits(Liner p, SubGroup gr, int i) {
+        PermutationGroup perm = (PermutationGroup) gr.group();
+        FixBS elems = gr.elems();
         QuickFind pts = new QuickFind(p.pointCount());
-        for (int a = 0; a < perm.order(); a++) {
+        for (int a = elems.nextSetBit(0); a >= 0; a = elems.nextSetBit(a + 1)) {
             int[] arr = perm.permutation(a);
             for (int p1 = 0; p1 < p.pointCount(); p1++) {
                 pts.union(p1, arr[p1]);
             }
         }
-        System.out.println("Liner " + i + " auths " + perm.order() + " " + GroupIndex.identify(perm) + " orbits " + pts.components());
+        System.out.println("Liner " + i + " auths " + gr.order() + (gr.order() > 1000 ? "" : " " + GroupIndex.identify(gr)) + " orbits " + pts.components());
+    }
+
+    private static final String lns = """
+            [[0, 1, 4, 16, 23, 64, 74], [0, 2, 8, 32, 37, 46, 57], [0, 13, 26, 39, 52, 65, 78]]
+            [[0, 1, 4, 16, 23, 64, 74], [0, 2, 36, 47, 56, 61, 85], [0, 13, 26, 39, 52, 65, 78]]
+            """;
+
+    @Test
+    public void testOrbits() {
+        ObjectMapper om = new ObjectMapper();
+        Arrays.stream(lns.split("\n")).parallel().forEach(l -> {
+            int[][] base = om.readValue(l, int[][].class);
+            Liner lnr = Liner.byDiffFamily(91, base);
+            PermutationGroup aut = lnr.automorphisms();
+            Group table = aut.asTable();
+            Map<Integer, List<SubGroup>> gr = table.groupedSubGroups();
+            for (List<SubGroup> sgs : gr.values()) {
+                for (SubGroup sg : sgs) {
+                    orbits(lnr, new SubGroup(aut, sg.elems()), l.length() % 2);
+                }
+            }
+        });
+    }
+
+    private static final String lns175 = "[[0, 7, 22, 39, 55, 151, 174], [0, 8, 14, 88, 97, 109, 139], [0, 10, 45, 49, 72, 116, 156], [0, 17, 37, 100, 122, 133, 158], [0, 1, 2, 3, 4, 5, 6]]";
+
+    @Test
+    public void generateAuts() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        int[][] base = om.readValue(lns175, int[][].class);
+        Liner lnr = Liner.byDiffFamily(new CyclicProduct(5, 5, 7), base);
+        System.out.println(lnr.hyperbolicFreq());
+        PermutationGroup aut = lnr.automorphisms();
+        try (FileOutputStream fos = new FileOutputStream(new File("/home/ihromant/maths/g-spaces", "auths-5-5-7.txt"));
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            ps.println(Arrays.deepToString(lnr.lines()));
+            for (int i = 0; i < aut.order(); i++) {
+                ps.println(Arrays.toString(aut.permutation(i)));
+            }
+        }
+    }
+
+    @Test
+    public void orbitsByFile() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        try (FileInputStream fis = new FileInputStream(new File("/home/ihromant/maths/g-spaces", "auths-5-5-7.txt"));
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner lnr = new Liner(175, om.readValue(br.readLine(), int[][].class));
+            List<int[]> aut = new ArrayList<>();
+            String l;
+            while ((l = br.readLine()) != null) {
+                aut.add(om.readValue(l, int[].class));
+            }
+            PermutationGroup group = new PermutationGroup(aut.toArray(int[][]::new));
+            Group table = group.asTable();
+            System.out.println(lnr.hyperbolicFreq());
+            Map<Integer, List<SubGroup>> gr = table.groupedSubGroups();
+            for (List<SubGroup> sgs : gr.values()) {
+                for (SubGroup sg : sgs) {
+                    orbits(lnr, new SubGroup(group, sg.elems()), 0);
+                }
+            }
+        }
     }
 }
