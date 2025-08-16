@@ -249,6 +249,9 @@ public class ApplicatorTest {
                     if (ftr.cardinality() < sqr) {
                         return false;
                     }
+                    if (!space.minimal(arr)) {
+                        return true;
+                    }
                     ai.incrementAndGet();
                     Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
                     System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
@@ -431,7 +434,7 @@ public class ApplicatorTest {
             singles.stream().parallel().forEach(single -> {
                 searchDesigns(space, space.emptyFilter(), new State[0], single[0], 0, tCons);
                 int vl = cnt.incrementAndGet();
-                if (vl % 100 == 0) {
+                if (vl % 10 == 0) {
                     System.out.println(vl);
                 }
             });
@@ -463,11 +466,12 @@ public class ApplicatorTest {
             List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
             br.lines().forEach(l -> {
                 if (l.contains("[{")) {
-                    System.out.println(l);
                     String[] split = l.substring(2, l.length() - 2).split("}, \\{");
                     List<FixBS> base = Arrays.stream(split).map(bl -> FixBS.of(v, Arrays.stream(bl.split(", "))
                             .mapToInt(Integer::parseInt).toArray())).toList();
-                    liners.add(new Liner(v, base.stream().flatMap(space::blocks).toArray(int[][]::new)));
+                    Liner lnr = new Liner(v, base.stream().flatMap(space::blocks).toArray(int[][]::new));
+                    liners.add(lnr);
+                    System.out.println(lnr.hyperbolicFreq() + " " + l);
                 } else {
                     set.remove(readPartial(l, v));
                 }
@@ -479,6 +483,9 @@ public class ApplicatorTest {
             BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
                 if (ftr.cardinality() < sqr) {
                     return false;
+                }
+                if (!space.minimal(arr)) {
+                    return true;
                 }
                 ai.incrementAndGet();
                 Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
@@ -506,6 +513,79 @@ public class ApplicatorTest {
                 ps.flush();
             });
             System.out.println("Results " + liners.size());
+        }
+    }
+
+    @Test
+    public void expand() throws IOException {
+        int k = 7;
+        Group group = GroupIndex.group(42, 2);
+        int[] comps = new int[]{6, 1, 1};
+        GSpace space = new GSpace(k, group, true, comps);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + ".txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
+        try (FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            int v = space.v();
+            List<List<FixBS>> toProcess = Collections.synchronizedList(new ArrayList<>());
+            Set<List<FixBS>> unprocessed = allBr.lines().map(l -> readPartial(l, v)).collect(Collectors.toSet());
+            List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+            br.lines().forEach(l -> {
+                if (l.contains("[{")) {
+                    String[] split = l.substring(2, l.length() - 2).split("}, \\{");
+                    List<FixBS> base = Arrays.stream(split).map(bl -> FixBS.of(v, Arrays.stream(bl.split(", "))
+                            .mapToInt(Integer::parseInt).toArray())).toList();
+                    Liner lnr = new Liner(v, base.stream().flatMap(space::blocks).toArray(int[][]::new));
+                    liners.add(lnr);
+                    System.out.println(lnr.hyperbolicFreq() + " " + l);
+                } else {
+                    List<FixBS> proc = readPartial(l, v);
+                    toProcess.add(proc);
+                    unprocessed.remove(proc);
+                }
+            });
+            List<List<FixBS>> tuples = new ArrayList<>(unprocessed);
+            int nextLength = tuples.getFirst().size() + 1;
+            File begExp = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                    + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-begExp.txt");
+            try (FileOutputStream fos = new FileOutputStream(begExp);
+                 BufferedOutputStream bos = new BufferedOutputStream(fos);
+                 PrintStream ps = new PrintStream(bos)) {
+                System.out.println("Processed: " + toProcess.size() + ", to expand: " + tuples.size() + ", next size: " + nextLength);
+                AtomicInteger cnt = new AtomicInteger();
+                AtomicInteger ai = new AtomicInteger();
+                BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+                    if (arr.length == nextLength) {
+                        if (space.minimal(arr)) {
+                            ai.incrementAndGet();
+                            toProcess.add(Arrays.stream(arr).map(State::block).toList());
+                        }
+                        return true;
+                    } else {
+                        return false;
+                    }
+                };
+                tuples.stream().parallel().forEach(lst -> {
+                    State[] pr = new State[lst.size() - 1];
+                    for (int i = 0; i < lst.size() - 1; i++) {
+                        pr[i] = State.fromBlock(space, lst.get(i));
+                    }
+                    FixBS newFilter = space.emptyFilter().copy();
+                    for (State st : pr) {
+                        st.updateFilter(newFilter, space);
+                    }
+                    searchDesigns(space, newFilter, pr, State.fromBlock(space, lst.getLast()), 0, fCons);
+                    System.out.println(cnt.incrementAndGet());
+                });
+                System.out.println("Addition " + ai.get());
+                toProcess.forEach(lst -> ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" "))));
+            }
         }
     }
 
