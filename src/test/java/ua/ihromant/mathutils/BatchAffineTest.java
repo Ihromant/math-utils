@@ -461,12 +461,15 @@ public class BatchAffineTest {
         int k = 16;
         for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
             String name = f.getName();
+            if ("desarg.txt".equals(f.getName())) {
+                continue;
+            }
             try (InputStream is = new FileInputStream(f);
                  InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
                  BufferedReader br = new BufferedReader(isr)) {
                 Liner proj = readProj(br);
                 int[][] central = new int[proj.pointCount()][proj.lineCount()];
-                for (int o = 0; o < proj.pointCount(); o++) {
+                IntStream.range(0, proj.pointCount()).parallel().forEach(o -> {
                     for (int l = 0; l < proj.lineCount(); l++) {
                         central[o][l]++;
                         int a = findA(proj, o, l);
@@ -503,12 +506,72 @@ public class BatchAffineTest {
                             central[o][l]++;
                         }
                     }
-                }
+                });
                 System.out.println(name);
+                //calculateParameters(proj, central);
                 Arrays.stream(central).forEach(ln -> System.out.println(Arrays.stream(ln).mapToObj(i -> Integer.toString(i, 36)).collect(Collectors.joining())));
             }
         }
     }
+
+    private static void calculateParameters(Liner proj, int[][] central) {
+        Map<Integer, List<Pr>> grouped = new HashMap<>(64);
+        for (int p = 0; p < proj.pointCount(); p++) {
+            for (int l = 0; l < proj.lineCount(); l++) {
+                int val = central[p][l];
+                grouped.computeIfAbsent(val, ky -> new ArrayList<>()).add(new Pr(p, l));
+            }
+        }
+        System.out.println("Spectrum: " + grouped.keySet());
+        System.out.println("LevelSize: " + grouped.entrySet().stream().map(e -> e.getValue().size() + "=" + e.getKey()).collect(Collectors.joining(" ")));
+        StringBuilder builder = new StringBuilder("Central multirank: ");
+        for (Map.Entry<Integer, List<Pr>> e : grouped.entrySet()) {
+            Set<Integer> pts = e.getValue().stream().map(Pr::p).collect(Collectors.toSet());
+            Set<Integer> lns = e.getValue().stream().map(Pr::l).collect(Collectors.toSet());
+            int ptRank;
+            int lnRank;
+            if (pts.size() == 1) {
+                ptRank = 1;
+            } else {
+                ptRank = 2;
+                Set<Integer> unL = new HashSet<>();
+                ex: for (int pt1 : pts) {
+                    for (int pt2 : pts) {
+                        if (pt1 == pt2) {
+                            continue;
+                        }
+                        unL.add(proj.line(pt1, pt2));
+                        if (unL.size() >= 2) {
+                            ptRank = 3;
+                            break ex;
+                        }
+                    }
+                }
+            }
+            if (lns.size() == 1) {
+                lnRank = 1;
+            } else {
+                lnRank = 2;
+                Set<Integer> unP = new HashSet<>();
+                ex: for (int ln1 : lns) {
+                    for (int ln2 : lns) {
+                        if (ln1 == ln2) {
+                            continue;
+                        }
+                        unP.add(proj.intersection(ln1, ln2));
+                        if (unP.size() >= 2) {
+                            lnRank = 3;
+                            break ex;
+                        }
+                    }
+                }
+            }
+            builder.append(ptRank).append(lnRank).append("=").append(e.getKey()).append(", ");
+        }
+        System.out.println(builder);
+    }
+
+    private record Pr(int p, int l) {}
 
     private static int findA(Liner proj, int o, int l) {
         return IntStream.range(0, proj.pointCount()).filter(a -> a != o && !proj.flag(l, a)).findAny().orElseThrow();
