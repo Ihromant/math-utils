@@ -2,6 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.Automorphisms;
+import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.plane.AffinePlane;
@@ -31,6 +32,7 @@ import java.util.Optional;
 import java.util.SequencedMap;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -1066,6 +1068,89 @@ public class BatchAffineTest {
             list.add(bs);
         }
         return new Liner(list.toArray(BitSet[]::new));
+    }
+
+    @Test
+    public void centralAuths() throws IOException {
+        int k = 9;
+        String name = "hughes9.txt";
+        int dl = 3;
+        try (InputStream is = new FileInputStream(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k, name));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readProj(br);
+            int[] inf = proj.line(dl);
+            List<int[]> auths = new ArrayList<>();
+            auths.add(IntStream.range(0, proj.pointCount()).toArray());
+            for (int o : inf) {
+                for (int l : proj.lines(o)) {
+                    int a = findA(proj, o, l);
+                    int oa = proj.line(o, a);
+                    ex: for (int a1 : proj.line(oa)) {
+                        int[] map = new int[proj.pointCount()];
+                        Arrays.fill(map, -1);
+                        map[o] = o;
+                        map[a] = a1;
+                        for (int pt : proj.points(l)) {
+                            map[pt] = pt;
+                        }
+                        if (a == a1 || o == a1 || proj.flag(l, a1)) {
+                            continue;
+                        }
+                        for (int ob : proj.lines(o)) {
+                            if (ob == l || ob == oa) {
+                                continue;
+                            }
+                            for (int oc : proj.lines(o)) {
+                                if (oc == l || oc == oa || oc == ob) {
+                                    continue;
+                                }
+                                for (int b : proj.points(ob)) {
+                                    if (b == o || proj.flag(l, b)) {
+                                        continue;
+                                    }
+                                    for (int c : proj.points(oc)) {
+                                        if (c == o || proj.flag(l, c)) {
+                                            continue;
+                                        }
+                                        int b1 = proj.intersection(ob, proj.line(proj.intersection(proj.line(a, b), l), a1));
+                                        int c1 = proj.intersection(oc, proj.line(proj.intersection(proj.line(a, c), l), a1));
+                                        if (!proj.flag(l, proj.intersection(proj.line(b, c), proj.line(b1, c1)))) {
+                                            continue ex;
+                                        }
+                                        map[b] = b1;
+                                        map[c] = c1;
+                                        map[proj.intersection(oa, proj.line(b, c))] = proj.intersection(oa, proj.line(b1, c1));
+                                    }
+                                }
+                            }
+                        }
+                        auths.add(map);
+                    }
+                }
+            }
+            Set<int[]> all = new TreeSet<>(Combinatorics::compareArr);
+            all.addAll(auths);
+            while (true) {
+                Set<int[]> next = new TreeSet<>(Combinatorics::compareArr);
+                for (int[] fst : all) {
+                    for (int[] snd : all) {
+                        int[] comb = new int[proj.pointCount()];
+                        for (int i = 0; i < proj.pointCount(); i++) {
+                            comb[i] = fst[snd[i]];
+                        }
+                        next.add(comb);
+                    }
+                }
+                if (next.size() == all.size()) {
+                    break;
+                } else {
+                    all = next;
+                }
+            }
+            Group gr = new PermutationGroup(all.toArray(int[][]::new)).asTable();
+            System.out.println(gr.order());
+        }
     }
 
     @Test
