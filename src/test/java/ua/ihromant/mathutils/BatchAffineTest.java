@@ -1079,11 +1079,18 @@ public class BatchAffineTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             Liner proj = readProj(br);
-            int[] inf = proj.line(dl);
             List<int[]> auths = new ArrayList<>();
             auths.add(IntStream.range(0, proj.pointCount()).toArray());
-            for (int o : inf) {
-                for (int l : proj.lines(o)) {
+            for (int o = 0; o < proj.pointCount(); o++) {
+                int[] lines;
+                if (proj.flag(dl, o)) {
+                    //lines = new int[]{dl}; // translation
+                    lines = IntStream.range(0, proj.pointCount()).toArray(); // translation + hyperscale
+                } else {
+                    //lines = proj.lines(o); // shear
+                    lines = IntStream.concat(Arrays.stream(proj.lines(o)), IntStream.of(dl)).toArray(); // shear + central
+                }
+                for (int l : lines) {
                     int a = findA(proj, o, l);
                     int oa = proj.line(o, a);
                     ex: for (int a1 : proj.line(oa)) {
@@ -1125,7 +1132,17 @@ public class BatchAffineTest {
                                 }
                             }
                         }
-                        auths.add(map);
+                        if (proj.flag(l, o)) {
+                            auths.add(map);
+                        } else {
+                            for (int pt = 0; pt < proj.pointCount(); pt++) {
+                                int mapped = map[pt];
+                                if (map[mapped] != pt) {
+                                    continue ex;
+                                }
+                            }
+                            auths.add(map);
+                        }
                     }
                 }
             }
@@ -1150,6 +1167,7 @@ public class BatchAffineTest {
             }
             Group gr = new PermutationGroup(all.toArray(int[][]::new)).asTable();
             System.out.println(gr.order());
+            //System.out.println(GroupIndex.identify(gr));
         }
     }
 
