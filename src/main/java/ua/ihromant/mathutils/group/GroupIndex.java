@@ -9,6 +9,9 @@ public class GroupIndex {
     }
 
     public static String identify(Group g) throws IOException {
+        if (g.order() > 1500) {
+            return "Large order " + g.order();
+        }
         return new GapInteractor().identifyGroup(g);
     }
 

@@ -538,4 +538,14 @@ public class FixBS implements Comparable<FixBS> {
         }
         return result;
     }
+
+    public boolean isFull(int desired) {
+        for (int i = 0; i < words.length - 1; i++) {
+            if (words[i] != -1L) {
+                return false;
+            }
+        }
+        int mod = desired % 64;
+        return Long.bitCount(words[words.length - 1]) == (mod == 0 ? 64 : mod);
+    }
 }

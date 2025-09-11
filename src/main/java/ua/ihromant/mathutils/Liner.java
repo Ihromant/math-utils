@@ -527,7 +527,6 @@ public class Liner {
                     }
                 }
                 if (pts.cardinality() != pointCount) {
-                    System.out.println(pts.cardinality() + " " + pointCount);
                     return false;
                 }
             }
