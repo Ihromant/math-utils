@@ -9,7 +9,6 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -30,7 +29,7 @@ public class GSpace {
     private final int[][] cayley;
     private final List<Relation> relations;
     private final int[] diffMap;
-    private final List<Map<Integer, FixBS>> preImages;
+    private final FixBS[][] preImages;
     private final State[][] statesCache;
 
     private final int[][] auths;
@@ -97,7 +96,7 @@ public class GSpace {
             }
         }
         QuickFind qf = new QuickFind(v * v);
-        this.preImages = IntStream.range(0, v * v).<Map<Integer, FixBS>>mapToObj(i -> new HashMap<>()).toList();
+        this.preImages = new FixBS[v * v][v * v];
         for (int x1 = 0; x1 < v; x1++) {
             for (int x2 = 0; x2 < v; x2++) {
                 int pair = x1 * v + x2;
@@ -106,7 +105,10 @@ public class GSpace {
                     int gx2 = cayley[g][x2];
                     int gPair = gx1 * v + gx2;
                     qf.union(pair, gPair);
-                    preImages.get(gPair).computeIfAbsent(pair, key -> new FixBS(gOrd)).set(g);
+                    if (preImages[gPair][pair] == null) {
+                        preImages[gPair][pair] = new FixBS(gOrd);
+                    }
+                    preImages[gPair][pair].set(g);
                 }
             }
         }
@@ -232,7 +234,7 @@ public class GSpace {
     }
 
     public FixBS preImage(int from, int to) {
-        return preImages.get(to).get(from);
+        return preImages[to][from];
     }
 
     public State forInitial(int fst, int snd) {
