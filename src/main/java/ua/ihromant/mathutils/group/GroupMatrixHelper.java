@@ -34,7 +34,6 @@ public class GroupMatrixHelper {
         this.matCount = Arrays.stream(sequence).map(el -> LinearSpace.pow(el, n)).reduce(1, (a, b) -> a * b);
         this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
-        System.out.println(gl.length);
     }
 
     private int[][] toMatrix(int a) {
