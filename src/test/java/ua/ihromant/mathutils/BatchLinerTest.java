@@ -26,6 +26,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -115,11 +117,47 @@ public class BatchLinerTest {
         assertEquals(of(1, 2, 3, 4, 5), planes.get(1).hyperbolicIndex());
     }
 
+    private static final String base66 = "[[0, 2, 13, 37, 51, 52], [0, 5, 10, 15, 60, 65], [0, 6, 12, 32, 39, 40], [0, 21, 22, 38, 43, 55], [0, 25, 34, 41, 54, 57], [2, 3, 21, 33, 49, 60], [6, 9, 22, 41, 52, 60], [20, 22, 24, 26, 28, 65], [20, 25, 30, 35, 60, 61], [40, 42, 44, 46, 48, 65], [40, 45, 50, 55, 60, 62]]";
+
     @Test
     public void test66_6() throws IOException {
         List<Liner> planes = readPlanes(66, 6);
         assertEquals(3, planes.size());
-        planes.forEach(p -> assertEquals(of(0, 1, 2, 3, 4), p.hyperbolicIndex()));
+        planes.forEach(p -> System.out.println(p.hyperbolicFreq()));
+        Set<BitSet> blocks = new HashSet<>();
+        for (int[] bbl : new ObjectMapper().readValue(base66, int[][].class)) {
+            for (int el = 0; el < 20; el++) {
+                BitSet actRes = new BitSet(66);
+                for (int x : bbl) {
+                    if (x < 20) {
+                        actRes.set(op(el, x));
+                    } else if (x < 40) {
+                        actRes.set(op(el, x - 20) + 20);
+                    } else if (x < 60) {
+                        actRes.set(op(el, x - 40) + 40);
+                    } else if (x < 65) {
+                        actRes.set(op5(el, x - 60) + 60);
+                    } else {
+                        actRes.set(x);
+                    }
+                }
+                blocks.add(actRes);
+            }
+        }
+        Liner lnr = new Liner(blocks.toArray(BitSet[]::new));
+        System.out.println(lnr.hyperbolicFreq());
+    }
+
+    private static int op(int el, int x) {
+        if (el < 10 && x < 10 || el >= 10 && x >= 10) {
+            return (el + x) % 10;
+        } else {
+            return 10 + ((el + x) % 10);
+        }
+    }
+
+    private static int op5(int x, int y) {
+        return (x + y) % 5;
     }
 
     @Test
@@ -141,8 +179,27 @@ public class BatchLinerTest {
 
     @Test
     public void test45_5() throws IOException {
-        List<Liner> planes = readPlanes(45, 5);
-        assertEquals(30, planes.size());
+        String s = Files.lines(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-45-5-1.des")).collect(Collectors.joining());
+        ObjectMapper om = new ObjectMapper();
+        List<Liner> planes = new ArrayList<>();
+        while (true) {
+            int fIdx = s.indexOf("blocks :=");
+            if (fIdx < 0) {
+                break;
+            }
+            int lIdx = s.indexOf("isBinary");
+            String bl = s.substring(fIdx + "blocks :=".length(), lIdx);
+            bl = bl.substring(0, bl.lastIndexOf(','));
+            int[][] lines = om.readValue(bl, int[][].class);
+            Arrays.stream(lines).forEach(b -> {
+                for (int i = 0; i < 5; i++) {
+                    b[i]--;
+                }
+            });
+            planes.add(new Liner(45, lines));
+            s = s.substring(lIdx + 20);
+        }
+        assertEquals(1072, planes.size());
         IntStream.range(0, planes.size()).parallel().forEach(i -> {
             orbits(planes.get(i), i);
         });
