@@ -199,7 +199,7 @@ public class ApplicatorTest {
         AtomicInteger cnt = new AtomicInteger();
         AtomicInteger ai = new AtomicInteger();
         BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-            if (ftr.cardinality() < sqr) {
+            if (!ftr.isFull(sqr)) {
                 return false;
             }
             ai.incrementAndGet();
@@ -246,7 +246,7 @@ public class ApplicatorTest {
                 AtomicInteger cnt = new AtomicInteger();
                 AtomicInteger ai = new AtomicInteger();
                 BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-                    if (ftr.cardinality() < sqr) {
+                    if (!ftr.isFull(sqr)) {
                         return false;
                     }
                     if (!space.minimal(arr)) {
@@ -319,7 +319,7 @@ public class ApplicatorTest {
         AtomicInteger ai = new AtomicInteger();
         cnt.set(0);
         BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
-            if (ftr.cardinality() < sqr) {
+            if (!ftr.isFull(sqr)) {
                 return false;
             }
             if (!space.minimal(arr)) {
@@ -419,11 +419,11 @@ public class ApplicatorTest {
             int val = 1;
             State state = space.forInitial(0, val);
             searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
-            System.out.println("Singles size: " + singles.size());
+            System.out.println(GroupIndex.identify(group) + " Singles size: " + singles.size());
             AtomicInteger cnt = new AtomicInteger();
             BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
                 if (arr.length == 2) {
-                    if (space.twoMinimal(arr)) {
+                    if (space.parMinimal(arr)) {
                         ps.println(Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(" ")));
                     }
                     return true;
@@ -481,7 +481,7 @@ public class ApplicatorTest {
             AtomicInteger cnt = new AtomicInteger();
             AtomicInteger ai = new AtomicInteger();
             BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
-                if (ftr.cardinality() < sqr) {
+                if (!ftr.isFull(sqr)) {
                     return false;
                 }
                 if (!space.minimal(arr)) {
@@ -562,7 +562,7 @@ public class ApplicatorTest {
                 AtomicInteger ai = new AtomicInteger();
                 BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
                     if (arr.length == nextLength) {
-                        if (space.minimal(arr)) {
+                        if (space.parMinimal(arr)) {
                             ai.incrementAndGet();
                             toProcess.add(Arrays.stream(arr).map(State::block).toList());
                         }
