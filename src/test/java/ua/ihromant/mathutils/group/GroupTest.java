@@ -223,7 +223,7 @@ public class GroupTest {
         });
     }
 
-    private void testCorrectness(Group g, boolean commutative) {
+    public static void testCorrectness(Group g, boolean commutative) {
         Group tg = g.asTable();
         int nonComm = g.elements().flatMap(i -> {
             assertEquals(i, g.op(i, 0));
