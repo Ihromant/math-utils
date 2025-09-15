@@ -3,6 +3,8 @@ package ua.ihromant.mathutils.group;
 import ua.ihromant.mathutils.IntList;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.IntStream;
 
 public class TableGroup implements Group {
@@ -10,6 +12,8 @@ public class TableGroup implements Group {
     private final int[] inverses;
     private final int[][] squareRoots;
     private final String label;
+    private int[][] cachedAuth;
+    private Map<Integer, List<SubGroup>> cachedSubGroups;
 
     public TableGroup(int[][] operationTable) {
         this(null, operationTable);
@@ -64,5 +68,21 @@ public class TableGroup implements Group {
     @Override
     public int[] squareRoots(int from) {
         return squareRoots[from];
+    }
+
+    @Override
+    public int[][] auth() {
+        if (cachedAuth == null) {
+            cachedAuth = Group.super.auth();
+        }
+        return cachedAuth;
+    }
+
+    @Override
+    public Map<Integer, List<SubGroup>> groupedSubGroups() {
+        if (cachedSubGroups == null) {
+            cachedSubGroups = Group.super.groupedSubGroups();
+        }
+        return cachedSubGroups;
     }
 }
