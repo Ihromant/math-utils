@@ -54,7 +54,7 @@ public class GaloisFieldTest {
         field.elements().forEach(a -> field.elements().forEach(b -> field.elements() // (a + b) + c = a + (b + c)
                 .forEach(c -> assertEquals(field.add(a, field.add(b, c)), field.add(field.add(a, b), c)))));
         field.elements().forEach(a -> assertEquals(field.add(a, 0), a)); // a + 0 = a
-        field.elements().forEach(a -> assertEquals(field.mul(a, 0), 0)); // a * 0 = 0
+        field.elements().forEach(a -> assertEquals(0, field.mul(a, 0))); // a * 0 = 0
         field.elements().forEach(a -> assertEquals(field.mul(a, 1), a)); // a * 1 = a
         field.elements().forEach(a -> field.elements()  // a * b = b * a
                 .forEach(b -> assertEquals(field.mul(a, b), field.mul(b, a))));
@@ -64,7 +64,7 @@ public class GaloisFieldTest {
                 .forEach(c -> assertEquals(field.mul(field.add(a, b), c), field.add(field.mul(a, c), field.mul(b, c))))));
         field.elements().forEach(a -> field.elements().forEach(b -> field.elements() // // a * (b + c) = a * b + a * c
                 .forEach(c -> assertEquals(field.mul(a, field.add(b, c)), field.add(field.mul(a, b), field.mul(a, c))))));
-        field.elements().skip(1).forEach(a -> assertEquals(field.mul(a, field.inverse(a)), 1));
+        field.elements().skip(1).forEach(a -> assertEquals(1, field.mul(a, field.inverse(a))));
     }
 
     @Test // a + b = b + a

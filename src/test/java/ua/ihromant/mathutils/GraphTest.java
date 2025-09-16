@@ -19,15 +19,11 @@ public class GraphTest {
         FixBS p = new FixBS(6);
         p.set(0, 6);
         IntList l = new IntList(6);
-        g.bronKerb(l, p, new FixBS(6), arr -> {
-            System.out.println(Arrays.toString(arr.toArray()));
-        });
+        g.bronKerb(l, p, new FixBS(6), arr -> System.out.println(Arrays.toString(arr.toArray())));
         System.out.println();
         FixBS p1 = new FixBS(6);
         p1.set(0, 6);
         IntList l1 = new IntList(6);
-        g.bronKerbPivot(l1, p1, new FixBS(6), arr -> {
-            System.out.println(Arrays.toString(arr.toArray()));
-        });
+        g.bronKerbPivot(l1, p1, new FixBS(6), arr -> System.out.println(Arrays.toString(arr.toArray())));
     }
 }

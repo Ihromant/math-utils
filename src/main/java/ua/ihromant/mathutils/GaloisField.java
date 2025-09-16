@@ -105,7 +105,7 @@ public class GaloisField {
         }
         List<Integer> result = new ArrayList<>();
         while (i != 0) {
-            result.add(0, i % base);
+            result.addFirst(i % base);
             i = i / base;
         }
         return result.stream().mapToInt(Integer::intValue).toArray();

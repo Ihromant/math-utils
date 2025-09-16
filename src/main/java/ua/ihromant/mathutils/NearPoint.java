@@ -42,7 +42,7 @@ public record NearPoint(NearField x, NearField y) {
             BitSet line = new BitSet();
             NearPoint start = new NearPoint(FIELD[i], NearField.ZERO);
             line.set(start.idx());
-            RAYS.get(0).forEach(p -> line.set(p.add(start).idx()));
+            RAYS.getFirst().forEach(p -> line.set(p.add(start).idx()));
             line.set(FIELD.length * FIELD.length + FIELD.length); // 90
             lines[lineIdx] = line;
         }
