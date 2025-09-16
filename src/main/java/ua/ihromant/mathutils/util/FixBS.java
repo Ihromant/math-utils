@@ -8,15 +8,13 @@ import java.util.Objects;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class FixBS implements Comparable<FixBS> {
-    private final long[] words;
-
+public record FixBS(long[] words) implements Comparable<FixBS> {
     private static final long WORD_MASK = 0xffffffffffffffffL;
     private static final int ADDRESS_BITS_PER_WORD = 6;
     private static final int BITS_PER_WORD = 1 << ADDRESS_BITS_PER_WORD;
 
     public FixBS(int n) {
-        this.words = new long[len(n)];
+        this(new long[len(n)]);
     }
 
     public static int len(int n) {
@@ -24,8 +22,8 @@ public class FixBS implements Comparable<FixBS> {
     }
 
     @JsonCreator
-    public FixBS(@JsonProperty("words") long[] arr) {
-        this.words = arr;
+    public FixBS(@JsonProperty long[] words) {
+        this.words = words;
     }
 
     private static int wordIndex(int bitIndex) {
@@ -123,10 +121,10 @@ public class FixBS implements Comparable<FixBS> {
         }
 
         int startWordIndex = wordIndex(fromIndex);
-        int endWordIndex   = wordIndex(toIndex - 1);
+        int endWordIndex = wordIndex(toIndex - 1);
 
         long firstWordMask = WORD_MASK << fromIndex;
-        long lastWordMask  = WORD_MASK >>> -toIndex;
+        long lastWordMask = WORD_MASK >>> -toIndex;
         if (startWordIndex == endWordIndex) {
             // Case 1: One word
             words[startWordIndex] ^= (firstWordMask & lastWordMask);
@@ -136,7 +134,7 @@ public class FixBS implements Comparable<FixBS> {
             words[startWordIndex] ^= firstWordMask;
 
             // Handle intermediate words, if any
-            for (int i = startWordIndex+1; i < endWordIndex; i++)
+            for (int i = startWordIndex + 1; i < endWordIndex; i++)
                 words[i] ^= WORD_MASK;
 
             // Handle last word
@@ -289,7 +287,9 @@ public class FixBS implements Comparable<FixBS> {
                 if (++i < 0) break;
                 if ((i = nextSetBit(i)) < 0) break;
                 int endOfRun = nextClearBit(i);
-                do { b.append(", ").append(i); }
+                do {
+                    b.append(", ").append(i);
+                }
                 while (++i != endOfRun);
             }
         }
@@ -516,10 +516,6 @@ public class FixBS implements Comparable<FixBS> {
         next.set(max + 1, max + cnt + 1);
 
         return next;
-    }
-
-    public long[] words() {
-        return words;
     }
 
     public static FixBS of(int v, int... values) {

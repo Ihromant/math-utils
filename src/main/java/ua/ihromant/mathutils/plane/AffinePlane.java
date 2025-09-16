@@ -11,15 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-public class AffinePlane {
-    private final Liner plane;
-    private final int dl;
-
-    public AffinePlane(Liner plane, int dl) {
-        this.plane = plane;
-        this.dl = dl;
-    }
-
+public record AffinePlane(Liner plane, int dl) {
     public int[] line(int line) {
         if (line == dl) {
             throw new IllegalArgumentException();

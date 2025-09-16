@@ -141,8 +141,8 @@ public class FuzzyBalLinerTest {
 
     private static List<FuzzyBalLiner> nextStageAlt(List<FuzzyBalLiner> partials, int currPoint, BiConsumer<FuzzyBalLiner, Col> checker) {
         Map<FixBS, FuzzyBalLiner> nonIso = partials.stream().parallel().<FuzzyBalLiner>mapMulti((lnr, sink) -> {
-            int v = lnr.getV();
-            int k = lnr.getK();
+            int v = lnr.v();
+            int k = lnr.k();
             int r = (v - 1) / (k - 1);
             int allC = r * (k - 1) * (k - 2) / 2;
             int all = (v - 1) * (v - 2) / 2;
@@ -176,7 +176,7 @@ public class FuzzyBalLinerTest {
 
     private static Integer findNotJoined(FuzzyBalLiner liner, int currPoint) {
         ex: for (int i = 0; i < currPoint; i++) {
-            for (int j = 0; j < liner.getV(); j++) {
+            for (int j = 0; j < liner.v(); j++) {
                 if (liner.collinear(currPoint, i, j)) {
                     continue ex;
                 }
@@ -210,7 +210,7 @@ public class FuzzyBalLinerTest {
     private static void additionalCheck(FuzzyBalLiner copy, Col c) {
         FixBS nl = copy.line(c.f(), c.s());
         int crd = nl.cardinality();
-        int k = copy.getK();
+        int k = copy.k();
         if (crd == k) {
             return;
         }
@@ -262,11 +262,11 @@ public class FuzzyBalLinerTest {
     }
 
     private static Liner toLiner(FuzzyBalLiner liner) {
-        return new Liner(liner.getV(), liner.lines().stream().map(l -> l.stream().toArray()).toArray(int[][]::new));
+        return new Liner(liner.v(), liner.lines().stream().map(l -> l.stream().toArray()).toArray(int[][]::new));
     }
 
     private static void updateAP(FuzzyBalLiner liner, Col col) {
-        int v = liner.getV();
+        int v = liner.v();
         while (true) {
             Queue<Rel> queue = new ArrayDeque<>(v);
             for (int a = 0; a < v; a++) {
@@ -327,7 +327,7 @@ public class FuzzyBalLinerTest {
     }
 
     private static void checkUnderCap(FuzzyBalLiner liner, Col col, int cap) {
-        int v = liner.getV();
+        int v = liner.v();
         for (int a = 0; a < v; a++) {
             checkUnderCap(liner, cap, v, a, col.f(), col.s());
             checkUnderCap(liner, cap, v, a, col.f(), col.t());

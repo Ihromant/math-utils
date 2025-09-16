@@ -7,12 +7,12 @@ import java.util.concurrent.ThreadLocalRandom;
 public record NegativeLine(Rational y, Rational tan) implements MoultonLine {
     @Override
     public MoultonPoint intersection(MoultonLine other) {
-        if (other instanceof NegativeLine nl) {
-            if (nl.tan().equals(tan)) {
+        if (other instanceof NegativeLine(Rational y1, Rational tan1)) {
+            if (tan1.equals(tan)) {
                 return null;
             } else {
-                Rational diffY = nl.y().sub(this.y());
-                Rational diffTan = nl.tan().sub(this.tan());
+                Rational diffY = y1.sub(this.y());
+                Rational diffTan = tan1.sub(this.tan());
                 Rational x = diffY.div(diffTan).neg();
                 if (x.numer() < 0) {
                     x = x.mul(Rational.of(2));

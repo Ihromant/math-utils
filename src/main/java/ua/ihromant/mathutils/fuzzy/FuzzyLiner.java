@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils.fuzzy;
 
-import lombok.Getter;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayDeque;
@@ -13,19 +12,9 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 
-@Getter
-public class FuzzyLiner {
-    private final int pc;
-    private final Map<Rel, Update> relations;
-
+public record FuzzyLiner(int pc, Map<Rel, Update> relations) {
     public FuzzyLiner(int pc) {
-        this.pc = pc;
-        this.relations = new HashMap<>();
-    }
-
-    private FuzzyLiner(int pc, Map<Rel, Update> relations) {
-        this.pc = pc;
-        this.relations = relations;
+        this(pc, new HashMap<>());
     }
 
     public static FuzzyLiner of(int[][] lines, Triple[] triangles) {

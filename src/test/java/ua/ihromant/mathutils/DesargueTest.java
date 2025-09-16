@@ -217,7 +217,7 @@ public class DesargueTest {
         return !Rational.ZERO.equals(slope) && slope.max() <= 6;
     }
 
-    public class TriplesIterator<T> implements Iterable<Triple<T>> {
+    public static class TriplesIterator<T> implements Iterable<Triple<T>> {
         private final java.util.List<T> list;
         private final int size;
 
@@ -243,5 +243,5 @@ public class DesargueTest {
         }
     }
 
-    record Triple<T>(T f, T s, T t) { }
+    public record Triple<T>(T f, T s, T t) { }
 }

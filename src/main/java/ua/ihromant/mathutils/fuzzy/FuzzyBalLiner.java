@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils.fuzzy;
 
-import lombok.Getter;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayDeque;
@@ -15,22 +14,9 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.IntStream;
 
-@Getter
-public class FuzzyBalLiner {
-    private final int v;
-    private final int k;
-    private final FixBS l;
-    private final FixBS t;
-
+public record FuzzyBalLiner(int v, int k, FixBS l, FixBS t) {
     private FuzzyBalLiner(int v, int k) {
         this(v, k, new FixBS(v * v * v), new FixBS(v * v * v));
-    }
-
-    private FuzzyBalLiner(int v, int k, FixBS l, FixBS t) {
-        this.v = v;
-        this.k = k;
-        this.l = l;
-        this.t = t;
     }
 
     public static FuzzyBalLiner of(int v, int k, int[][] lines) {

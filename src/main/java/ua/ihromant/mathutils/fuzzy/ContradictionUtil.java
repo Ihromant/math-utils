@@ -27,14 +27,14 @@ public class ContradictionUtil {
             };
             System.out.println("From one side: ");
             SequencedMap<Rel, Update> stack = new LinkedHashMap<>();
-            reconstruct(rel, base.getRelations(), stack);
+            reconstruct(rel, base.relations(), stack);
             for (Update u : stack.reversed().values()) {
                 System.out.println(u.base() + " follows from " + u.reasonName() + " due to "
                         + Arrays.stream(u.reasons()).map(Object::toString).collect(Collectors.joining(" ")));
             }
             System.out.println("But from the other side: ");
             stack = new LinkedHashMap<>();
-            reconstruct(opposite, base.getRelations(), stack);
+            reconstruct(opposite, base.relations(), stack);
             for (Update u : stack.reversed().values()) {
                 System.out.println(u.base() + " follows from " + u.reasonName() + " due to "
                         + Arrays.stream(u.reasons()).map(Object::toString).collect(Collectors.joining(" ")));
@@ -218,8 +218,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processPAlt(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int a = 0; a < pc; a++) {
             for (int c = a + 1; c < pc; c++) {
                 for (int ab1a1b = 0; ab1a1b < pc; ab1a1b++) {
@@ -239,7 +239,7 @@ public class ContradictionUtil {
                             int b1 = -1;
                             int c1 = -1;
                             int ac1a1c = -1;
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a1, ab1a1b, i) && liner.collinear(a, c, i)) {
                                     if (b < 0) {
                                         b = i;
@@ -254,7 +254,7 @@ public class ContradictionUtil {
                             if (b1 < 0 || b < 0 || !liner.triangle(a1, b1, a) || !liner.triangle(a1, b1, b) || !liner.triangle(a1, b1, c) || !liner.triangle(a, c, b1)) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a1, b1, i) && liner.collinear(b, bc1b1c, i)) {
                                     if (c1 < 0) {
                                         c1 = i;
@@ -264,7 +264,7 @@ public class ContradictionUtil {
                             if (c1 < 0 || !liner.triangle(a, b, c1)) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a1, c, i) && liner.collinear(a, c1, i)) {
                                     if (ac1a1c < 0) {
                                         ac1a1c = i;
@@ -289,8 +289,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processP(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int a = 0; a < pc; a++) {
             for (int b = a + 1; b < pc; b++) {
                 if (!liner.distinct(a, b)) {
@@ -315,7 +315,7 @@ public class ContradictionUtil {
                                 int ab1a1b = -1;
                                 int ac1a1c = -1;
                                 int bc1b1c = -1;
-                                for (int i = 0; i < liner.getPc(); i++) {
+                                for (int i = 0; i < liner.pc(); i++) {
                                     if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
                                         if (ab1a1b < 0) {
                                             ab1a1b = i;
@@ -351,8 +351,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processP1(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int a = 0; a < pc; a++) {
             for (int b = 0; b < pc; b++) {
                 if (!liner.distinct(a, b)) {
@@ -374,7 +374,7 @@ public class ContradictionUtil {
                             int ab1a1b = -1;
                             int ac1a1c = -1;
                             int bc1b1c = -1;
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a1, b, i) && liner.collinear(a, b1, i)) {
                                     ab1a1b = i;
                                     break;
@@ -383,7 +383,7 @@ public class ContradictionUtil {
                             if (ab1a1b < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a1, b1, i) && liner.collinear(c, ab1a1b, i)) {
                                     c1 = i;
                                     break;
@@ -392,7 +392,7 @@ public class ContradictionUtil {
                             if (c1 < 0 || !liner.triangle(a, b, c1)) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
                                     bc1b1c = i;
                                 }
@@ -418,8 +418,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processPS(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -482,8 +482,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processP1S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -503,7 +503,7 @@ public class ContradictionUtil {
                         int c = -1;
                         int c1 = -1;
                         int bc1b1c = -1;
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(o, a, i) && liner.collinear(a1, ab1a1b, i)) {
                                 b = i;
                             }
@@ -514,7 +514,7 @@ public class ContradictionUtil {
                         if (b < 0 || b1 < 0) {
                             continue;
                         }
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(b, b1, i) && liner.collinear(o, ab1a1b, i)) {
                                 ac1a1c = i;
                                 break;
@@ -523,7 +523,7 @@ public class ContradictionUtil {
                         if (ac1a1c < 0) {
                             continue;
                         }
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(a, ac1a1c, i) && liner.collinear(o, a1, i)) {
                                 c1 = i;
                             }
@@ -534,7 +534,7 @@ public class ContradictionUtil {
                         if (c < 0 || c1 < 0) {
                             continue;
                         }
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
                                 bc1b1c = i;
                                 break;
@@ -557,8 +557,8 @@ public class ContradictionUtil {
     }
 
     public static List<Rel> processP2S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Rel> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -578,7 +578,7 @@ public class ContradictionUtil {
                         int c = -1;
                         int c1 = -1;
                         int bc1b1c = -1;
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(o, a, i) && liner.collinear(a1, ab1a1b, i)) {
                                 b = i;
                             }
@@ -589,7 +589,7 @@ public class ContradictionUtil {
                         if (b < 0 || b1 < 0) {
                             continue;
                         }
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(b, b1, i) && liner.collinear(o, ab1a1b, i)) {
                                 ac1a1c = i;
                                 break;
@@ -598,7 +598,7 @@ public class ContradictionUtil {
                         if (ac1a1c < 0) {
                             continue;
                         }
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(a, ac1a1c, i) && liner.collinear(o, a1, i)) {
                                 c1 = i;
                             }
@@ -609,7 +609,7 @@ public class ContradictionUtil {
                         if (c < 0 || c1 < 0) {
                             continue;
                         }
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(b, c1, i) && liner.collinear(b1, c, i)) {
                                 bc1b1c = i;
                                 break;
@@ -629,8 +629,8 @@ public class ContradictionUtil {
     }
 
     public static List<Rel> processP3S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Rel> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Rel> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -659,7 +659,7 @@ public class ContradictionUtil {
                                     int ab1a1b = -1;
                                     int ac1a1c = -1;
                                     int bc1b1c = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
+                                    for (int i = 0; i < liner.pc(); i++) {
                                         if (liner.collinear(a, b1, i) && liner.collinear(a1, b, i)) {
                                             if (ab1a1b < 0) {
                                                 ab1a1b = i;
@@ -717,8 +717,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD3(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -801,8 +801,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD2(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -884,8 +884,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD2S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -963,8 +963,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD1(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -1042,8 +1042,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD1S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -1073,7 +1073,7 @@ public class ContradictionUtil {
                                     int aba1b1 = -1;
                                     int bcb1c1 = -1;
                                     int aca1c1 = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
+                                    for (int i = 0; i < liner.pc(); i++) {
                                         if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
                                             if (aba1b1 < 0) {
                                                 aba1b1 = i;
@@ -1122,8 +1122,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD3S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {
@@ -1153,7 +1153,7 @@ public class ContradictionUtil {
                                     int aba1b1 = -1;
                                     int bcb1c1 = -1;
                                     int aca1c1 = -1;
-                                    for (int i = 0; i < liner.getPc(); i++) {
+                                    for (int i = 0; i < liner.pc(); i++) {
                                         if (liner.collinear(a, b, i) && liner.collinear(a1, b1, i)) {
                                             if (aba1b1 < 0) {
                                                 aba1b1 = i;
@@ -1205,24 +1205,24 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processFullFano(FuzzyLiner liner) {
-        List<Update> res = new ArrayList<>(liner.getPc());
-        for (int a = 0; a < liner.getPc(); a++) {
-            for (int b = a + 1; b < liner.getPc(); b++) {
+        List<Update> res = new ArrayList<>(liner.pc());
+        for (int a = 0; a < liner.pc(); a++) {
+            for (int b = a + 1; b < liner.pc(); b++) {
                 if (!liner.distinct(a, b)) {
                     continue;
                 }
-                for (int c = b + 1; c < liner.getPc(); c++) {
+                for (int c = b + 1; c < liner.pc(); c++) {
                     if (!liner.triangle(a, b, c)) {
                         continue;
                     }
-                    for (int d = c + 1; d < liner.getPc(); d++) {
+                    for (int d = c + 1; d < liner.pc(); d++) {
                         if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
                             continue;
                         }
                         int abcd = -1;
                         int acbd = -1;
                         int adbc = -1;
-                        for (int i = 0; i < liner.getPc(); i++) {
+                        for (int i = 0; i < liner.pc(); i++) {
                             if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
                                 if (abcd < 0) {
                                     abcd = i;
@@ -1254,21 +1254,21 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processInversivePlus(FuzzyLiner liner) {
-        List<Update> res = new ArrayList<>(liner.getPc());
-        for (int a = 0; a < liner.getPc(); a++) {
-            for (int b = 0; b < liner.getPc(); b++) {
+        List<Update> res = new ArrayList<>(liner.pc());
+        for (int a = 0; a < liner.pc(); a++) {
+            for (int b = 0; b < liner.pc(); b++) {
                 if (!liner.distinct(a, b)) {
                     continue;
                 }
-                for (int c = 0; c < liner.getPc(); c++) {
+                for (int c = 0; c < liner.pc(); c++) {
                     if (!liner.triangle(a, b, c)) {
                         continue;
                     }
-                    for (int d = 0; d < liner.getPc(); d++) {
+                    for (int d = 0; d < liner.pc(); d++) {
                         if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
                             continue;
                         }
-                        for (int a1 = 0; a1 < liner.getPc(); a1++) {
+                        for (int a1 = 0; a1 < liner.pc(); a1++) {
                             if (!liner.collinear(a, d, a1)) {
                                 continue;
                             }
@@ -1278,7 +1278,7 @@ public class ContradictionUtil {
                             int b1 = -1;
                             int c1 = -1;
                             int d1 = -1;
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
                                     if (h < 0) {
                                         h = i;
@@ -1293,7 +1293,7 @@ public class ContradictionUtil {
                             if (h < 0 || o < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(h, o, i) && liner.collinear(a, d, i)) {
                                     if (v < 0) {
                                         v = i;
@@ -1303,7 +1303,7 @@ public class ContradictionUtil {
                             if (v < 0 || !liner.distinct(a1, v)) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(o, a1, i) && liner.collinear(v, c, i)) {
                                     if (c1 < 0) {
                                         c1 = i;
@@ -1313,7 +1313,7 @@ public class ContradictionUtil {
                             if (c1 < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(v, a1, i) && liner.collinear(h, c1, i)) {
                                     if (d1 < 0) {
                                         d1 = i;
@@ -1323,7 +1323,7 @@ public class ContradictionUtil {
                             if (d1 < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(h, a1, i) && liner.collinear(o, d1, i)) {
                                     if (b1 < 0) {
                                         b1 = i;
@@ -1348,21 +1348,21 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processAssocPlus(FuzzyLiner liner) {
-        List<Update> res = new ArrayList<>(liner.getPc());
-        for (int a = 0; a < liner.getPc(); a++) {
-            for (int b = 0; b < liner.getPc(); b++) {
+        List<Update> res = new ArrayList<>(liner.pc());
+        for (int a = 0; a < liner.pc(); a++) {
+            for (int b = 0; b < liner.pc(); b++) {
                 if (!liner.distinct(a, b)) {
                     continue;
                 }
-                for (int c = 0; c < liner.getPc(); c++) {
+                for (int c = 0; c < liner.pc(); c++) {
                     if (!liner.triangle(a, b, c)) {
                         continue;
                     }
-                    for (int d = 0; d < liner.getPc(); d++) {
+                    for (int d = 0; d < liner.pc(); d++) {
                         if (!liner.triangle(a, b, d) || !liner.triangle(a, c, d) || !liner.triangle(b, c, d)) {
                             continue;
                         }
-                        for (int a1 = 0; a1 < liner.getPc(); a1++) {
+                        for (int a1 = 0; a1 < liner.pc(); a1++) {
                             if (!liner.triangle(a, c, a1) || !liner.triangle(a, b, a1)) {
                                 continue;
                             }
@@ -1372,7 +1372,7 @@ public class ContradictionUtil {
                             int b1 = -1;
                             int c1 = -1;
                             int d1 = -1;
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(a, b, i) && liner.collinear(c, d, i)) {
                                     if (h < 0) {
                                         h = i;
@@ -1387,7 +1387,7 @@ public class ContradictionUtil {
                             if (h < 0 || v < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(h, v, i) && liner.collinear(a, a1, i)) {
                                     if (o < 0) {
                                         o = i;
@@ -1397,7 +1397,7 @@ public class ContradictionUtil {
                             if (o < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(v, a1, i) && liner.collinear(o, c, i)) {
                                     if (c1 < 0) {
                                         c1 = i;
@@ -1407,7 +1407,7 @@ public class ContradictionUtil {
                             if (c1 < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(o, d, i) && liner.collinear(h, c1, i)) {
                                     if (d1 < 0) {
                                         d1 = i;
@@ -1417,7 +1417,7 @@ public class ContradictionUtil {
                             if (d1 < 0) {
                                 continue;
                             }
-                            for (int i = 0; i < liner.getPc(); i++) {
+                            for (int i = 0; i < liner.pc(); i++) {
                                 if (liner.collinear(h, a1, i) && liner.collinear(v, d1, i)) {
                                     if (b1 < 0) {
                                         b1 = i;
@@ -1442,8 +1442,8 @@ public class ContradictionUtil {
     }
 
     public static List<Update> processD11S(FuzzyLiner liner) {
-        int pc = liner.getPc();
-        List<Update> res = new ArrayList<>(liner.getPc());
+        int pc = liner.pc();
+        List<Update> res = new ArrayList<>(liner.pc());
         for (int o = 0; o < pc; o++) {
             for (int a = 0; a < pc; a++) {
                 if (!liner.distinct(o, a)) {

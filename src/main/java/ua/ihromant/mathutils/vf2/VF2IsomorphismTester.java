@@ -11,7 +11,6 @@ package ua.ihromant.mathutils.vf2;
  *      on Pattern Analysis and Machine Intelligence,</i> <b>26:10</b>.  2004.
  *      Available <a
  *      href="http://ieeexplore.ieee.org/xpls/abs_all.jsp?arnumber=1323804">here</a>
- *
  * </ul> This implementation will test that the number of edges between two
  * vertices are equivalent.  However, the implementation does not test that the
  * types are equivalent.  In essence, <b>this class checks only for structural
