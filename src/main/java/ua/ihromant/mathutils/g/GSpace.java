@@ -285,16 +285,13 @@ public class GSpace {
     }
 
     public boolean minimal(FixBS block) {
-        for (int[] auth : auths) {
+        return Arrays.stream(auths).parallel().allMatch(auth -> {
             FixBS alt = new FixBS(v);
             for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
                 alt.set(auth[el]);
             }
-            if (alt.compareTo(block) < 0) {
-                return false;
-            }
-        }
-        return true;
+            return alt.compareTo(block) >= 0;
+        });
     }
 
     public boolean twoMinimal(State[] states) {
