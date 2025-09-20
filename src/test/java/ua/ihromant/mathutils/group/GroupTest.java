@@ -78,7 +78,7 @@ public class GroupTest {
 
     @Test
     public void testGroupedSubgroups() {
-        Group gr = new PermutationGroup(5, false);
+        Group gr = new CyclicProduct(17, 17).asTable();
         System.out.println(gr.groupedSubGroups().entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
     }
 
