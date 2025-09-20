@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.group;
 
+import lombok.Setter;
 import ua.ihromant.mathutils.IntList;
 
 import java.util.Arrays;
@@ -11,7 +12,10 @@ public class TableGroup implements Group {
     private final int[][] operationTable;
     private final int[] inverses;
     private final int[][] squareRoots;
+    private final int[] orders;
+    private final int[][] powers;
     private final String label;
+    @Setter
     private int[][] cachedAuth;
     private Map<Integer, List<SubGroup>> cachedSubGroups;
 
@@ -28,6 +32,18 @@ public class TableGroup implements Group {
             roots[sqr].add(i);
         }
         this.squareRoots = Arrays.stream(roots).map(IntList::toArray).toArray(int[][]::new);
+        this.orders = new int[operationTable.length];
+        this.powers = new int[operationTable.length][operationTable.length];
+        for (int el = 0; el < operationTable.length; el++) {
+            int comb = 0;
+            for (int ord = 1; ord < operationTable.length; ord++) {
+                comb = op(comb, el);
+                if (comb == 0 && orders[el] == 0) {
+                    orders[el] = ord;
+                }
+                powers[el][ord] = comb;
+            }
+        }
         this.label = label;
     }
 
@@ -44,6 +60,16 @@ public class TableGroup implements Group {
     @Override
     public int order() {
         return inverses.length;
+    }
+
+    @Override
+    public int order(int a) {
+        return orders[a];
+    }
+
+    @Override
+    public int mul(int a, int cff) {
+        return powers[a][cff];
     }
 
     @Override
