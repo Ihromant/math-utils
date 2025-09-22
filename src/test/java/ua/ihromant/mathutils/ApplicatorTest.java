@@ -106,7 +106,7 @@ public class ApplicatorTest {
         assertEquals(12168, space.authLength());
         int v = space.v();
         System.out.println("Randomized test");
-        IntStream.range(0, 100).parallel().forEach(i -> {
+        IntStream.range(0, 100).parallel().forEach(_ -> {
             int[] auth = space.auth(ThreadLocalRandom.current().nextInt(space.authLength()));
             for (int a = 0; a < v; a++) {
                 for (int b = a + 1; b < v; b++) {
@@ -129,7 +129,7 @@ public class ApplicatorTest {
         assertEquals(73728, space1.authLength());
         int ov = space1.v();
         System.out.println("Randomized test");
-        IntStream.range(0, 100).parallel().forEach(i -> {
+        IntStream.range(0, 100).parallel().forEach(_ -> {
             int[] auth = space1.auth(ThreadLocalRandom.current().nextInt(space1.authLength()));
             for (int a = 0; a < ov; a++) {
                 for (int b = a + 1; b < ov; b++) {
@@ -155,13 +155,13 @@ public class ApplicatorTest {
         Group group = new PermutationGroup(5, true);
         GSpace space = new GSpace(k, group, true, 1, 60, 60, 60, 60, 60);
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
-        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
             System.out.println(arr[0].block());
             return true;
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+        searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, sCons);
         System.out.println(space.minimalBlock(FixBS.of(space.v(), 0, 1, 15, 46, 51)));
         FixBS[] blocks = {FixBS.of(space.v(), 0, 1, 15, 46, 51),
                 FixBS.of(space.v(), 0, 3, 8, 11, 64),
@@ -188,13 +188,13 @@ public class ApplicatorTest {
         System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
         List<State[]> singles = new ArrayList<>();
-        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
             singles.add(arr);
             return true;
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+        searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, sCons);
         System.out.println("Singles size: " + singles.size());
         AtomicInteger cnt = new AtomicInteger();
         AtomicInteger ai = new AtomicInteger();
@@ -235,13 +235,13 @@ public class ApplicatorTest {
                 System.out.println(GroupIndex.identify(group) + " " + Arrays.deepToString(conf) + " " + space.v() + " " + k + " auths: " + space.authLength());
                 int sqr = v * v;
                 List<State[]> singles = new ArrayList<>();
-                BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+                BiPredicate<State[], FixBS> sCons = (arr, _) -> {
                     singles.add(arr);
                     return true;
                 };
                 int val = 1;
                 State state = space.forInitial(0, val);
-                searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+                searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, sCons);
                 System.out.println("Singles size: " + singles.size());
                 AtomicInteger cnt = new AtomicInteger();
                 AtomicInteger ai = new AtomicInteger();
@@ -283,17 +283,17 @@ public class ApplicatorTest {
         System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
         List<State[]> singles = new ArrayList<>();
-        BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+        BiPredicate<State[], FixBS> fCons = (arr, _) -> {
             singles.add(arr);
             return true;
         };
         int val = 1;
         State state = space.forInitial(0, val);
-        searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, fCons);
+        searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, fCons);
         System.out.println("Singles size: " + singles.size());
         List<State[]> pairs = new ArrayList<>();
         List<State[]> sync = Collections.synchronizedList(pairs);
-        BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
             if (arr.length < 2) {
                 return false;
             }
@@ -345,6 +345,94 @@ public class ApplicatorTest {
         System.out.println("Results " + ai);
     }
 
+    @Test
+    public void twoStageMul() throws IOException {
+        int k = 8;
+        int gs = 450;
+        int mt = 2;
+        int c = GroupIndex.groupCount(gs);
+        System.out.println(c);
+        for (int j = 10; j <= c; j++) {
+            Group group = GroupIndex.group(gs, j);
+            Map<Integer, List<SubGroup>> subs = group.groupedSubGroups();
+            for (int t = 0; t < subs.getOrDefault(mt, List.of()).size(); t++) {
+                //for (int u = 0; u < subs.getOrDefault(48, List.of()).size(); u++) {
+                    GSpace space;
+                    try {
+                        space = new GSpace(k, group, true, new int[][]{{mt, t}});
+                    } catch (IllegalArgumentException e) {
+                        System.out.println("Not empty");
+                        continue;
+                    }
+                    int v = space.v();
+                    System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
+                    int sqr = v * v;
+                    List<State[]> singles = new ArrayList<>();
+                    BiPredicate<State[], FixBS> fCons = (arr, _) -> {
+                        singles.add(arr);
+                        return true;
+                    };
+                    int val = 1;
+                    State state = space.forInitial(0, val);
+                    searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, fCons);
+                    System.out.println("Singles size: " + singles.size());
+                    List<State[]> pairs = new ArrayList<>();
+                    List<State[]> sync = Collections.synchronizedList(pairs);
+                    BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+                        if (arr.length < 2) {
+                            return false;
+                        }
+                        if (space.twoMinimal(arr)) {
+                            sync.add(arr);
+                        }
+                        return true;
+                    };
+                    AtomicInteger cnt = new AtomicInteger();
+                    singles.stream().parallel().forEach(tuple -> {
+                        State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
+                        FixBS newFilter = space.emptyFilter().copy();
+                        for (State st : pr) {
+                            st.updateFilter(newFilter, space);
+                        }
+                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
+                        int vl = cnt.incrementAndGet();
+                        if (vl % 10 == 0) {
+                            System.out.println(vl);
+                        }
+                    });
+                    System.out.println("Pairs " + pairs.size());
+                    AtomicInteger ai = new AtomicInteger();
+                    cnt.set(0);
+                    BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
+                        if (!ftr.isFull(sqr)) {
+                            return false;
+                        }
+                        if (!space.minimal(arr)) {
+                            return true;
+                        }
+                        ai.incrementAndGet();
+                        Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+                        System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+                        return true;
+                    };
+                    pairs.stream().parallel().forEach(tuple -> {
+                        State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
+                        FixBS newFilter = space.emptyFilter().copy();
+                        for (State st : pr) {
+                            st.updateFilter(newFilter, space);
+                        }
+                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, tCons);
+                        int vl = cnt.incrementAndGet();
+                        if (vl % 100 == 0) {
+                            System.out.println(vl);
+                        }
+                    });
+                    System.out.println("Results " + ai);
+                //}
+            }
+        }
+    }
+
     private static void searchDesigns(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
         int v = space.v();
         if (state.size() == space.k()) {
@@ -372,7 +460,7 @@ public class ApplicatorTest {
         }
     }
 
-    private static void searchDesignsMinimal(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
+    private static void searchDesignsFirst(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
         int v = space.v();
         if (state.size() == space.k()) {
             State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
@@ -385,15 +473,15 @@ public class ApplicatorTest {
             int pair = nextFilter.nextClearBit(0);
             int snd = pair % v;
             State nextState = space.forInitial(pair / v, snd);
-            searchDesignsMinimal(space, nextFilter, nextDesign, nextState, snd, cons);
+            searchDesignsFirst(space, nextFilter, nextDesign, nextState, snd, cons);
         } else {
             int from = prev * v + prev + 1;
             int to = prev * v + v;
             for (int pair = filter.nextClearBit(from); pair >= 0 && pair < to; pair = filter.nextClearBit(pair + 1)) {
                 int el = pair % v;
                 State nextState = state.acceptElem(space, filter, el);
-                if (nextState != null && (currDesign.length > 0 || space.minimal(nextState.block()))) {
-                    searchDesignsMinimal(space, filter, currDesign, nextState, el, cons);
+                if (nextState != null && space.minimal(nextState.block())) {
+                    searchDesignsFirst(space, filter, currDesign, nextState, el, cons);
                 }
             }
         }
@@ -412,18 +500,18 @@ public class ApplicatorTest {
              PrintStream ps = new PrintStream(bos)) {
             System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
             List<State[]> singles = new ArrayList<>();
-            BiPredicate<State[], FixBS> sCons = (arr, ftr) -> {
+            BiPredicate<State[], FixBS> sCons = (arr, _) -> {
                 singles.add(arr);
                 return true;
             };
             int val = 1;
             State state = space.forInitial(0, val);
-            searchDesignsMinimal(space, space.emptyFilter(), new State[0], state, val, sCons);
+            searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, sCons);
             System.out.println(GroupIndex.identify(group) + " Singles size: " + singles.size());
             AtomicInteger cnt = new AtomicInteger();
-            BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
+            BiPredicate<State[], FixBS> tCons = (arr, _) -> {
                 if (arr.length == 2) {
-                    if (space.parMinimal(arr)) {
+                    if (space.twoMinimal(arr)) {
                         ps.println(Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(" ")));
                     }
                     return true;
@@ -560,7 +648,7 @@ public class ApplicatorTest {
                 System.out.println("Processed: " + toProcess.size() + ", to expand: " + tuples.size() + ", next size: " + nextLength);
                 AtomicInteger cnt = new AtomicInteger();
                 AtomicInteger ai = new AtomicInteger();
-                BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
+                BiPredicate<State[], FixBS> fCons = (arr, _) -> {
                     if (arr.length == nextLength) {
                         if (space.parMinimal(arr)) {
                             ai.incrementAndGet();
