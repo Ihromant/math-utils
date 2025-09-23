@@ -7,12 +7,12 @@ import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -131,7 +131,14 @@ public interface Group {
         ex: for (int gen = currGroup.nextClearBit(prev + 1); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
             FixBS nextGroup = currGroup.copy();
             FixBS additional = new FixBS(order);
-            additional.set(gen);
+            int ord = order(gen);
+            int comb = 0;
+            for (int i = 1; i < ord; i++) {
+                comb = op(comb, gen);
+                if (!currGroup.get(comb)) {
+                    additional.set(comb);
+                }
+            }
             do {
                 if (additional.nextSetBit(0) < gen) {
                     continue ex;
@@ -196,10 +203,9 @@ public interface Group {
     }
 
     default int[][] auth() {
-        Set<int[]> result = new TreeSet<>(Combinatorics::compareArr);
+        List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int order = order();
         FixBS init = FixBS.of(order, 0);
-        int[] map = new int[order];
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
         for (int i = 0; i < order; i++) {
             int ord = order(i);
@@ -211,8 +217,20 @@ public interface Group {
         }
         IntList list = new IntList(order);
         int[] gens = gens(list, init);
-        find(gens, result, new PartialMap(init, map), 0, bOrd, order);
-        return result.toArray(int[][]::new);
+        int ord = order(gens[0]);
+        Arrays.stream(bOrd[ord]).parallel().forEach(v -> {
+            PartialMap pm = new PartialMap(FixBS.of(order, 0), new int[order]);
+            for (int i = 1; i < ord; i++) {
+                int key = mul(gens[0], i);
+                int val = mul(v, i);
+                pm.keys.set(key);
+                pm.map[key] = val;
+            }
+            find(gens, result, pm, 1, bOrd, order);
+        });
+        int[][] res = result.toArray(int[][]::new);
+        Arrays.parallelSort(res, Combinatorics::compareArr);
+        return res;
     }
 
     record PartialMap(FixBS keys, int[] map) {
@@ -221,7 +239,7 @@ public interface Group {
         }
     }
 
-    private void find(int[] gens, Set<int[]> result, PartialMap currMap, int idx, int[][] byOrders, int order) {
+    private void find(int[] gens, List<int[]> result, PartialMap currMap, int idx, int[][] byOrders, int order) {
         if (gens.length == idx) {
             if (TernaryAutomorphisms.isBijective(currMap.map())) {
                 result.add(currMap.map());
@@ -230,11 +248,22 @@ public interface Group {
         }
         int gen = gens[idx];
         int ord = order(gen);
-        for (int suitVal : byOrders[ord]) {
+        ex: for (int suitVal : byOrders[ord]) {
             PartialMap nextGroup = currMap.copy();
             PartialMap additional = new PartialMap(new FixBS(order), new int[order]);
-            additional.keys.set(gen);
-            additional.map[gen] = suitVal;
+            for (int i = 1; i < ord; i++) {
+                int key = mul(gen, i);
+                int val = mul(suitVal, i);
+                if (currMap.keys.get(key)) {
+                    if (currMap.map[key] != val) {
+                        continue ex;
+                    } else {
+                        continue;
+                    }
+                }
+                additional.keys.set(key);
+                additional.map[key] = val;
+            }
             do {
                 nextGroup.keys.or(additional.keys);
                 for (int k = additional.keys.nextSetBit(0); k >= 0; k = additional.keys.nextSetBit(k + 1)) {
