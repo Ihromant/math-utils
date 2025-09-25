@@ -106,7 +106,7 @@ public class ApplicatorTest {
         assertEquals(12168, space.authLength());
         int v = space.v();
         System.out.println("Randomized test");
-        IntStream.range(0, 100).parallel().forEach(_ -> {
+        IntStream.range(0, 100).parallel().forEach(uu -> {
             int[] auth = space.auth(ThreadLocalRandom.current().nextInt(space.authLength()));
             for (int a = 0; a < v; a++) {
                 for (int b = a + 1; b < v; b++) {
@@ -129,7 +129,7 @@ public class ApplicatorTest {
         assertEquals(73728, space1.authLength());
         int ov = space1.v();
         System.out.println("Randomized test");
-        IntStream.range(0, 100).parallel().forEach(_ -> {
+        IntStream.range(0, 100).parallel().forEach(uu -> {
             int[] auth = space1.auth(ThreadLocalRandom.current().nextInt(space1.authLength()));
             for (int a = 0; a < ov; a++) {
                 for (int b = a + 1; b < ov; b++) {
@@ -155,7 +155,7 @@ public class ApplicatorTest {
         Group group = new PermutationGroup(5, true);
         GSpace space = new GSpace(k, group, true, 1, 60, 60, 60, 60, 60);
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
-        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+        BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
             System.out.println(arr[0].block());
             return true;
         };
@@ -188,7 +188,7 @@ public class ApplicatorTest {
         System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
         List<State[]> singles = new ArrayList<>();
-        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+        BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
             singles.add(arr);
             return true;
         };
@@ -235,7 +235,7 @@ public class ApplicatorTest {
                 System.out.println(GroupIndex.identify(group) + " " + Arrays.deepToString(conf) + " " + space.v() + " " + k + " auths: " + space.authLength());
                 int sqr = v * v;
                 List<State[]> singles = new ArrayList<>();
-                BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+                BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
                     singles.add(arr);
                     return true;
                 };
@@ -283,7 +283,7 @@ public class ApplicatorTest {
         System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
         List<State[]> singles = new ArrayList<>();
-        BiPredicate<State[], FixBS> fCons = (arr, _) -> {
+        BiPredicate<State[], FixBS> fCons = (arr, uu) -> {
             singles.add(arr);
             return true;
         };
@@ -293,7 +293,7 @@ public class ApplicatorTest {
         System.out.println("Singles size: " + singles.size());
         List<State[]> pairs = new ArrayList<>();
         List<State[]> sync = Collections.synchronizedList(pairs);
-        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+        BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
             if (arr.length < 2) {
                 return false;
             }
@@ -352,7 +352,7 @@ public class ApplicatorTest {
         int mt = 2;
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
-        for (int j = 10; j <= c; j++) {
+        for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
             Map<Integer, List<SubGroup>> subs = group.groupedSubGroups();
             for (int t = 0; t < subs.getOrDefault(mt, List.of()).size(); t++) {
@@ -368,7 +368,7 @@ public class ApplicatorTest {
                     System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
                     int sqr = v * v;
                     List<State[]> singles = new ArrayList<>();
-                    BiPredicate<State[], FixBS> fCons = (arr, _) -> {
+                    BiPredicate<State[], FixBS> fCons = (arr, uu) -> {
                         singles.add(arr);
                         return true;
                     };
@@ -378,7 +378,7 @@ public class ApplicatorTest {
                     System.out.println("Singles size: " + singles.size());
                     List<State[]> pairs = new ArrayList<>();
                     List<State[]> sync = Collections.synchronizedList(pairs);
-                    BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+                    BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
                         if (arr.length < 2) {
                             return false;
                         }
@@ -500,7 +500,7 @@ public class ApplicatorTest {
              PrintStream ps = new PrintStream(bos)) {
             System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
             List<State[]> singles = new ArrayList<>();
-            BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+            BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
                 singles.add(arr);
                 return true;
             };
@@ -509,7 +509,7 @@ public class ApplicatorTest {
             searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, sCons);
             System.out.println(GroupIndex.identify(group) + " Singles size: " + singles.size());
             AtomicInteger cnt = new AtomicInteger();
-            BiPredicate<State[], FixBS> tCons = (arr, _) -> {
+            BiPredicate<State[], FixBS> tCons = (arr, uu) -> {
                 if (arr.length == 2) {
                     if (space.twoMinimal(arr)) {
                         ps.println(Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(" ")));
@@ -648,7 +648,7 @@ public class ApplicatorTest {
                 System.out.println("Processed: " + toProcess.size() + ", to expand: " + tuples.size() + ", next size: " + nextLength);
                 AtomicInteger cnt = new AtomicInteger();
                 AtomicInteger ai = new AtomicInteger();
-                BiPredicate<State[], FixBS> fCons = (arr, _) -> {
+                BiPredicate<State[], FixBS> fCons = (arr, uu) -> {
                     if (arr.length == nextLength) {
                         if (space.parMinimal(arr)) {
                             ai.incrementAndGet();

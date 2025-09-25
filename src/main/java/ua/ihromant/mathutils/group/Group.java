@@ -170,7 +170,7 @@ public interface Group {
                     return;
                 }
             }
-            result.computeIfAbsent(elems.cardinality(), _ -> new ArrayList<>()).add(sg);
+            result.computeIfAbsent(elems.cardinality(), uu -> new ArrayList<>()).add(sg);
         });
         return result;
     }
@@ -209,7 +209,7 @@ public interface Group {
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
         for (int i = 0; i < order; i++) {
             int ord = order(i);
-            byOrders.computeIfAbsent(ord, _ -> new FixBS(order)).set(i);
+            byOrders.computeIfAbsent(ord, uu -> new FixBS(order)).set(i);
         }
         int[][] bOrd = new int[byOrders.lastKey() + 1][0];
         for (Map.Entry<Integer, FixBS> e : byOrders.entrySet()) {
