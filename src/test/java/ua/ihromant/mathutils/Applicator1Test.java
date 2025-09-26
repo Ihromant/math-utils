@@ -30,6 +30,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -574,7 +575,8 @@ public class Applicator1Test {
         OrbitConfig conf = new OrbitConfig(106, 6);
         ObjectMapper om = new ObjectMapper();
         Map<FixBS, int[][][]> map = new HashMap<>();
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt")).parallel().forEach(l -> {
+        Stream<String> lns = Files.lines(Path.of("/home/ihromant/maths/g-spaces/chunks", conf + "all.txt"));
+        lns.parallel().forEach(l -> {
             if (!l.contains("[[[")) {
                 return;
             }
@@ -582,6 +584,7 @@ public class Applicator1Test {
             Liner lnr = conf.fromChunks(chunks);
             map.putIfAbsent(lnr.getCanonicalOld(), chunks);
         });
+        lns.close();
         System.out.println(map.size());
         new ArrayList<>(map.values()).stream().parallel().forEach(ch -> {
             Liner lnr = conf.fromChunks(ch);

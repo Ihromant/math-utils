@@ -179,7 +179,7 @@ public class BatchLinerTest {
 
     @Test
     public void test45_5() throws IOException {
-        String s = Files.lines(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-45-5-1.des")).collect(Collectors.joining());
+        String s = Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-45-5-1.des"));
         ObjectMapper om = new ObjectMapper();
         List<Liner> planes = new ArrayList<>();
         while (true) {

@@ -227,12 +227,14 @@ public class BatchIsomorphismTest {
     @Test
     public void fingerprintTest() throws IOException {
         Map<String, String> unique = new HashMap<>();
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt")).forEach(l -> {
+        Stream<String> lns = Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt"));
+        lns.forEach(l -> {
             if (!l.contains("[[")) {
                 return;
             }
             unique.putIfAbsent(l.substring(l.indexOf('{'), l.indexOf('}')), l);
         });
+        lns.close();
         unique.values().forEach(System.out::println);
     }
 
@@ -244,7 +246,8 @@ public class BatchIsomorphismTest {
         Map<String, int[][]> lns = new HashMap<>();
         Group group = GroupIndex.group(135, 3);
         int[][] auths = BibdFinder6CyclicTest.auth(group);
-        Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt")).forEach(l -> {
+        Stream<String> str = Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt"));
+        str.forEach(l -> {
             if (!l.contains("[[")) {
                 return;
             }
@@ -258,6 +261,7 @@ public class BatchIsomorphismTest {
             }
             lns.putIfAbsent(l, base);
         });
+        str.close();
         lns.keySet().forEach(System.out::println);
     }
 
