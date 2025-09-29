@@ -1083,12 +1083,17 @@ public class BatchAffineTest {
             auths.add(IntStream.range(0, proj.pointCount()).toArray());
             for (int o = 0; o < proj.pointCount(); o++) {
                 int[] lines;
-                if (proj.flag(dl, o)) {
+                // translation - point on infinite, line infinite
+                // shear - point infinite and on line which is not infinite
+                // homotety - point finite, line infinite
+                // hyperscale - point infinite, line finite, point does not belong to line
+                if (proj.flag(dl, o)) { // point in infinity
                     //lines = new int[]{dl}; // translation
-                    lines = IntStream.range(0, proj.pointCount()).toArray(); // translation + hyperscale
+                    lines = proj.lines(o); // translation + shear
+                    //lines = IntStream.range(0, proj.pointCount()).toArray(); // translation + shear + hyperscale
                 } else {
-                    //lines = proj.lines(o); // shear
-                    lines = IntStream.concat(Arrays.stream(proj.lines(o)), IntStream.of(dl)).toArray(); // shear + central
+                    lines = new int[]{}; // nothing
+                    //lines = new int[]{dl}; // homotety
                 }
                 for (int l : lines) {
                     int a = findA(proj, o, l);
@@ -1132,17 +1137,7 @@ public class BatchAffineTest {
                                 }
                             }
                         }
-                        if (proj.flag(l, o)) {
-                            auths.add(map);
-                        } else {
-                            for (int pt = 0; pt < proj.pointCount(); pt++) {
-                                int mapped = map[pt];
-                                if (map[mapped] != pt) {
-                                    continue ex;
-                                }
-                            }
-                            auths.add(map);
-                        }
+                        auths.add(map);
                     }
                 }
             }
@@ -1165,10 +1160,60 @@ public class BatchAffineTest {
                     all = next;
                 }
             }
-            Group gr = new PermutationGroup(all.toArray(int[][]::new)).asTable();
+            PermutationGroup gr = new PermutationGroup(all.toArray(int[][]::new));
             System.out.println(gr.order());
+            int pc = proj.pointCount();
+            int ts = proj.pointCount() * proj.pointCount() * proj.pointCount();
+            QuickFind qf = new QuickFind(ts);
+            for (int el = 0; el < gr.order(); el++) {
+                int[] perm = gr.permutation(el);
+                for (int i = 0; i < ts; i++) {
+                    int[] abc = to(i, pc);
+                    int[] mapped = new int[]{perm[abc[0]], perm[abc[1]], perm[abc[2]]};
+                    qf.union(i, from(mapped, pc));
+                }
+            }
+            List<FixBS> comps = new ArrayList<>(qf.components());
+            comps.removeIf(l -> {
+                int st = l.nextSetBit(0);
+                int[] abc = to(st, pc);
+                return abc[0] == abc[1] || abc[1] == abc[2] || abc[0] == abc[2]
+                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                        || proj.collinear(abc[0], abc[1], abc[2]);
+            });
+            System.out.println(comps.size());
+            for (int i = 0; i < ts; i++) {
+                int[] abc = to(i, pc);
+                int[] acb = new int[]{abc[0], abc[2], abc[1]};
+                int[] bac = new int[]{abc[1], abc[0], abc[2]};
+                int[] bca = new int[]{abc[1], abc[2], abc[0]};
+                int[] cab = new int[]{abc[2], abc[0], abc[1]};
+                int[] cba = new int[]{abc[2], abc[1], abc[0]};
+                qf.union(i, from(acb, pc));
+                qf.union(i, from(bac, pc));
+                qf.union(i, from(bca, pc));
+                qf.union(i, from(cab, pc));
+                qf.union(i, from(cba, pc));
+            }
+            List<FixBS> comps1 = new ArrayList<>(qf.components());
+            comps1.removeIf(l -> {
+                int st = l.nextSetBit(0);
+                int[] abc = to(st, pc);
+                return abc[0] == abc[1] || abc[1] == abc[2] || abc[0] == abc[2]
+                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                        || proj.collinear(abc[0], abc[1], abc[2]);
+            });
+            System.out.println(comps1.size());
             //System.out.println(GroupIndex.identify(gr));
         }
+    }
+
+    private int from(int[] abc, int pc) {
+        return abc[0] * pc * pc + abc[1] * pc + abc[2];
+    }
+
+    private int[] to(int p, int pc) {
+        return new int[]{p / pc / pc, p / pc % pc, p % pc};
     }
 
     @Test
