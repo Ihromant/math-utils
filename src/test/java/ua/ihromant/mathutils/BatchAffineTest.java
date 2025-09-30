@@ -2,7 +2,6 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.Automorphisms;
-import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.plane.AffinePlane;
@@ -149,6 +148,46 @@ public class BatchAffineTest {
                 throw new RuntimeException(e);
             }
         });
+    }
+
+    private static final String uni = """
+            5 7 8 11 15 17 18 21 29 31 32 35 37 40 41 50 51 57 58 63 66 67 69 71 76 86 88 89 93 95 102 124 131 153 160 162 166 167 169 179 184 186 188 189 192 197 198 204 205 214 215 218 220 223 224 226 234 237 238 240 244 247 248 250 267
+            4 6 8 11 13 17 18 23 28 30 32 35 39 40 41 50 51 57 58 61 66 67 68 70 78 84 88 89 92 94 100 126 129 155 161 163 166 167 171 177 185 187 188 189 194 197 198 204 205 214 215 216 220 223 225 227 232 237 238 242 244 247 249 251 267
+            2 3 10 12 14 18 21 23 29 30 32 50 51 53 54 56 72 80 90 91 93 94 98 100 102 106 107 117 118 122 125 127 129 131 135 142 143 144 147 152 154 159 173 181 184 187 190 191 197 208 211 214 215 221 230 231 233 235 239 240 242 247 248 251 267
+            14 21 27 28 29 31 32 35 42 44 45 48 51 55 57 59 67 72 74 76 77 84 86 90 91 93 102 112 117 121 122 126 131 144 149 155 156 159 166 168 169 173 175 177 179 184 190 191 197 198 200 201 207 210 213 214 220 222 235 240 248 249 250 254 267
+            """;
+
+    @Test
+    public void testMathon() throws IOException {
+        int k = 16;
+        try (InputStream is = getClass().getResourceAsStream("/math.uni");
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            System.out.println(br.readLine());
+            br.readLine();
+            String l;
+            int[] idx = new int[k * k + k + 1];
+            int[][] lns = new int[k * k + k + 1][k + 1];
+            int rn = 0;
+            while (!(l = br.readLine()).isEmpty()) {
+                for (int i = 0; i < l.length(); i++) {
+                    if (l.charAt(i) == '1') {
+                        lns[i][idx[i]++] = rn;
+                    }
+                }
+                rn++;
+            }
+            Liner mathon = new Liner(k * k + k + 1, lns);
+            LenzBarlotti lb = lenzBarlotti(mathon, k);
+            System.out.println(lb);
+            System.out.println(Arrays.toString(mathon.line(lb.lenzLns.nextSetBit(0))));
+            rn = 0;
+            for (String s : uni.split("\\n")) {
+                int[] pts = Arrays.stream(s.split(" ")).mapToInt(Integer::parseInt).toArray();
+                Liner uni = mathon.subPlane(pts);
+                BatchLinerTest.orbits(uni, rn++);
+            }
+        }
     }
 
     private record LenzBarlotti(FixBS lenzPts, FixBS lenzLns, FixBS barPts, FixBS barLns) { }
@@ -1173,7 +1212,7 @@ public class BatchAffineTest {
                     qf.union(i, from(mapped, pc));
                 }
             }
-            List<FixBS> comps = new ArrayList<>(qf.components());
+            Set<FixBS> comps = new HashSet<>(qf.components());
             comps.removeIf(l -> {
                 int st = l.nextSetBit(0);
                 int[] abc = to(st, pc);
@@ -1195,7 +1234,7 @@ public class BatchAffineTest {
                 qf.union(i, from(cab, pc));
                 qf.union(i, from(cba, pc));
             }
-            List<FixBS> comps1 = new ArrayList<>(qf.components());
+            Set<FixBS> comps1 = new HashSet<>(qf.components());
             comps1.removeIf(l -> {
                 int st = l.nextSetBit(0);
                 int[] abc = to(st, pc);
@@ -1204,6 +1243,16 @@ public class BatchAffineTest {
                         || proj.collinear(abc[0], abc[1], abc[2]);
             });
             System.out.println(comps1.size());
+            Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
+            for (FixBS comp : comps) {
+                for (FixBS comp1 : comps1) {
+                    if (comp.intersects(comp1)) {
+                        multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
+                        break;
+                    }
+                }
+            }
+            System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(v -> v.size()).sorted().toArray()));
             //System.out.println(GroupIndex.identify(gr));
         }
     }
