@@ -92,6 +92,7 @@ public class BibdFinder6CyclicTest {
         int v = ord + fixed;
         int k = 6;
         int[][] auths = auth(table);
+        FixBS orderTwo = orderTwo(table);
         List<State> states = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
             State st = arr[0];
@@ -114,12 +115,8 @@ public class BibdFinder6CyclicTest {
                 }
             }
             if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0) {
-                    for (int el = filter.nextClearBit(1); el >= 0 && el < ord; el = filter.nextClearBit(el + 1)) {
-                        if (el == table.inv(el)) {
-                            return false;
-                        }
-                    }
+                if (ord % 2 == 0 && !orderTwo.diff(filter).isEmpty()) {
+                    return false;
                 }
                 PrintStream ps = openIfMissing(base.length, streams, k, group, fixed);
                 ps.println(Arrays.deepToString(base));
@@ -285,11 +282,22 @@ public class BibdFinder6CyclicTest {
         }
     }
 
+    private static FixBS orderTwo(Group g) {
+        FixBS orderTwo = new FixBS(g.order() + 1);
+        for (int i = 0; i < g.order(); i++) {
+            if (g.order(i) == 2) {
+                orderTwo.set(i);
+            }
+        }
+        return orderTwo;
+    }
+
     private static void generate(Group group, int fixed, int k) throws IOException {
         Group table = group.asTable();
         int[][] auths = auth(table);
         int ord = table.order();
         int v = ord + fixed;
+        FixBS orderTwo = orderTwo(table);
         State[] design = new State[0];
         List<State> stabilized = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
@@ -312,12 +320,8 @@ public class BibdFinder6CyclicTest {
                 }
             }
             if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0) {
-                    for (int el = filter.nextClearBit(1); el >= 0 && el < ord; el = filter.nextClearBit(el + 1)) {
-                        if (el == table.inv(el)) {
-                            return false;
-                        }
-                    }
+                if (ord % 2 == 0 && !orderTwo.diff(filter).isEmpty()) {
+                    return false;
                 }
                 synchronized (states) {
                     states.add(lst);
@@ -502,9 +506,73 @@ public class BibdFinder6CyclicTest {
                 if (result.block().get(el)) {
                     continue;
                 }
-                result = Objects.requireNonNull(result.acceptElem(g, empty, el, v, k));
+                result = Objects.requireNonNull(result.acceptSimple(g, empty, el, v, k));
             }
             return result;
+        }
+
+        private State acceptSimple(Group group, FixBS globalFilter, int val, int v, int k) {
+            FixBS newBlock = block.copy();
+            FixBS queue = new FixBS(v);
+            queue.set(val);
+            int sz = size;
+            FixBS newSelfDiff = selfDiff.copy();
+            FixBS newStabilizer = stabilizer.copy();
+            FixBS newFilter = filter.copy();
+            if (val == group.order()) {
+                newFilter.set(val);
+                newBlock.set(val);
+                return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz + 1);
+            }
+            while (!queue.isEmpty()) {
+                if (++sz > k) {
+                    return null;
+                }
+                int x = queue.nextSetBit(0);
+                if (x < val) {
+                    return null;
+                }
+                FixBS stabExt = new FixBS(v);
+                FixBS selfDiffExt = new FixBS(v);
+                for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
+                    int bInv = group.inv(b);
+                    int xInv = group.inv(x);
+                    int xb = group.op(x, bInv);
+                    selfDiffExt.set(xb);
+                    if (newSelfDiff.get(xb) || newBlock.get(group.op(xb, x))) {
+                        stabExt.set(xb);
+                    }
+                    int bx = group.op(b, xInv);
+                    if (newSelfDiff.get(bx)) {
+                        stabExt.set(bx);
+                    }
+                    selfDiffExt.set(bx);
+                    int diff = group.op(bInv, x);
+                    if (globalFilter.get(diff)) {
+                        return null;
+                    }
+                    int outDiff = group.op(xInv, b);
+                    newFilter.set(diff);
+                    if (globalFilter.get(outDiff)) {
+                        return null;
+                    }
+                    newFilter.set(outDiff);
+                }
+                newBlock.set(x);
+                stabExt.andNot(newStabilizer);
+                for (int st = newStabilizer.nextSetBit(1); st >= 0; st = newStabilizer.nextSetBit(st + 1)) {
+                    queue.set(group.op(st, x));
+                }
+                for (int st = stabExt.nextSetBit(1); st >= 0; st = stabExt.nextSetBit(st + 1)) {
+                    for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
+                        queue.set(group.op(st, b));
+                    }
+                }
+                newStabilizer.or(stabExt);
+                newSelfDiff.or(selfDiffExt);
+                queue.andNot(newBlock);
+            }
+            return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
         }
 
         private State acceptElem(Group group, FixBS globalFilter, int val, int v, int k) {
