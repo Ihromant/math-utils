@@ -238,6 +238,7 @@ public class BibdFinder6CyclicTest {
         int k = 3;
         int ord = 24;
         int sz = GroupIndex.groupCount(ord);
+        System.out.println(sz);
         for (int i = 1; i <= sz; i++) {
             Group group = GroupIndex.group(ord, i);
             generate(group, fixed, k);
@@ -247,7 +248,8 @@ public class BibdFinder6CyclicTest {
     private static void generate(Group group, int fixed, int k) throws IOException {
         Group table = group.asTable();
         int[][] auths = auth(table);
-        int v = table.order() + fixed;
+        int ord = table.order();
+        int v = ord + fixed;
         State[] design = new State[0];
         List<State> stabilized = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
@@ -263,12 +265,18 @@ public class BibdFinder6CyclicTest {
         System.out.println("Stabilized size " + stabilized.size());
         List<List<State>> states = new ArrayList<>();
         BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-            FixBS ftr = filter.copy();
-            ftr.clear(table.order());
-            if ((table.order() - 1 - ftr.cardinality()) % (k * (k - 1)) == 0) {
-                for (int el = ftr.nextClearBit(1); el >= 0 && el < table.order(); el = ftr.nextClearBit(el + 1)) {
-                    if (el == table.inv(el)) {
-                        return false;
+            int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    return true;
+                }
+            }
+            if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                if (ord % 2 == 0) {
+                    for (int el = filter.nextClearBit(1); el >= 0 && el < ord; el = filter.nextClearBit(el + 1)) {
+                        if (el == table.inv(el)) {
+                            return false;
+                        }
                     }
                 }
                 synchronized (states) {
@@ -303,11 +311,6 @@ public class BibdFinder6CyclicTest {
                 }
                 int[][] base = Stream.concat(lst.stream().map(st -> st.block.toArray()),
                         Arrays.stream(des)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
-                for (int[] auth : auths) {
-                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
-                        return true;
-                    }
-                }
                 int[][] lines = Arrays.stream(base).flatMap(arr -> blocks(arr, v, table)).toArray(int[][]::new);
                 Liner lnr = new Liner(v, lines);
                 System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(des));
