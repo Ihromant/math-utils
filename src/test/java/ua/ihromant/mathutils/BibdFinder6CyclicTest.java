@@ -11,16 +11,20 @@ import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
@@ -103,6 +107,67 @@ public class BibdFinder6CyclicTest {
                 find(states, i, st.filter, init, pred);
             });
         }
+    }
+
+    @Test
+    public void dumpSeparatedBeginnings() throws IOException {
+        int fixed = 1;
+        Group group = GroupIndex.group(120, 5);
+        Group table = group.asTable();
+        int v = table.order() + fixed;
+        int k = 6;
+        int[][] auths = auth(table);
+        List<State> states = new ArrayList<>();
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            State st = arr[0];
+            if (st.stabilizer.cardinality() > 1) {
+                states.add(st);
+            }
+            return true;
+        };
+        int blocksNeeded = v * (v - 1) / k / (k - 1);
+        FixBS zero = FixBS.of(v, 0);
+        FixBS empty = new FixBS(v);
+        State state = new State(zero, zero, empty, zero, 1);
+        searchDesigns(table, empty, new State[0], state, v, k, 0, blocksNeeded, cons);
+        System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
+        Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
+        BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
+            int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    return true;
+                }
+            }
+            if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                PrintStream ps = openIfMissing(base.length, streams, k, group, fixed);
+                ps.println(Arrays.deepToString(base));
+                ps.flush();
+            }
+            return false;
+        };
+        states.sort(Comparator.comparing(State::filter));
+        IntStream.range(0, states.size()).parallel().forEach(i -> {
+            List<State> init = new ArrayList<>();
+            State st = states.get(i);
+            init.add(st);
+            find(states, i, st.filter, init, pred);
+        });
+        streams.values().forEach(PrintStream::close);
+    }
+
+    private static PrintStream openIfMissing(int cnt, Map<Integer, PrintStream> streams, int k, Group group, int fixed) {
+        return streams.computeIfAbsent(cnt, key -> {
+            File f = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + key + ".txt");
+            FileOutputStream fos;
+            try {
+                fos = new FileOutputStream(f);
+            } catch (FileNotFoundException e) {
+                throw new RuntimeException(e);
+            }
+            BufferedOutputStream bos = new BufferedOutputStream(fos);
+            return new PrintStream(bos);
+        });
     }
 
     @Test
@@ -250,15 +315,15 @@ public class BibdFinder6CyclicTest {
         if (pred.test(curr, globalFilter)) {
             return;
         }
-        for (int i = prev + 1; i < states.size(); i++) {
+        IntStream.range(prev + 1, states.size()).parallel().forEach(i -> {
             State st = states.get(i);
             if (st.filter.intersects(globalFilter)) {
-                continue;
+                return;
             }
             List<State> nextCurr = new ArrayList<>(curr);
             nextCurr.add(st);
             find(states, i, globalFilter.union(st.filter), nextCurr, pred);
-        }
+        });
     }
 
     public static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
