@@ -112,7 +112,8 @@ public class BibdFinder6CyclicTest {
         int fixed = 1;
         Group group = GroupIndex.group(120, 5);
         Group table = group.asTable();
-        int v = table.order() + fixed;
+        int ord = table.order();
+        int v = ord + fixed;
         int k = 6;
         int[][] auths = auth(table);
         List<State> states = new ArrayList<>();
@@ -137,6 +138,13 @@ public class BibdFinder6CyclicTest {
                 }
             }
             if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                if (ord % 2 == 0) {
+                    for (int el = filter.nextClearBit(1); el >= 0 && el < ord; el = filter.nextClearBit(el + 1)) {
+                        if (el == table.inv(el)) {
+                            return false;
+                        }
+                    }
+                }
                 PrintStream ps = openIfMissing(base.length, streams, k, group, fixed);
                 ps.println(Arrays.deepToString(base));
                 ps.flush();
