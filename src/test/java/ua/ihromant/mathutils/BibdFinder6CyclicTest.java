@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -210,8 +211,65 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private List<FixBS> readInitial(String l, int v) {
+    private static List<FixBS> readInitial(String l, int v) {
         return Arrays.stream(map.readValue(l, int[][].class)).map(arr -> FixBS.of(v, arr)).toList();
+    }
+
+    @Test
+    public void expand() throws IOException {
+        int fixed = 1;
+        Group group = GroupIndex.group(120, 5);
+        Group table = group.asTable();
+        int v = group.order() + fixed;
+        int k = 6;
+        int len = 4;
+        File f = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + "fin.txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + ".txt");
+        try (FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            List<List<FixBS>> toProcess = Collections.synchronizedList(new ArrayList<>());
+            Set<List<FixBS>> unprocessed = allBr.lines().map(l -> readInitial(l, v)).collect(Collectors.toSet());
+            br.lines().forEach(l -> {
+                if (l.contains("[[[")) {
+                    System.out.println(l);
+                } else {
+                    List<FixBS> proc = readInitial(l, v);
+                    toProcess.add(proc);
+                    unprocessed.remove(proc);
+                }
+            });
+            List<List<FixBS>> tuples = new ArrayList<>(unprocessed);
+            int nextLength = tuples.getFirst().size() + 1;
+            File begExp = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + "Exp.txt");
+            try (FileOutputStream fos = new FileOutputStream(begExp);
+                 BufferedOutputStream bos = new BufferedOutputStream(fos);
+                 PrintStream ps = new PrintStream(bos)) {
+                System.out.println("Processed: " + toProcess.size() + ", to expand: " + tuples.size() + ", next size: " + nextLength);
+                AtomicInteger cnt = new AtomicInteger();
+                AtomicInteger ai = new AtomicInteger();
+                tuples.stream().parallel().forEach(fbs -> {
+                    List<State> lst = fbs.stream().map(bl -> State.fromBlock(group, v, k, bl)).toList();
+                    FixBS filter = lst.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
+                    filter.clear(group.order());
+                    FixBS whiteList = filter.copy();
+                    whiteList.flip(1, group.order());
+                    DiffState initial = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, filter.nextClearBit(1));
+                    searchUniqueDesigns(table, k, new int[0][], initial, design -> {
+                        List<FixBS> merged = Stream.concat(lst.stream().map(State::block), Arrays.stream(design).map(bl -> FixBS.of(v, bl))).toList();
+                        ai.incrementAndGet();
+                        toProcess.add(merged);
+                        return true;
+                    });
+                    System.out.println(cnt.incrementAndGet());
+                });
+                System.out.println("Addition " + ai.get());
+                toProcess.forEach(lst -> ps.println(Arrays.deepToString(lst.stream().map(FixBS::toArray).toArray(int[][]::new))));
+            }
+        }
     }
 
     @Test
@@ -309,15 +367,27 @@ public class BibdFinder6CyclicTest {
         if (pred.test(curr, globalFilter)) {
             return;
         }
-        IntStream.range(prev + 1, states.size()).parallel().forEach(i -> {
-            State st = states.get(i);
-            if (st.filter.intersects(globalFilter)) {
-                return;
+        if (curr.size() < 5) {
+            IntStream.range(prev + 1, states.size()).parallel().forEach(i -> {
+                State st = states.get(i);
+                if (st.filter.intersects(globalFilter)) {
+                    return;
+                }
+                List<State> nextCurr = new ArrayList<>(curr);
+                nextCurr.add(st);
+                find(states, i, globalFilter.union(st.filter), nextCurr, pred);
+            });
+        } else {
+            for (int i = prev + 1; i < states.size(); i++) {
+                State st = states.get(i);
+                if (st.filter.intersects(globalFilter)) {
+                    continue;
+                }
+                List<State> nextCurr = new ArrayList<>(curr);
+                nextCurr.add(st);
+                find(states, i, globalFilter.union(st.filter), nextCurr, pred);
             }
-            List<State> nextCurr = new ArrayList<>(curr);
-            nextCurr.add(st);
-            find(states, i, globalFilter.union(st.filter), nextCurr, pred);
-        });
+        }
     }
 
     public static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
