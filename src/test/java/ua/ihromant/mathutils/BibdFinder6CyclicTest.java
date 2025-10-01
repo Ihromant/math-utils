@@ -237,7 +237,8 @@ public class BibdFinder6CyclicTest {
         int fixed = 1;
         int k = 3;
         int ord = 24;
-        for (int i = 1; i <= 15; i++) {
+        int sz = GroupIndex.groupCount(ord);
+        for (int i = 1; i <= sz; i++) {
             Group group = GroupIndex.group(ord, i);
             generate(group, fixed, k);
         }
@@ -276,12 +277,16 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
+        stabilized.sort(Comparator.comparing(State::block));
         IntStream.range(0, stabilized.size()).parallel().forEach(i -> {
             List<State> init = new ArrayList<>();
             State st = stabilized.get(i);
             init.add(st);
             find(stabilized, i, st.filter, init, pred);
         });
+        if (states.isEmpty()) {
+            return;
+        }
         System.out.println("Initial size " + states.size() + " " + new GapInteractor().identifyGroup(group) + " " + v + " " + k + " auths: " + auths.length);
         AtomicInteger ai = new AtomicInteger();
         states.stream().parallel().forEach(lst -> {
