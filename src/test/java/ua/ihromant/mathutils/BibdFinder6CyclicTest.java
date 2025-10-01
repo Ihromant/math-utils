@@ -143,7 +143,7 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        states.sort(Comparator.comparing(State::filter));
+        states.sort(Comparator.comparing(State::block));
         IntStream.range(0, states.size()).parallel().forEach(i -> {
             List<State> init = new ArrayList<>();
             State st = states.get(i);
