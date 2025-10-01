@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.group.GapInteractor;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
@@ -33,6 +34,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BibdFinder6CyclicTest {
+    private static final ObjectMapper map = new ObjectMapper();
     @Test
     public void dumpBeginnings() throws IOException {
         int fixed = 1;
@@ -151,12 +153,13 @@ public class BibdFinder6CyclicTest {
     @Test
     public void generate() throws IOException {
         int fixed = 1;
-        Group group = new SimpleLinear(2, new GaloisField(3));
+        Group group = GroupIndex.group(120, 5);
         Group table = group.asTable();
         int v = group.order() + fixed;
-        int k = 3;
-        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1fin.txt");
-        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-stab1.txt");
+        int k = 6;
+        int len = 4;
+        File f = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + "fin.txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + ".txt");
         try (FileOutputStream fos = new FileOutputStream(f, true);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos);
@@ -200,7 +203,7 @@ public class BibdFinder6CyclicTest {
                 ps.println(Arrays.deepToString(lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
                 ps.flush();
                 int inc = ai.incrementAndGet();
-                if (inc % 10000 == 0) {
+                if (inc % 100 == 0) {
                     System.out.println(inc);
                 }
             });
@@ -208,9 +211,7 @@ public class BibdFinder6CyclicTest {
     }
 
     private List<FixBS> readInitial(String l, int v) {
-        return Arrays.stream(l.substring(2, l.length() - 2).split("], \\["))
-                .map(ln -> FixBS.of(v,
-                        Arrays.stream(ln.split(", ")).mapToInt(Integer::parseInt).toArray())).toList();
+        return Arrays.stream(map.readValue(l, int[][].class)).map(arr -> FixBS.of(v, arr)).toList();
     }
 
     @Test
