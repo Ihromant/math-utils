@@ -34,33 +34,6 @@ import java.util.stream.Stream;
 
 public class BibdFinder6CyclicTest {
     @Test
-    public void dumpInitial() throws IOException {
-        int fixed = 1;
-        Group group = new SimpleLinear(2, new GaloisField(3));
-        int v = group.order() + fixed;
-        int k = 3;
-        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-fix" + fixed + "-ntr.txt");
-        try (FileOutputStream fos = new FileOutputStream(f);
-             BufferedOutputStream bos = new BufferedOutputStream(fos);
-             PrintStream ps = new PrintStream(bos)) {
-            Group table = group.asTable();
-            FixBS filter = new FixBS(v);
-            State[] design = new State[0];
-            Predicate<State[]> cons = arr -> {
-                State st = arr[0];
-                if (st.stabilizer.cardinality() > 1) {
-                    ps.println(st.block);
-                    ps.flush();
-                }
-                return true;
-            };
-            FixBS zero = FixBS.of(v, 0);
-            State state = new State(zero, zero, zero, zero, 1);
-            searchDesigns(table, filter, design, state, v, k, 0, cons);
-        }
-    }
-
-    @Test
     public void dumpBeginnings() throws IOException {
         int fixed = 1;
         Group group = new SimpleLinear(2, new GaloisField(3));
