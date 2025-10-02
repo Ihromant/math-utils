@@ -170,7 +170,10 @@ public class BibdFinder6CyclicTest {
             Set<List<FixBS>> set = allBr.lines().map(l -> readInitial(l, v)).collect(Collectors.toSet());
             br.lines().forEach(l -> {
                 if (l.contains("[[[")) {
-                    System.out.println(l);
+                    int[][][] base = map.readValue(l, int[][][].class);
+                    Liner lnr = new Liner(v, Stream.concat(Arrays.stream(base[0]), Arrays.stream(base[1]))
+                            .flatMap(bl -> blocks(bl, v, table)).toArray(int[][]::new));
+                    System.out.println(lnr.hyperbolicFreq() + " " + l);
                 } else {
                     set.remove(readInitial(l, v));
                 }
