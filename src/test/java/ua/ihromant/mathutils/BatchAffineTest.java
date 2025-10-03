@@ -2,6 +2,8 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.Automorphisms;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.plane.AffinePlane;
@@ -180,12 +182,61 @@ public class BatchAffineTest {
             Liner mathon = new Liner(k * k + k + 1, lns);
             LenzBarlotti lb = lenzBarlotti(mathon, k);
             System.out.println(lb);
-            System.out.println(Arrays.toString(mathon.line(lb.lenzLns.nextSetBit(0))));
-            rn = 0;
+            int dl = lb.lenzLns.nextSetBit(0);
+            System.out.println(Arrays.toString(mathon.line(dl)));
+            List<int[]> auth = TernaryAutomorphisms.automorphismsAffine(mathon, dl);
+            PermutationGroup pg = new PermutationGroup(auth.toArray(int[][]::new));
+            System.out.println(pg.order());
+            List<int[]> translations = new ArrayList<>();
+            int lenzPt = lb.lenzPts.nextSetBit(0);
+            int[] vertLines = mathon.lines(lenzPt);
+            ex: for (int i = 0; i < pg.order(); i++) {
+                int[] perm = pg.permutation(i);
+                for (int vl : vertLines) {
+                    if (vl == dl) {
+                        continue;
+                    }
+                    int mappedLn = mathon.line(perm[mathon.line(vl)[0]], lenzPt);
+                    if (mappedLn != vl) {
+                        continue ex;
+                    }
+                }
+                translations.add(perm);
+            }
+            PermutationGroup trans = new PermutationGroup(translations.toArray(int[][]::new));
+            System.out.println(GroupIndex.identify(trans));
             for (String s : uni.split("\\n")) {
-                int[] pts = Arrays.stream(s.split(" ")).mapToInt(Integer::parseInt).toArray();
-                Liner uni = mathon.subPlane(pts);
-                BatchLinerTest.orbits(uni, rn++);
+                int[] map = Arrays.stream(s.split(" ")).mapToInt(Integer::parseInt).toArray();
+                int[] reverse = new int[mathon.pointCount()];
+                Arrays.fill(reverse, -1);
+                IntStream.range(0, map.length).forEach(i -> reverse[map[i]] = i);
+                FixBS pts = FixBS.of(mathon.pointCount(), map);
+                Set<FixBS> fbs = new HashSet<>();
+                for (int i = 0; i < trans.order(); i++) {
+                    int[] perm = trans.permutation(i);
+                    FixBS mapped = new FixBS(mathon.pointCount());
+                    for (int pt = pts.nextSetBit(0); pt >= 0; pt = pts.nextSetBit(pt + 1)) {
+                        mapped.set(perm[pt]);
+                    }
+                    fbs.add(mapped);
+                }
+                System.out.println("Shifts: " + fbs.size());
+                Liner lnr = mathon.subPlane(map);
+                PermutationGroup lnrAuth = lnr.automorphisms();
+                System.out.println(lnrAuth.order() + " " + GroupIndex.identify(lnrAuth));
+                for (int i = 0; i < lnrAuth.order(); i++) {
+                    int[] perm = lnrAuth.permutation(i);
+                    System.out.println(i + " " + IntStream.range(0, pg.order()).parallel().mapToObj(pg::permutation)
+                            .filter(oldPerm -> {
+                                for (int fr = 0; fr < lnr.pointCount(); fr++) {
+                                    int to = perm[fr];
+                                    if (oldPerm[map[fr]] != map[to]) {
+                                        return false;
+                                    }
+                                }
+                                return true;
+                            }).count());
+                }
             }
         }
     }
