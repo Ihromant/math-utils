@@ -74,13 +74,26 @@ public class BibdFinder6CyclicTest {
                 }
                 return false;
             };
-            IntStream.range(0, states.size()).parallel().forEach(i -> {
-                List<State> init = new ArrayList<>();
-                State st = states.get(i);
-                init.add(st);
-                find(states, i, st.filter, init, pred);
-            });
+            FixBS[] intersecting = intersecting(states);
+            FixBS available = new FixBS(states.size());
+            available.set(0, states.size());
+            find(states, intersecting, available, -1, new FixBS(v), List.of(), pred);
         }
+    }
+
+    private static FixBS[] intersecting(List<State> states) {
+        FixBS[] intersecting = new FixBS[states.size()];
+        IntStream.range(0, states.size()).parallel().forEach(i -> {
+            FixBS comp = new FixBS(states.size());
+            FixBS ftr = states.get(i).filter;
+            for (int j = 0; j < states.size(); j++) {
+                if (ftr.intersects(states.get(j).filter)) {
+                    comp.set(j);
+                }
+            }
+            intersecting[i] = comp;
+        });
+        return intersecting;
     }
 
     @Test
@@ -125,12 +138,10 @@ public class BibdFinder6CyclicTest {
             return false;
         };
         states.sort(Comparator.comparing(State::block));
-        IntStream.range(0, states.size()).parallel().forEach(i -> {
-            List<State> init = new ArrayList<>();
-            State st = states.get(i);
-            init.add(st);
-            find(states, i, st.filter, init, pred);
-        });
+        FixBS[] intersecting = intersecting(states);
+        FixBS available = new FixBS(states.size());
+        available.set(0, states.size());
+        find(states, intersecting, available, -1, new FixBS(v), List.of(), pred);
         streams.values().forEach(PrintStream::close);
     }
 
@@ -333,12 +344,10 @@ public class BibdFinder6CyclicTest {
             return false;
         };
         stabilized.sort(Comparator.comparing(State::block));
-        IntStream.range(0, stabilized.size()).parallel().forEach(i -> {
-            List<State> init = new ArrayList<>();
-            State st = stabilized.get(i);
-            init.add(st);
-            find(stabilized, i, st.filter, init, pred);
-        });
+        FixBS[] intersecting = intersecting(stabilized);
+        FixBS available = new FixBS(stabilized.size());
+        available.set(0, stabilized.size());
+        find(stabilized, intersecting, available, -1, new FixBS(v), List.of(), pred);
         if (states.isEmpty()) {
             return;
         }
@@ -370,29 +379,27 @@ public class BibdFinder6CyclicTest {
         });
     }
 
-    private static void find(List<State> states, int prev, FixBS globalFilter, List<State> curr, BiPredicate<List<State>, FixBS> pred) {
+    private static void find(List<State> states, FixBS[] intersecting, FixBS available, int prev, FixBS globalFilter, List<State> curr, BiPredicate<List<State>, FixBS> pred) {
         if (pred.test(curr, globalFilter)) {
             return;
         }
-        if (curr.size() < 5) {
-            IntStream.range(prev + 1, states.size()).parallel().forEach(i -> {
+        if (curr.size() < 3) {
+            IntList base = new IntList(available.cardinality());
+            for (int i = available.nextSetBit(prev + 1); i >= 0; i = available.nextSetBit(i + 1)) {
+                base.add(i);
+            }
+            Arrays.stream(base.toArray()).parallel().forEach(i -> {
                 State st = states.get(i);
-                if (st.filter.intersects(globalFilter)) {
-                    return;
-                }
                 List<State> nextCurr = new ArrayList<>(curr);
                 nextCurr.add(st);
-                find(states, i, globalFilter.union(st.filter), nextCurr, pred);
+                find(states, intersecting, available.diff(intersecting[i]), i, globalFilter.union(st.filter), nextCurr, pred);
             });
         } else {
-            for (int i = prev + 1; i < states.size(); i++) {
+            for (int i = available.nextSetBit(prev + 1); i >= 0; i = available.nextSetBit(i + 1)) {
                 State st = states.get(i);
-                if (st.filter.intersects(globalFilter)) {
-                    continue;
-                }
                 List<State> nextCurr = new ArrayList<>(curr);
                 nextCurr.add(st);
-                find(states, i, globalFilter.union(st.filter), nextCurr, pred);
+                find(states, intersecting, available.diff(intersecting[i]), i, globalFilter.union(st.filter), nextCurr, pred);
             }
         }
     }
