@@ -201,6 +201,11 @@ public class BatchAffineTest {
                         continue ex;
                     }
                 }
+                for (int pt : mathon.line(dl)) {
+                    if (perm[pt] != pt) {
+                        continue ex;
+                    }
+                }
                 translations.add(perm);
             }
             PermutationGroup trans = new PermutationGroup(translations.toArray(int[][]::new));
