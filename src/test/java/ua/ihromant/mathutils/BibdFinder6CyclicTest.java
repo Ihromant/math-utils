@@ -105,7 +105,7 @@ public class BibdFinder6CyclicTest {
         int v = ord + fixed;
         int k = 6;
         int[][] auths = auth(table);
-        FixBS orderTwo = orderTwo(table);
+        FixBS orderTwo = orderTwo(table, v);
         List<State> states = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
             State st = arr[0];
@@ -168,7 +168,7 @@ public class BibdFinder6CyclicTest {
         int v = ord + fixed;
         int k = 6;
         int[][] auths = auth(table);
-        FixBS orderTwo = orderTwo(table);
+        FixBS orderTwo = orderTwo(table, v);
         List<State[]> init = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
             int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
@@ -353,12 +353,15 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private static FixBS orderTwo(Group g) {
+    private static FixBS orderTwo(Group g, int v) {
         FixBS orderTwo = new FixBS(g.order() + 1);
         for (int i = 0; i < g.order(); i++) {
             if (g.order(i) == 2) {
                 orderTwo.set(i);
             }
+        }
+        if (g.order() != v) {
+            orderTwo.set(g.order());
         }
         return orderTwo;
     }
@@ -368,7 +371,7 @@ public class BibdFinder6CyclicTest {
         int[][] auths = auth(table);
         int ord = table.order();
         int v = ord + fixed;
-        FixBS orderTwo = orderTwo(table);
+        FixBS orderTwo = orderTwo(table, v);
         State[] design = new State[0];
         List<State> stabilized = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
