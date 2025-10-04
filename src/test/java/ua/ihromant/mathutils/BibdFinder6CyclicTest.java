@@ -160,6 +160,63 @@ public class BibdFinder6CyclicTest {
     }
 
     @Test
+    public void breadthFirstSearch() throws IOException {
+        int fixed = 1;
+        Group group = GroupIndex.group(120, 5);
+        Group table = group.asTable();
+        int ord = table.order();
+        int v = ord + fixed;
+        int k = 6;
+        int[][] auths = auth(table);
+        FixBS orderTwo = orderTwo(table);
+        List<State[]> init = new ArrayList<>();
+        Predicate<State[]> cons = arr -> {
+            int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    return true;
+                }
+            }
+            init.add(arr);
+            return true;
+        };
+        FixBS zero = FixBS.of(v, 0);
+        FixBS empty = new FixBS(v);
+        State state = new State(zero, zero, empty, zero, 1);
+        searchDesigns(table, empty, new State[0], state, v, k, 0, cons);
+        System.out.println("Initial " + init.size() + " auths " + GroupIndex.identify(table));
+        List<State[]> states = new ArrayList<>(init);
+        Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
+        while (!states.isEmpty()) {
+            System.out.println("Curr length: " + states.getFirst().length + " count " + states.size());
+            List<State[]> next = Collections.synchronizedList(new ArrayList<>());
+            states.stream().parallel().forEach(curr -> {
+                FixBS ftr = Arrays.stream(curr).map(State::filter).reduce(new FixBS(v), FixBS::union);
+                if ((v - 1 - ftr.cardinality()) % (k * (k - 1)) == 0) {
+                    if (ord % 2 != 0 || orderTwo.diff(ftr).isEmpty()) {
+                        PrintStream ps = openIfMissing(curr.length, streams, k, group, fixed);
+                        ps.println(Arrays.deepToString(Arrays.stream(curr).map(st -> st.block.toArray()).toArray(int[][]::new)));
+                        ps.flush();
+                    }
+                }
+                Predicate<State[]> pred = lst -> {
+                    int[][] base = Arrays.stream(lst).map(st -> st.block.toArray()).toArray(int[][]::new);
+                    for (int[] auth : auths) {
+                        if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                            return true;
+                        }
+                    }
+                    next.add(lst);
+                    return true;
+                };
+                searchDesigns(table, ftr, curr, state, v, k, curr[curr.length - 1].block().nextSetBit(1), pred);
+            });
+            states = new ArrayList<>(next);
+        }
+        streams.values().forEach(PrintStream::close);
+    }
+
+    @Test
     public void generate() throws IOException {
         int fixed = 1;
         Group group = GroupIndex.group(120, 5);
