@@ -111,4 +111,17 @@ public class TableGroup implements Group {
         }
         return cachedSubGroups;
     }
+
+    public TableGroup applyPerm(int[] perm) {
+        if (perm[0] != 0) {
+            throw new IllegalArgumentException();
+        }
+        int[][] opTable = new int[operationTable.length][operationTable.length];
+        for (int i = 0; i < operationTable.length; i++) {
+            for (int j = 0; j < operationTable.length; j++) {
+                opTable[perm[i]][perm[j]] = perm[operationTable[i][j]];
+            }
+        }
+        return new TableGroup(label, opTable);
+    }
 }
