@@ -67,4 +67,23 @@ public class SubGroup implements Group {
         }
         return true;
     }
+
+    public SubGroup normalizer() {
+        FixBS nEls = new FixBS(group.order());
+        for (int i = 0; i < group.order(); i++) {
+            FixBS conj = new FixBS(group.order());
+            for (int el : arr) {
+                conj.set(group.conjugate(el, i));
+            }
+            if (conj.equals(elems)) {
+                nEls.set(i);
+            }
+        }
+        return new SubGroup(group, nEls);
+    }
+
+    @Override
+    public String toString() {
+        return "SubGroup[" + group.name() + ", " + elems + ']';
+    }
 }
