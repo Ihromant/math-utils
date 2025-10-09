@@ -30,7 +30,6 @@ public class SemiDirectProduct implements Group {
         this.k = k;
         this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
-        psi[0] = 0;
         this.elem = IntStream.range(1, gr.order()).filter(e -> k.order() / mul == gr.order(e)).findAny().orElseThrow();
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
@@ -42,8 +41,8 @@ public class SemiDirectProduct implements Group {
         this.k = k;
         this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
-        psi[0] = 0;
-        int[] elems = IntStream.range(1, gr.order()).filter(e -> k.order() == gr.order(e)).toArray();
+        int[] elems = gr.conjugationClasses().stream().mapToInt(cl -> cl.nextSetBit(0))
+                .filter(el -> k.order() == gr.order(el)).toArray();
         this.elem = elems[idx];
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);

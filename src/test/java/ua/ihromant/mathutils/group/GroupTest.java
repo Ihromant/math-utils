@@ -43,7 +43,7 @@ public class GroupTest {
         testCorrectness(new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(4)), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(8), 2), false);
         testCorrectness(new SemiDirectProduct(new CyclicGroup(5), new CyclicGroup(8), 4), false);
-        testCorrectness(new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(2), 6, false), false);
+        testCorrectness(new SemiDirectProduct(new CyclicProduct(3, 3), new CyclicGroup(2), 1, false), false);
         testCorrectness(new SemiDirectProduct(new CyclicProduct(2, 2, 3), new CyclicGroup(2)), false);
         testCorrectness(new BurnsideGroup(), false);
         testCorrectness(new Liner(new GaloisField(2).generatePlane()).automorphisms(), false);

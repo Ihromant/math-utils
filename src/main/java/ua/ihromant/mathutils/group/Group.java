@@ -103,9 +103,13 @@ public interface Group {
     default List<FixBS> conjugationClasses() {
         int order = order();
         QuickFind qf = new QuickFind(order);
-        for (int g = 0; g < order; g++) {
-            for (int x = 0; x < order; x++) {
-                qf.union(x, op(inv(g), op(x, g)));
+        for (int x = 0; x < order; x++) {
+            for (int g = 0; g < order; g++) {
+                int conj = op(inv(g), op(x, g));
+                if (conj < x) {
+                    qf.union(x, conj);
+                    break;
+                }
             }
         }
         return qf.components();
