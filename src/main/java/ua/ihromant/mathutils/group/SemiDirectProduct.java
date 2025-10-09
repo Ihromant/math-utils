@@ -88,4 +88,8 @@ public class SemiDirectProduct implements Group {
         int beta = a % k.order();
         return "(" + alpha + ", " + beta + ")";
     }
+
+    public int[] permutation() {
+        return gr.permutation(psi[1]);
+    }
 }
