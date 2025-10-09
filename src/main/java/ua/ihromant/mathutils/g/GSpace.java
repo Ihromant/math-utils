@@ -96,20 +96,20 @@ public class GSpace {
             }
         }
         QuickFind qf = new QuickFind(v * v);
-        this.preImages = new FixBS[v * v][v * v];
+        this.preImages = new FixBS[v][v];
         for (int x1 = 0; x1 < v; x1++) {
-            for (int x2 = 0; x2 < v; x2++) {
-                int pair = x1 * v + x2;
-                for (int g = 0; g < gOrd; g++) {
-                    int gx1 = cayley[g][x1];
+            for (int g = 0; g < gOrd; g++) {
+                int gx1 = cayley[g][x1];
+                for (int x2 = 0; x2 < v; x2++) {
+                    int pair = x1 * v + x2;
                     int gx2 = cayley[g][x2];
                     int gPair = gx1 * v + gx2;
                     qf.union(pair, gPair);
-                    if (preImages[gPair][pair] == null) {
-                        preImages[gPair][pair] = new FixBS(gOrd);
-                    }
-                    preImages[gPair][pair].set(g);
                 }
+                if (preImages[gx1][x1] == null) {
+                    preImages[gx1][x1] = new FixBS(gOrd);
+                }
+                preImages[gx1][x1].set(g);
             }
         }
         FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());

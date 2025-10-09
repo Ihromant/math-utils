@@ -59,7 +59,9 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
                 existingDiffs.add(bx);
                 for (int i = 0; i < existingDiffs.size(); i++) {
                     int diff = existingDiffs.get(i);
-                    stabExt.or(gSpace.preImage(bx, diff));
+                    int fst = diff / v;
+                    int snd = diff % v;
+                    stabExt.or(gSpace.preImage(b, fst).intersection(gSpace.preImage(x, snd)));
                 }
                 newDiffSet.set(compBx);
 
@@ -70,7 +72,9 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
                 existingDiffs.add(xb);
                 for (int i = 0; i < existingDiffs.size(); i++) {
                     int diff = existingDiffs.get(i);
-                    stabExt.or(gSpace.preImage(xb, diff));
+                    int fst = diff / v;
+                    int snd = diff % v;
+                    stabExt.or(gSpace.preImage(x, fst).intersection(gSpace.preImage(b, snd)));
                 }
                 newDiffSet.set(compXb);
             }
