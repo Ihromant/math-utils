@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -753,6 +754,41 @@ public class BibdFinder6CyclicTest {
 
         public int last() {
             return block[idx - 1];
+        }
+    }
+
+    @Test
+    public void refine() throws IOException {
+        int fixed = 1;
+        Group group = GroupIndex.group(135, 3);
+        Group table = group.asTable();
+        int v = group.order() + fixed;
+        int k = 6;
+        int len = 2;
+        File f = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + "fin.txt");
+        try (FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            Map<Map<Integer, Integer>, PartialLiner> lnrs = new HashMap<>();
+            br.lines().forEach(l -> {
+                if (!l.contains("[[[")) {
+                    return;
+                }
+                int[][][] base = map.readValue(l, int[][][].class);
+                Liner lnr = new Liner(v, Stream.concat(Arrays.stream(base[0]), Arrays.stream(base[1]))
+                        .flatMap(bl -> blocks(bl, v, table)).toArray(int[][]::new));
+                Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                PartialLiner pl = new PartialLiner(lnr.lines());
+                if (lnrs.containsKey(freq)) {
+                    if (!lnrs.get(freq).isomorphicSel(pl)) {
+                        System.out.println("Non iso " + freq + " " + l);
+                    }
+                } else {
+                    lnrs.put(freq, pl);
+                    System.out.println(freq + " " + l);
+                }
+            });
+            System.out.println(lnrs.size());
         }
     }
 }
