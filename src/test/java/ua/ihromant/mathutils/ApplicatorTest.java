@@ -10,6 +10,7 @@ import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
+import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -530,6 +531,43 @@ public class ApplicatorTest {
     }
 
     @Test
+    public void generateInitialSingle() throws IOException {
+        int k = 9;
+        Group semi = new SemiDirectProduct(new CyclicProduct(19, 19), new CyclicGroup(5));
+        int[][] auth = semi.auth();
+        TableGroup group = semi.asTable();
+        group.setCachedAuth(auth);
+        int[] comps = new int[]{5};
+        GSpace space = new GSpace(k, group, true, comps);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
+            BiPredicate<State[], FixBS> sCons = (arr, uu) -> {
+                ps.println(arr[0].block());
+                ps.flush();
+                return true;
+            };
+            int val = 1;
+            State state = space.forInitial(0, val);
+            searchDesignsFirst(space, space.emptyFilter(), new State[0], state, val, sCons);
+        }
+    }
+
+    private int[] perm462() {
+        int[] perm = IntStream.range(0, 462).toArray();
+        perm[1] = 4;
+        perm[4] = 1;
+        perm[2] = 16;
+        perm[16] = 2;
+        perm[33] = 3;
+        perm[3] = 33;
+        return perm;
+    }
+
+    @Test
     public void byInitial() throws IOException {
         int k = 6;
         Group group = GroupIndex.group(39, 1);
@@ -565,7 +603,7 @@ public class ApplicatorTest {
                 }
             });
             List<List<FixBS>> tuples = new ArrayList<>(set);
-            System.out.println("Tuples size: " + tuples.size());
+            System.out.println(GroupIndex.identify(group) + " Tuples size: " + tuples.size());
             AtomicInteger cnt = new AtomicInteger();
             AtomicInteger ai = new AtomicInteger();
             BiPredicate<State[], FixBS> fCons = (arr, ftr) -> {
