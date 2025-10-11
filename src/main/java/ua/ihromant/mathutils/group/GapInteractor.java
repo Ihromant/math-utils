@@ -52,6 +52,21 @@ public class GapInteractor {
         return joined;
     }
 
+    public int groupId(Group g) throws IOException {
+        process.outputWriter().write("LoadPackage(\"LOOPS\");\n");
+        process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
+        String repr = Arrays.deepToString(g.asTable().table());
+        process.outputWriter().write("IdGroup(IntoGroup(LoopByCayleyTable(" + repr + ")));\n");
+        process.outputWriter().write("quit;\n");
+        process.outputWriter().flush();
+        String joined = process.inputReader().lines().dropWhile(l -> !l.contains("true")).skip(2).map(l -> {
+            int idx = l.lastIndexOf(ANSI_RED);
+            return idx < 0 ? l : l.substring(idx + ANSI_RED.length());
+        }).collect(Collectors.joining());
+        process.destroyForcibly();
+        return om.readValue(joined, int[].class)[1];
+    }
+
     public int groupCount(int order) throws IOException {
         process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
         process.outputWriter().write("NumberSmallGroups(" + order + ");\n");
