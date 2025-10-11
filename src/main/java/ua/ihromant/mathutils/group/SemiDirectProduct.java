@@ -4,6 +4,7 @@ import ua.ihromant.mathutils.Combinatorics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.IntStream;
 
@@ -118,15 +119,15 @@ public class SemiDirectProduct implements Group {
 
     @Override
     public int[][] auth() {
-        if (Combinatorics.gcd(h.order(), k.order()) != 1) {
-            return Group.super.auth();
-        }
-        List<int[]> result = new ArrayList<>();
-        int[][] alphas = h.auth();
-        int[][] deltas = k.auth();
         int hOrd = h.order();
         int kOrd = k.order();
-        for (int oneMap = 0; oneMap < hOrd; oneMap++) {
+        if (Combinatorics.gcd(hOrd, kOrd) != 1) {
+            return Group.super.auth();
+        }
+        List<int[]> result = Collections.synchronizedList(new ArrayList<>());
+        int[][] alphas = h.auth();
+        int[][] deltas = k.auth();
+        IntStream.range(0, hOrd).parallel().forEach(oneMap -> {
             ex: for (int[] delta : deltas) {
                 int[] beta = new int[kOrd];
                 beta[1] = from(oneMap, 0);
@@ -163,7 +164,7 @@ public class SemiDirectProduct implements Group {
                     result.add(auth);
                 }
             }
-        }
+        });
         int[][] res = result.toArray(int[][]::new);
         Arrays.parallelSort(res, Combinatorics::compareArr);
         return res;
