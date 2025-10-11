@@ -93,7 +93,7 @@ public interface Group {
                 }
             }
         }
-        return new TableGroup(table);
+        return new TableGroup(name(), table);
     }
 
     default int conjugate(int fst, int snd) {

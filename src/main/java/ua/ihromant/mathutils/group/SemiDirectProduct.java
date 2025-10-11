@@ -1,5 +1,10 @@
 package ua.ihromant.mathutils.group;
 
+import ua.ihromant.mathutils.Combinatorics;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.stream.IntStream;
 
 public class SemiDirectProduct implements Group {
@@ -41,12 +46,31 @@ public class SemiDirectProduct implements Group {
         this.k = k;
         this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
-        int[] elems = gr.conjugationClasses().stream().mapToInt(cl -> cl.nextSetBit(0))
-                .filter(el -> k.order() == gr.order(el)).toArray();
-        this.elem = elems[idx];
+        this.elem = elem(gr, k.order(), idx);
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
         }
+    }
+
+    private static int elem(PermutationGroup gr, int elOrder, int idx) {
+        int order = gr.order();
+        int cnt = 0;
+        ex: for (int x = 0; x < order; x++) {
+            int ord = gr.order(x);
+            if (ord != elOrder) {
+                continue;
+            }
+            for (int g = 0; g < order; g++) {
+                int conj = gr.op(gr.inv(g), gr.op(x, g));
+                if (conj < x) {
+                    continue ex;
+                }
+            }
+            if (cnt++ == idx) {
+                return x;
+            }
+        }
+        throw new IllegalArgumentException();
     }
 
     public int from(int hp, int kp) {
@@ -90,5 +114,58 @@ public class SemiDirectProduct implements Group {
 
     public int[] permutation() {
         return gr.permutation(psi[1]);
+    }
+
+    @Override
+    public int[][] auth() {
+        if (Combinatorics.gcd(h.order(), k.order()) != 1) {
+            return Group.super.auth();
+        }
+        List<int[]> result = new ArrayList<>();
+        int[][] alphas = h.auth();
+        int[][] deltas = k.auth();
+        int hOrd = h.order();
+        int kOrd = k.order();
+        for (int oneMap = 0; oneMap < hOrd; oneMap++) {
+            ex: for (int[] delta : deltas) {
+                int[] beta = new int[kOrd];
+                beta[1] = from(oneMap, 0);
+                for (int i = 2; i < kOrd; i++) {
+                    int conj = conjugate(beta[1], delta[i - 1]);
+                    beta[i] = op(beta[i - 1], conj);
+                }
+                beta[0] = op(beta[kOrd - 1], conjugate(beta[1], delta[kOrd - 1]));
+                for (int k1 = 0; k1 < kOrd; k1++) {
+                    for (int k2 = 0; k2 < kOrd; k2++) {
+                        int conj = conjugate(beta[k2], delta[k1]);
+                        if (beta[k.op(k1, k2)] != op(beta[k1], conj)) {
+                            continue ex;
+                        }
+                    }
+                }
+                ex1: for (int[] alpha : alphas) {
+                    for (int h1 = 0; h1 < hOrd; h1++) {
+                        for (int k1 = 0; k1 < kOrd; k1++) {
+                            int ahk = alpha[conjugate(from(h1, 0), from(0, k1)) / kOrd];
+                            int ahbd = conjugate(from(alpha[h1], 0), op(beta[k1], delta[k1])) / kOrd;
+                            if (ahk != ahbd) {
+                                continue ex1;
+                            }
+                        }
+                    }
+                    int[] auth = new int[order()];
+                    for (int h1 = 0; h1 < hOrd; h1++) {
+                        for (int k1 = 0; k1 < kOrd; k1++) {
+                            int el = from(h1, k1);
+                            auth[el] = op(op(from(alpha[h1], 0), beta[k1]), from(0, delta[k1]));
+                        }
+                    }
+                    result.add(auth);
+                }
+            }
+        }
+        int[][] res = result.toArray(int[][]::new);
+        Arrays.parallelSort(res, Combinatorics::compareArr);
+        return res;
     }
 }
