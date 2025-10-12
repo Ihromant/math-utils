@@ -185,7 +185,9 @@ public class BibdFinder6CyclicTest {
         List<Des> states = new ArrayList<>();
         states.add(Des.empty(v, init.size()));
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
+        AtomicInteger ai = new AtomicInteger();
         while (!states.isEmpty()) {
+            ai.set(0);
             System.out.println("Curr length: " + states.getFirst().curr.size() + " count " + states.size());
             List<Des> next = Collections.synchronizedList(new ArrayList<>());
             states.stream().parallel().forEach(old -> {
@@ -210,6 +212,10 @@ public class BibdFinder6CyclicTest {
                     return true;
                 };
                 find(init, intersecting, old, pred);
+                int val = ai.incrementAndGet();
+                if (val % 10 == 0) {
+                    System.out.println(val);
+                }
             });
             states = new ArrayList<>(next);
         }
