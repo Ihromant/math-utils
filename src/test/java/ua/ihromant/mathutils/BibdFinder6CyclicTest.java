@@ -123,10 +123,9 @@ public class BibdFinder6CyclicTest {
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
         BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
             int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
-            for (int[] auth : auths) {
-                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
-                    return true;
-                }
+            if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(base,
+                    Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new)))) {
+                return true;
             }
             if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
                 if (ord % 2 == 0 && !orderTwo.diff(filter).isEmpty()) {
@@ -202,10 +201,9 @@ public class BibdFinder6CyclicTest {
                 }
                 Predicate<State[]> pred = lst -> {
                     int[][] base = Arrays.stream(lst).map(st -> st.block.toArray()).toArray(int[][]::new);
-                    for (int[] auth : auths) {
-                        if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
-                            return true;
-                        }
+                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(base,
+                            Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new)))) {
+                        return true;
                     }
                     next.add(lst);
                     return true;
