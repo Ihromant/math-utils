@@ -181,7 +181,7 @@ public class BibdFinder6CyclicTest {
         State state = new State(zero, zero, empty, zero, 1);
         searchDesigns(table, empty, new State[0], state, v, k, 0, cons);
         FixBS[] intersecting = intersecting(init);
-        System.out.println("Initial " + init.size() + " auths " + GroupIndex.identify(table));
+        System.out.println("Initial " + init.size() + " auths " + auths.length + " group " + GroupIndex.identify(table));
         List<Des> states = new ArrayList<>();
         states.add(Des.empty(v, init.size()));
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
