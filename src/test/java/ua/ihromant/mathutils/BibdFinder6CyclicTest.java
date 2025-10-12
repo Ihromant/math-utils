@@ -29,7 +29,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -62,14 +61,14 @@ public class BibdFinder6CyclicTest {
         try (FileOutputStream fos = new FileOutputStream(f);
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
-            BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-                int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+            Predicate<Des> pred = des -> {
+                int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
                 for (int[] auth : auths) {
                     if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
                         return true;
                     }
                 }
-                if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
+                if ((v - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
                     ps.println(Arrays.deepToString(base));
                     ps.flush();
                 }
@@ -78,7 +77,7 @@ public class BibdFinder6CyclicTest {
             FixBS[] intersecting = intersecting(states);
             FixBS available = new FixBS(states.size());
             available.set(0, states.size());
-            find(states, intersecting, available, -1, new FixBS(v), List.of(), pred);
+            find(states, intersecting, Des.empty(v, states.size()), pred);
         }
     }
 
@@ -121,14 +120,14 @@ public class BibdFinder6CyclicTest {
         searchDesigns(table, empty, new State[0], state, v, k, 0, cons);
         System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
-        BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-            int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+        Predicate<Des> pred = des -> {
+            int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
             if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(base,
                     Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new)))) {
                 return true;
             }
-            if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0 && !orderTwo.diff(filter).isEmpty()) {
+            if ((v - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
+                if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
                     return false;
                 }
                 PrintStream ps = openIfMissing(base.length, streams, k, group, fixed);
@@ -141,7 +140,7 @@ public class BibdFinder6CyclicTest {
         FixBS[] intersecting = intersecting(states);
         FixBS available = new FixBS(states.size());
         available.set(0, states.size());
-        find(states, intersecting, available, -1, new FixBS(v), List.of(), pred);
+        find(states, intersecting, Des.empty(v, states.size()), pred);
         streams.values().forEach(PrintStream::close);
     }
 
@@ -169,46 +168,48 @@ public class BibdFinder6CyclicTest {
         int k = 6;
         int[][] auths = auth(table);
         FixBS orderTwo = orderTwo(table, v);
-        List<State[]> init = new ArrayList<>();
+        List<State> init = new ArrayList<>();
         Predicate<State[]> cons = arr -> {
-            int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
-            for (int[] auth : auths) {
-                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
-                    return true;
-                }
+            State st = arr[0];
+            if (st.stabilizer.cardinality() > 1) {
+                init.add(st);
             }
-            init.add(arr);
             return true;
         };
         FixBS zero = FixBS.of(v, 0);
         FixBS empty = new FixBS(v);
         State state = new State(zero, zero, empty, zero, 1);
         searchDesigns(table, empty, new State[0], state, v, k, 0, cons);
+        FixBS[] intersecting = intersecting(init);
         System.out.println("Initial " + init.size() + " auths " + GroupIndex.identify(table));
-        List<State[]> states = new ArrayList<>(init);
+        List<Des> states = new ArrayList<>();
+        states.add(Des.empty(v, init.size()));
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
         while (!states.isEmpty()) {
-            System.out.println("Curr length: " + states.getFirst().length + " count " + states.size());
-            List<State[]> next = Collections.synchronizedList(new ArrayList<>());
-            states.stream().parallel().forEach(curr -> {
-                FixBS ftr = Arrays.stream(curr).map(State::filter).reduce(new FixBS(v), FixBS::union);
+            System.out.println("Curr length: " + states.getFirst().curr.size() + " count " + states.size());
+            List<Des> next = Collections.synchronizedList(new ArrayList<>());
+            states.stream().parallel().forEach(old -> {
+                FixBS ftr = old.curr.stream().map(State::filter).reduce(new FixBS(v), FixBS::union);
                 if ((v - 1 - ftr.cardinality()) % (k * (k - 1)) == 0) {
                     if (ord % 2 != 0 || orderTwo.diff(ftr).isEmpty()) {
-                        PrintStream ps = openIfMissing(curr.length, streams, k, group, fixed);
-                        ps.println(Arrays.deepToString(Arrays.stream(curr).map(st -> st.block.toArray()).toArray(int[][]::new)));
+                        PrintStream ps = openIfMissing(old.curr.size(), streams, k, group, fixed);
+                        ps.println(Arrays.deepToString(old.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
                         ps.flush();
                     }
                 }
-                Predicate<State[]> pred = lst -> {
-                    int[][] base = Arrays.stream(lst).map(st -> st.block.toArray()).toArray(int[][]::new);
+                Predicate<Des> pred = des -> {
+                    if (des.curr.size() <= old.curr.size()) {
+                        return false;
+                    }
+                    int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
                     if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(base,
                             Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new)))) {
                         return true;
                     }
-                    next.add(lst);
+                    next.add(des);
                     return true;
                 };
-                searchDesigns(table, ftr, curr, state, v, k, curr[curr.length - 1].block().nextSetBit(1), pred);
+                find(init, intersecting, old, pred);
             });
             states = new ArrayList<>(next);
         }
@@ -385,28 +386,26 @@ public class BibdFinder6CyclicTest {
         searchDesigns(table, new FixBS(v), design, state, v, k, 0, cons);
         System.out.println("Stabilized size " + stabilized.size());
         List<List<State>> states = new ArrayList<>();
-        BiPredicate<List<State>, FixBS> pred = (lst, filter) -> {
-            int[][] base = lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+        Predicate<Des> pred = des -> {
+            int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
             for (int[] auth : auths) {
                 if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
                     return true;
                 }
             }
-            if ((v - 1 - filter.cardinality()) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0 && !orderTwo.diff(filter).isEmpty()) {
+            if ((v - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
+                if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
                     return false;
                 }
                 synchronized (states) {
-                    states.add(lst);
+                    states.add(des.curr);
                 }
             }
             return false;
         };
         stabilized.sort(Comparator.comparing(State::block));
         FixBS[] intersecting = intersecting(stabilized);
-        FixBS available = new FixBS(stabilized.size());
-        available.set(0, stabilized.size());
-        find(stabilized, intersecting, available, -1, new FixBS(v), List.of(), pred);
+        find(stabilized, intersecting, Des.empty(v, stabilized.size()), pred);
         if (states.isEmpty()) {
             return;
         }
@@ -438,27 +437,36 @@ public class BibdFinder6CyclicTest {
         });
     }
 
-    private static void find(List<State> states, FixBS[] intersecting, FixBS available, int prev, FixBS globalFilter, List<State> curr, BiPredicate<List<State>, FixBS> pred) {
-        if (pred.test(curr, globalFilter)) {
+    private record Des(List<State> curr, FixBS filter, FixBS available, int idx) {
+        private Des accept(State state, FixBS intersecting, int idx) {
+            List<State> nextCurr = new ArrayList<>(curr);
+            nextCurr.add(state);
+            return new Des(nextCurr, filter.union(state.filter()), available.diff(intersecting), idx);
+        }
+
+        private static Des empty(int v, int statesSize) {
+            FixBS available = new FixBS(statesSize);
+            available.set(0, statesSize);
+            return new Des(List.of(), new FixBS(v), available, -1);
+        }
+    }
+
+    private static void find(List<State> states, FixBS[] intersecting, Des des, Predicate<Des> pred) {
+        if (pred.test(des)) {
             return;
         }
-        if (curr.size() < 3) {
+        FixBS available = des.available;
+        if (des.curr.size() < 3) {
             IntList base = new IntList(available.cardinality());
-            for (int i = available.nextSetBit(prev + 1); i >= 0; i = available.nextSetBit(i + 1)) {
+            for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
                 base.add(i);
             }
             Arrays.stream(base.toArray()).parallel().forEach(i -> {
-                State st = states.get(i);
-                List<State> nextCurr = new ArrayList<>(curr);
-                nextCurr.add(st);
-                find(states, intersecting, available.diff(intersecting[i]), i, globalFilter.union(st.filter), nextCurr, pred);
+                find(states, intersecting, des.accept(states.get(i), intersecting[i], i), pred);
             });
         } else {
-            for (int i = available.nextSetBit(prev + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-                State st = states.get(i);
-                List<State> nextCurr = new ArrayList<>(curr);
-                nextCurr.add(st);
-                find(states, intersecting, available.diff(intersecting[i]), i, globalFilter.union(st.filter), nextCurr, pred);
+            for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
+                find(states, intersecting, des.accept(states.get(i), intersecting[i], i), pred);
             }
         }
     }
