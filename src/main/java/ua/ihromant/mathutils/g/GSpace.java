@@ -9,6 +9,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -146,10 +147,10 @@ public class GSpace {
     }
 
     private int[][] genAuthsNew() {
-        Set<int[]> sortedAuths = new TreeSet<>(Combinatorics::compareArr);
+        List<int[]> sortedAuths = Collections.synchronizedList(new ArrayList<>());
         int[][] grAuths = group.auth();
         int[][] baseMappings = generateBaseMappings();
-        for (int[] auth : grAuths) {
+        Arrays.stream(grAuths).parallel().forEach(auth -> {
             ex: for (int[] baseMapping : baseMappings) {
                 int[] mapping = baseMapping.clone();
                 for (int g = 0; g < group.order(); g++) {
@@ -168,7 +169,7 @@ public class GSpace {
                 }
                 sortedAuths.add(mapping);
             }
-        }
+        });
         return sortedAuths.toArray(int[][]::new);
     }
 
