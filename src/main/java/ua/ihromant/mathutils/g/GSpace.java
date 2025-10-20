@@ -26,7 +26,7 @@ public class GSpace {
     private final FixBS emptyFilter;
     private final int k;
     private final int[][] cayley;
-    private final List<FixBS> differences;
+    private final FixBS[] differences;
     private final int[] diffMap;
     private final FixBS[][] preImages;
     private final State[][] statesCache;
@@ -112,9 +112,9 @@ public class GSpace {
             }
         }
         FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());
-        this.differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toList();
+        this.differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toArray(FixBS[]::new);
         this.diffMap = new int[v * v];
-        int sz = differences.size();
+        int sz = differences.length;
         for (int i = 0; i < sz; i++) {
             FixBS comp = difference(i);
             for (int val = comp.nextSetBit(0); val >= 0; val = comp.nextSetBit(val + 1)) {
@@ -224,12 +224,12 @@ public class GSpace {
         return auths[i];
     }
 
-    public List<FixBS> differences() {
+    public FixBS[] differences() {
         return differences;
     }
 
     public FixBS difference(int idx) {
-        return differences.get(idx);
+        return differences[idx];
     }
 
     public int diffIdx(int xy) {
