@@ -42,18 +42,36 @@ public class SemiDirectProduct implements Group {
         }
     }
 
-    public SemiDirectProduct(Group h, CyclicGroup k, int idx, boolean b) {
+    public SemiDirectProduct(Group h, CyclicGroup k, int idx, boolean fromAuth) {
         this.h = h;
         this.k = k;
         this.gr = new PermutationGroup(h.auth());
         this.psi = new int[k.order()];
-        this.elem = elem(gr, k.order(), idx);
+        this.elem = fromAuth ? autElem(gr, k.order(), idx) : conjElem(gr, k.order(), idx);
         for (int i = 1; i < k.order(); i++) {
             psi[i] = gr.mul(elem, i);
         }
     }
 
-    private static int elem(PermutationGroup gr, int elOrder, int idx) {
+    private static int autElem(PermutationGroup gr, int elOrder, int idx) {
+        Group table = gr.asTable();
+        int order = table.order();
+        int cnt = 0;
+        int[][] auth = table.auth();
+        for (int x = 0; x < order; x++) {
+            int el = x;
+            int ord = table.order(el);
+            if (ord != elOrder || Arrays.stream(auth).parallel().anyMatch(aut -> aut[el] < el)) {
+                continue;
+            }
+            if (cnt++ == idx) {
+                return el;
+            }
+        }
+        throw new IllegalArgumentException();
+    }
+
+    private static int conjElem(PermutationGroup gr, int elOrder, int idx) {
         int order = gr.order();
         int cnt = 0;
         ex: for (int x = 0; x < order; x++) {
