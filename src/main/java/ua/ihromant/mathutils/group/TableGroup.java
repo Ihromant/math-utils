@@ -33,10 +33,10 @@ public class TableGroup implements Group {
         }
         this.squareRoots = Arrays.stream(roots).map(IntList::toArray).toArray(int[][]::new);
         this.orders = new int[operationTable.length];
-        this.powers = new int[operationTable.length][operationTable.length];
+        this.powers = new int[operationTable.length][operationTable.length + 1];
         for (int el = 0; el < operationTable.length; el++) {
             int comb = 0;
-            for (int ord = 1; ord < operationTable.length; ord++) {
+            for (int ord = 1; ord <= operationTable.length; ord++) {
                 comb = op(comb, el);
                 if (comb == 0 && orders[el] == 0) {
                     orders[el] = ord;
