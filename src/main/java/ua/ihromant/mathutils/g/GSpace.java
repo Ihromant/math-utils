@@ -224,8 +224,8 @@ public class GSpace {
         return auths[i];
     }
 
-    public FixBS[] differences() {
-        return differences;
+    public int diffLength() {
+        return differences.length;
     }
 
     public FixBS difference(int idx) {
