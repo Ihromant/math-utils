@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils.g;
 
-import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
@@ -14,7 +13,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -28,7 +26,7 @@ public class GSpace {
     private final FixBS emptyFilter;
     private final int k;
     private final int[][] cayley;
-    private final List<Relation> relations;
+    private final List<FixBS> differences;
     private final int[] diffMap;
     private final FixBS[][] preImages;
     private final State[][] statesCache;
@@ -54,7 +52,7 @@ public class GSpace {
         return Arrays.stream(comps).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
     }
 
-    private GSpace(int k, Group table, boolean genAuths, SubGroup... subs) {
+    public GSpace(int k, Group table, boolean genAuths, SubGroup... subs) {
         this.group = table;
         this.k = k;
         this.cosets = new GCosets[subs.length];
@@ -114,9 +112,9 @@ public class GSpace {
             }
         }
         FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());
-        this.relations = qf.components().stream().filter(c -> !c.intersects(diagonal)).map(c -> new Relation(v, c)).toList();
+        this.differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toList();
         this.diffMap = new int[v * v];
-        int sz = relations.size();
+        int sz = differences.size();
         for (int i = 0; i < sz; i++) {
             FixBS comp = difference(i);
             for (int val = comp.nextSetBit(0); val >= 0; val = comp.nextSetBit(val + 1)) {
@@ -226,8 +224,12 @@ public class GSpace {
         return auths[i];
     }
 
+    public List<FixBS> differences() {
+        return differences;
+    }
+
     public FixBS difference(int idx) {
-        return relations.get(idx).diffs();
+        return differences.get(idx);
     }
 
     public int diffIdx(int xy) {
