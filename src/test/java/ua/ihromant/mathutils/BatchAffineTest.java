@@ -1184,6 +1184,7 @@ public class BatchAffineTest {
                 // hyperscale - point infinite, line finite, point does not belong to line
                 if (proj.flag(dl, o)) { // point in infinity
                     //lines = new int[]{dl}; // translation
+                    //lines = IntStream.of(proj.lines(o)).filter(l -> l != dl).toArray(); // shear
                     lines = proj.lines(o); // translation + shear
                     //lines = IntStream.range(0, proj.pointCount()).toArray(); // translation + shear + hyperscale
                 } else {
@@ -1308,7 +1309,115 @@ public class BatchAffineTest {
                     }
                 }
             }
-            System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(v -> v.size()).sorted().toArray()));
+            System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
+            //System.out.println(GroupIndex.identify(gr));
+        }
+    }
+
+    @Test
+    public void parallelTriangles() throws IOException {
+        int k = 16;
+        String name = "dhall.txt";
+        int dl = 0;
+        try (InputStream is = new FileInputStream(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k, name));
+             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+             BufferedReader br = new BufferedReader(isr)) {
+            Liner proj = readProj(br);
+            int pc = proj.pointCount();
+            int ts = pc * pc * pc;
+            QuickFind qf = new QuickFind(ts);
+            for (int a = 0; a < pc; a++) {
+                for (int b = 0; b < pc; b++) {
+                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, a, a}, pc));
+                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, b}, pc));
+                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, a}, pc));
+                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{b, a, a}, pc));
+                    for (int dp : proj.line(dl)) {
+                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, dp}, pc));
+                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, dp, b}, pc));
+                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{dp, a, b}, pc));
+                    }
+                    if (a == b) {
+                        continue;
+                    }
+                    int ab = proj.line(a, b);
+                    for (int c : proj.line(ab)) {
+                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, c}, pc));
+                    }
+                }
+            }
+            for (int a = 0; a < pc; a++) {
+                if (proj.flag(dl, a)) {
+                    continue;
+                }
+                for (int b = 0; b < pc; b++) {
+                    if (proj.flag(dl, b) || a == b) {
+                        continue;
+                    }
+                    int ab = proj.line(a, b);
+                    int inf = proj.intersection(dl, ab);
+                    for (int c = 0; c < pc; c++) {
+                        if (proj.flag(dl, c)) {
+                            continue;
+                        }
+                        //qf.union(from(new int[]{a, b, c}, pc), from(new int[]{b, c, a}, pc));
+                        //qf.union(from(new int[]{a, b, c}, pc), from(new int[]{c, a, b}, pc));
+                        int cd = proj.line(c, inf);
+                        for (int d : proj.line(cd)) {
+                            if (proj.flag(dl, d)) {
+                                continue;
+                            }
+                            qf.union(from(new int[]{a, b, c}, pc), from(new int[]{a, b, d}, pc));
+                            qf.union(from(new int[]{a, c, b}, pc), from(new int[]{a, d, b}, pc));
+                            qf.union(from(new int[]{b, a, c}, pc), from(new int[]{b, a, d}, pc));
+                            qf.union(from(new int[]{b, c, a}, pc), from(new int[]{b, d, a}, pc));
+                            qf.union(from(new int[]{c, a, b}, pc), from(new int[]{d, a, b}, pc));
+                            qf.union(from(new int[]{c, b, a}, pc), from(new int[]{d, b, a}, pc));
+                        }
+                    }
+                }
+            }
+            Set<FixBS> comps = new HashSet<>(qf.components());
+            comps.removeIf(l -> {
+                int st = l.nextSetBit(0);
+                int[] abc = to(st, pc);
+                return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
+                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                        || proj.collinear(abc[0], abc[1], abc[2]);
+            });
+            System.out.println(comps.size());
+            for (int i = 0; i < ts; i++) {
+                int[] abc = to(i, pc);
+                int[] acb = new int[]{abc[0], abc[2], abc[1]};
+                int[] bac = new int[]{abc[1], abc[0], abc[2]};
+                int[] bca = new int[]{abc[1], abc[2], abc[0]};
+                int[] cab = new int[]{abc[2], abc[0], abc[1]};
+                int[] cba = new int[]{abc[2], abc[1], abc[0]};
+                qf.union(i, from(acb, pc));
+                qf.union(i, from(bac, pc));
+                qf.union(i, from(bca, pc));
+                qf.union(i, from(cab, pc));
+                qf.union(i, from(cba, pc));
+            }
+            Set<FixBS> comps1 = new HashSet<>(qf.components());
+            comps1.removeIf(l -> {
+                int st = l.nextSetBit(0);
+                int[] abc = to(st, pc);
+                return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
+                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                        || proj.collinear(abc[0], abc[1], abc[2]);
+            });
+            System.out.println(comps1.size());
+            Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
+            for (FixBS comp : comps) {
+                for (FixBS comp1 : comps1) {
+                    if (comp.intersects(comp1)) {
+                        multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
+                        break;
+                    }
+                }
+            }
+            System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
             //System.out.println(GroupIndex.identify(gr));
         }
     }
