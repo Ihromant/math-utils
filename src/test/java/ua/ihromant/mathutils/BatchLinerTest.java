@@ -179,6 +179,14 @@ public class BatchLinerTest {
 
     @Test
     public void test45_5() throws IOException {
+        List<Liner> planes = getUpdated45();
+        assertEquals(1072, planes.size());
+        IntStream.range(0, planes.size()).parallel().forEach(i -> {
+            orbits(planes.get(i), i);
+        });
+    }
+
+    private static List<Liner> getUpdated45() throws IOException {
         String s = Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-45-5-1.des"));
         ObjectMapper om = new ObjectMapper();
         List<Liner> planes = new ArrayList<>();
@@ -199,10 +207,7 @@ public class BatchLinerTest {
             planes.add(new Liner(45, lines));
             s = s.substring(lIdx + 20);
         }
-        assertEquals(1072, planes.size());
-        IntStream.range(0, planes.size()).parallel().forEach(i -> {
-            orbits(planes.get(i), i);
-        });
+        return planes;
     }
 
     @Test
@@ -1092,5 +1097,115 @@ public class BatchLinerTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void testParallel() throws IOException {
+//        List<Liner> planes = readPlanes(66, 6);
+//        for (int i = 0; i < planes.size(); i++) {
+//            parallelTriangles(planes.get(i), i);
+//        }
+        Liner denniston = HyperbolicPlaneTest.dennistonArc(16, 8);
+        parallelTriangles(denniston, 0);
+        Liner proj = new Liner(new GaloisField(5).generatePlane());
+        //parallelTriangles(proj, 0);
+        AffinePlane pl = new AffinePlane(proj, 0);
+        Liner lnrAff = pl.toLiner();
+        parallelTriangles(lnrAff, 0);
+    }
+
+    private static void parallelTriangles(Liner lnr, int idx) throws IOException {
+        int pc = lnr.pointCount();
+        int lc = lnr.lineCount();
+        int ts = pc * pc * pc;
+        System.out.println("Liner " + idx);
+        QuickFind qf = new QuickFind(ts);
+        for (int a = 0; a < pc; a++) {
+            for (int b = 0; b < pc; b++) {
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, a, a}, pc));
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, b}, pc));
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, a}, pc));
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{b, a, a}, pc));
+                if (a == b) {
+                    continue;
+                }
+                int ab = lnr.line(a, b);
+                for (int c : lnr.line(ab)) {
+                    qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, c}, pc));
+                }
+            }
+        }
+        for (int ln1 = 0; ln1 < lc; ln1++) {
+            for (int ln2 = 0; ln2 < lc; ln2++) {
+                if (lnr.intersection(ln1, ln2) >= 0) {
+                    continue;
+                }
+                for (int a : lnr.line(ln1)) {
+                    for (int b : lnr.line(ln1)) {
+                        if (a == b) {
+                            continue;
+                        }
+                        for (int c : lnr.line(ln2)) {
+                            for (int d : lnr.line(ln2)) {
+                                qf.union(from(new int[]{a, b, c}, pc), from(new int[]{a, b, d}, pc));
+                                qf.union(from(new int[]{a, c, b}, pc), from(new int[]{a, d, b}, pc));
+                                qf.union(from(new int[]{b, a, c}, pc), from(new int[]{b, a, d}, pc));
+                                qf.union(from(new int[]{b, c, a}, pc), from(new int[]{b, d, a}, pc));
+                                qf.union(from(new int[]{c, a, b}, pc), from(new int[]{d, a, b}, pc));
+                                qf.union(from(new int[]{c, b, a}, pc), from(new int[]{d, b, a}, pc));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Set<FixBS> comps = new HashSet<>(qf.components());
+        comps.removeIf(l -> {
+            int st = l.nextSetBit(0);
+            int[] abc = to(st, pc);
+            return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
+                    || lnr.collinear(abc[0], abc[1], abc[2]);
+        });
+        System.out.println(comps.size());
+        for (int i = 0; i < ts; i++) {
+            int[] abc = to(i, pc);
+            int[] acb = new int[]{abc[0], abc[2], abc[1]};
+            int[] bac = new int[]{abc[1], abc[0], abc[2]};
+            int[] bca = new int[]{abc[1], abc[2], abc[0]};
+            int[] cab = new int[]{abc[2], abc[0], abc[1]};
+            int[] cba = new int[]{abc[2], abc[1], abc[0]};
+            qf.union(i, from(acb, pc));
+            qf.union(i, from(bac, pc));
+            qf.union(i, from(bca, pc));
+            qf.union(i, from(cab, pc));
+            qf.union(i, from(cba, pc));
+        }
+        Set<FixBS> comps1 = new HashSet<>(qf.components());
+        comps1.removeIf(l -> {
+            int st = l.nextSetBit(0);
+            int[] abc = to(st, pc);
+            return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
+                    || lnr.collinear(abc[0], abc[1], abc[2]);
+        });
+        System.out.println(comps1.size());
+        Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
+        for (FixBS comp : comps) {
+            for (FixBS comp1 : comps1) {
+                if (comp.intersects(comp1)) {
+                    multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
+                    break;
+                }
+            }
+        }
+        System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
+        //System.out.println(GroupIndex.identify(gr));
+    }
+
+    private static int from(int[] abc, int pc) {
+        return abc[0] * pc * pc + abc[1] * pc + abc[2];
+    }
+
+    private static int[] to(int p, int pc) {
+        return new int[]{p / pc / pc, p / pc % pc, p % pc};
     }
 }
