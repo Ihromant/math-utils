@@ -40,7 +40,7 @@ public class Applicator4Test {
         };
         int sz = space.differences().length;
         State1 state = new State1(FixBS.of(v, 0), FixBS.of(group.order(), 0), new FixBS(sz), new IntList[sz], 1);
-        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, sCons);
+        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, 0, sCons);
         System.out.println("Singles size: " + singles.size());
     }
 
@@ -57,7 +57,7 @@ public class Applicator4Test {
             return true;
         };
         State1 state = space.forInitial(0, 1);
-        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, sCons);
+        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, 1, sCons);
         System.out.println("Singles size: " + singles.size());
         AtomicInteger cnt = new AtomicInteger();
         AtomicInteger ai = new AtomicInteger();
@@ -76,7 +76,7 @@ public class Applicator4Test {
             for (State1 st : pr) {
                 st.updateFilter(newFilter, space);
             }
-            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), fCons);
+            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), 0, fCons);
             int vl = cnt.incrementAndGet();
             if (vl % 100 == 0) {
                 System.out.println(vl);
@@ -114,7 +114,7 @@ public class Applicator4Test {
                         return true;
                     };
                     State1 state = space.forInitial(0, 1);
-                    searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, fCons);
+                    searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, 1, fCons);
                     System.out.println("Singles size: " + singles.size());
                     List<State1[]> pairs = new ArrayList<>();
                     List<State1[]> sync = Collections.synchronizedList(pairs);
@@ -134,7 +134,7 @@ public class Applicator4Test {
                         for (State1 st : pr) {
                             st.updateFilter(newFilter, space);
                         }
-                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), sCons);
+                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), 0, sCons);
                         int vl = cnt.incrementAndGet();
                         if (vl % 10 == 0) {
                             System.out.println(vl);
@@ -161,7 +161,7 @@ public class Applicator4Test {
                         for (State1 st : pr) {
                             st.updateFilter(newFilter, space);
                         }
-                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), tCons);
+                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), 0, tCons);
                         int vl = cnt.incrementAndGet();
                         if (vl % 100 == 0) {
                             System.out.println(vl);
@@ -175,12 +175,9 @@ public class Applicator4Test {
 
     @Test
     public void twoStage() throws IOException {
-        int k = 6;
-        Group semi = new SemiDirectProduct(new CyclicGroup(19), new CyclicGroup(3));
-        int[][] auth = semi.auth();
-        TableGroup group = semi.asTable();
-        group.setCachedAuth(auth);
-        GSpace1 space = new GSpace1(k, group, true, 3, 1);
+        int k = 7;
+        Group group = new SemiDirectProduct(new CyclicGroup(169), new CyclicGroup(3));
+        GSpace1 space = new GSpace1(k, group, true, 3);
         int v = space.v();
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
         List<State1[]> singles = new ArrayList<>();
@@ -189,7 +186,7 @@ public class Applicator4Test {
             return true;
         };
         State1 state = space.forInitial(0, 1);
-        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, fCons);
+        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, 1, fCons);
         System.out.println("Singles size: " + singles.size());
         List<State1[]> pairs = new ArrayList<>();
         List<State1[]> sync = Collections.synchronizedList(pairs);
@@ -209,7 +206,7 @@ public class Applicator4Test {
             for (State1 st : pr) {
                 st.updateFilter(newFilter, space);
             }
-            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), sCons);
+            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), 0, sCons);
             int vl = cnt.incrementAndGet();
             if (vl % 10 == 0) {
                 System.out.println(vl);
@@ -236,7 +233,7 @@ public class Applicator4Test {
             for (State1 st : pr) {
                 st.updateFilter(newFilter, space);
             }
-            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), tCons);
+            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], newFilter.currOrbit(v), 0, tCons);
             int vl = cnt.incrementAndGet();
             if (vl % 100 == 0) {
                 System.out.println(vl);
@@ -245,7 +242,7 @@ public class Applicator4Test {
         System.out.println("Results " + ai);
     }
 
-    private static void searchDesigns(GSpace1 space, OrbitFilter filter, State1[] currDesign, State1 state, int orbit, BiPredicate<State1[], Integer> cons) {
+    private static void searchDesigns(GSpace1 space, OrbitFilter filter, State1[] currDesign, State1 state, int orbit, int prev, BiPredicate<State1[], Integer> cons) {
         int v = space.v();
         if (state.size() == space.k()) {
             State1[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
@@ -256,20 +253,21 @@ public class Applicator4Test {
             if (cons.test(nextDesign, nextOrbit)) {
                 return;
             }
-            State1 nextState = space.forInitial(space.oBeg(nextOrbit), nextFilter.filters()[nextOrbit].nextClearBit(0));
-            searchDesigns(space, nextFilter, nextDesign, nextState, nextOrbit, cons);
+            int snd = nextFilter.filters()[nextOrbit].nextClearBit(0);
+            State1 nextState = space.forInitial(space.oBeg(nextOrbit), snd);
+            searchDesigns(space, nextFilter, nextDesign, nextState, nextOrbit, snd, cons);
         } else {
             FixBS ftr = filter.filters()[orbit];
-            for (int el = ftr.nextClearBit(state.block().previousSetBit(v) + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
+            for (int el = ftr.nextClearBit(prev + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
                 State1 nextState = state.acceptElem(space, filter, el);
                 if (nextState != null) {
-                    searchDesigns(space, filter, currDesign, nextState, orbit, cons);
+                    searchDesigns(space, filter, currDesign, nextState, orbit, el, cons);
                 }
             }
         }
     }
 
-    private static void searchDesignsFirst(GSpace1 space, OrbitFilter filter, State1[] currDesign, State1 state, int orbit, BiPredicate<State1[], Integer> cons) {
+    private static void searchDesignsFirst(GSpace1 space, OrbitFilter filter, State1[] currDesign, State1 state, int orbit, int prev, BiPredicate<State1[], Integer> cons) {
         int v = space.v();
         if (state.size() == space.k()) {
             State1[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
@@ -280,14 +278,15 @@ public class Applicator4Test {
             if (cons.test(nextDesign, nextOrbit)) {
                 return;
             }
-            State1 nextState = space.forInitial(space.oBeg(nextOrbit), nextFilter.filters()[nextOrbit].nextClearBit(0));
-            searchDesignsFirst(space, nextFilter, nextDesign, nextState, nextOrbit, cons);
+            int snd = nextFilter.filters()[nextOrbit].nextClearBit(0);
+            State1 nextState = space.forInitial(space.oBeg(nextOrbit), snd);
+            searchDesignsFirst(space, nextFilter, nextDesign, nextState, nextOrbit, snd, cons);
         } else {
             FixBS ftr = filter.filters()[orbit];
-            for (int el = ftr.nextClearBit(state.block().previousSetBit(v) + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
+            for (int el = ftr.nextClearBit(prev + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
                 State1 nextState = state.acceptElem(space, filter, el);
                 if (nextState != null && space.minimal(nextState.block())) {
-                    searchDesignsFirst(space, filter, currDesign, nextState, orbit, cons);
+                    searchDesignsFirst(space, filter, currDesign, nextState, orbit, el, cons);
                 }
             }
         }

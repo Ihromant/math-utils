@@ -20,6 +20,9 @@ public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] dif
     }
 
     public State1 acceptElem(GSpace1 gSpace, OrbitFilter globalFilter, int val) {
+        if (block.get(val)) {
+            return null;
+        }
         int v = gSpace.v();
         int k = gSpace.k();
         FixBS newBlock = block.copy();
