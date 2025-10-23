@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
@@ -179,20 +180,26 @@ public interface Group {
         return result;
     }
 
-    private int[] gens(IntList genList, FixBS currGroup) {
+    private void gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
         if (currGroup.cardinality() == ord) {
-            return genList.toArray();
+            currGens.set(genList.toArray());
+            return;
         }
-        int gen = currGroup.nextClearBit(0);
-        genList.add(gen);
-        FixBS nextGroup = currGroup.copy();
-        FixBS additional = new FixBS(ord);
-        additional.set(gen);
-        do {
-            nextGroup.or(additional);
-        } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
-        return gens(genList, nextGroup);
+        if (genList.size() + 1 >= currGens.get().length) {
+            return;
+        }
+        for (int gen = currGroup.nextClearBit(0); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
+            IntList nextGenList = genList.copy();
+            nextGenList.add(gen);
+            FixBS nextGroup = currGroup.copy();
+            FixBS additional = new FixBS(ord);
+            additional.set(gen);
+            do {
+                nextGroup.or(additional);
+            } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
+            gens(nextGenList, nextGroup, currGens);
+        }
     }
 
     private FixBS additional(FixBS currGroup, FixBS addition, int order) {
@@ -220,7 +227,10 @@ public interface Group {
             bOrd[e.getKey()] = e.getValue().toArray();
         }
         IntList list = new IntList(order);
-        int[] gens = gens(list, init);
+        AtomicReference<int[]> ar = new AtomicReference<>();
+        ar.set(IntStream.range(0, order()).toArray());
+        gens(list, init, ar);
+        int[] gens = ar.get();
         int ord = order(gens[0]);
         Arrays.stream(bOrd[ord]).parallel().forEach(v -> {
             PartialMap pm = new PartialMap(FixBS.of(order, 0), new int[order]);
