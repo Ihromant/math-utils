@@ -182,8 +182,10 @@ public interface Group {
 
     private void gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
-        if (currGroup.cardinality() == ord) {
-            currGens.set(genList.toArray());
+        if (currGroup.isFull(ord)) {
+            if (currGens.get().length > genList.size()) {
+                currGens.set(genList.toArray());
+            }
             return;
         }
         if (genList.size() + 1 >= currGens.get().length) {
