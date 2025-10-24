@@ -145,40 +145,31 @@ public class GSpace {
     }
 
     private int[][] genAuthsNew() {
-        List<int[]> sortedAuths = Collections.synchronizedList(new ArrayList<>());
+        List<int[]> auths = Collections.synchronizedList(new ArrayList<>());
         int[][] grAuths = group.auth();
-        int[][] baseMappings = generateBaseMappings();
-        Arrays.stream(grAuths).parallel().forEach(auth -> {
-            ex: for (int[] baseMapping : baseMappings) {
-                int[] mapping = baseMapping.clone();
-                for (int g = 0; g < group.order(); g++) {
-                    for (int t : oBeg) {
-                        int from = apply(g, t);
-                        int to = apply(auth[g], baseMapping[t]);
-                        int prev = mapping[from];
-                        if (prev < 0) {
-                            mapping[from] = to;
-                        } else {
-                            if (prev != to) {
-                                continue ex;
-                            }
-                        }
-                    }
-                }
-                sortedAuths.add(mapping);
-            }
-        });
-        return sortedAuths.toArray(int[][]::new);
-    }
-
-    private int[][] generateBaseMappings() {
-        List<int[]> result = new ArrayList<>();
         FixBS availableOrbits = new FixBS(cosets.length);
         availableOrbits.set(0, cosets.length);
         int[] base = new int[v];
         Arrays.fill(base, -1);
-        recur(base, 0, availableOrbits, result::add);
-        return result.toArray(int[][]::new);
+        recur(base, 0, availableOrbits, bm -> Arrays.stream(grAuths).parallel().forEach(auth -> {
+            int[] mapping = bm.clone();
+            for (int g = 0; g < group.order(); g++) {
+                for (int t : oBeg) {
+                    int from = apply(g, t);
+                    int to = apply(auth[g], bm[t]);
+                    int prev = mapping[from];
+                    if (prev < 0) {
+                        mapping[from] = to;
+                    } else {
+                        if (prev != to) {
+                            return;
+                        }
+                    }
+                }
+            }
+            auths.add(mapping);
+        }));
+        return auths.toArray(int[][]::new);
     }
 
     private void recur(int[] curr, int orbit, FixBS availableOrbits, Consumer<int[]> cons) {
@@ -196,10 +187,19 @@ public class GSpace {
             }
             FixBS nextAvailable = availableOrbits.copy();
             nextAvailable.clear(orb);
-            for (int i = 0; i < oLen; i++) {
-                int[] nextCurr = curr.clone();
-                nextCurr[start] = oBeg[orb] + i;
-                recur(nextCurr, orbit + 1, nextAvailable, cons);
+            int beg = oBeg[orb];
+            if (orbit < 3) {
+                IntStream.range(0, oLen).parallel().forEach(i -> {
+                    int[] nextCurr = curr.clone();
+                    nextCurr[start] = beg + i;
+                    recur(nextCurr, orbit + 1, nextAvailable, cons);
+                });
+            } else {
+                for (int i = 0; i < oLen; i++) {
+                    int[] nextCurr = curr.clone();
+                    nextCurr[start] = beg + i;
+                    recur(nextCurr, orbit + 1, nextAvailable, cons);
+                }
             }
         }
     }
