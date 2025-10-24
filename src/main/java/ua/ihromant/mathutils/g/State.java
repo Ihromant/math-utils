@@ -95,10 +95,8 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
     }
 
     public void updateFilter(FixBS filter, GSpace space) {
-        for (int i = 0; i < diffs.length; i++) {
-            if (diffs[i] != null) {
-                filter.or(space.difference(i));
-            }
+        for (int i = diffSet.nextSetBit(0); i >= 0; i = diffSet.nextSetBit(i + 1)) {
+            filter.or(space.difference(i));
         }
     }
 }
