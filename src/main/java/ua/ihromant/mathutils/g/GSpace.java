@@ -151,7 +151,7 @@ public class GSpace {
         availableOrbits.set(0, cosets.length);
         int[] base = new int[v];
         Arrays.fill(base, -1);
-        recur(base, 0, availableOrbits, bm -> Arrays.stream(grAuths).parallel().forEach(auth -> {
+        recur(base, 0, availableOrbits, bm -> Arrays.stream(grAuths).forEach(auth -> {
             int[] mapping = bm.clone();
             for (int g = 0; g < group.order(); g++) {
                 for (int t : oBeg) {
