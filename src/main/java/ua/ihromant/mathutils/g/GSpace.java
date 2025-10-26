@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.g;
 
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
@@ -202,6 +203,43 @@ public class GSpace {
                 }
             }
         }
+    }
+
+    private int[][] genAuthsSh() {
+        List<int[]> auths = Collections.synchronizedList(new ArrayList<>());
+        int[][] grAuths = group.auth();
+        int[] base = new int[v];
+        Arrays.fill(base, -1);
+        int[][] perms = Combinatorics.permutations(IntStream.range(0, cosets.length).toArray()).toArray(int[][]::new);
+        IntStream.range(0, cosets[0].cosetCount()).parallel().forEach(sh -> {
+            for (int[] perm : perms) {
+                int[] bm = base.clone();
+                for (int orbit = 0; orbit < perm.length; orbit++) {
+                    int start = oBeg[orbit];
+                    int end = oBeg[perm[orbit]] + sh;
+                    bm[start] = end;
+                }
+                ex: for (int[] auth : grAuths) {
+                    int[] mapping = bm.clone();
+                    for (int g = 0; g < group.order(); g++) {
+                        for (int t : oBeg) {
+                            int from = apply(g, t);
+                            int to = apply(auth[g], bm[t]);
+                            int prev = mapping[from];
+                            if (prev < 0) {
+                                mapping[from] = to;
+                            } else {
+                                if (prev != to) {
+                                    continue ex;
+                                }
+                            }
+                        }
+                    }
+                    auths.add(mapping);
+                }
+            }
+        });
+        return auths.toArray(int[][]::new);
     }
 
     public int v() {
