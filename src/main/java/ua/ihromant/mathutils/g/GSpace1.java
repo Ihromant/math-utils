@@ -386,14 +386,10 @@ public class GSpace1 {
     }
 
     public boolean minimal(State1[] states) {
-        FixBS[] blocks = new FixBS[states.length];
-        for (int i = 0; i < blocks.length; i++) {
-            blocks[i] = states[i].block();
-        }
         ex: for (int[] auth : auths) {
-            FixBS[] altBlocks = new FixBS[blocks.length];
-            for (int i = 0; i < blocks.length; i++) {
-                FixBS block = blocks[i];
+            FixBS[] altBlocks = new FixBS[states.length];
+            for (int i = 0; i < states.length; i++) {
+                FixBS block = states[i].block();
                 FixBS alt = new FixBS(v);
                 for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
                     alt.set(auth[el]);
@@ -401,8 +397,8 @@ public class GSpace1 {
                 altBlocks[i] = alt;
             }
             Arrays.sort(altBlocks);
-            for (int i = 0; i < blocks.length; i++) {
-                int cmp = altBlocks[i].compareTo(blocks[i]);
+            for (int i = 0; i < states.length; i++) {
+                int cmp = altBlocks[i].compareTo(states[i].block());
                 if (cmp < 0) {
                     return false;
                 }
@@ -415,14 +411,10 @@ public class GSpace1 {
     }
 
     public boolean parMinimal(State1[] states) {
-        FixBS[] blocks = new FixBS[states.length];
-        for (int i = 0; i < blocks.length; i++) {
-            blocks[i] = states[i].block();
-        }
         return Arrays.stream(auths).parallel().allMatch(auth -> {
-            FixBS[] altBlocks = new FixBS[blocks.length];
-            for (int i = 0; i < blocks.length; i++) {
-                FixBS block = blocks[i];
+            FixBS[] altBlocks = new FixBS[states.length];
+            for (int i = 0; i < states.length; i++) {
+                FixBS block = states[i].block();
                 FixBS alt = new FixBS(v);
                 for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
                     alt.set(auth[el]);
@@ -430,8 +422,8 @@ public class GSpace1 {
                 altBlocks[i] = alt;
             }
             Arrays.sort(altBlocks);
-            for (int i = 0; i < blocks.length; i++) {
-                int cmp = altBlocks[i].compareTo(blocks[i]);
+            for (int i = 0; i < states.length; i++) {
+                int cmp = altBlocks[i].compareTo(states[i].block());
                 if (cmp < 0) {
                     return false;
                 }
