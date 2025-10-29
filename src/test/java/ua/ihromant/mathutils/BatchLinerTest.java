@@ -1228,7 +1228,7 @@ public class BatchLinerTest {
             Map<Integer, Integer> freq = lnr.hyperbolicFreq();
             PartialLiner plnr = new PartialLiner(lnr.lines());
             PartialLiner existing = plnrs.computeIfAbsent(freq, ky -> plnr);
-            if (Arrays.deepEquals(existing.lines(), plnr.lines())) {
+            if (plnr == existing) {
                 //Group auth = lnr.automorphisms();
                 try {
                     System.out.println(/*auth.order() + " " + GroupIndex.identify(auth) + " " + */freq + " " + s);
