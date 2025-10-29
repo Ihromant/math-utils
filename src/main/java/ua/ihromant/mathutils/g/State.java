@@ -9,8 +9,9 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
     public static State fromBlock(GSpace space, FixBS block) {
         int fst = block.nextSetBit(0);
         int snd = block.nextSetBit(fst + 1);
-        State result = space.forInitial(fst, snd);
-        for (int el = block.nextSetBit(snd + 1); el >= 0; el = block.nextSetBit(el + 1)) {
+        int trd = block.nextSetBit(snd + 1);
+        State result = space.forInitial(fst, snd, trd);
+        for (int el = block.nextSetBit(trd + 1); el >= 0; el = block.nextSetBit(el + 1)) {
             if (result.block().get(el)) {
                 continue;
             }

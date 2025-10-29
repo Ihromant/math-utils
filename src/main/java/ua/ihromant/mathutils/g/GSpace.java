@@ -13,6 +13,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -30,7 +31,7 @@ public class GSpace {
     private final FixBS[] differences;
     private final int[] diffMap;
     private final FixBS[][] preImages;
-    private final State[][] statesCache;
+    private final State[][][] statesCache;
 
     private final int[][] auths;
 
@@ -126,15 +127,19 @@ public class GSpace {
             diffMap[i * v + i] = -1;
         }
 
-        this.statesCache = new State[v][v];
+        this.statesCache = new State[oBeg.length][v][v];
         this.emptyFilter = new FixBS(v * v);
         for (int i = 0; i < v; i++) {
             emptyFilter.set(i * v + i);
         }
-        for (int f = 0; f < v; f++) {
-            for (int s = f + 1; s < v; s++) {
-                statesCache[f][s] = new State(FixBS.of(v, f), FixBS.of(gOrd, 0), new FixBS(sz), new IntList[sz], 1)
-                        .acceptElem(this, emptyFilter, s);
+        for (int oi = 0; oi < oBeg.length; oi++) {
+            int fst = oBeg[oi];
+            for (int snd = fst + 1; snd < v; snd++) {
+                for (int trd = snd + 1; trd < v; trd++) {
+                    statesCache[oi][snd][trd] = Objects.requireNonNull(
+                            new State(FixBS.of(v, fst), FixBS.of(gOrd, 0), new FixBS(sz), new IntList[sz], 1)
+                                    .acceptElem(this, emptyFilter, snd)).acceptElem(this, emptyFilter, trd);
+                }
             }
         }
 
@@ -278,16 +283,12 @@ public class GSpace {
         return preImages[to][from];
     }
 
-    public State forInitial(int fst, int snd) {
-        return statesCache[fst][snd];
-    }
-
-    private int orbIdx(int x) {
-        return orbIdx[x];
+    public State forInitial(int fst, int snd, int trd) {
+        return statesCache[orbIdx[fst]][snd][trd];
     }
 
     private int applyByDef(int g, int x) {
-        int idx = orbIdx(x);
+        int idx = orbIdx[x];
         int g1 = xToG(x);
         return gToX(group.op(g, g1), idx);
     }

@@ -6,15 +6,15 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.Objects;
 
 public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
-    public static State fromBlock(GSpace space, FixBS block) {
+    public static State1 fromBlock(GSpace1 space, FixBS block) {
         int fst = block.nextSetBit(0);
         int snd = block.nextSetBit(fst + 1);
-        State result = space.forInitial(fst, snd);
+        State1 result = space.forInitial(fst, snd);
         for (int el = block.nextSetBit(snd + 1); el >= 0; el = block.nextSetBit(el + 1)) {
             if (result.block().get(el)) {
                 continue;
             }
-            result = Objects.requireNonNull(result.acceptElem(space, space.emptyFilter(), el));
+            result = Objects.requireNonNull(result.acceptElem(space, space.emptyOf(), el));
         }
         return result;
     }

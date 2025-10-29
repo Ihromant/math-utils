@@ -11,10 +11,13 @@ import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
-import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 
 public class Applicator4Test {
     @Test
@@ -194,7 +198,7 @@ public class Applicator4Test {
             if (arr.length < 2) {
                 return false;
             }
-            if (space.twoMinimal(arr)) {
+            if (space.parMinimal(arr)) {
                 sync.add(arr);
             }
             return true;
@@ -289,6 +293,48 @@ public class Applicator4Test {
                     searchDesignsFirst(space, filter, currDesign, nextState, orbit, el, cons);
                 }
             }
+        }
+    }
+
+    @Test
+    public void generateInitial() throws IOException {
+        int k = 6;
+        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        int[] comps = new int[]{1, 3, 3, 39};
+        GSpace1 space = new GSpace1(k, group, true, comps);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(comps).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
+            List<State1[]> singles = new ArrayList<>();
+            BiPredicate<State1[], Integer> sCons = (arr, _) -> {
+                singles.add(arr);
+                return true;
+            };
+            int val = 1;
+            State1 state = space.forInitial(0, val);
+            searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, 0, sCons);
+            System.out.println(group.name() + " Singles size: " + singles.size());
+            AtomicInteger cnt = new AtomicInteger();
+            BiPredicate<State1[], Integer> tCons = (arr, _) -> {
+                if (arr.length == 2) {
+                    if (space.parMinimal(arr)) {
+                        ps.println(Arrays.stream(arr).map(st -> st.block().toString()).collect(Collectors.joining(" ")));
+                    }
+                    return true;
+                } else {
+                    return false;
+                }
+            };
+            singles.stream().parallel().forEach(single -> {
+                searchDesigns(space, space.emptyOf(), new State1[0], single[0], 0, 0, tCons);
+                int vl = cnt.incrementAndGet();
+                if (vl % 10 == 0) {
+                    System.out.println(vl);
+                }
+            });
         }
     }
 }
