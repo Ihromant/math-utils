@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.fuzzy.Pair;
+import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.FinderTest;
@@ -39,6 +40,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -1207,5 +1209,38 @@ public class BatchLinerTest {
 
     private static int[] to(int p, int pc) {
         return new int[]{p / pc / pc, p / pc % pc, p % pc};
+    }
+
+    @Test
+    public void refine() throws IOException {
+        Stream<String> lns = Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/6-96-1,19,19,19,19,19.txt"));
+        ObjectMapper om = new ObjectMapper();
+        Group g = new SemiDirectProduct(new CyclicGroup(19), new CyclicGroup(3));
+        GSpace space = new GSpace(6, g, false, 57, 3, 3, 3, 3, 3);
+        Map<Map<Integer, Integer>, PartialLiner> plnrs = new ConcurrentHashMap<>();
+        lns.parallel().forEach(l -> {
+            if (!l.contains("[{")) {
+                return;
+            }
+            String s = l.substring(l.indexOf("[{")).replace('{', '[').replace('}', ']');
+            int[][] base = om.readValue(s, int[][].class);
+            Liner lnr = new Liner(space.v(), Arrays.stream(base).flatMap(bl -> space.blocks(FixBS.of(space.v(), bl))).toArray(int[][]::new));
+            Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+            PartialLiner plnr = new PartialLiner(lnr.lines());
+            PartialLiner existing = plnrs.computeIfAbsent(freq, ky -> plnr);
+            if (Arrays.deepEquals(existing.lines(), plnr.lines())) {
+                //Group auth = lnr.automorphisms();
+                try {
+                    System.out.println(/*auth.order() + " " + GroupIndex.identify(auth) + " " + */freq + " " + s);
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
+            } else {
+                if (!existing.isomorphicSel(plnr)) {
+                    System.out.println("non iso " + freq + " " + l);
+                }
+            }
+        });
+        lns.close();
     }
 }
