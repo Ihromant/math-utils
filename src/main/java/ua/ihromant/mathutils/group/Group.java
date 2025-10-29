@@ -180,6 +180,15 @@ public interface Group {
         return result;
     }
 
+    default SubGroup closure(FixBS from) {
+        FixBS result = new FixBS(order());
+        FixBS additional = from.copy();
+        do {
+            result.or(additional);
+        } while (!(additional = additional(result, additional, order())).isEmpty());
+        return new SubGroup(this, result);
+    }
+
     private void gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
         if (currGroup.isFull(ord)) {
