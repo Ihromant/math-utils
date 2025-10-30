@@ -463,11 +463,9 @@ public class ApplicatorTest {
             int to = snd * v + v;
             for (int pr = nextFilter.nextClearBit(from); pr >= 0 && pr < to; pr = nextFilter.nextClearBit(pr + 1)) {
                 int trd = pr % v;
-                if (nextFilter.get(fst * v + trd)) {
-                    continue;
-                }
                 State nextState = space.forInitial(fst, snd, trd);
-                if (nextState == null) {
+                if (nextState == null || (nextState.size() == 3 ? nextFilter.get(fst * v + trd)
+                        : Arrays.stream(currDesign).anyMatch(st -> st.diffSet().intersects(nextState.diffSet())))) {
                     continue;
                 }
                 searchDesigns(space, nextFilter, nextDesign, nextState, trd, cons);
