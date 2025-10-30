@@ -465,7 +465,7 @@ public class ApplicatorTest {
                 int trd = pr % v;
                 State nextState = space.forInitial(fst, snd, trd);
                 if (nextState == null || (nextState.size() == 3 ? nextFilter.get(fst * v + trd)
-                        : Arrays.stream(currDesign).anyMatch(st -> st.diffSet().intersects(nextState.diffSet())))) {
+                        : Arrays.stream(nextDesign).anyMatch(st -> st.diffSet().intersects(nextState.diffSet())))) {
                     continue;
                 }
                 searchDesigns(space, nextFilter, nextDesign, nextState, trd, cons);
