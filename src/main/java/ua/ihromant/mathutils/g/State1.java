@@ -1,24 +1,10 @@
 package ua.ihromant.mathutils.g;
 
-import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.util.Objects;
+import java.util.Arrays;
 
-public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
-    public static State1 fromBlock(GSpace1 space, FixBS block) {
-        int fst = block.nextSetBit(0);
-        int snd = block.nextSetBit(fst + 1);
-        State1 result = space.forInitial(fst, snd);
-        for (int el = block.nextSetBit(snd + 1); el >= 0; el = block.nextSetBit(el + 1)) {
-            if (result.block().get(el)) {
-                continue;
-            }
-            result = Objects.requireNonNull(result.acceptElem(space, space.emptyOf(), el));
-        }
-        return result;
-    }
-
+public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs, int size) {
     public State1 acceptElem(GSpace1 gSpace, OrbitFilter globalFilter, int val) {
         if (block.get(val)) {
             return null;
@@ -31,13 +17,7 @@ public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] dif
         int sz = size;
         FixBS newStabilizer = stabilizer.copy();
         FixBS newDiffSet = diffSet.copy();
-        IntList[] newDiffs = new IntList[diffs.length];
-        for (int i = 0; i < diffs.length; i++) {
-            IntList lst = diffs[i];
-            if (lst != null) {
-                newDiffs[i] = lst.copy();
-            }
-        }
+        int[][] newDiffs = diffs.clone();
         while (!queue.isEmpty()) {
             if (++sz > k) {
                 return null;
@@ -55,29 +35,36 @@ public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] dif
                 if (globalFilter.intersects(gSpace.projection(compBx)) || globalFilter.intersects(gSpace.projection(compXb))) {
                     return null;
                 }
-                IntList existingDiffs = newDiffs[compBx];
-                if (existingDiffs == null) {
-                    existingDiffs = (newDiffs[compBx] = new IntList(k * (k - 1)));
-                }
-                existingDiffs.add(bx);
-                for (int i = 0; i < existingDiffs.size(); i++) {
-                    int diff = existingDiffs.get(i);
-                    int fst = diff / v;
-                    int snd = diff % v;
-                    stabExt.or(gSpace.prImage(b, fst).intersection(gSpace.prImage(x, snd)));
+
+                int[] exBx = newDiffs[compBx];
+                stabExt.or(gSpace.prImage(b, b).intersection(gSpace.prImage(x, x)));
+                if (exBx != null) {
+                    for (int diff : exBx) {
+                        int fst = diff / v;
+                        int snd = diff % v;
+                        stabExt.or(gSpace.prImage(b, fst).intersection(gSpace.prImage(x, snd)));
+                    }
+                    int[] newExDiffs = Arrays.copyOf(exBx, exBx.length + 1);
+                    newExDiffs[exBx.length] = bx;
+                    newDiffs[compBx] = newExDiffs;
+                } else {
+                    newDiffs[compBx] = new int[]{bx};
                 }
                 newDiffSet.set(compBx);
 
-                existingDiffs = newDiffs[compXb];
-                if (existingDiffs == null) {
-                    existingDiffs = (newDiffs[compXb] = new IntList(k * (k - 1)));
-                }
-                existingDiffs.add(xb);
-                for (int i = 0; i < existingDiffs.size(); i++) {
-                    int diff = existingDiffs.get(i);
-                    int fst = diff / v;
-                    int snd = diff % v;
-                    stabExt.or(gSpace.prImage(x, fst).intersection(gSpace.prImage(b, snd)));
+                int[] exXb = newDiffs[compXb];
+                stabExt.or(gSpace.prImage(x, x).intersection(gSpace.prImage(b, b)));
+                if (exXb != null) {
+                    for (int diff : exXb) {
+                        int fst = diff / v;
+                        int snd = diff % v;
+                        stabExt.or(gSpace.prImage(x, fst).intersection(gSpace.prImage(b, snd)));
+                    }
+                    int[] newExDiffs = Arrays.copyOf(exXb, exXb.length + 1);
+                    newExDiffs[exXb.length] = xb;
+                    newDiffs[compXb] = newExDiffs;
+                } else {
+                    newDiffs[compXb] = new int[]{xb};
                 }
                 newDiffSet.set(compXb);
             }

@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils.g;
 
 import ua.ihromant.mathutils.Combinatorics;
-import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -27,7 +26,6 @@ public class GSpace1 {
     private final OrbitFilter[] projections;
     private final int k;
     private final int[][] cayley;
-    private final FixBS[] differences;
     private final int[] diffMap;
     private final FixBS[][] prImages;
     private final State1[][] statesCache;
@@ -113,10 +111,10 @@ public class GSpace1 {
             }
         }
         FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());
-        this.differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toArray(FixBS[]::new);
+        FixBS[] differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toArray(FixBS[]::new);
         this.diffMap = new int[v * v];
         int sz = differences.length;
-        this.projections = IntStream.range(0, sz).mapToObj(i -> emptyOf()).toArray(OrbitFilter[]::new);
+        this.projections = IntStream.range(0, sz).mapToObj(_ -> emptyOf()).toArray(OrbitFilter[]::new);
         for (int i = 0; i < sz; i++) {
             FixBS comp = differences[i];
             for (int val = comp.nextSetBit(0); val >= 0; val = comp.nextSetBit(val + 1)) {
@@ -138,7 +136,7 @@ public class GSpace1 {
         OrbitFilter empty = emptyOf();
         for (int f = 0; f < v; f++) {
             for (int s = f + 1; s < v; s++) {
-                statesCache[f][s] = new State1(FixBS.of(v, f), FixBS.of(gOrd, 0), new FixBS(sz), new IntList[sz], 1)
+                statesCache[f][s] = new State1(FixBS.of(v, f), FixBS.of(gOrd, 0), new FixBS(sz), new int[sz][], 1)
                         .acceptElem(this, empty, s);
             }
         }
@@ -232,14 +230,6 @@ public class GSpace1 {
 
     public OrbitFilter projection(int i) {
         return projections[i];
-    }
-
-    public FixBS[] differences() {
-        return differences;
-    }
-
-    public FixBS difference(int idx) {
-        return differences[idx];
     }
 
     public int diffIdx(int xy) {
@@ -342,47 +332,6 @@ public class GSpace1 {
             }
         }
         return true;
-    }
-
-    public FixBS minimalBlock(FixBS block) {
-        FixBS result = block;
-        for (int[] auth : auths) {
-            FixBS alt = new FixBS(v);
-            for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
-                alt.set(auth[el]);
-            }
-            if (alt.compareTo(result) < 0) {
-                result = alt;
-            }
-        }
-        return result;
-    }
-
-    public FixBS[] minimalBlocks(FixBS[] blocks) {
-        FixBS[] result = blocks;
-        ex: for (int[] auth : auths) {
-            FixBS[] altBlocks = new FixBS[blocks.length];
-            for (int i = 0; i < blocks.length; i++) {
-                FixBS block = blocks[i];
-                FixBS alt = new FixBS(v);
-                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
-                    alt.set(auth[el]);
-                }
-                altBlocks[i] = alt;
-            }
-            Arrays.sort(altBlocks);
-            for (int i = 0; i < blocks.length; i++) {
-                int cmp = altBlocks[i].compareTo(result[i]);
-                if (cmp < 0) {
-                    result = altBlocks;
-                    break;
-                }
-                if (cmp > 0) {
-                    continue ex;
-                }
-            }
-        }
-        return result;
     }
 
     public boolean minimal(State1[] states) {

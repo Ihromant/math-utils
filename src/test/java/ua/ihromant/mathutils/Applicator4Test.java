@@ -8,7 +8,6 @@ import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
-import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
@@ -28,26 +27,6 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 
 public class Applicator4Test {
-    @Test
-    public void tst() throws IOException {
-        int k = 11;
-        Group g = GroupIndex.group(819, 6);
-        Group group = new GroupProduct(new CyclicGroup(11), g);
-        GSpace1 space = new GSpace1(k, group, false,
-                new SubGroup(group, FixBS.of(group.order(), g.subGroups().stream().filter(sg -> sg.order() == 9).findAny().orElseThrow().elems().toArray())));
-        int v = space.v();
-        System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
-        List<State1[]> singles = new ArrayList<>();
-        BiPredicate<State1[], Integer> sCons = (arr, uu) -> {
-            singles.add(arr);
-            return true;
-        };
-        int sz = space.differences().length;
-        State1 state = new State1(FixBS.of(v, 0), FixBS.of(group.order(), 0), new FixBS(sz), new IntList[sz], 1);
-        searchDesignsFirst(space, space.emptyOf(), new State1[0], state, 0, 0, sCons);
-        System.out.println("Singles size: " + singles.size());
-    }
-
     @Test
     public void logDesigns() throws IOException {
         int k = 4;
