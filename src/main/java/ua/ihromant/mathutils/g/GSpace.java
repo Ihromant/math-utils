@@ -1,7 +1,6 @@
 package ua.ihromant.mathutils.g;
 
 import ua.ihromant.mathutils.Combinatorics;
-import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -137,7 +136,7 @@ public class GSpace {
             for (int snd = fst + 1; snd < v; snd++) {
                 for (int trd = snd + 1; trd < v; trd++) {
                     statesCache[oi][snd][trd] = Objects.requireNonNull(
-                            new State(FixBS.of(v, fst), FixBS.of(gOrd, 0), new FixBS(sz), new IntList[sz], 1)
+                            new State(FixBS.of(v, fst), FixBS.of(gOrd, 0), new FixBS(sz), new int[sz][], 1)
                                     .acceptElem(this, emptyFilter, snd)).acceptElem(this, emptyFilter, trd);
                 }
             }

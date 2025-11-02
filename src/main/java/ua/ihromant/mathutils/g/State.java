@@ -1,11 +1,11 @@
 package ua.ihromant.mathutils.g;
 
-import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.Arrays;
 import java.util.Objects;
 
-public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diffs, int size) {
+public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs, int size) {
     public static State fromBlock(GSpace space, FixBS block) {
         int fst = block.nextSetBit(0);
         int snd = block.nextSetBit(fst + 1);
@@ -29,13 +29,7 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
         int sz = size;
         FixBS newStabilizer = stabilizer.copy();
         FixBS newDiffSet = diffSet.copy();
-        IntList[] newDiffs = new IntList[diffs.length];
-        for (int i = 0; i < diffs.length; i++) {
-            IntList lst = diffs[i];
-            if (lst != null) {
-                newDiffs[i] = lst.copy();
-            }
-        }
+        int[][] newDiffs = diffs.clone();
         while (!queue.isEmpty()) {
             if (++sz > k) {
                 return null;
@@ -51,31 +45,38 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, IntList[] diff
                 if (globalFilter.get(bx) || globalFilter.get(xb)) {
                     return null;
                 }
+
                 int compBx = gSpace.diffIdx(bx);
-                int compXb = gSpace.diffIdx(xb);
-                IntList existingDiffs = newDiffs[compBx];
-                if (existingDiffs == null) {
-                    existingDiffs = (newDiffs[compBx] = new IntList(k * (k - 1)));
-                }
-                existingDiffs.add(bx);
-                for (int i = 0; i < existingDiffs.size(); i++) {
-                    int diff = existingDiffs.get(i);
-                    int fst = diff / v;
-                    int snd = diff % v;
-                    stabExt.or(gSpace.preImage(b, fst).intersection(gSpace.preImage(x, snd)));
+                int[] exBx = newDiffs[compBx];
+                stabExt.or(gSpace.preImage(b, b).intersection(gSpace.preImage(x, x)));
+                if (exBx != null) {
+                    for (int diff : exBx) {
+                        int fst = diff / v;
+                        int snd = diff % v;
+                        stabExt.or(gSpace.preImage(b, fst).intersection(gSpace.preImage(x, snd)));
+                    }
+                    int[] newExDiffs = Arrays.copyOf(exBx, exBx.length + 1);
+                    newExDiffs[exBx.length] = bx;
+                    newDiffs[compBx] = newExDiffs;
+                } else {
+                    newDiffs[compBx] = new int[]{bx};
                 }
                 newDiffSet.set(compBx);
 
-                existingDiffs = newDiffs[compXb];
-                if (existingDiffs == null) {
-                    existingDiffs = (newDiffs[compXb] = new IntList(k * (k - 1)));
-                }
-                existingDiffs.add(xb);
-                for (int i = 0; i < existingDiffs.size(); i++) {
-                    int diff = existingDiffs.get(i);
-                    int fst = diff / v;
-                    int snd = diff % v;
-                    stabExt.or(gSpace.preImage(x, fst).intersection(gSpace.preImage(b, snd)));
+                int compXb = gSpace.diffIdx(xb);
+                int[] exXb = newDiffs[compXb];
+                stabExt.or(gSpace.preImage(x, x).intersection(gSpace.preImage(b, b)));
+                if (exXb != null) {
+                    for (int diff : exXb) {
+                        int fst = diff / v;
+                        int snd = diff % v;
+                        stabExt.or(gSpace.preImage(x, fst).intersection(gSpace.preImage(b, snd)));
+                    }
+                    int[] newExDiffs = Arrays.copyOf(exXb, exXb.length + 1);
+                    newExDiffs[exXb.length] = xb;
+                    newDiffs[compXb] = newExDiffs;
+                } else {
+                    newDiffs[compXb] = new int[]{xb};
                 }
                 newDiffSet.set(compXb);
             }
