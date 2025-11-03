@@ -267,12 +267,12 @@ public class BibdFinder6CyclicTest {
                     if (design.length < blocksNeeded) {
                         return false;
                     }
+                    ps.println(Arrays.deepToString(new int[][][]{lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new), design}));
+                    ps.flush();
                     int[][] lines = Stream.concat(lst.stream().flatMap(st -> blocks(st.block.toArray(), v, table)),
                             Arrays.stream(design).flatMap(arr -> blocks(arr, v, table))).toArray(int[][]::new);
                     Liner lnr = new Liner(v, lines);
                     System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(State::block).toArray()) + " " + Arrays.deepToString(design));
-                    ps.println(Arrays.deepToString(new int[][][]{lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new), design}));
-                    ps.flush();
                     return true;
                 });
                 ps.println(Arrays.deepToString(lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
