@@ -627,10 +627,10 @@ public class ApplicatorTest {
                     return true;
                 }
                 ai.incrementAndGet();
-                Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
-                liners.add(l);
                 ps.println(Arrays.stream(arr).map(State::block).toList());
                 ps.flush();
+                Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+                liners.add(l);
                 System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
                 return true;
             };
