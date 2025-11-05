@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -359,8 +360,9 @@ public class Liner {
     }
 
     public Map<Integer, Integer> hyperbolicFreq() {
-        Map<Integer, Integer> result = new HashMap<>();
-        for (int o = 0; o < pointCount; o++) {
+        int maxLength = Arrays.stream(lines).mapToInt(l -> l.length).reduce(0, Math::max);
+        AtomicInteger[] res = IntStream.range(0, maxLength).mapToObj(i -> new AtomicInteger()).toArray(AtomicInteger[]::new);
+        IntStream.range(0, pointCount).parallel().forEach(o -> {
             for (int x = 0; x < pointCount; x++) {
                 if (o == x) {
                     continue;
@@ -383,12 +385,12 @@ public class Liner {
                                 counter++;
                             }
                         }
-                        result.compute(counter, (k, v) -> v == null ? 1 : v + 1);
+                        res[counter].incrementAndGet();
                     }
                 }
             }
-        }
-        return result;
+        });
+        return IntStream.range(0, res.length).filter(i -> res[i].get() != 0).boxed().collect(Collectors.toMap(Function.identity(), i -> res[i].get()));
     }
 
     public BitSet playfairIndex() {
