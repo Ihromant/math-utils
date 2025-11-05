@@ -430,26 +430,30 @@ public class Liner {
 
     public FixBS cardSubPlanes(boolean full) {
         FixBS result = new FixBS(pointCount + 1);
-        for (int x = 0; x < pointCount; x++) {
+        IntStream.range(0, pointCount).parallel().forEach(x -> {
             for (int y = x + 1; y < pointCount; y++) {
                 for (int z = y + 1; z < pointCount; z++) {
                     if (line(x, y) == line(y, z)) {
                         continue;
                     }
                     int card = hull(x, y, z).cardinality();
-                    result.set(card);
+                    if (!result.get(card)) {
+                        synchronized (result) {
+                            result.set(card);
+                        }
+                    }
                     if (!full && card == pointCount) {
-                        return result; // it's either plane or has no exchange property
+                        return; // it's either plane or has no exchange property
                     }
                 }
             }
-        }
+        });
         return result;
     }
 
     public FixBS cardSubSpaces(boolean full) {
         FixBS result = new FixBS(pointCount + 1);
-        for (int x = 0; x < pointCount; x++) {
+        IntStream.range(0, pointCount).parallel().forEach(x -> {
             for (int y = x + 1; y < pointCount; y++) {
                 for (int z = y + 1; z < pointCount; z++) {
                     if (line(x, y) == line(y, z)) {
@@ -461,14 +465,18 @@ public class Liner {
                             continue;
                         }
                         int sCard = hull(x, y, z, w).cardinality();
-                        result.set(sCard);
+                        if (!result.get(sCard)) {
+                            synchronized (result) {
+                                result.set(sCard);
+                            }
+                        }
                         if (!full && sCard == pointCount) {
-                            return result;
+                            return;
                         }
                     }
                 }
             }
-        }
+        });
         return result;
     }
 
