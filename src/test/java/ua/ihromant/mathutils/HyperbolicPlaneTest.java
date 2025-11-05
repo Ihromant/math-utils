@@ -158,7 +158,7 @@ public class HyperbolicPlaneTest {
         assertEquals(2 * base.pointCount() + 1, infty.pointCount());
         assertEquals(117, infty.lineCount());
         assertEquals(of(0, 1), infty.hyperbolicIndex());
-        assertEquals(of(7, 13, 27), infty.cardSubPlanes(true));
+        assertEquals(FixBS.of(infty.pointCount() + 1, 7, 13, 27), infty.cardSubPlanes(true));
 
         Liner affine = Liner.byStrings("000011122236", "134534534547", "268787676858");
         BitSet[] constructed = Stream.concat(IntStream.range(0, affine.pointCount()).boxed().flatMap(x ->
@@ -180,7 +180,7 @@ public class HyperbolicPlaneTest {
         assertEquals(3 * affine.pointCount(), bose.pointCount());
         assertEquals(9 * 13, bose.lineCount());
         assertEquals(of(1), bose.hyperbolicIndex());
-        assertEquals(of(9, 27), bose.cardSubPlanes(true));
+        assertEquals(FixBS.of(bose.pointCount() + 1, 9, 27), bose.cardSubPlanes(true));
     }
 
     private static int quasiOp(Liner pl, int x, int y) {
@@ -197,7 +197,7 @@ public class HyperbolicPlaneTest {
         assertEquals(60, Automorphisms.autCountOld(p2));
         assertEquals(of(4), p2.playfairIndex());
         assertEquals(of(1), p2.hyperbolicIndex());
-        assertEquals(of(p2.pointCount()), p2.cardSubPlanes(true));
+        assertEquals(FixBS.of(p2.pointCount() + 1, p2.pointCount()), p2.cardSubPlanes(true));
 
         Liner p3 = new Liner(19, new int[][]{{0, 1, 2}, {0, 3, 4}, {0, 5, 6}, {0, 7, 8}, {0, 9, 10}, {0, 11, 12},
                 {0, 13, 14}, {0, 15, 16}, {0, 17, 18}, {1, 3, 5}, {1, 4, 7}, {1, 6, 9}, {1, 8, 11}, {1, 10, 13}, {1, 12, 15},
@@ -217,7 +217,7 @@ public class HyperbolicPlaneTest {
         assertEquals(63, p1.lineCount());
         assertEquals(of(5), p1.playfairIndex());
         assertEquals(of(2), p1.hyperbolicIndex());
-        assertEquals(of(p1.pointCount()), p1.cardSubPlanes(true));
+        assertEquals(FixBS.of(p1.pointCount() + 1, p1.pointCount()), p1.cardSubPlanes(true));
 
         Liner p = Liner.byDiffFamily(217, new int[]{0,1,37,67,88,92,149}, new int[]{0,15,18,65,78,121,137}, new int[]{0,8,53,79,85,102,107},
                 new int[]{0,11,86,100,120,144,190}, new int[]{0,29,64,165,198,205,207}, new int[]{0,31,62,93,124,155,186});
@@ -225,7 +225,7 @@ public class HyperbolicPlaneTest {
         assertEquals(1116, p.lineCount());
         assertEquals(of(29), p.playfairIndex());
         assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
-        assertEquals(of(p.pointCount()), p.cardSubPlanes(false)); // it's a plane, but long-running, change to true to check
+        assertEquals(FixBS.of(p.pointCount() + 1, p.pointCount()), p.cardSubPlanes(false)); // it's a plane, but long-running, change to true to check
     }
 
     @Test
@@ -236,8 +236,8 @@ public class HyperbolicPlaneTest {
         assertEquals(15, p.pointCount());
         assertEquals(35, p.lineCount());
         assertEquals(of(0), p.hyperbolicIndex());
-        assertEquals(of(7), p.cardSubPlanes(true)); // it's model of 3-dimensional projective space
-        assertEquals(of(p.pointCount()), p.cardSubSpaces(true));
+        assertEquals(FixBS.of(p.pointCount() + 1, 7), p.cardSubPlanes(true)); // it's model of 3-dimensional projective space
+        assertEquals(FixBS.of(p.pointCount() + 1, p.pointCount()), p.cardSubSpaces(true));
 
         Liner p3 = Liner.byStrings("00000001111112222223333444455556666",
                 "13579bd3478bc3478bc789a789a789a789a",
@@ -245,19 +245,19 @@ public class HyperbolicPlaneTest {
         assertEquals(15, p3.pointCount());
         assertEquals(35, p3.lineCount());
         assertEquals(of(0, 1), p3.hyperbolicIndex());
-        assertEquals(of(7, p3.pointCount()), p3.cardSubPlanes(true)); // it's plane with no exchange property
+        assertEquals(FixBS.of(p3.pointCount() + 1, 7, p3.pointCount()), p3.cardSubPlanes(true)); // it's plane with no exchange property
 
         Liner p1 = Liner.byDiffFamily(31, new int[]{0, 1, 12}, new int[]{0, 2, 24},
                 new int[]{0, 3, 8}, new int[]{0, 4, 17}, new int[]{0, 6, 16});
         assertEquals(of(0), p1.hyperbolicIndex());
-        assertEquals(of(7), p1.cardSubPlanes(true)); // 4-dimensional projective space
-        assertEquals(of(15), p1.cardSubSpaces(true)); // 4-dimensional projective space
+        assertEquals(FixBS.of(p1.pointCount() + 1, 7), p1.cardSubPlanes(true)); // 4-dimensional projective space
+        assertEquals(FixBS.of(p1.pointCount() + 1, 15), p1.cardSubSpaces(true)); // 4-dimensional projective space
 
         Liner p2 = Liner.byDiffFamily(63, new int[][]{{0, 7, 26}, {0, 13, 35}, {0, 1, 6},
                 {0, 16, 33}, {0, 11, 25}, {0, 2, 12}, {0, 9, 27}, {0, 3, 32}, {0, 15, 23}, {0, 4, 24}, {0, 21, 42}});
         assertEquals(of(0, 1), p2.hyperbolicIndex());
-        assertEquals(of(7, 15), p2.cardSubPlanes(true));
-        assertEquals(of(15, 63), p2.cardSubSpaces(true));
+        assertEquals(FixBS.of(p2.pointCount() + 1, 7, 15), p2.cardSubPlanes(true));
+        assertEquals(FixBS.of(p2.pointCount() + 1, 15, 63), p2.cardSubSpaces(true));
     }
 
     @Test
@@ -296,7 +296,7 @@ public class HyperbolicPlaneTest {
         assertEquals(725, p.lineCount());
         assertEquals(of(22), p.playfairIndex());
         assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
-        assertEquals(of(p.pointCount()), p.cardSubPlanes(false)); // it's a plane, but long-running, change to true to check
+        assertEquals(FixBS.of(p.pointCount() + 1, p.pointCount()), p.cardSubPlanes(false)); // it's a plane, but long-running, change to true to check
 
         CyclicGroup left = new CyclicGroup(7);
         CyclicGroup right = new CyclicGroup(41);
@@ -909,8 +909,8 @@ public class HyperbolicPlaneTest {
         })).collect(Collectors.toSet()).toArray(BitSet[]::new);
         Liner bp = new Liner(lines);
         assertEquals(of(1), bp.hyperbolicIndex());
-        assertEquals(of(9), bp.cardSubPlanes(true));
-        assertEquals(of(bp.pointCount()), bp.cardSubSpaces(true));
+        assertEquals(FixBS.of(bp.pointCount() + 1, 9), bp.cardSubPlanes(true));
+        assertEquals(FixBS.of(bp.pointCount() + 1, bp.pointCount()), bp.cardSubSpaces(true));
     }
 
     private int operator(GaloisField fd, int x, int a, int b, int alpha) {

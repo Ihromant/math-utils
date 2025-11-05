@@ -167,7 +167,7 @@ public class BatchLinerTest {
         List<Liner> planes = readPlanes(65, 5);
         assertEquals(1777, planes.size());
         assertEquals(of(3), planes.getFirst().hyperbolicIndex());
-        assertEquals(of(65), planes.getFirst().cardSubPlanes(true));
+        assertEquals(FixBS.of(planes.getFirst().pointCount() + 1, 65), planes.getFirst().cardSubPlanes(true));
     }
 
     @Test
@@ -225,7 +225,7 @@ public class BatchLinerTest {
         assertEquals(4466, planes.size());
         Liner plane = planes.get(1001); // 1001 classical, 976 Ree
         assertEquals(of(2), plane.hyperbolicIndex());
-        assertEquals(of(v), plane.cardSubPlanes(true));
+        assertEquals(FixBS.of(plane.pointCount() + 1, v), plane.cardSubPlanes(true));
 
         Liner ree = planes.get(976);
         PermutationGroup pg = ree.automorphisms();
@@ -560,7 +560,7 @@ public class BatchLinerTest {
             assertEquals(50, p.lineCount());
             assertEquals(of(4), p.playfairIndex());
             assertEquals(i == 0 ? of(1, 2) : of(0, 1, 2), p.hyperbolicIndex()); // first is hyperaffine
-            assertEquals(of(25), p.cardSubPlanes(true));
+            assertEquals(FixBS.of(p.pointCount() + 1, 25), p.cardSubPlanes(true));
             PermutationGroup perm = p.automorphisms();
             QuickFind pts = new QuickFind(p.pointCount());
             QuickFind lns = new QuickFind(p.lineCount());

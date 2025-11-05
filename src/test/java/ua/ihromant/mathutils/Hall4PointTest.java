@@ -148,7 +148,7 @@ public class Hall4PointTest {
         Liner pl = new Liner(lines);
         assertEquals(cube * lc, pl.pointCount());
         assertEquals(cube * 85, pl.lineCount());
-        assertEquals(of(16), pl.cardSubPlanes(true));
+        assertEquals(FixBS.of(pl.pointCount() + 1, 16), pl.cardSubPlanes(true));
         assertEquals(of(64, 256), checkSpace(pl));
     }
 

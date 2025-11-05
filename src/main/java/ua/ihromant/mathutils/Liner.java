@@ -428,8 +428,8 @@ public class Liner {
         return result;
     }
 
-    public BitSet cardSubPlanes(boolean full) {
-        BitSet result = new BitSet();
+    public FixBS cardSubPlanes(boolean full) {
+        FixBS result = new FixBS(pointCount + 1);
         for (int x = 0; x < pointCount; x++) {
             for (int y = x + 1; y < pointCount; y++) {
                 for (int z = y + 1; z < pointCount; z++) {
