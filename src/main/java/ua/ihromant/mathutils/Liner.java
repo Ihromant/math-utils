@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 public class Liner {
     private final int pointCount;
     private final int[][] lines;
-    private final boolean[][] flags;
+    private final FixBS[] flags;
     private final int[][] lookup;
     private final int[][] beams;
     private final int[][] intersections;
@@ -41,12 +41,12 @@ public class Liner {
     public Liner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
-        this.flags = new boolean[lines.length][pointCount];
+        this.flags = IntStream.range(0, lines.length).mapToObj(_ -> new FixBS(pointCount)).toArray(FixBS[]::new);
         int[] beamCounts = new int[pointCount];
         for (int i = 0; i < lines.length; i++) {
             int[] line = lines[i];
             for (int pt : line) {
-                flags[i][pt] = true;
+                flags[i].set(pt);
                 beamCounts[pt]++;
             }
         }
@@ -56,7 +56,7 @@ public class Liner {
             beams[pt] = new int[bc];
             int idx = 0;
             for (int ln = 0; ln < lines.length; ln++) {
-                if (flags[ln][pt]) {
+                if (flags[ln].get(pt)) {
                     beams[pt][idx++] = ln;
                 }
             }
@@ -235,7 +235,7 @@ public class Liner {
     }
 
     public boolean flag(int line, int point) {
-        return flags[line][point];
+        return flags[line].get(point);
     }
 
     public int[] line(int line) {
@@ -274,8 +274,8 @@ public class Liner {
         for (int i = 1; i < points.length; i++) {
             int second = points[i];
             if (first != second) {
-                boolean[] fgs = flags[line(first, second)];
-                return Arrays.stream(points, i + 1, points.length).allMatch(p -> fgs[p]);
+                FixBS fgs = flags[line(first, second)];
+                return Arrays.stream(points, i + 1, points.length).allMatch(fgs::get);
             }
         }
         return true;
@@ -578,8 +578,8 @@ public class Liner {
         }
         for (int l = 0; l < lines.length; l++) {
             for (int p = 0; p < pointCount; p++) {
-                if (intersection(l, block) < 0 || !flags[block][p]) {
-                    newInc[l][p] = flags[l][p];
+                if (intersection(l, block) < 0 || !flags[block].get(p)) {
+                    newInc[l][p] = flags[l].get(p);
                 } else {
                     newInc[l][p] = Arrays.binarySearch(base, p) == idx.get(intersection(l, block));
                 }
