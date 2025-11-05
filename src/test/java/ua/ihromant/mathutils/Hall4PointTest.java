@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.BitSet;
@@ -159,7 +160,7 @@ public class Hall4PointTest {
                     if (plane.collinear(x, y, z)) {
                         continue;
                     }
-                    BitSet hull = plane.hull(x, y, z);
+                    FixBS hull = plane.hull(x, y, z);
                     for (int w = z + 1; w < plane.pointCount(); w++) {
                         if (hull.get(w)) {
                             continue;

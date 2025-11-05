@@ -285,20 +285,20 @@ public class Liner {
         return Arrays.toString(lines[line]);
     }
 
-    public BitSet hull(int... points) {
-        BitSet base = new BitSet(pointCount);
+    public FixBS hull(int... points) {
+        FixBS base = new FixBS(pointCount);
         for (int point : points) {
             base.set(point);
         }
-        BitSet additional = base;
+        FixBS additional = base;
         while (!(additional = additional(base, additional)).isEmpty()) {
             base.or(additional);
         }
         return base;
     }
 
-    public BitSet additional(BitSet first, BitSet second) {
-        BitSet result = new BitSet();
+    public FixBS additional(FixBS first, FixBS second) {
+        FixBS result = new FixBS(pointCount);
         for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
             for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
                 if (x == y) {
@@ -309,7 +309,7 @@ public class Liner {
                 }
             }
         }
-        BitSet removal = new BitSet();
+        FixBS removal = new FixBS(pointCount);
         removal.or(first);
         removal.or(second);
         result.xor(removal);
@@ -447,15 +447,15 @@ public class Liner {
         return result;
     }
 
-    public BitSet cardSubSpaces(boolean full) {
-        BitSet result = new BitSet();
+    public FixBS cardSubSpaces(boolean full) {
+        FixBS result = new FixBS(pointCount + 1);
         for (int x = 0; x < pointCount; x++) {
             for (int y = x + 1; y < pointCount; y++) {
                 for (int z = y + 1; z < pointCount; z++) {
                     if (line(x, y) == line(y, z)) {
                         continue;
                     }
-                    BitSet hull = hull(x, y, z);
+                    FixBS hull = hull(x, y, z);
                     for (int w = z + 1; w < pointCount; w++) {
                         if (hull.get(w)) {
                             continue;
@@ -537,7 +537,7 @@ public class Liner {
     }
 
     public BitSet[] pointResidue(int p) {
-        Set<BitSet> sets = new HashSet<>();
+        Set<FixBS> sets = new HashSet<>();
         BitSet points = new BitSet();
         for (int i = 0; i < lineCount(); i++) {
             if (flag(i, p)) {
@@ -552,8 +552,8 @@ public class Liner {
                 if (j == p || line(i, p) == line(j, p)) {
                     continue;
                 }
-                BitSet hull = hull(p, i, j);
-                BitSet line = new BitSet();
+                FixBS hull = hull(p, i, j);
+                FixBS line = new FixBS(pointCount);
                 for (int pt = points.nextSetBit(0); pt >= 0; pt = points.nextSetBit(pt + 1)) {
                     int[] l = lines[pt];
                     if (Arrays.stream(l).allMatch(hull::get)) {

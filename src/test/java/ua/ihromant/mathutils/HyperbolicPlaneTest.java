@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -769,7 +770,7 @@ public class HyperbolicPlaneTest {
         GaloisField fd = new GaloisField(q);
         int a = fd.elements().filter(o -> fd.elements().noneMatch(x -> fd.add(fd.mul(x, x), x, o) == 0)).findAny().orElseThrow();
         Liner sp = new Liner(fd.generateSpace());
-        BitSet set = new BitSet();
+        FixBS set = new FixBS(q * q * q + q * q + q + 1);
         IntStream.range(0, q).forEach(s -> IntStream.range(0, q).forEach(t -> set.set(
                 q * q * fd.add(fd.mul(s, s), fd.mul(s, t), fd.mul(a, t, t)) + t * q + s)));
         set.set(q * q * q);
@@ -794,7 +795,7 @@ public class HyperbolicPlaneTest {
                     if (sp.line(x, y) == sp.line(y, z)) {
                         continue;
                     }
-                    BitSet bs = sp.hull(x, y, z);
+                    FixBS bs = sp.hull(x, y, z);
                     bs.and(set);
                 }
             }
@@ -952,7 +953,7 @@ public class HyperbolicPlaneTest {
             }
         }
         Liner sp = new Liner(lines.toArray(BitSet[]::new));
-        BitSet[][] planes = new BitSet[max][max / 6];
+        FixBS[][] planes = new FixBS[max][max / 6];
         for (int curr = 0; curr < max; curr++) {
             beg: for (int idx = findFirstNull(planes[curr]); idx < max / 6; idx++) {
                 for (int x = curr + 1; x < max; x++) {
@@ -960,9 +961,9 @@ public class HyperbolicPlaneTest {
                         if (sp.line(x, y) == sp.line(y, curr)) {
                             continue;
                         }
-                        BitSet pl = sp.hull(x, y, curr);
+                        FixBS pl = sp.hull(x, y, curr);
                         if (Arrays.stream(planes).flatMap(arr -> Arrays.stream(arr).filter(Objects::nonNull)).noneMatch(p -> {
-                            BitSet bs = (BitSet) pl.clone();
+                            FixBS bs = pl.copy();
                             bs.and(p);
                             return bs.cardinality() != 1;
                         })) {

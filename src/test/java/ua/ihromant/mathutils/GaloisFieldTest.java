@@ -288,14 +288,14 @@ public class GaloisFieldTest {
             }
         }
         Liner bks = prSp.subPlane(pts.stream().toArray());
-        Set<BitSet> planes = new HashSet<>();
+        Set<FixBS> planes = new HashSet<>();
         for (int i = 0; i < bks.pointCount(); i++) {
             for (int j = i + 1; j < bks.pointCount(); j++) {
                 for (int k = j + 1; k < bks.pointCount(); k++) {
                     if (bks.line(i, j) == bks.line(j, k)) {
                         continue;
                     }
-                    BitSet plane = bks.hull(i, j, k);
+                    FixBS plane = bks.hull(i, j, k);
                     if (!planes.add(plane)) {
                         continue;
                     }
