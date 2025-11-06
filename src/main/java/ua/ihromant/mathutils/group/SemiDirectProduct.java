@@ -96,6 +96,10 @@ public class SemiDirectProduct implements Group {
         return hp * k.order() + kp;
     }
 
+    public int[] to(int el) {
+        return new int[]{el / k.order(), el % k.order()};
+    }
+
     @Override
     public int op(int a, int b) {
         int h1 = a / k.order();
