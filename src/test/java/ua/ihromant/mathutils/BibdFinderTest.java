@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -310,8 +311,8 @@ public class BibdFinderTest {
         }
     }
 
-    private static void checkSubPlanes(Liner p, Set<BitSet> unique, int[][] ds) {
-        BitSet subPlanes = p.cardSubPlanes(false);
+    private static void checkSubPlanes(Liner p, Set<FixBS> unique, int[][] ds) {
+        FixBS subPlanes = p.cardSubPlanes(false);
         if (unique.add(subPlanes)) {
             System.out.println(subPlanes + " " + Arrays.deepToString(ds));
         }
@@ -502,7 +503,7 @@ public class BibdFinderTest {
                 int[][] dsss = IntStream.range(0, dss.length)
                         .mapToObj(i -> ((1 << i) & comb) == 0 ? dss[i] : mirrorTuple(dss[i])).toArray(int[][]::new);
                 Liner hp = Liner.byDiffFamily(v, dsss);
-                BitSet csp = hp.cardSubPlanes(false);
+                FixBS csp = hp.cardSubPlanes(false);
                 if (!csp.get(v)) {
                     System.out.println(csp + " " + Arrays.deepToString(dsss));
                 }
