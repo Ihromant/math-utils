@@ -392,12 +392,27 @@ public class TernaryAutomorphisms {
         return -1;
     }
 
-    public static boolean isAffineTranslation(Liner liner) {
+    public static boolean isAffineTranslation(Liner proj, int dl) {
+        int o = IntStream.range(0, proj.pointCount()).filter(p -> !proj.flag(dl, p)).findAny().orElseThrow();
+        int[] dropped = proj.line(dl);
+        int v = dropped[0];
+        int h = dropped[1];
+        int oh = proj.line(o, h);
+        int ov = proj.line(o, v);
+        int e = IntStream.range(0, proj.pointCount()).filter(p -> !proj.flag(dl, p) && !proj.flag(ov, p) && !proj.flag(oh, p)).findAny().orElseThrow();
+        int w = proj.intersection(proj.line(e, h), ov);
+        int u = proj.intersection(proj.line(e, v), oh);
+        Quad base = new Quad(o, u, w, e);
+        TernaryRing ring = new ProjectiveTernaryRing("", proj, base).toMatrix();
+        return ring.isLinear() && ring.addAssoc() && ring.addComm() && ring.isRightDistributive();
+    }
+
+    public static boolean isAffineTranslation(Liner aff) {
         int o = 0;
         int u = 1;
-        int ou = liner.line(o, u);
-        int w = IntStream.range(0, liner.pointCount()).filter(p -> !liner.flag(ou, p)).findAny().orElseThrow();
-        TernaryRing ring = new AffineTernaryRing(liner, new Triangle(o, u, w)).toMatrix();
+        int ou = aff.line(o, u);
+        int w = IntStream.range(0, aff.pointCount()).filter(p -> !aff.flag(ou, p)).findAny().orElseThrow();
+        TernaryRing ring = new AffineTernaryRing(aff, new Triangle(o, u, w)).toMatrix();
         return ring.isLinear() && ring.addAssoc() && ring.addComm() && ring.isRightDistributive();
     }
 
