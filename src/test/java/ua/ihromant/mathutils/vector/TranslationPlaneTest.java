@@ -3,6 +3,7 @@ package ua.ihromant.mathutils.vector;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.Version;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.module.SimpleAbstractTypeResolver;
 import tools.jackson.databind.module.SimpleModule;
 import ua.ihromant.mathutils.BatchAffineTest;
@@ -706,7 +707,6 @@ public class TranslationPlaneTest {
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line;
-            ObjectMapper om = new ObjectMapper();
             SimpleModule module = new SimpleModule("CustomModel", Version.unknownVersion());
 
             SimpleAbstractTypeResolver resolver = new SimpleAbstractTypeResolver();
@@ -714,7 +714,7 @@ public class TranslationPlaneTest {
 
             module.setAbstractTypes(resolver);
 
-            // TODO fix om.registerModule(module);
+            ObjectMapper om = JsonMapper.builder().addModule(module).build();
             while ((line = br.readLine()) != null) {
                 ProjChar chr = om.readValue(line, ProjChar.class);
                 chars.add(chr);
