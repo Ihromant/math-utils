@@ -7,6 +7,7 @@ import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.CommonMatrixHelper;
+import ua.ihromant.mathutils.vector.LinearSpace;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -254,5 +255,77 @@ public class MoultonGeneratorTest {
                 }
             }
         }
+    }
+
+    @Test
+    public void andre1() {
+        int base = 3;
+        int pow = 3;
+        int order = LinearSpace.pow(base, pow);
+        GaloisField gf = new GaloisField(order);
+        FixBS fbs = new FixBS(order);
+        for (int i = 1; i < order; i++) {
+            fbs.set(gf.mul(i, i));
+        }
+        int[] positive = fbs.toArray();
+        fbs.flip(1, order);
+        int[] negative = fbs.toArray();
+        System.out.println(Arrays.toString(positive) + " " + Arrays.toString(negative));
+        List<int[]> paley = new ArrayList<>();
+        for (int p = 0; p < pow; p++) {
+            int[] frobMap = new int[order];
+            int cff = LinearSpace.pow(base, p);
+            for (int i = 0; i < order; i++) {
+                frobMap[i] = gf.power(i, cff);
+            }
+            for (int b : IntStream.range(0, order).toArray()) {
+                for (int a : positive) {
+                    int[] arr = new int[order];
+                    for (int el = 0; el < order; el++) {
+                        arr[el] = gf.add(gf.mul(a, frobMap[el]), b);
+                    }
+                    paley.add(arr);
+                }
+            }
+        }
+        System.out.println(paley.size());
+        for (int[] a : paley) {
+            for (int[] b : paley) {
+                checkPair(a, b, order, positive, gf, negative);
+            }
+        }
+        //System.out.println(Arrays.deepToString(helper.toMatrix(lst.get(0))));
+//        for (Pair pr : lst) {
+//            checkPair(pr, order, positive, gf, negative, helper);
+//        }
+    }
+
+    private static void checkPair(int[] aFun, int[] bFun, int order, int[] positive, GaloisField gf, int[] negative) {
+        List<int[]> lns = new ArrayList<>();
+        for (int i = 0; i < order; i++) {
+            int fix = i;
+            int[] horLine = IntStream.range(0, order).map(x -> fromXY(order, x, fix)).toArray();
+            int[] verLine = IntStream.range(0, order).map(y -> fromXY(order, fix, y)).toArray();
+            lns.add(horLine);
+            lns.add(verLine);
+        }
+        for (int i = 0; i < order; i++) {
+            int b = i;
+            for (int a : positive) {
+                int[] posLine = IntStream.range(0, order).map(x -> fromXY(order, x, gf.add(gf.mul(a, x), b))).toArray();
+                lns.add(posLine);
+            }
+            for (int a : negative) {
+                int[] negLine = IntStream.range(0, order).map(x -> {
+                    int xApplied = bFun[x];
+                    int axb = gf.add(gf.mul(a, xApplied), b);
+                    int mapped = aFun[axb];
+                    return fromXY(order, x, mapped);
+                }).toArray();
+                lns.add(negLine);
+            }
+        }
+        Liner lnr = new Liner(order * order, lns.toArray(int[][]::new));
+        System.out.println(Arrays.toString(aFun) + " " + Arrays.toString(bFun) + " " + lnr.playfairIndex() + " " + TernaryAutomorphisms.isAffineTranslation(lnr) + " " + TernaryAutomorphisms.isAffineDesargues(lnr));
     }
 }
