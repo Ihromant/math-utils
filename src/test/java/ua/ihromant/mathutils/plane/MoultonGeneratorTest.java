@@ -8,10 +8,15 @@ import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.CommonMatrixHelper;
 import ua.ihromant.mathutils.vector.LinearSpace;
+import ua.ihromant.mathutils.vector.TranslationPlaneTest;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 public class MoultonGeneratorTest {
@@ -258,10 +263,11 @@ public class MoultonGeneratorTest {
     }
 
     @Test
-    public void andre1() {
+    public void andre1() throws IOException {
         int base = 3;
         int pow = 3;
         int order = LinearSpace.pow(base, pow);
+        Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(order);
         GaloisField gf = new GaloisField(order);
         FixBS fbs = new FixBS(order);
         for (int i = 1; i < order; i++) {
@@ -272,6 +278,7 @@ public class MoultonGeneratorTest {
         int[] negative = fbs.toArray();
         System.out.println(Arrays.toString(positive) + " " + Arrays.toString(negative));
         List<int[]> paley = new ArrayList<>();
+        Set<String> found = ConcurrentHashMap.newKeySet();
         for (int p = 0; p < pow; p++) {
             int[] frobMap = new int[order];
             int cff = LinearSpace.pow(base, p);
@@ -289,43 +296,57 @@ public class MoultonGeneratorTest {
             }
         }
         System.out.println(paley.size());
-        for (int[] a : paley) {
+        paley.stream().parallel().forEach(a -> {
             for (int[] b : paley) {
-                checkPair(a, b, order, positive, gf, negative);
+                checkPair(a, b, order, positive, gf, negative, projData, found);
             }
-        }
+        });
         //System.out.println(Arrays.deepToString(helper.toMatrix(lst.get(0))));
 //        for (Pair pr : lst) {
 //            checkPair(pr, order, positive, gf, negative, helper);
 //        }
     }
 
-    private static void checkPair(int[] aFun, int[] bFun, int order, int[] positive, GaloisField gf, int[] negative) {
+    private static void checkPair(int[] aFun, int[] bFun, int order, int[] positive, GaloisField gf, int[] negative, Map<Characteristic, List<ProjChar>> projData, Set<String> found) {
         List<int[]> lns = new ArrayList<>();
+        int sqr = order * order;
         for (int i = 0; i < order; i++) {
             int fix = i;
-            int[] horLine = IntStream.range(0, order).map(x -> fromXY(order, x, fix)).toArray();
-            int[] verLine = IntStream.range(0, order).map(y -> fromXY(order, fix, y)).toArray();
+            int[] horLine = IntStream.concat(IntStream.range(0, order).map(x -> fromXY(order, x, fix)),
+                    IntStream.of(sqr)).toArray();
+            int[] verLine = IntStream.concat(IntStream.range(0, order).map(y -> fromXY(order, fix, y)),
+                    IntStream.of(sqr + 1)).toArray();
             lns.add(horLine);
             lns.add(verLine);
         }
         for (int i = 0; i < order; i++) {
             int b = i;
-            for (int a : positive) {
-                int[] posLine = IntStream.range(0, order).map(x -> fromXY(order, x, gf.add(gf.mul(a, x), b))).toArray();
+            for (int j = 0; j < positive.length; j++) {
+                int a = positive[j];
+                int[] posLine = IntStream.concat(IntStream.range(0, order).map(x -> fromXY(order, x, gf.add(gf.mul(a, x), b))),
+                    IntStream.of(sqr + 2 + j)).toArray();
                 lns.add(posLine);
             }
-            for (int a : negative) {
-                int[] negLine = IntStream.range(0, order).map(x -> {
+            for (int j = 0; j < negative.length; j++) {
+                int a = negative[j];
+                int[] negLine = IntStream.concat(IntStream.range(0, order).map(x -> {
                     int xApplied = bFun[x];
                     int axb = gf.add(gf.mul(a, xApplied), b);
                     int mapped = aFun[axb];
                     return fromXY(order, x, mapped);
-                }).toArray();
+                }), IntStream.of(sqr + 2 + positive.length + j)).toArray();
                 lns.add(negLine);
             }
         }
-        Liner lnr = new Liner(order * order, lns.toArray(int[][]::new));
-        System.out.println(Arrays.toString(aFun) + " " + Arrays.toString(bFun) + " " + lnr.playfairIndex() + " " + TernaryAutomorphisms.isAffineTranslation(lnr) + " " + TernaryAutomorphisms.isAffineDesargues(lnr));
+        lns.add(IntStream.range(sqr, sqr + order + 1).toArray());
+        Liner l = new Liner(sqr + order + 1, lns.toArray(int[][]::new));
+        if (TernaryAutomorphisms.isDesargues(l)) {
+            return;
+        }
+        String fp = Arrays.toString(aFun) + " " + Arrays.toString(bFun);
+        ProjChar chr = TranslationPlaneTest.newTranslation(fp, l, projData);
+        if (found.add(chr.name())) {
+            System.out.println("Existing " + chr.name() + " " + fp);
+        }
     }
 }
