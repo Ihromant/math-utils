@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
@@ -1001,5 +1002,107 @@ public class HyperbolicPlaneTest {
         BitSet bs = new BitSet();
         IntStream.of(values).forEach(bs::set);
         return bs;
+    }
+
+
+    private static final String str = "[[\"0000\", \"0001\", \"0112\", \"0222\", \"0322\", \"0412\"], [\"0000\", \"0010\", \"1402\", \"2312\", \"3212\", \"4102\"], [\"0000\", \"0011\", \"1110\", \"2021\", \"3021\", \"4410\"], [\"0000\", \"0012\", \"0120\", \"0420\", \"2002\", \"3002\"], [\"0000\", \"0101\", \"1102\", \"1421\", \"2320\", \"3022\"], [\"0000\", \"0201\", \"1012\", \"2202\", \"2311\", \"4110\"], [\"0000\", \"0401\", \"2022\", \"3220\", \"4121\", \"4402\"], [\"0000\", \"0301\", \"1410\", \"3211\", \"3302\", \"4012\"], [\"0000\", \"0102\", \"2222\", \"3121\", \"4001\", \"4320\"], [\"0000\", \"0202\", \"1211\", \"3001\", \"3110\", \"4412\"], [\"0000\", \"0121\", \"2401\", \"3120\", \"3422\", \"4202\"], [\"0000\", \"0311\", \"1201\", \"2102\", \"4212\", \"4310\"], [\"0000\", \"0111\", \"1122\", \"3222\", \"4211\", \"4300\"], [\"0000\", \"0221\", \"1412\", \"2212\", \"3100\", \"3421\"], [\"0000\", \"1400\", \"2300\", \"3200\", \"4100\", \"infty\"]]";
+
+    @Test
+    public void test226_6() {
+        ObjectMapper om = new ObjectMapper();
+        String[][] arrs = om.readValue(str, String[][].class);
+        System.out.println(Arrays.deepToString(arrs));
+        int[][][] bases = Arrays.stream(arrs).map(bl -> Arrays.stream(bl).map(str -> {
+            if ("infty".equals(str)) {
+                return null;
+            }
+            int[] result = new int[4];
+            for (int i = 0; i < result.length; i++) {
+                result[i] = Integer.parseInt(str.substring(i, i + 1));
+            }
+            return result;
+        }).toArray(int[][]::new)).toArray(int[][][]::new);
+        System.out.println(Arrays.deepToString(bases));
+        Set<Set<List<Integer>>> blocks = new HashSet<>();
+        for (int[][] baseBlock : bases) {
+            for (int x0 = 0; x0 < 5; x0++) {
+                for (int x1 = 0; x1 < 5; x1++) {
+                    for (int x2 = 0; x2 < 3; x2++) {
+                        for (int x3 = 0; x3 < 3; x3++) {
+                            int[] multiplier = new int[]{x0, x1, x2, x3};
+                            Set<List<Integer>> block = new HashSet<>();
+                            for (int[] el : baseBlock) {
+                                if (el != null) {
+                                    int[] mult = mul(multiplier, el);
+                                    List<Integer> els = Arrays.stream(mult).boxed().toList();
+                                    block.add(els);
+                                } else {
+                                    block.add(null);
+                                }
+                            }
+                            blocks.add(block);
+                        }
+                    }
+                }
+            }
+        }
+        System.out.println(blocks.size());
+        Set<List<Integer>> unique = blocks.stream().flatMap(Set::stream).collect(Collectors.toSet());
+        System.out.println(unique.size());
+        List<List<Integer>> unList = unique.stream().toList();
+        Map<List<Integer>, Integer> indexes = new HashMap<>();
+        for (int i = 0; i < unList.size(); i++) {
+            indexes.put(unList.get(i), i);
+        }
+        boolean[][] usedPairs = new boolean[indexes.size()][indexes.size()];
+        for (int i = 0; i < indexes.size(); i++) {
+            usedPairs[i][i] = true;
+        }
+        for (Set<List<Integer>> line : blocks) {
+            for (List<Integer> fEl : line) {
+                for (List<Integer> sEl : line) {
+                    if (Objects.equals(fEl, sEl)) {
+                        continue;
+                    }
+                    int fIndex = indexes.get(fEl);
+                    int sIndex = indexes.get(sEl);
+                    if (usedPairs[fIndex][sIndex]) {
+                        throw new IllegalStateException("Error");
+                    }
+                    usedPairs[fIndex][sIndex] = true;
+                }
+            }
+        }
+        for (int i = 0; i < usedPairs.length; i++) {
+            for (int j = 0; j < usedPairs.length; j++) {
+                if (!usedPairs[i][j]) {
+                    throw new IllegalStateException("Error");
+                }
+            }
+        }
+    }
+
+    private static final int[][] zero = {{1, 0}, {0, 1}};
+    private static final int[][] single = {{4, 1}, {4, 0}};
+    private static final int[][] sqr = {{0, 4}, {1, 4}};
+
+    private static int[] mul(int[] x, int[] y) {
+        int multiplier = x[3];
+        int[] result = new int[4];
+        if (multiplier == 0) {
+            result[0] = (x[0] + y[0]) % 5;
+            result[1] = (x[1] + y[1]) % 5;
+        }
+        if (multiplier == 1) {
+            result[0] = (x[0] + 4 * y[0] + y[1]) % 5;
+            result[1] = (x[1] + 4 * y[0]) % 5;
+        }
+        if (multiplier == 2) {
+            result[0] = (x[0] + 4 * y[1]) % 5;
+            result[1] = (x[1] + y[0] + 4 * y[1]) % 5;
+        }
+        result[2] = (x[2] + y[2]) % 3;
+        result[3] = (x[3] + y[3]) % 3;
+        return result;
     }
 }
