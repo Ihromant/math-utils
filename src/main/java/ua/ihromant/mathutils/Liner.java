@@ -203,7 +203,6 @@ public class Liner {
         for (int[] arr : result) {
             Arrays.fill(arr, -1);
         }
-        int[] freq = new int[lines.length];
         for (int p = 0; p < pointCount; p++) {
             int[] beam = beams[p];
             for (int i = 0; i < beam.length; i++) {
@@ -212,15 +211,7 @@ public class Liner {
                     int l2 = beam[j];
                     result[l1][l2] = p;
                     result[l2][l1] = p;
-                    freq[l1]++;
-                    freq[l2]++;
                 }
-            }
-        }
-        int maxFreq = 0;
-        for (int f : freq) {
-            if (f > maxFreq) {
-                maxFreq = f;
             }
         }
         return result;
