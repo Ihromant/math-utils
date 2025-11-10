@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -427,6 +428,34 @@ public class GSpace {
 
     public boolean parMinimal(State[] states) {
         return Arrays.stream(auths).parallel().allMatch(auth -> {
+            FixBS[] altBlocks = new FixBS[states.length];
+            for (int i = 0; i < states.length; i++) {
+                FixBS block = states[i].block();
+                FixBS alt = new FixBS(v);
+                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                    alt.set(auth[el]);
+                }
+                altBlocks[i] = alt;
+            }
+            Arrays.sort(altBlocks);
+            for (int i = 0; i < states.length; i++) {
+                int cmp = altBlocks[i].compareTo(states[i].block());
+                if (cmp < 0) {
+                    return false;
+                }
+                if (cmp > 0) {
+                    return true;
+                }
+            }
+            return true;
+        });
+    }
+
+    public boolean relaxedParMinimal(State[] states) {
+        int sz = auths.length;
+        int cnt = sz / v;
+        return IntStream.range(0, cnt).parallel().allMatch(_ -> {
+            int[] auth = auths[ThreadLocalRandom.current().nextInt(sz)];
             FixBS[] altBlocks = new FixBS[states.length];
             for (int i = 0; i < states.length; i++) {
                 FixBS block = states[i].block();
