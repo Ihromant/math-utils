@@ -5,6 +5,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -273,5 +274,42 @@ public class CombinatoricsTest {
             }
             System.out.println(q + " " + IntStream.range(0, vals.length).filter(i -> vals[i] != 0).mapToObj(i -> i + ":" + vals[i]).collect(Collectors.joining(" ")));
         }
+    }
+
+    @Test
+    public void testCycling() {
+        for (int i = 1000; i < 9999; i++) {
+            int a = i;
+            int prev;
+            int next;
+            do {
+                prev = a;
+                next = max(prev) - min(prev);
+                a = next;
+            } while (prev != next);
+            System.out.println(i + " " + next);
+        }
+    }
+
+    private int max(int a) {
+        String val = String.valueOf(a);
+        char[] dgt = val.toCharArray();
+        char[] res = new char[val.length()];
+        Character[] sorted = IntStream.range(0, dgt.length).mapToObj(i -> dgt[i]).sorted(Comparator.reverseOrder()).toArray(Character[]::new);
+        for (int i = 0; i < res.length; i++) {
+            res[i] = sorted[i];
+        }
+        return Integer.parseInt(new String(res));
+    }
+
+    private int min(int a) {
+        String val = String.valueOf(a);
+        char[] dgt = val.toCharArray();
+        char[] res = new char[val.length()];
+        Character[] sorted = IntStream.range(0, dgt.length).mapToObj(i -> dgt[i]).sorted().toArray(Character[]::new);
+        for (int i = 0; i < res.length; i++) {
+            res[i] = sorted[i];
+        }
+        return Integer.parseInt(new String(res), 10);
     }
 }
