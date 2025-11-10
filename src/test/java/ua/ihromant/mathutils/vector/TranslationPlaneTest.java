@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import org.junit.jupiter.api.Test;
 import tools.jackson.core.Version;
 import tools.jackson.databind.ObjectMapper;
@@ -531,9 +533,9 @@ public class TranslationPlaneTest {
         base[1] = second;
         base[2] = third;
         AtomicInteger counter = new AtomicInteger();
-        ObjectMapper om = new ObjectMapper();
-        // TODO om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        // TODO om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        ObjectMapper om = JsonMapper.builder()
+                .changeDefaultVisibility(vc -> vc.withVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
+                        .withVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)).build();
         Map<Characteristic, List<ProjChar>> projData = new ConcurrentHashMap<>(readKnown(order));
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/trans/", "simples-" + p + "^" + n + "x.txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
@@ -690,9 +692,9 @@ public class TranslationPlaneTest {
                         return;
                     }
                     ProjChar chr = fromProj(name, proj, transLine);
-                    ObjectMapper om = new ObjectMapper();
-                    // TODO fix om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-                    // TODO fix om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+                    ObjectMapper om = JsonMapper.builder()
+                            .changeDefaultVisibility(vc -> vc.withVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE)
+                                    .withVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)).build();
                     ps.println(om.writeValueAsString(chr));
                 } catch (IOException e) {
                     throw new RuntimeException(e);
