@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.auto.CharVals;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.CommonMatrixHelper;
@@ -15,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
@@ -264,8 +267,8 @@ public class MoultonGeneratorTest {
 
     @Test
     public void andre1() throws IOException {
-        int base = 3;
-        int pow = 3;
+        int base = 5;
+        int pow = 2;
         int order = LinearSpace.pow(base, pow);
         Map<Characteristic, List<ProjChar>> projData = TranslationPlaneTest.readKnown(order);
         GaloisField gf = new GaloisField(order);
@@ -296,11 +299,11 @@ public class MoultonGeneratorTest {
             }
         }
         System.out.println(paley.size());
-        paley.stream().parallel().forEach(a -> {
+        for (int[] a : paley) {
             for (int[] b : paley) {
                 checkPair(a, b, order, positive, gf, negative, projData, found);
             }
-        });
+        }
         //System.out.println(Arrays.deepToString(helper.toMatrix(lst.get(0))));
 //        for (Pair pr : lst) {
 //            checkPair(pr, order, positive, gf, negative, helper);
@@ -344,9 +347,70 @@ public class MoultonGeneratorTest {
             return;
         }
         String fp = Arrays.toString(aFun) + " " + Arrays.toString(bFun);
-        ProjChar chr = TranslationPlaneTest.newTranslation(fp, l, projData);
+        ProjChar chr = newTranslation(fp, l, projData);
         if (found.add(chr.name())) {
             System.out.println("Existing " + chr.name() + " " + fp);
         }
+    }
+
+    public static ProjChar newTranslation(String name, Liner proj, Map<Characteristic, List<ProjChar>> map) {
+        List<TernarMapping> mappings = new ArrayList<>();
+        int pc = proj.pointCount();
+        int order = proj.line(0).length - 1;
+        return IntStream.range(0, proj.lineCount()).mapToObj(dl -> {
+            int[] line = proj.line(dl);
+            for (int i = 0; i < line.length; i++) {
+                int h = line[i];
+                int v = i == 0 ? line[1] : line[0];
+                for (int o = 0; o < pc; o++) {
+                    if (proj.flag(dl, o)) {
+                        continue;
+                    }
+                    int oh = proj.line(o, h);
+                    int ov = proj.line(o, v);
+                    for (int e = 0; e < pc; e++) {
+                        if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                            continue;
+                        }
+                        int w = proj.intersection(proj.line(e, h), ov);
+                        int u = proj.intersection(proj.line(e, v), oh);
+                        Quad base = new Quad(o, u, w, e);
+                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
+                        int two = ring.op(1, 1, 1);
+                        if (two == 0) {
+                            continue;
+                        }
+                        CharVals cv = CharVals.of(ring, two, order);
+                        if (!cv.induced()) {
+                            continue;
+                        }
+                        if (mappings.isEmpty()) {
+                            mappings.add(TernaryAutomorphisms.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                        }
+                        Characteristic fstChr = mappings.getFirst().chr();
+                        List<ProjChar> existingChars = map.get(cv.chr());
+                        boolean eq = fstChr.equals(cv.chr());
+                        if (!eq && existingChars == null) {
+                            continue;
+                        }
+                        TernaryRing matrix = ring.toMatrix();
+                        if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
+                            mappings.add(TernaryAutomorphisms.fillTernarMapping(matrix, cv, two, order));
+                        }
+                        if (existingChars != null) {
+                            Optional<ProjChar> opt = existingChars.stream()
+                                    .filter(projChar -> projChar.ternars().stream()
+                                            .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix)))
+                                    .findAny();
+                            if (opt.isPresent()) {
+                                return opt.get();
+                            }
+                        }
+                    }
+                }
+            }
+            System.out.println(dl);
+            return null;
+        }).filter(p -> !Objects.isNull(p)).findAny().orElseThrow();
     }
 }
