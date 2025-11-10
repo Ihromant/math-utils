@@ -1,11 +1,13 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.GapInteractor;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -25,10 +27,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
+import java.util.stream.Gatherers;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -513,5 +517,95 @@ public class BibdFinder5CyclicTest {
             }
         }
         return cmp < 0;
+    }
+
+    private static final String s1 = """
+            [
+            [[0, 1, 71, 86, 395, 401], [0, 3, 35, 56, 194, 254], [0, 4, 151, 211, 316, 318], [0, 5, 50, 197, 198, 236], [0, 6, 24, 47, 235, 298], [0, 8, 166, 240, 358, 437], [0, 29, 168, 203, 362, 415], [0, 38, 91, 188, 263, 357], [0, 13, 108, 182, 310, 356], [0, 9, 106, 139, 334, 430], [0, 26, 99, 216, 252, 293], [0, 22, 70, 165, 339, 394], [0, 66, 176, 220, 352, 440], [0, 81, 185, 223, 343, 425], [0, 72, 175, 230, 350, 424], [0, 89, 164, 207, 301, 433], [0, 88, 174, 242, 287, 331], [0, 103, 143, 245, 304, 342], [0, 101, 136, 292, 371, 426], [0, 97, 172, 248, 279, 335]],
+            [[0, 1, 68, 84, 398, 399], [0, 3, 14, 35, 107, 425], [0, 5, 64, 96, 293, 311], [0, 39, 105, 271, 368, 430], [0, 24, 118, 182, 193, 420], [0, 7, 222, 249, 386, 403], [0, 6, 31, 40, 56, 59], [0, 85, 170, 233, 274, 315], [0, 8, 10, 192, 205, 209], [0, 75, 168, 210, 348, 432], [0, 9, 90, 196, 256, 402], [0, 26, 81, 101, 137, 389], [0, 22, 139, 216, 288, 325], [0, 23, 108, 157, 349, 438], [0, 30, 289, 307, 335, 362], [0, 33, 131, 188, 217, 241], [0, 120, 160, 224, 253, 437], [0, 100, 162, 236, 254, 361], [0, 69, 166, 227, 350, 409], [0, 89, 180, 237, 290, 333]],
+            [[0, 1, 74, 86, 392, 401], [0, 3, 35, 56, 68, 380], [0, 4, 213, 241, 266, 412], [0, 14, 90, 196, 275, 312], [0, 29, 71, 288, 308, 337], [0, 26, 137, 183, 205, 368], [0, 5, 126, 146, 223, 409], [0, 6, 111, 220, 292, 420], [0, 8, 10, 318, 331, 335], [0, 69, 168, 210, 342, 426], [0, 9, 180, 191, 263, 375], [0, 30, 89, 353, 396, 408], [0, 22, 178, 227, 281, 370], [0, 23, 110, 136, 328, 440], [0, 27, 260, 299, 415, 427], [0, 36, 91, 121, 206, 251], [0, 31, 50, 112, 128, 282], [0, 34, 59, 222, 317, 436], [0, 75, 173, 226, 355, 431], [0, 100, 157, 192, 314, 428]],
+            [[0, 1, 74, 85, 392, 400], [0, 3, 14, 56, 152, 338], [0, 5, 107, 230, 232, 280], [0, 7, 227, 285, 302, 426], [0, 28, 51, 133, 299, 326], [0, 30, 46, 214, 275, 386], [0, 6, 145, 240, 312, 325], [0, 31, 204, 217, 271, 397], [0, 8, 10, 192, 205, 209], [0, 75, 168, 210, 348, 432], [0, 9, 88, 208, 265, 406], [0, 66, 136, 243, 369, 394], [0, 22, 71, 186, 360, 395], [0, 23, 111, 223, 283, 435], [0, 24, 277, 304, 317, 368], [0, 39, 128, 182, 229, 244], [0, 27, 65, 125, 343, 376], [0, 36, 163, 172, 380, 425], [0, 69, 187, 224, 353, 430], [0, 92, 184, 241, 293, 318]],
+            [[0, 1, 74, 86, 392, 401], [0, 3, 35, 56, 68, 380], [0, 4, 200, 350, 377, 420], [0, 5, 84, 243, 301, 428], [0, 7, 120, 248, 298, 406], [0, 14, 119, 154, 172, 271], [0, 6, 222, 251, 288, 305], [0, 72, 169, 206, 332, 430], [0, 8, 10, 192, 205, 209], [0, 75, 168, 210, 348, 432], [0, 9, 37, 57, 227, 290], [0, 22, 140, 237, 309, 326], [0, 26, 102, 225, 264, 284], [0, 66, 143, 246, 366, 389], [0, 31, 50, 104, 171, 268], [0, 80, 170, 211, 345, 439], [0, 34, 59, 196, 375, 404], [0, 73, 185, 223, 347, 429], [0, 69, 182, 229, 346, 437], [0, 94, 188, 239, 289, 318]],
+            [[0, 1, 68, 86, 398, 401], [0, 3, 35, 56, 128, 320], [0, 4, 28, 95, 120, 311], [0, 14, 30, 247, 418, 437], [0, 24, 124, 229, 257, 440], [0, 39, 110, 209, 277, 424], [0, 5, 16, 200, 201, 208], [0, 93, 147, 198, 303, 420], [0, 6, 73, 225, 285, 397], [0, 75, 167, 197, 323, 416], [0, 8, 10, 255, 268, 272], [0, 72, 168, 210, 345, 429], [0, 9, 149, 237, 297, 347], [0, 26, 166, 283, 384, 404], [0, 22, 101, 172, 376, 407], [0, 23, 108, 157, 349, 438], [0, 29, 139, 179, 214, 246], [0, 97, 169, 248, 288, 329], [0, 38, 292, 300, 325, 371], [0, 100, 183, 236, 275, 319]]
+            ]
+            """;
+
+    @Test
+    public void tst2() {
+        int[][][] bases = new ObjectMapper().readValue(s1, int[][][].class);
+        SemiDirectProduct left = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
+        GroupProduct group = new GroupProduct(left, left);
+        int v = group.order();
+        Map<Map<Integer, Integer>, int[][]> ordered = new TreeMap<>((a, b) -> {
+            int[] fst = IntStream.range(0, 6).map(i -> a.getOrDefault(i, 0)).toArray();
+            int[] snd = IntStream.range(0, 6).map(i -> b.getOrDefault(i, 0)).toArray();
+            return Combinatorics.compareArr(fst, snd);
+        });
+        Arrays.stream(bases).forEach(base -> {
+            Liner lnr = new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new));
+            ordered.put(lnr.hyperbolicFreq(), base);
+        });
+        ordered.forEach((freq, base) -> {
+            String[][] strs = Arrays.stream(base).map(arr -> {
+                return Arrays.stream(arr).mapToObj(el -> {
+                    if (el == group.order()) {
+                        return "\\infty";
+                    }
+                    int l = el / left.order();
+                    int r = el % left.order();
+                    return IntStream.concat(IntStream.of(left.to(l)), IntStream.of(left.to(r))).mapToObj(String::valueOf).collect(Collectors.joining());
+                }).toArray(String[]::new);
+            }).toArray(String[][]::new);
+            System.out.println("\\item $" + freq.toString().replace("{", "[").replace("}", "]") + " \\newline "
+                    + Arrays.stream(strs).gather(Gatherers.windowFixed(2))
+                    .map(l -> l.stream().map(a -> Arrays.stream(a).collect(Collectors.joining(", ", "\\{", "\\}")))
+                            .collect(Collectors.joining(", ")))
+                    .collect(Collectors.joining(", \\newline ")) + "$");
+        });
+    }
+
+    private static final String s4 = """
+[
+[[0, 1, 14, 26, 35, 41], [0, 3, 73, 103, 175, 199], [0, 4, 46, 111, 165, 181], [0, 5, 21, 30, 47, 182], [0, 10, 56, 78, 97, 179], [0, 28, 49, 164, 174, 203], [0, 17, 127, 151, 177, 200], [0, 23, 67, 75, 173, 208], [0, 13, 62, 161, 202, 207], [0, 25, 86, 113, 144, 178], [0, 16, 129, 143, 166, 209], [0, 22, 50, 61, 146, 213], [0, 43, 65, 98, 112, 147], [0, 31, 69, 128, 185, 223], [0, 72, 99, 171, 198, 225]],
+[[0, 1, 14, 26, 35, 41], [0, 3, 76, 100, 172, 202], [0, 4, 62, 101, 173, 224], [0, 5, 97, 121, 142, 157], [0, 10, 33, 89, 103, 149], [0, 12, 19, 71, 122, 205], [0, 15, 43, 85, 164, 221], [0, 22, 30, 116, 160, 218], [0, 11, 133, 143, 166, 210], [0, 20, 50, 61, 150, 211], [0, 38, 66, 98, 112, 151], [0, 29, 67, 132, 185, 223], [0, 47, 55, 118, 128, 171], [0, 65, 82, 137, 163, 198], [0, 54, 108, 162, 216, 225]],
+[[0, 1, 14, 26, 35, 41], [0, 3, 10, 22, 31, 37], [0, 4, 74, 134, 152, 200], [0, 5, 85, 106, 178, 193], [0, 9, 92, 118, 146, 163], [0, 18, 55, 65, 182, 190], [0, 11, 133, 143, 166, 210], [0, 20, 50, 61, 150, 211], [0, 38, 66, 98, 112, 151], [0, 29, 67, 132, 185, 223], [0, 13, 62, 84, 119, 142], [0, 25, 49, 113, 123, 191], [0, 17, 79, 100, 120, 158], [0, 32, 73, 87, 175, 197], [0, 72, 99, 171, 198, 225]],
+[[0, 1, 14, 26, 35, 41], [0, 3, 65, 131, 149, 209], [0, 4, 57, 127, 145, 219], [0, 5, 92, 102, 137, 174], [0, 9, 18, 27, 36, 225], [0, 10, 42, 56, 116, 196], [0, 19, 30, 110, 157, 221], [0, 15, 37, 88, 170, 218], [0, 16, 33, 83, 100, 152], [0, 11, 133, 143, 166, 210], [0, 20, 50, 61, 150, 211], [0, 38, 66, 98, 112, 151], [0, 29, 67, 132, 185, 223], [0, 13, 62, 161, 202, 207], [0, 25, 86, 113, 144, 178]],
+[[0, 1, 14, 26, 35, 41], [0, 3, 68, 128, 146, 212], [0, 4, 57, 97, 142, 219], [0, 5, 15, 42, 92, 137], [0, 10, 56, 79, 98, 177], [0, 19, 75, 103, 110, 185], [0, 37, 105, 143, 205, 218], [0, 28, 50, 164, 175, 201], [0, 11, 116, 151, 181, 213], [0, 20, 67, 136, 147, 221], [0, 16, 127, 150, 179, 200], [0, 31, 64, 101, 203, 210], [0, 13, 62, 161, 202, 207], [0, 25, 86, 113, 144, 178], [0, 72, 99, 171, 198, 225]],
+[[0, 1, 14, 26, 35, 41], [0, 3, 83, 122, 158, 191], [0, 4, 57, 97, 142, 219], [0, 5, 15, 42, 92, 137], [0, 10, 56, 88, 123, 143], [0, 19, 50, 110, 121, 192], [0, 37, 98, 159, 196, 218], [0, 28, 84, 157, 164, 185], [0, 11, 116, 151, 181, 213], [0, 20, 67, 136, 147, 221], [0, 16, 127, 150, 179, 200], [0, 31, 64, 101, 203, 210], [0, 13, 62, 161, 202, 207], [0, 25, 86, 113, 144, 178], [0, 81, 117, 153, 189, 225]],
+[[0, 1, 14, 26, 35, 41], [0, 3, 56, 113, 167, 218], [0, 4, 89, 104, 176, 197], [0, 5, 118, 133, 151, 154], [0, 11, 74, 81, 127, 181], [0, 20, 101, 117, 136, 208], [0, 16, 59, 73, 98, 174], [0, 22, 78, 100, 116, 185], [0, 43, 102, 143, 199, 221], [0, 31, 50, 170, 172, 204], [0, 17, 109, 150, 184, 212], [0, 23, 66, 142, 152, 217], [0, 44, 49, 68, 132, 163], [0, 32, 55, 97, 134, 210], [0, 54, 108, 162, 216, 225]]
+]
+            """;
+
+    @Test
+    public void tst4() {
+        int[][][] bases = new ObjectMapper().readValue(s4, int[][][].class);
+        CyclicProduct left = new CyclicProduct(5, 5, 3);
+        SemiDirectProduct group = new SemiDirectProduct(left, new CyclicGroup(3));
+        int v = group.order() + 1;
+        Map<Map<Integer, Integer>, int[][]> ordered = new TreeMap<>((a, b) -> {
+            int[] fst = IntStream.range(0, 6).map(i -> a.getOrDefault(i, 0)).toArray();
+            int[] snd = IntStream.range(0, 6).map(i -> b.getOrDefault(i, 0)).toArray();
+            return Combinatorics.compareArr(fst, snd);
+        });
+        Arrays.stream(bases).forEach(base -> {
+            Liner lnr = new Liner(v, Arrays.stream(base).flatMap(bl -> blocks(bl, v, group)).toArray(int[][]::new));
+            ordered.put(lnr.hyperbolicFreq(), base);
+        });
+        ordered.forEach((freq, base) -> {
+            String[][] strs = Arrays.stream(base).map(arr -> {
+                return Arrays.stream(arr).mapToObj(el -> {
+                    if (el == group.order()) {
+                        return "\\infty";
+                    }
+                    int[] toPair = group.to(el);
+                    return IntStream.concat(IntStream.of(left.toArr(toPair[0])), IntStream.of(toPair[1])).mapToObj(String::valueOf).collect(Collectors.joining());
+                }).toArray(String[]::new);
+            }).toArray(String[][]::new);
+            System.out.println("\\item $" + freq.toString().replace("{", "[").replace("}", "]") + " \\newline "
+                    + Arrays.stream(strs).gather(Gatherers.windowFixed(2))
+                    .map(l -> l.stream().map(a -> Arrays.stream(a).collect(Collectors.joining(", ", "\\{", "\\}")))
+                            .collect(Collectors.joining(", ")))
+                    .collect(Collectors.joining(", \\newline ")) + "$");
+        });
     }
 }
