@@ -1315,6 +1315,57 @@ public class BatchAffineTest {
     }
 
     @Test
+    public void testBoolean() throws IOException {
+        int k = 32;
+        for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
+            String name = f.getName();
+            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
+                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
+                 BufferedReader br = new BufferedReader(isr)) {
+                Liner proj = readProj(br);
+                System.out.println(name);
+                for (int dl = 0; dl < proj.lineCount(); dl++) {
+                    if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
+                        continue;
+                    }
+                    testBoolean(proj, dl);
+                }
+            }
+        }
+    }
+
+    private static void testBoolean(Liner proj, int dl) {
+        int pc = proj.pointCount();
+        for (int a = 0; a < pc; a++) {
+            if (proj.flag(dl, a)) {
+                continue;
+            }
+            for (int b = a + 1; b < pc; b++) {
+                if (proj.flag(dl, b)) {
+                    continue;
+                }
+                int ab = proj.line(a, b);
+                for (int c = b + 1; c < pc; c++) {
+                    if (proj.flag(dl, c) || proj.flag(ab, c)) {
+                        continue;
+                    }
+                    int ac = proj.line(a, c);
+                    int bc = proj.line(b, c);
+                    int abInf = proj.intersection(ab, dl);
+                    int acInf = proj.intersection(ac, dl);
+                    int d = proj.intersection(proj.line(c, abInf), proj.line(b, acInf));
+                    int ad = proj.line(a, d);
+                    int adbc = proj.intersection(ad, bc);
+                    if (!proj.flag(dl, adbc)) {
+                        return;
+                    }
+                }
+            }
+        }
+        System.out.println("Boolean " + dl);
+    }
+
+    @Test
     public void parallelTriangles() throws IOException {
         int k = 16;
         String name = "dhall.txt";
