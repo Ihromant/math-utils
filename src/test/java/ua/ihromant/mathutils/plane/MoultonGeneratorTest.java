@@ -299,11 +299,11 @@ public class MoultonGeneratorTest {
             }
         }
         System.out.println(paley.size());
-        for (int[] a : paley) {
+        paley.stream().parallel().forEach(a -> {
             for (int[] b : paley) {
                 checkPair(a, b, order, positive, gf, negative, projData, found);
             }
-        }
+        });
         //System.out.println(Arrays.deepToString(helper.toMatrix(lst.get(0))));
 //        for (Pair pr : lst) {
 //            checkPair(pr, order, positive, gf, negative, helper);
@@ -357,59 +357,65 @@ public class MoultonGeneratorTest {
         List<TernarMapping> mappings = new ArrayList<>();
         int pc = proj.pointCount();
         int order = proj.line(0).length - 1;
-        return IntStream.range(0, proj.lineCount()).mapToObj(dl -> {
+        return IntStream.range(0, proj.lineCount() - 1).parallel().mapToObj(dl -> {
             int[] line = proj.line(dl);
             for (int i = 0; i < line.length; i++) {
                 int h = line[i];
-                int v = i == 0 ? line[1] : line[0];
-                for (int o = 0; o < pc; o++) {
-                    if (proj.flag(dl, o)) {
+                for (int j = 0; j < line.length; j++) {
+                    if (j == i) {
                         continue;
                     }
-                    int oh = proj.line(o, h);
-                    int ov = proj.line(o, v);
-                    for (int e = 0; e < pc; e++) {
-                        if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                    int v = line[j];
+                    for (int o = 0; o < pc; o++) {
+                        if (proj.flag(dl, o)) {
                             continue;
                         }
-                        int w = proj.intersection(proj.line(e, h), ov);
-                        int u = proj.intersection(proj.line(e, v), oh);
-                        Quad base = new Quad(o, u, w, e);
-                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
-                        int two = ring.op(1, 1, 1);
-                        if (two == 0) {
-                            continue;
-                        }
-                        CharVals cv = CharVals.of(ring, two, order);
-                        if (!cv.induced()) {
-                            continue;
-                        }
-                        if (mappings.isEmpty()) {
-                            mappings.add(TernaryAutomorphisms.fillTernarMapping(ring.toMatrix(), cv, two, order));
-                        }
-                        Characteristic fstChr = mappings.getFirst().chr();
-                        List<ProjChar> existingChars = map.get(cv.chr());
-                        boolean eq = fstChr.equals(cv.chr());
-                        if (!eq && existingChars == null) {
-                            continue;
-                        }
-                        TernaryRing matrix = ring.toMatrix();
-                        if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
-                            mappings.add(TernaryAutomorphisms.fillTernarMapping(matrix, cv, two, order));
-                        }
-                        if (existingChars != null) {
-                            Optional<ProjChar> opt = existingChars.stream()
-                                    .filter(projChar -> projChar.ternars().stream()
-                                            .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix)))
-                                    .findAny();
-                            if (opt.isPresent()) {
-                                return opt.get();
+                        int oh = proj.line(o, h);
+                        int ov = proj.line(o, v);
+                        for (int e = 0; e < pc; e++) {
+                            if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                                continue;
+                            }
+                            int w = proj.intersection(proj.line(e, h), ov);
+                            int u = proj.intersection(proj.line(e, v), oh);
+                            Quad base = new Quad(o, u, w, e);
+                            TernaryRing ring = new ProjectiveTernaryRing(name, proj, base);
+                            int two = ring.op(1, 1, 1);
+                            if (two == 0) {
+                                continue;
+                            }
+                            CharVals cv = CharVals.of(ring, two, order);
+                            if (!cv.induced()) {
+                                continue;
+                            }
+                            if (mappings.isEmpty()) {
+                                mappings.add(TernaryAutomorphisms.fillTernarMapping(ring.toMatrix(), cv, two, order));
+                            }
+                            Characteristic fstChr = mappings.getFirst().chr();
+                            List<ProjChar> existingChars = map.get(cv.chr());
+                            boolean eq = fstChr.equals(cv.chr());
+                            if (!eq && existingChars == null) {
+                                continue;
+                            }
+                            TernaryRing matrix = ring.toMatrix();
+                            if (eq && mappings.stream().noneMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix))) {
+                                mappings.add(TernaryAutomorphisms.fillTernarMapping(matrix, cv, two, order));
+                            }
+                            if (existingChars != null) {
+                                Optional<ProjChar> opt = existingChars.stream()
+                                        .filter(projChar -> projChar.ternars().stream()
+                                                .anyMatch(tm -> TernaryRingTest.ringIsomorphic(tm, matrix)))
+                                        .findAny();
+                                if (opt.isPresent()) {
+                                    System.out.println(opt.get().name());
+                                    return opt.get();
+                                }
                             }
                         }
                     }
                 }
             }
-            System.out.println(dl);
+            System.out.println("||" + dl);
             return null;
         }).filter(p -> !Objects.isNull(p)).findAny().orElseThrow();
     }
