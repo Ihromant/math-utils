@@ -113,8 +113,11 @@ public class GSpace {
                 preImages[gx1][x1].set(g);
             }
         }
-        FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());
-        this.differences = qf.components().stream().filter(c -> !c.intersects(diagonal)).toArray(FixBS[]::new);
+        this.emptyFilter = new FixBS(v * v);
+        for (int i = 0; i < v; i++) {
+            emptyFilter.set(i * v + i);
+        }
+        this.differences = qf.components().stream().filter(c -> !c.intersects(emptyFilter)).toArray(FixBS[]::new);
         this.diffMap = new int[v * v];
         int sz = differences.length;
         for (int i = 0; i < sz; i++) {
@@ -128,10 +131,6 @@ public class GSpace {
         }
 
         this.statesCache = new State[oBeg.length][v][v];
-        this.emptyFilter = new FixBS(v * v);
-        for (int i = 0; i < v; i++) {
-            emptyFilter.set(i * v + i);
-        }
         for (int oi = 0; oi < oBeg.length; oi++) {
             int fst = oBeg[oi];
             for (int snd = fst + 1; snd < v; snd++) {

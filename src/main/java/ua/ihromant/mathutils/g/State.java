@@ -45,10 +45,10 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs,
                 if (globalFilter.get(bx) || globalFilter.get(xb)) {
                     return null;
                 }
+                stabExt.or(gSpace.preImage(b, b).intersection(gSpace.preImage(x, x)));
 
                 int compBx = gSpace.diffIdx(bx);
                 int[] exBx = newDiffs[compBx];
-                stabExt.or(gSpace.preImage(b, b).intersection(gSpace.preImage(x, x)));
                 if (exBx != null) {
                     for (int diff : exBx) {
                         int fst = diff / v;
@@ -65,7 +65,6 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs,
 
                 int compXb = gSpace.diffIdx(xb);
                 int[] exXb = newDiffs[compXb];
-                stabExt.or(gSpace.preImage(x, x).intersection(gSpace.preImage(b, b)));
                 if (exXb != null) {
                     for (int diff : exXb) {
                         int fst = diff / v;
