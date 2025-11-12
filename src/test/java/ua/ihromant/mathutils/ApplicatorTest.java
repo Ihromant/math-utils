@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -148,16 +149,13 @@ public class ApplicatorTest {
         Group group = new PermutationGroup(5, true);
         GSpace space = new GSpace(k, group, true, 1, 60, 60, 60, 60, 60);
         System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
-        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
-            System.out.println(arr[0].block());
-            return true;
-        };
+        Consumer<State> sCons = st -> System.out.println(st.block());
         IntStream.range(2, space.v()).forEach(trd -> {
             State state = space.forInitial(0, 1, trd);
             if (state == null) {
                 return;
             }
-            searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, sCons);
+            searchDesignsFirst(space, state, trd, sCons);
         });
         System.out.println(space.minimalBlock(FixBS.of(space.v(), 0, 1, 15, 46, 51)));
         FixBS[] blocks = {FixBS.of(space.v(), 0, 1, 15, 46, 51),
@@ -184,17 +182,13 @@ public class ApplicatorTest {
         int v = space.v();
         System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
-        List<State[]> singles = Collections.synchronizedList(new ArrayList<>());
-        BiPredicate<State[], FixBS> sCons = (arr, _) -> {
-            singles.add(arr);
-            return true;
-        };
+        List<State> singles = Collections.synchronizedList(new ArrayList<>());
         IntStream.range(2, space.v()).parallel().forEach(trd -> {
             State state = space.forInitial(0, 1, trd);
             if (state == null) {
                 return;
             }
-            searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, sCons);
+            searchDesignsFirst(space, state, trd, singles::add);
         });
         System.out.println("Singles size: " + singles.size());
         AtomicInteger cnt = new AtomicInteger();
@@ -208,13 +202,8 @@ public class ApplicatorTest {
             System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
             return true;
         };
-        singles.stream().parallel().forEach(tuple -> {
-            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-            FixBS newFilter = space.emptyFilter().copy();
-            for (State st : pr) {
-                st.updateFilter(newFilter, space);
-            }
-            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
+        singles.stream().parallel().forEach(state -> {
+            searchDesigns(space, space.emptyFilter(), new State[0], state, 0, fCons);
             int vl = cnt.incrementAndGet();
             if (vl % 100 == 0) {
                 System.out.println(vl);
@@ -235,17 +224,13 @@ public class ApplicatorTest {
                 int v = space.v();
                 System.out.println(GroupIndex.identify(group) + " " + Arrays.deepToString(conf) + " " + space.v() + " " + k + " auths: " + space.authLength());
                 int sqr = v * v;
-                List<State[]> singles = Collections.synchronizedList(new ArrayList<>());
-                BiPredicate<State[], FixBS> sCons = (arr, _) -> {
-                    singles.add(arr);
-                    return true;
-                };
+                List<State> singles = Collections.synchronizedList(new ArrayList<>());
                 IntStream.range(2, space.v()).parallel().forEach(trd -> {
                     State state = space.forInitial(0, 1, trd);
                     if (state == null) {
                         return;
                     }
-                    searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, sCons);
+                    searchDesignsFirst(space, state, trd, singles::add);
                 });
                 System.out.println("Singles size: " + singles.size());
                 AtomicInteger cnt = new AtomicInteger();
@@ -262,13 +247,8 @@ public class ApplicatorTest {
                     System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
                     return true;
                 };
-                singles.stream().parallel().forEach(tuple -> {
-                    State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-                    FixBS newFilter = space.emptyFilter().copy();
-                    for (State st : pr) {
-                        st.updateFilter(newFilter, space);
-                    }
-                    searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, fCons);
+                singles.stream().parallel().forEach(state -> {
+                    searchDesigns(space, space.emptyFilter(), new State[0], state, 0, fCons);
                     int vl = cnt.incrementAndGet();
                     if (vl % 100 == 0) {
                         System.out.println(vl);
@@ -287,17 +267,13 @@ public class ApplicatorTest {
         int v = space.v();
         System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
         int sqr = v * v;
-        List<State[]> singles = Collections.synchronizedList(new ArrayList<>());
-        BiPredicate<State[], FixBS> fCons = (arr, _) -> {
-            singles.add(arr);
-            return true;
-        };
+        List<State> singles = Collections.synchronizedList(new ArrayList<>());
         IntStream.range(2, space.v()).parallel().forEach(trd -> {
             State state = space.forInitial(0, 1, trd);
             if (state == null) {
                 return;
             }
-            searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, fCons);
+            searchDesignsFirst(space, state, trd, singles::add);
         });
         System.out.println("Singles size: " + singles.size());
         List<State[]> pairs = new ArrayList<>();
@@ -312,13 +288,8 @@ public class ApplicatorTest {
             return true;
         };
         AtomicInteger cnt = new AtomicInteger();
-        singles.stream().parallel().forEach(tuple -> {
-            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-            FixBS newFilter = space.emptyFilter().copy();
-            for (State st : pr) {
-                st.updateFilter(newFilter, space);
-            }
-            searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
+        singles.stream().parallel().forEach(state -> {
+            searchDesigns(space, space.emptyFilter(), new State[0], state, 0, sCons);
             int vl = cnt.incrementAndGet();
             if (vl % 10 == 0) {
                 System.out.println(vl);
@@ -376,17 +347,13 @@ public class ApplicatorTest {
                     int v = space.v();
                     System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
                     int sqr = v * v;
-                    List<State[]> singles = Collections.synchronizedList(new ArrayList<>());
-                    BiPredicate<State[], FixBS> fCons = (arr, _) -> {
-                        singles.add(arr);
-                        return true;
-                    };
+                    List<State> singles = Collections.synchronizedList(new ArrayList<>());
                     IntStream.range(2, space.v()).parallel().forEach(trd -> {
                         State state = space.forInitial(0, 1, trd);
                         if (state == null) {
                             return;
                         }
-                        searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, fCons);
+                        searchDesignsFirst(space, state, trd, singles::add);
                     });
                     System.out.println("Singles size: " + singles.size());
                     List<State[]> pairs = new ArrayList<>();
@@ -401,13 +368,8 @@ public class ApplicatorTest {
                         return true;
                     };
                     AtomicInteger cnt = new AtomicInteger();
-                    singles.stream().parallel().forEach(tuple -> {
-                        State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-                        FixBS newFilter = space.emptyFilter().copy();
-                        for (State st : pr) {
-                            st.updateFilter(newFilter, space);
-                        }
-                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, sCons);
+                    singles.stream().parallel().forEach(state -> {
+                        searchDesigns(space, space.emptyFilter(), new State[0], state, 0, sCons);
                         int vl = cnt.incrementAndGet();
                         if (vl % 10 == 0) {
                             System.out.println(vl);
@@ -483,22 +445,15 @@ public class ApplicatorTest {
         }
     }
 
-    private static void searchDesignsFirst(GSpace space, FixBS filter, State[] currDesign, State state, int prev, BiPredicate<State[], FixBS> cons) {
+    private static void searchDesignsFirst(GSpace space, State state, int prev, Consumer<State> cons) {
         int v = space.v();
         if (state.size() == space.k()) {
-            State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
-            nextDesign[currDesign.length] = state;
-            FixBS nextFilter = filter.copy();
-            state.updateFilter(nextFilter, space);
-            cons.test(nextDesign, nextFilter);
+            cons.accept(state);
         } else {
-            int from = prev * v + prev + 1;
-            int to = prev * v + v;
-            for (int pair = filter.nextClearBit(from); pair >= 0 && pair < to; pair = filter.nextClearBit(pair + 1)) {
-                int el = pair % v;
-                State nextState = state.acceptElem(space, filter, el);
+            for (int el = prev + 1; el < v; el++) {
+                State nextState = state.acceptElem(space, space.emptyFilter(), el);
                 if (nextState != null && space.minimal(nextState.block())) {
-                    searchDesignsFirst(space, filter, currDesign, nextState, el, cons);
+                    searchDesignsFirst(space, nextState, el, cons);
                 }
             }
         }
@@ -516,17 +471,13 @@ public class ApplicatorTest {
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
-            List<State[]> singles = Collections.synchronizedList(new ArrayList<>());
-            BiPredicate<State[], FixBS> sCons = (arr, _) -> {
-                singles.add(arr);
-                return true;
-            };
+            List<State> singles = Collections.synchronizedList(new ArrayList<>());
             IntStream.range(2, space.v()).parallel().forEach(trd -> {
                 State state = space.forInitial(0, 1, trd);
                 if (state == null) {
                     return;
                 }
-                searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, sCons);
+                searchDesignsFirst(space, state, trd, singles::add);
             });
             System.out.println(group.name() + " Singles size: " + singles.size());
             AtomicInteger cnt = new AtomicInteger();
@@ -540,8 +491,8 @@ public class ApplicatorTest {
                     return false;
                 }
             };
-            singles.stream().parallel().forEach(single -> {
-                searchDesigns(space, space.emptyFilter(), new State[0], single[0], 0, tCons);
+            singles.stream().parallel().forEach(st -> {
+                searchDesigns(space, space.emptyFilter(), new State[0], st, 0, tCons);
                 int vl = cnt.incrementAndGet();
                 if (vl % 10 == 0) {
                     System.out.println(vl);
@@ -565,17 +516,16 @@ public class ApplicatorTest {
              BufferedOutputStream bos = new BufferedOutputStream(fos);
              PrintStream ps = new PrintStream(bos)) {
             System.out.println(group.name() + " " + space.v() + " " + k + " auths: " + space.authLength());
-            BiPredicate<State[], FixBS> sCons = (arr, _) -> {
-                ps.println(arr[0].block());
+            Consumer<State> sCons = st -> {
+                ps.println(st.block());
                 ps.flush();
-                return true;
             };
             IntStream.range(2, space.v()).parallel().forEach(trd -> {
                 State state = space.forInitial(0, 1, trd);
                 if (state == null) {
                     return;
                 }
-                searchDesignsFirst(space, space.emptyFilter(), new State[0], state, trd, sCons);
+                searchDesignsFirst(space, state, trd, sCons);
             });
         }
     }
