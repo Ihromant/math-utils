@@ -1,7 +1,10 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
+import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 
 import java.util.ArrayList;
@@ -274,6 +277,15 @@ public class InversivePlane {
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
         return counter.get();
+    }
+
+    public PermutationGroup automorphisms() {
+        List<int[]> res = new ArrayList<>();
+        Consumer<int[]> cons = res::add;
+        GraphWrapper wrap = GraphWrapper.forInversive(this);
+        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
+        NautyAlgo.search(wrap, aut);
+        return new PermutationGroup(res.toArray(int[][]::new));
     }
 
     public Liner derived(int pt) {
