@@ -4,10 +4,15 @@ import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 public class InversivePlane {
     private final int pointCount;
@@ -47,6 +52,9 @@ public class InversivePlane {
                     int p2 = line[j];
                     for (int k = j + 1; k < line.length; k++) {
                         int p3 = line[k];
+                        if (result[p1][p2][p3] >= 0) {
+                            throw new IllegalStateException();
+                        }
                         result[p1][p2][p3] = l;
                         result[p1][p3][p2] = l;
                         result[p2][p1][p3] = l;
@@ -266,5 +274,29 @@ public class InversivePlane {
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
         return counter.get();
+    }
+
+    public Liner derived(int pt) {
+        List<int[]> result = new ArrayList<>();
+        for (int[] line : lines) {
+            int pos = Arrays.binarySearch(line, pt);
+            if (pos < 0) {
+                continue;
+            }
+            int[] bl = IntStream.concat(Arrays.stream(line, 0, pos),
+                    Arrays.stream(line, pos + 1, line.length).map(i -> i - 1)).toArray();
+            result.add(bl);
+        }
+        return new Liner(pointCount - 1, result.toArray(int[][]::new));
+    }
+
+    public Map<Map<Integer, Integer>, Integer> fingerprint() {
+        Map<Map<Integer, Integer>, Integer> result = new HashMap<>();
+        for (int pt = 0; pt < pointCount; pt++) {
+            Liner lnr = derived(pt);
+            Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+            result.compute(freq, (k, v) -> v == null ? 1 : v + 1);
+        }
+        return result;
     }
 }
