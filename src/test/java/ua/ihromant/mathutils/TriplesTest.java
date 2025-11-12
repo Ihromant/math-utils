@@ -217,6 +217,10 @@ public class TriplesTest {
     private static void generateConfigs(int[][] splits, BiConsumer<Group, int[][]> cons) throws IOException {
         for (int[] split : splits) {
             int lcm = lcm(split);
+            if (lcm % 16 == 0) {
+                System.out.println("Skipping " + Arrays.toString(split) + " as it will have too big group");
+                continue;
+            }
             int gc = GroupIndex.groupCount(lcm);
             for (int i = 1; i <= gc; i++) {
                 Group gr = GroupIndex.group(lcm, i);
