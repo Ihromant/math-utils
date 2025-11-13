@@ -103,7 +103,8 @@ public class InversivesFinderTest {
     public void printAdmissible() {
         int t = 3;
         int k = 7;
-        System.out.println(IntStream.range(0, 200).filter(v -> Combinatorics.admissible(t, v, k)).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+        System.out.println(t + " " + k);
+        System.out.println(IntStream.range(0, 400).filter(v -> Combinatorics.admissible(t, v, k)).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
     }
 
     private static DumpConfig readLast(String prefix, int v, int k, Supplier<DumpConfig> fallback) {
