@@ -77,13 +77,11 @@ public class TriplesTest {
                 System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
                 int cube = v * v * v;
                 List<StateTr> singles = Collections.synchronizedList(new ArrayList<>());
-                IntStream.range(2, space.v()).parallel().forEach(trd -> {
-                    StateTr state = space.forInitial(0, 1, trd);
-                    if (state == null) {
-                        return;
-                    }
-                    searchDesignsFirst(space, state, trd, singles::add);
-                });
+                StateTr state = space.forInitial(0, 1, 2);
+                if (state == null) {
+                    continue;
+                }
+                searchDesignsFirst(space, state, 2, singles::add);
                 System.out.println("Singles size: " + singles.size());
                 List<StateTr[]> tuples = new ArrayList<>();
                 List<StateTr[]> sync = Collections.synchronizedList(tuples);
@@ -98,8 +96,8 @@ public class TriplesTest {
                     return true;
                 };
                 AtomicInteger cnt = new AtomicInteger();
-                singles.stream().parallel().forEach(state -> {
-                    searchDesigns(space, space.emptyFilter(), new StateTr[0], state, 0, 0, sCons);
+                singles.stream().parallel().forEach(st -> {
+                    searchDesigns(space, space.emptyFilter(), new StateTr[0], st, 0, 0, sCons);
                     int vl = cnt.incrementAndGet();
                     if (vl % 10 == 0) {
                         System.out.println(vl);
@@ -155,13 +153,11 @@ public class TriplesTest {
             System.out.println(group.name() + " " + space.v() + " " + k + " conf: " + Arrays.deepToString(conf) + " auths: " + space.authLength());
             int cube = v * v * v;
             List<StateTr> singles = Collections.synchronizedList(new ArrayList<>());
-            IntStream.range(2, space.v()).parallel().forEach(trd -> {
-                StateTr state = space.forInitial(0, 1, trd);
-                if (state == null) {
-                    return;
-                }
-                searchDesignsFirst(space, state, trd, singles::add);
-            });
+            StateTr state = space.forInitial(0, 1, 2);
+            if (state == null) {
+                return;
+            }
+            searchDesignsFirst(space, state, 2, singles::add);
             System.out.println("Singles size: " + singles.size());
             List<StateTr[]> tuples = new ArrayList<>();
             List<StateTr[]> sync = Collections.synchronizedList(tuples);
@@ -176,8 +172,8 @@ public class TriplesTest {
                 return true;
             };
             AtomicInteger cnt = new AtomicInteger();
-            singles.stream().parallel().forEach(state -> {
-                searchDesigns(space, space.emptyFilter(), new StateTr[0], state, 0, 0, sCons);
+            singles.stream().parallel().forEach(st -> {
+                searchDesigns(space, space.emptyFilter(), new StateTr[0], st, 0, 0, sCons);
                 int vl = cnt.incrementAndGet();
                 if (vl % 10 == 0) {
                     System.out.println(vl);
