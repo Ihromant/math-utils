@@ -60,8 +60,8 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs,
                     newDiffs[compBx] = newExDiffs;
                 } else {
                     newDiffs[compBx] = new int[]{bx};
+                    newDiffSet.set(compBx);
                 }
-                newDiffSet.set(compBx);
 
                 int compXb = gSpace.diffIdx(xb);
                 int[] exXb = newDiffs[compXb];
@@ -76,8 +76,8 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs,
                     newDiffs[compXb] = newExDiffs;
                 } else {
                     newDiffs[compXb] = new int[]{xb};
+                    newDiffSet.set(compXb);
                 }
-                newDiffSet.set(compXb);
             }
             newBlock.set(x);
             stabExt.andNot(newStabilizer);

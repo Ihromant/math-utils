@@ -67,8 +67,8 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
                         newDiffs[compAbx] = newExDiffs;
                     } else {
                         newDiffs[compAbx] = new int[]{abx};
+                        newDiffSet.set(compAbx);
                     }
-                    newDiffSet.set(compAbx);
 
                     int compBax = gSpace.diffIdx(bax);
                     int[] exBax = newDiffs[compBax];
@@ -84,8 +84,8 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
                         newDiffs[compBax] = newExDiffs;
                     } else {
                         newDiffs[compBax] = new int[]{bax};
+                        newDiffSet.set(compBax);
                     }
-                    newDiffSet.set(compBax);
 
                     int compAxb = gSpace.diffIdx(axb);
                     int[] exAxb = newDiffs[compAxb];
@@ -101,8 +101,8 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
                         newDiffs[compAxb] = newExDiffs;
                     } else {
                         newDiffs[compAxb] = new int[]{axb};
+                        newDiffSet.set(compAxb);
                     }
-                    newDiffSet.set(compAxb);
 
                     int compBxa = gSpace.diffIdx(bxa);
                     int[] exBxa = newDiffs[compBxa];
@@ -118,8 +118,8 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
                         newDiffs[compBxa] = newExDiffs;
                     } else {
                         newDiffs[compBxa] = new int[]{bxa};
+                        newDiffSet.set(compBxa);
                     }
-                    newDiffSet.set(compBxa);
 
                     int compXab = gSpace.diffIdx(xab);
                     int[] exXab = newDiffs[compXab];
@@ -135,8 +135,8 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
                         newDiffs[compXab] = newExDiffs;
                     } else {
                         newDiffs[compXab] = new int[]{xab};
+                        newDiffSet.set(compXab);
                     }
-                    newDiffSet.set(compXab);
 
                     int compXba = gSpace.diffIdx(xba);
                     int[] exXba = newDiffs[compXba];
@@ -152,8 +152,8 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
                         newDiffs[compXba] = newExDiffs;
                     } else {
                         newDiffs[compXba] = new int[]{xba};
+                        newDiffSet.set(compXba);
                     }
-                    newDiffSet.set(compXba);
                 }
             }
             newBlock.set(x);
