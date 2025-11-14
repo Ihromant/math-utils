@@ -119,13 +119,13 @@ public class BatchIsomorphismTest {
         Arrays.stream(CYCLIC.split("\n")).forEach(str -> {
             int[][] base = om.readValue(str, int[][].class);
             Liner lnr = Liner.byDiffFamily(ccl, base);
-            grouped.computeIfAbsent(lnr.hyperbolicFreq(), ky -> new ArrayList<>()).add(new DesignData(6, base));
+            grouped.computeIfAbsent(lnr.hyperbolicFreq(), _ -> new ArrayList<>()).add(new DesignData(6, base));
         });
         Group comm = new CyclicProduct(2, 3, 3, 7);
         Arrays.stream(COMM.split("\n")).forEach(str -> {
             int[][] base = om.readValue(str, int[][].class);
             Liner lnr = Liner.byDiffFamily(comm, base);
-            grouped.computeIfAbsent(lnr.hyperbolicFreq(), ky -> new ArrayList<>()).add(new DesignData(16, base));
+            grouped.computeIfAbsent(lnr.hyperbolicFreq(), _ -> new ArrayList<>()).add(new DesignData(16, base));
         });
         int k = 6;
         int fixed = 0;
@@ -153,7 +153,7 @@ public class BatchIsomorphismTest {
                         Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> BibdFinder5CyclicTest.blocks(bl, v, group)).toArray(int[][]::new));
                         if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
                             Map<Integer, Integer> freq = l.hyperbolicFreq();
-                            grouped.computeIfAbsent(freq, ky -> new ArrayList<>()).add(new DesignData(i, base));
+                            grouped.computeIfAbsent(freq, _ -> new ArrayList<>()).add(new DesignData(i, base));
                         }
                     }
                 });
@@ -201,7 +201,7 @@ public class BatchIsomorphismTest {
                     Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> BibdFinder5CyclicTest.blocks(bl, v, table)).toArray(int[][]::new));
                     if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
                         Map<Integer, Integer> freq = l.hyperbolicFreq();
-                        grouped.computeIfAbsent(freq, ky -> new ArrayList<>()).add(new DesignData(0, base));
+                        grouped.computeIfAbsent(freq, _ -> new ArrayList<>()).add(new DesignData(0, base));
                     }
                 }
             });
@@ -236,37 +236,6 @@ public class BatchIsomorphismTest {
         });
         lns.close();
         unique.values().forEach(System.out::println);
-    }
-
-    // 6-Z3xZ3semiZ3xZ5.txt <-> 3
-    // 6-Z45semiZ3.txt <-> 4
-    @Test
-    public void testForCyclic6() throws IOException {
-        ObjectMapper om = new ObjectMapper();
-        Map<String, int[][]> lns = new HashMap<>();
-        Group group = GroupIndex.group(135, 3);
-        int[][] auths = BibdFinder6CyclicTest.auth(group);
-        Stream<String> str = Files.lines(Path.of("/home/ihromant/maths/g-spaces/bunch/", "6-Z3xZ3semiZ3xZ5.txt"));
-        str.forEach(l -> {
-            if (!l.contains("[[")) {
-                return;
-            }
-            int[][] arr1 = om.readValue(l.substring(l.indexOf("[{"), l.indexOf("}]") + 2).replace('{', '[').replace('}', ']'), int[][].class);
-            int[][] arr2 = om.readValue(l.substring(l.indexOf("[["), l.indexOf("]]") + 2), int[][].class);
-            int[][] base = Stream.concat(Arrays.stream(arr1), Arrays.stream(arr2)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
-            for (int[] auth : auths) {
-                if (BibdFinder6CyclicTest.bigger(base, Arrays.stream(base).map(bl -> BibdFinder6CyclicTest.minimalTuple(bl, auth, group)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
-                    return;
-                }
-            }
-            lns.putIfAbsent(l, base);
-        });
-        str.close();
-        lns.keySet().forEach(System.out::println);
-    }
-
-    private static int[][] read(ObjectMapper om, String val) {
-        return om.readValue(val.substring(val.indexOf("[["), val.indexOf("]]") + 2), int[][].class);
     }
 
     @Test
