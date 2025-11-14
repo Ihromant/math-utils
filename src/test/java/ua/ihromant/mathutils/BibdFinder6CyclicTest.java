@@ -388,6 +388,9 @@ public class BibdFinder6CyclicTest {
         State state = new State(zero, zero, new FixBS(ord), zero, 1);
         searchDesigns(table, new FixBS(ord), design, state, k, 0, cons);
         System.out.println("Stabilized size " + stabilized.size());
+        if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
+            return;
+        }
         List<List<State>> states = new ArrayList<>();
         Predicate<Des> pred = des -> {
             long fixedCount = des.curr.stream().filter(st -> st.size == k - 1).count();
