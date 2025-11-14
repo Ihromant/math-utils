@@ -30,6 +30,7 @@ public class GroupTest {
         testCorrectness(new CyclicProduct(3, 3, 5), true);
         testCorrectness(new QuaternionGroup(), false);
         testCorrectness(new DihedralGroup(7), false);
+        testCorrectness(new SimpleLinearCyclic(2, 4), false);
         GeneralLinear gl = new GeneralLinear(2, new GaloisField(4));
         assertEquals(180, gl.order());
         testCorrectness(gl, false);
