@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.stream.IntStream;
 
 public class TableGroup implements Group {
+    private final int order;
     private final int[][] operationTable;
     private final int[] inverses;
     private final int[][] squareRoots;
@@ -24,9 +25,10 @@ public class TableGroup implements Group {
     }
 
     public TableGroup(String label, int[][] operationTable) {
+        this.order = operationTable.length;
         this.operationTable = operationTable;
         this.inverses = Arrays.stream(operationTable).mapToInt(arr -> IntStream.range(0, operationTable.length).filter(j -> arr[j] == 0).findAny().orElseThrow()).toArray();
-        IntList[] roots = IntStream.range(0, operationTable.length).mapToObj(i -> new IntList(operationTable.length)).toArray(IntList[]::new);
+        IntList[] roots = IntStream.range(0, operationTable.length).mapToObj(_ -> new IntList(operationTable.length)).toArray(IntList[]::new);
         for (int i = 0; i < operationTable.length; i++) {
             int sqr = operationTable[i][i];
             roots[sqr].add(i);
@@ -59,7 +61,7 @@ public class TableGroup implements Group {
 
     @Override
     public int order() {
-        return inverses.length;
+        return order;
     }
 
     @Override
@@ -110,18 +112,5 @@ public class TableGroup implements Group {
             cachedSubGroups = Group.super.groupedSubGroups();
         }
         return cachedSubGroups;
-    }
-
-    public TableGroup applyPerm(int[] perm) {
-        if (perm[0] != 0) {
-            throw new IllegalArgumentException();
-        }
-        int[][] opTable = new int[operationTable.length][operationTable.length];
-        for (int i = 0; i < operationTable.length; i++) {
-            for (int j = 0; j < operationTable.length; j++) {
-                opTable[perm[i]][perm[j]] = perm[operationTable[i][j]];
-            }
-        }
-        return new TableGroup(label, opTable);
     }
 }
