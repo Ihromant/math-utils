@@ -358,6 +358,7 @@ public class BibdFinder6CyclicTest {
                 FixBS fbs = new FixBS(v);
                 for (int el : arr) {
                     if (el >= ord) {
+                        sh = true;
                         continue;
                     }
                     fbs.set(table.op(i, el));
