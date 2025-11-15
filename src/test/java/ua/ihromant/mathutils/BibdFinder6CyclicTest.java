@@ -72,6 +72,10 @@ public class BibdFinder6CyclicTest {
         StabState state = new StabState(zero, zero, empty, zero, 1);
         searchStabilized(table, state, k, 0, cons);
         System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
+        List<StabState> stabilized = new ArrayList<>(states.values());
+        if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
+            return;
+        }
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
         Predicate<Des> pred = des -> {
             int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
@@ -89,7 +93,6 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        List<StabState> stabilized = new ArrayList<>(states.values());
         stabilized.sort(Comparator.comparing(StabState::block));
         FixBS[] intersecting = intersecting(stabilized);
         FixBS available = new FixBS(states.size());
