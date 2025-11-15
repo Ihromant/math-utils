@@ -738,8 +738,8 @@ public class BibdFinder6CyclicTest {
         try (FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
-            Map<Map<Integer, Integer>, PartialLiner> lnrs = new HashMap<>();
-            br.lines().forEach(l -> {
+            Map<Map<Integer, Integer>, PartialLiner> plnrs = new ConcurrentHashMap<>();
+            br.lines().parallel().forEach(l -> {
                 if (!l.contains("[[[")) {
                     return;
                 }
@@ -747,16 +747,16 @@ public class BibdFinder6CyclicTest {
                 Liner lnr = generateLiner(table, fixed, k, Stream.concat(Arrays.stream(base[0]), Arrays.stream(base[1])).toArray(int[][]::new));
                 Map<Integer, Integer> freq = lnr.hyperbolicFreq();
                 PartialLiner pl = new PartialLiner(lnr.lines());
-                if (lnrs.containsKey(freq)) {
-                    if (!lnrs.get(freq).isomorphicSel(pl)) {
+                PartialLiner existing = plnrs.computeIfAbsent(freq, _ -> pl);
+                if (pl == existing) {
+                    System.out.println(freq + " " + l);
+                } else {
+                    if (!existing.isomorphicSel(pl)) {
                         System.out.println("Non iso " + freq + " " + l);
                     }
-                } else {
-                    lnrs.put(freq, pl);
-                    System.out.println(freq + " " + l);
                 }
             });
-            System.out.println(lnrs.size());
+            System.out.println(plnrs.size());
         }
     }
 }
