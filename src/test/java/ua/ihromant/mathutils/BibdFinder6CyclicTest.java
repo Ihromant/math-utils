@@ -153,8 +153,7 @@ public class BibdFinder6CyclicTest {
                 int blocksNeeded = (ord - 1 - filter.cardinality()) / k / (k - 1);
                 FixBS whiteList = filter.copy();
                 whiteList.flip(1, ord);
-                DiffState diffState = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, filter.nextClearBit(1));
-                searchUniqueDesigns(table, k, new int[0][], diffState, design -> {
+                Predicate<int[][]> fCons = design -> {
                     if (design.length < blocksNeeded) {
                         return false;
                     }
@@ -164,7 +163,14 @@ public class BibdFinder6CyclicTest {
                     Liner lnr = generateLiner(table, fixed, k, base);
                     System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(StabState::block).toArray()) + " " + Arrays.deepToString(design));
                     return true;
-                });
+                };
+                if (blocksNeeded == 0) {
+                    fCons.test(new int[0][]);
+                } else {
+                    int next = filter.nextClearBit(1);
+                    DiffState diffState = new DiffState(new int[k], 1, filter, whiteList).acceptElem(table, next);
+                    searchUniqueDesigns(table, k, new int[0][], diffState, fCons);
+                }
                 ps.println(Arrays.deepToString(lst.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
                 ps.flush();
                 int inc = ai.incrementAndGet();
