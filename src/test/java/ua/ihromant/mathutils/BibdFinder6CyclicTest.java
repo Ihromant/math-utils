@@ -71,9 +71,8 @@ public class BibdFinder6CyclicTest {
                 if (fixedCount > fixed) {
                     return true;
                 }
-                int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
                 for (int[] auth : auths) {
-                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    if (bigger(des.curr, auth, table)) {
                         return true;
                     }
                 }
@@ -85,7 +84,7 @@ public class BibdFinder6CyclicTest {
                         return false;
                     }
                     PrintStream ps = openIfMissing(-1, streams, k, group, fixed);
-                    ps.println(Arrays.deepToString(base));
+                    ps.println(Arrays.deepToString(des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
                     ps.flush();
                 }
                 return false;
@@ -144,9 +143,7 @@ public class BibdFinder6CyclicTest {
             if (fixedCount > fixed) {
                 return true;
             }
-            int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
-            if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(base,
-                    Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new)))) {
+            if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
             if (fixedCount < fixed) {
@@ -156,8 +153,8 @@ public class BibdFinder6CyclicTest {
                 if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
                     return false;
                 }
-                PrintStream ps = openIfMissing(base.length, streams, k, group, fixed);
-                ps.println(Arrays.deepToString(base));
+                PrintStream ps = openIfMissing(des.curr.size(), streams, k, group, fixed);
+                ps.println(Arrays.deepToString(des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
                 ps.flush();
             }
             return false;
@@ -367,9 +364,8 @@ public class BibdFinder6CyclicTest {
             if (fixedCount > fixed) {
                 return true;
             }
-            int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
             for (int[] auth : auths) {
-                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                if (bigger(des.curr, auth, table)) {
                     return true;
                 }
             }
@@ -493,14 +489,14 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    public static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
+    private static FixBS minimalTuple(FixBS tuple, int[] auth, Group gr) {
         int ord = gr.order();
         FixBS base = new FixBS(ord);
-        for (int val : tuple) {
+        for (int val = tuple.nextSetBit(0); val >= 0; val = tuple.nextSetBit(val + 1)) {
             base.set(auth[val]);
         }
         FixBS min = base;
-        for (int val = base.nextSetBit(0); val >= 0 && val < ord; val = base.nextSetBit(val + 1)) {
+        for (int val = base.nextSetBit(1); val >= 0 && val < ord; val = base.nextSetBit(val + 1)) {
             FixBS cnd = new FixBS(ord);
             int inv = gr.inv(val);
             for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
@@ -510,13 +506,18 @@ public class BibdFinder6CyclicTest {
                 min = cnd;
             }
         }
-        return min.toArray();
+        return min;
     }
 
-    public static boolean bigger(int[][] fst, int[][] snd) {
+    private static boolean bigger(List<StabState> fst, int[] auth, Group table) {
+        FixBS[] transformed = new FixBS[fst.size()];
+        for (int i = 0; i < fst.size(); i++) {
+            transformed[i] = minimalTuple(fst.get(i).block, auth, table);
+        }
+        Arrays.sort(transformed);
         int cmp = 0;
-        for (int i = 0; i < fst.length; i++) {
-            cmp = Combinatorics.compareArr(snd[i], fst[i]);
+        for (int i = 0; i < transformed.length; i++) {
+            cmp = transformed[i].compareTo(fst.get(i).block);
             if (cmp != 0) {
                 break;
             }
