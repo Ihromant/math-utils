@@ -37,6 +37,57 @@ import java.util.stream.Stream;
 public class BibdFinder6CyclicTest {
     private static final ObjectMapper map = new ObjectMapper();
 
+    @Test
+    public void dumpAllBeginnings() throws IOException {
+        int fixed = 1;
+        Group group = GroupIndex.group(24, 3);
+        Group table = group.asTable();
+        int ord = table.order();
+        int k = 3;
+        int[][] auths = table.auth();
+        FixBS orderTwo = orderTwo(table);
+        Map<FixBS, StabState> states = new HashMap<>();
+        Consumer<StabState> cons = st -> {
+            if (st.stabilizer.cardinality() > 1) {
+                states.putIfAbsent(st.filter, st);
+            }
+        };
+        FixBS zero = FixBS.of(ord, 0);
+        FixBS empty = new FixBS(ord);
+        StabState state = new StabState(zero, zero, empty, zero, 1);
+        searchStabilized(table, state, k, 0, cons);
+        System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
+        List<StabState> stabilized = new ArrayList<>(states.values());
+        if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
+            return;
+        }
+        File f = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx-1.txt");
+        try (FileOutputStream fos = new FileOutputStream(f);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos)) {
+            Predicate<Des> pred = des -> {
+                int[][] base = des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new);
+                for (int[] auth : auths) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                        return true;
+                    }
+                }
+                if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
+                    if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
+                        return false;
+                    }
+                    ps.println(Arrays.deepToString(base));
+                    ps.flush();
+                }
+                return false;
+            };
+            FixBS[] intersecting = intersecting(stabilized);
+            FixBS available = new FixBS(states.size());
+            available.set(0, states.size());
+            find(stabilized, intersecting, Des.empty(ord, states.size()), pred);
+        }
+    }
+
     private static FixBS[] intersecting(List<StabState> states) {
         FixBS[] intersecting = new FixBS[states.size()];
         IntStream.range(0, states.size()).parallel().forEach(i -> {
