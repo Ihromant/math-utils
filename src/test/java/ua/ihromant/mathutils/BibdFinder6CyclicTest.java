@@ -56,10 +56,14 @@ public class BibdFinder6CyclicTest {
                     states.putIfAbsent(st.filter, st);
                 }
             };
-            FixBS zero = FixBS.of(ord, 0);
-            FixBS empty = new FixBS(ord);
-            StabState state = new StabState(zero, zero, empty, zero, 1);
-            searchStabilized(table, state, k, 0, cons);
+            if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
+                table.subGroups().stream().filter(sg -> sg.order() == k || sg.order() == k - 1)
+                        .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
+            } else {
+                FixBS zero = FixBS.of(ord, 0);
+                StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
+                searchStabilized(table, state, k, 0, cons);
+            }
             System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
             List<StabState> stabilized = new ArrayList<>(states.values());
             if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
@@ -128,10 +132,14 @@ public class BibdFinder6CyclicTest {
                 states.putIfAbsent(st.filter, st);
             }
         };
-        FixBS zero = FixBS.of(ord, 0);
-        FixBS empty = new FixBS(ord);
-        StabState state = new StabState(zero, zero, empty, zero, 1);
-        searchStabilized(table, state, k, 0, cons);
+        if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
+            table.subGroups().stream().filter(sg -> sg.order() == k || sg.order() == k - 1)
+                    .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
+        } else {
+            FixBS zero = FixBS.of(ord, 0);
+            StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
+            searchStabilized(table, state, k, 0, cons);
+        }
         System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
         List<StabState> stabilized = new ArrayList<>(states.values());
         if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
@@ -350,11 +358,16 @@ public class BibdFinder6CyclicTest {
                 states.putIfAbsent(st.filter, st);
             }
         };
-        FixBS zero = FixBS.of(ord, 0);
-        StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
-        searchStabilized(table, state, k, 0, cons);
+        if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
+            table.subGroups().stream().filter(sg -> sg.order() == k || sg.order() == k - 1)
+                    .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
+        } else {
+            FixBS zero = FixBS.of(ord, 0);
+            StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
+            searchStabilized(table, state, k, 0, cons);
+        }
         List<StabState> stabilized = new ArrayList<>(states.values());
-        System.out.println("Stabilized size " + states.size());
+        System.out.println("Stabilized size " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
         if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
             return;
         }
