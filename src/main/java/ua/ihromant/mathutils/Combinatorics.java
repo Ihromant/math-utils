@@ -137,6 +137,19 @@ public class Combinatorics {
         return 0;
     }
 
+    public static boolean isPrime(int val) {
+        if (val < 2) {
+            return false;
+        }
+        long cap = Math.round(Math.sqrt(val));
+        for (int i = 2; i <= cap; i++) {
+            if (val % i == 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public static int[] factorize(int base) {
         List<Integer> result = new ArrayList<>();
         int from = 2;

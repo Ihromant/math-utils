@@ -291,6 +291,11 @@ public class CombinatoricsTest {
         }
     }
 
+    @Test
+    public void testIsPrime() {
+        IntStream.range(0, 1000).filter(Combinatorics::isPrime).forEach(System.out::println);
+    }
+
     private int max(int a) {
         String val = String.valueOf(a);
         char[] dgt = val.toCharArray();
