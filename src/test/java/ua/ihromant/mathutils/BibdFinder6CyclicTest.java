@@ -2,7 +2,6 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
-import ua.ihromant.mathutils.group.GapInteractor;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.util.FixBS;
@@ -28,6 +27,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -48,7 +48,6 @@ public class BibdFinder6CyclicTest {
             Group group = GroupIndex.group(gs, i);
             Group table = group.asTable();
             int ord = table.order();
-            int[][] auths = table.auth();
             FixBS orderTwo = orderTwo(table);
             Map<FixBS, StabState> states = new HashMap<>();
             Consumer<StabState> cons = st -> {
@@ -64,11 +63,12 @@ public class BibdFinder6CyclicTest {
                 StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
                 searchStabilized(table, state, k, 0, cons);
             }
-            System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
+            System.out.println("Stabilized " + states.size());
             List<StabState> stabilized = new ArrayList<>(states.values());
-            if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
+            if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
                 continue;
             }
+            int[][] auths = table.auth();
             Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
             Predicate<Des> pred = des -> {
                 if (des.fixedCount > fixed) {
@@ -102,6 +102,40 @@ public class BibdFinder6CyclicTest {
         }
     }
 
+    private static boolean preCheckFailed(FixBS orderTwo, List<StabState> stabilized, int k, int fixed) {
+        List<StabState> subs = stabilized.stream().filter(st -> st.size == k - 1).collect(Collectors.toList());
+        if (subs.size() < fixed) {
+            System.out.println("Pre check failed");
+            return true;
+        }
+        if (k % 2 == 1 && subs.size() != stabilized.size()) {
+            System.out.println("Pre checking for " + subs.size() + " subgroups");
+            subs.sort(Comparator.comparing(st -> st.block));
+            FixBS[] intersecting = intersecting(subs);
+            FixBS available = new FixBS(subs.size());
+            available.set(0, subs.size());
+            AtomicReference<Des> existing = new AtomicReference<>();
+            Predicate<Des> pred = des -> {
+                if (existing.get() != null) {
+                    return true;
+                }
+                if (des.curr.size() == fixed) {
+                    if (!orderTwoPresent(orderTwo, des)) {
+                        existing.set(des);
+                    }
+                    return true;
+                }
+                return false;
+            };
+            find(subs, intersecting, Des.empty(subs.size()), k, pred);
+            if (existing.get() == null) {
+                System.out.println("Pre check failed");
+                return true;
+            }
+        }
+        return false;
+    }
+
     private static FixBS[] intersecting(List<StabState> states) {
         FixBS[] intersecting = new FixBS[states.size()];
         IntStream.range(0, states.size()).parallel().forEach(i -> {
@@ -124,7 +158,6 @@ public class BibdFinder6CyclicTest {
         Group table = group.asTable();
         int ord = table.order();
         int k = 6;
-        int[][] auths = table.auth();
         FixBS orderTwo = orderTwo(table);
         Map<FixBS, StabState> states = new HashMap<>();
         Consumer<StabState> cons = st -> {
@@ -140,11 +173,12 @@ public class BibdFinder6CyclicTest {
             StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
             searchStabilized(table, state, k, 0, cons);
         }
-        System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
+        System.out.println("Stabilized " + states.size());
         List<StabState> stabilized = new ArrayList<>(states.values());
-        if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
+        if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
             return;
         }
+        int[][] auths = table.auth();
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
         Predicate<Des> pred = des -> {
             if (des.fixedCount > fixed) {
@@ -351,7 +385,6 @@ public class BibdFinder6CyclicTest {
 
     private static void generate(Group group, int fixed, int k) throws IOException {
         Group table = group.asTable();
-        int[][] auths = table.auth();
         int ord = table.order();
         FixBS orderTwo = orderTwo(table);
         Map<FixBS, StabState> states = new HashMap<>();
@@ -369,10 +402,11 @@ public class BibdFinder6CyclicTest {
             searchStabilized(table, state, k, 0, cons);
         }
         List<StabState> stabilized = new ArrayList<>(states.values());
-        System.out.println("Stabilized size " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
-        if (stabilized.stream().filter(st -> st.size == k - 1).count() < fixed) {
+        System.out.println("Stabilized size " + states.size());
+        if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
             return;
         }
+        int[][] auths = table.auth();
         List<List<StabState>> initial = new ArrayList<>();
         Predicate<Des> pred = des -> {
             if (des.fixedCount > fixed) {
@@ -403,7 +437,7 @@ public class BibdFinder6CyclicTest {
         if (initial.isEmpty()) {
             return;
         }
-        System.out.println("Initial size " + initial.size() + " " + new GapInteractor().identifyGroup(group) + " " + (ord + fixed) + " " + k + " auths: " + auths.length);
+        System.out.println("Initial size " + initial.size() + " " + GroupIndex.identify(group) + " " + (ord + fixed) + " " + k + " auths: " + auths.length);
         AtomicInteger ai = new AtomicInteger();
         initial.stream().parallel().forEach(lst -> {
             FixBS ftr = lst.stream().map(StabState::filter).reduce(new FixBS(ord), FixBS::union);
