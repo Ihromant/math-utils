@@ -75,10 +75,8 @@ public class BibdFinder6CyclicTest {
                 if (fixedCount > fixed) {
                     return true;
                 }
-                for (int[] auth : auths) {
-                    if (bigger(des.curr, auth, table)) {
-                        return true;
-                    }
+                if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                    return true;
                 }
                 if (fixedCount < fixed) {
                     return false;
@@ -86,6 +84,9 @@ public class BibdFinder6CyclicTest {
                 if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
                     if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
                         return false;
+                    }
+                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                        return true;
                     }
                     PrintStream ps = openIfMissing(-1, streams, k, group, fixed);
                     ps.println(Arrays.deepToString(des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
@@ -151,7 +152,7 @@ public class BibdFinder6CyclicTest {
             if (fixedCount > fixed) {
                 return true;
             }
-            if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+            if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
             if (fixedCount < fixed) {
@@ -160,6 +161,9 @@ public class BibdFinder6CyclicTest {
             if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
                 if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
                     return false;
+                }
+                if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                    return true;
                 }
                 PrintStream ps = openIfMissing(des.curr.size(), streams, k, group, fixed);
                 ps.println(Arrays.deepToString(des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
@@ -377,10 +381,8 @@ public class BibdFinder6CyclicTest {
             if (fixedCount > fixed) {
                 return true;
             }
-            for (int[] auth : auths) {
-                if (bigger(des.curr, auth, table)) {
-                    return true;
-                }
+            if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                return true;
             }
             if (fixedCount < fixed) {
                 return false;
@@ -390,6 +392,9 @@ public class BibdFinder6CyclicTest {
                     return false;
                 }
                 synchronized (initial) {
+                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                        return true;
+                    }
                     initial.add(des.curr);
                 }
             }
