@@ -71,14 +71,13 @@ public class BibdFinder6CyclicTest {
             }
             Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
             Predicate<Des> pred = des -> {
-                long fixedCount = des.curr.stream().filter(st -> st.size == k - 1).count();
-                if (fixedCount > fixed) {
+                if (des.fixedCount > fixed) {
                     return true;
                 }
                 if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                     return true;
                 }
-                if (fixedCount < fixed) {
+                if (des.fixedCount < fixed) {
                     return false;
                 }
                 if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
@@ -98,7 +97,7 @@ public class BibdFinder6CyclicTest {
             FixBS[] intersecting = intersecting(stabilized);
             FixBS available = new FixBS(states.size());
             available.set(0, states.size());
-            find(stabilized, intersecting, Des.empty(ord, states.size()), pred);
+            find(stabilized, intersecting, Des.empty(ord, states.size()), k, pred);
             streams.values().forEach(PrintStream::close);
         }
     }
@@ -148,14 +147,13 @@ public class BibdFinder6CyclicTest {
         }
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
         Predicate<Des> pred = des -> {
-            long fixedCount = des.curr.stream().filter(st -> st.size == k - 1).count();
-            if (fixedCount > fixed) {
+            if (des.fixedCount > fixed) {
                 return true;
             }
             if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
-            if (fixedCount < fixed) {
+            if (des.fixedCount < fixed) {
                 return false;
             }
             if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
@@ -175,7 +173,7 @@ public class BibdFinder6CyclicTest {
         FixBS[] intersecting = intersecting(stabilized);
         FixBS available = new FixBS(states.size());
         available.set(0, states.size());
-        find(stabilized, intersecting, Des.empty(ord, states.size()), pred);
+        find(stabilized, intersecting, Des.empty(ord, states.size()), k, pred);
         streams.values().forEach(PrintStream::close);
     }
 
@@ -377,14 +375,13 @@ public class BibdFinder6CyclicTest {
         }
         List<List<StabState>> initial = new ArrayList<>();
         Predicate<Des> pred = des -> {
-            long fixedCount = des.curr.stream().filter(st -> st.size == k - 1).count();
-            if (fixedCount > fixed) {
+            if (des.fixedCount > fixed) {
                 return true;
             }
             if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
-            if (fixedCount < fixed) {
+            if (des.fixedCount < fixed) {
                 return false;
             }
             if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
@@ -402,7 +399,7 @@ public class BibdFinder6CyclicTest {
         };
         stabilized.sort(Comparator.comparing(StabState::block));
         FixBS[] intersecting = intersecting(stabilized);
-        find(stabilized, intersecting, Des.empty(ord, states.size()), pred);
+        find(stabilized, intersecting, Des.empty(ord, states.size()), k, pred);
         if (initial.isEmpty()) {
             return;
         }
@@ -473,21 +470,21 @@ public class BibdFinder6CyclicTest {
         return new Liner(v, lines.toArray(int[][]::new));
     }
 
-    private record Des(List<StabState> curr, FixBS filter, FixBS available, int idx) {
-        private Des accept(StabState state, FixBS intersecting, int idx) {
+    private record Des(List<StabState> curr, FixBS filter, FixBS available, int idx, int fixedCount) {
+        private Des accept(StabState state, FixBS intersecting, int idx, int k) {
             List<StabState> nextCurr = new ArrayList<>(curr);
             nextCurr.add(state);
-            return new Des(nextCurr, filter.union(state.filter()), available.diff(intersecting), idx);
+            return new Des(nextCurr, filter.union(state.filter()), available.diff(intersecting), idx, state.size < k ? fixedCount + 1 : fixedCount);
         }
 
         private static Des empty(int v, int statesSize) {
             FixBS available = new FixBS(statesSize);
             available.set(0, statesSize);
-            return new Des(List.of(), new FixBS(v), available, -1);
+            return new Des(List.of(), new FixBS(v), available, -1, 0);
         }
     }
 
-    private static void find(List<StabState> states, FixBS[] intersecting, Des des, Predicate<Des> pred) {
+    private static void find(List<StabState> states, FixBS[] intersecting, Des des, int k, Predicate<Des> pred) {
         if (pred.test(des)) {
             return;
         }
@@ -498,11 +495,11 @@ public class BibdFinder6CyclicTest {
                 base.add(i);
             }
             Arrays.stream(base.toArray()).parallel().forEach(i -> {
-                find(states, intersecting, des.accept(states.get(i), intersecting[i], i), pred);
+                find(states, intersecting, des.accept(states.get(i), intersecting[i], i, k), k, pred);
             });
         } else {
             for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-                find(states, intersecting, des.accept(states.get(i), intersecting[i], i), pred);
+                find(states, intersecting, des.accept(states.get(i), intersecting[i], i, k), k, pred);
             }
         }
     }
