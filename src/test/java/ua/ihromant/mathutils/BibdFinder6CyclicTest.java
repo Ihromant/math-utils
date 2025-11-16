@@ -61,7 +61,7 @@ public class BibdFinder6CyclicTest {
                         .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
             } else {
                 FixBS zero = FixBS.of(ord, 0);
-                StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
+                StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
                 searchStabilized(table, state, k, 0, cons);
             }
             System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
@@ -80,8 +80,8 @@ public class BibdFinder6CyclicTest {
                 if (des.fixedCount < fixed) {
                     return false;
                 }
-                if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
-                    if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
+                if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
+                    if (ord % 2 == 0 && orderTwoPresent(orderTwo, des)) {
                         return false;
                     }
                     if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
@@ -97,7 +97,7 @@ public class BibdFinder6CyclicTest {
             FixBS[] intersecting = intersecting(stabilized);
             FixBS available = new FixBS(states.size());
             available.set(0, states.size());
-            find(stabilized, intersecting, Des.empty(ord, states.size()), k, pred);
+            find(stabilized, intersecting, Des.empty(states.size()), k, pred);
             streams.values().forEach(PrintStream::close);
         }
     }
@@ -137,7 +137,7 @@ public class BibdFinder6CyclicTest {
                     .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
         } else {
             FixBS zero = FixBS.of(ord, 0);
-            StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
+            StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
             searchStabilized(table, state, k, 0, cons);
         }
         System.out.println("Stabilized " + states.size() + " auths " + auths.length + " " + GroupIndex.identify(table));
@@ -156,8 +156,8 @@ public class BibdFinder6CyclicTest {
             if (des.fixedCount < fixed) {
                 return false;
             }
-            if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
+            if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
+                if (ord % 2 == 0 && orderTwoPresent(orderTwo, des)) {
                     return false;
                 }
                 if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
@@ -173,7 +173,7 @@ public class BibdFinder6CyclicTest {
         FixBS[] intersecting = intersecting(stabilized);
         FixBS available = new FixBS(states.size());
         available.set(0, states.size());
-        find(stabilized, intersecting, Des.empty(ord, states.size()), k, pred);
+        find(stabilized, intersecting, Des.empty(states.size()), k, pred);
         streams.values().forEach(PrintStream::close);
     }
 
@@ -365,7 +365,7 @@ public class BibdFinder6CyclicTest {
                     .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
         } else {
             FixBS zero = FixBS.of(ord, 0);
-            StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
+            StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
             searchStabilized(table, state, k, 0, cons);
         }
         List<StabState> stabilized = new ArrayList<>(states.values());
@@ -384,8 +384,8 @@ public class BibdFinder6CyclicTest {
             if (des.fixedCount < fixed) {
                 return false;
             }
-            if ((ord - 1 - des.filter.cardinality()) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0 && !orderTwo.diff(des.filter).isEmpty()) {
+            if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
+                if (ord % 2 == 0 && orderTwoPresent(orderTwo, des)) {
                     return false;
                 }
                 synchronized (initial) {
@@ -399,7 +399,7 @@ public class BibdFinder6CyclicTest {
         };
         stabilized.sort(Comparator.comparing(StabState::block));
         FixBS[] intersecting = intersecting(stabilized);
-        find(stabilized, intersecting, Des.empty(ord, states.size()), k, pred);
+        find(stabilized, intersecting, Des.empty(states.size()), k, pred);
         if (initial.isEmpty()) {
             return;
         }
@@ -432,6 +432,14 @@ public class BibdFinder6CyclicTest {
                 System.out.println(inc);
             }
         });
+    }
+
+    private static boolean orderTwoPresent(FixBS orderTwo, Des des) {
+        FixBS copy = orderTwo.copy();
+        for (StabState state : des.curr) {
+            copy.andNot(state.filter);
+        }
+        return !copy.isEmpty();
     }
 
     private static Liner generateLiner(Group table, int fixed, int k, int[][] base) {
@@ -470,17 +478,17 @@ public class BibdFinder6CyclicTest {
         return new Liner(v, lines.toArray(int[][]::new));
     }
 
-    private record Des(List<StabState> curr, FixBS filter, FixBS available, int idx, int fixedCount) {
+    private record Des(List<StabState> curr, int filterCard, FixBS available, int idx, int fixedCount) {
         private Des accept(StabState state, FixBS intersecting, int idx, int k) {
             List<StabState> nextCurr = new ArrayList<>(curr);
             nextCurr.add(state);
-            return new Des(nextCurr, filter.union(state.filter()), available.diff(intersecting), idx, state.size < k ? fixedCount + 1 : fixedCount);
+            return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx, state.size < k ? fixedCount + 1 : fixedCount);
         }
 
-        private static Des empty(int v, int statesSize) {
+        private static Des empty(int statesSize) {
             FixBS available = new FixBS(statesSize);
             available.set(0, statesSize);
-            return new Des(List.of(), new FixBS(v), available, -1, 0);
+            return new Des(List.of(), 0, available, -1, 0);
         }
     }
 
@@ -576,11 +584,11 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int size) {
+    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, int filterCard, FixBS selfDiff, int size) {
         public static StabState fromBlock(Group g, int k, FixBS block) {
             FixBS empty = new FixBS(g.order());
             FixBS zero = FixBS.of(g.order(), 0);
-            StabState result = new StabState(zero, zero, empty, zero, 1);
+            StabState result = new StabState(zero, zero, empty, 0, zero, 1);
             for (int el = block.nextSetBit(1); el >= 0; el = block.nextSetBit(el + 1)) {
                 if (result.block().get(el)) {
                     continue;
@@ -640,7 +648,7 @@ public class BibdFinder6CyclicTest {
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
-            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
+            return new StabState(newBlock, newStabilizer, newFilter, newFilter.cardinality(), newSelfDiff, sz);
         }
 
         private StabState acceptElem(Group group, int val, int k) {
@@ -696,7 +704,7 @@ public class BibdFinder6CyclicTest {
             if (sz > 2 && sz > k / 2 && newStabilizer.cardinality() == 1) {
                 return null;
             }
-            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
+            return new StabState(newBlock, newStabilizer, newFilter, newFilter.cardinality(), newSelfDiff, sz);
         }
     }
 
