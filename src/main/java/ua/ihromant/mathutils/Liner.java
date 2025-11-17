@@ -351,7 +351,7 @@ public class Liner {
 
     public Map<Integer, Integer> hyperbolicFreq() {
         int maxLength = Arrays.stream(lines).mapToInt(l -> l.length).reduce(0, Math::max);
-        AtomicInteger[] res = IntStream.range(0, maxLength).mapToObj(i -> new AtomicInteger()).toArray(AtomicInteger[]::new);
+        AtomicInteger[] res = IntStream.range(0, maxLength).mapToObj(_ -> new AtomicInteger()).toArray(AtomicInteger[]::new);
         IntStream.range(0, pointCount).parallel().forEach(o -> {
             for (int x = 0; x < pointCount; x++) {
                 if (o == x) {
@@ -411,7 +411,7 @@ public class Liner {
                         continue;
                     }
                     int card = hull(x, y, z).cardinality();
-                    result.compute(card, (k, v) -> v == null ? 1 : v + 1);
+                    result.compute(card, (_, v) -> v == null ? 1 : v + 1);
                 }
             }
         }
@@ -824,7 +824,7 @@ public class Liner {
 
     public long autCountNew() {
         AtomicLong counter = new AtomicLong();
-        Consumer<int[]> cons = arr -> counter.incrementAndGet();
+        Consumer<int[]> cons = _ -> counter.incrementAndGet();
         GraphWrapper wrap = GraphWrapper.forFull(this);
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
@@ -833,7 +833,7 @@ public class Liner {
 
     public long autCountOld() {
         AtomicLong counter = new AtomicLong();
-        Consumer<int[]> cons = arr -> counter.incrementAndGet();
+        Consumer<int[]> cons = _ -> counter.incrementAndGet();
         GraphWrapper wrap = GraphWrapper.forFull(this);
         AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
         NautyAlgo.search(wrap, aut);
