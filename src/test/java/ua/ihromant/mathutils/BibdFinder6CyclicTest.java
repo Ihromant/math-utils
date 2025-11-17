@@ -836,7 +836,7 @@ public class BibdFinder6CyclicTest {
         PermutationGroup perm = lnr.automorphisms();
         String fp = freq.toString().replace(" ", "");
         System.out.println("Auth order " + perm.order());
-        Files.writeString(Path.of("/home/ihromant/maths/g-spaces", "auths-" + g.name() + "-fix" + fixed + "-" + fp + ".txt"),
-                Arrays.deepToString(perm.permutations()));
+        Files.writeString(Path.of("/home/ihromant/maths/g-spaces", "auths" + k + "-" + g.name() + "-fix" + fixed + "-" + fp + ".txt"),
+                Arrays.deepToString(lnr.lines()) + "\n" + Arrays.deepToString(perm.permutations()));
     }
 }
