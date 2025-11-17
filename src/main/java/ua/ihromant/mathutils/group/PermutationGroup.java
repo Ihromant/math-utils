@@ -91,6 +91,10 @@ public class PermutationGroup implements Group {
         return permutations[a];
     }
 
+    public int[][] permutations() {
+        return permutations;
+    }
+
     public static boolean identity(int[] perm) {
         return IntStream.range(0, perm.length).allMatch(i -> i == perm[i]);
     }

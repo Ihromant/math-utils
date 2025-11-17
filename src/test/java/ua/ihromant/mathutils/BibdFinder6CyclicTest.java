@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -15,6 +16,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -816,5 +819,24 @@ public class BibdFinder6CyclicTest {
             });
             System.out.println(plnrs.size());
         }
+    }
+
+    @Test
+    public void dumpAuths() throws IOException {
+        String des = "[[{0, 1, 3}, {0, 4, 12}, {0, 6, 16}, {0, 7, 20}], [[0, 2, 8, 9]]]"
+                .replace('{', '[').replace('}', ']');
+        int[][][] bks = new ObjectMapper().readValue(des, int[][][].class);
+        int[][] base = Stream.concat(Arrays.stream(bks[0]), Arrays.stream(bks[1])).toArray(int[][]::new);
+        int fixed = 4;
+        int k = 4;
+        Group g = GroupIndex.group(21, 1);
+        Liner lnr = generateLiner(g, fixed, k, base);
+        Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+        System.out.println(freq);
+        PermutationGroup perm = lnr.automorphisms();
+        String fp = freq.toString().replace(" ", "");
+        System.out.println("Auth order " + perm.order());
+        Files.writeString(Path.of("/home/ihromant/maths/g-spaces", "auths-" + g.name() + "-fix" + fixed + "-" + fp + ".txt"),
+                Arrays.deepToString(perm.permutations()));
     }
 }
