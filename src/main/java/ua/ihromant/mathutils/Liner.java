@@ -288,10 +288,10 @@ public class Liner {
         return base;
     }
 
-    public FixBS additional(FixBS first, FixBS second) {
+    public FixBS additional(FixBS base, FixBS add) {
         FixBS result = new FixBS(pointCount);
-        for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
-            for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
+        for (int x = base.nextSetBit(0); x >= 0; x = base.nextSetBit(x + 1)) {
+            for (int y = add.nextSetBit(0); y >= 0; y = add.nextSetBit(y + 1)) {
                 int xy = line(x, y);
                 if (xy < 0) {
                     continue;
@@ -299,10 +299,7 @@ public class Liner {
                 result.or(flags[xy]);
             }
         }
-        FixBS removal = new FixBS(pointCount);
-        removal.or(first);
-        removal.or(second);
-        result.xor(removal);
+        result.andNot(base);
         return result;
     }
 
@@ -420,7 +417,7 @@ public class Liner {
 
     public FixBS cardSubPlanes(boolean full) {
         FixBS result = new FixBS(pointCount + 1);
-        IntStream.range(0, pointCount).parallel().forEach(x -> {
+        for (int x = 0; x < pointCount; x++) {
             for (int y = x + 1; y < pointCount; y++) {
                 int xy = line(x, y);
                 for (int z = y + 1; z < pointCount; z++) {
@@ -428,23 +425,19 @@ public class Liner {
                         continue;
                     }
                     int card = hull(x, y, z).cardinality();
-                    if (!result.get(card)) {
-                        synchronized (result) {
-                            result.set(card);
-                        }
-                    }
+                    result.set(card);
                     if (!full && card == pointCount) {
-                        return; // it's either plane or has no exchange property
+                        return result; // it's either plane or has no exchange property
                     }
                 }
             }
-        });
+        }
         return result;
     }
 
     public FixBS cardSubSpaces(boolean full) {
         FixBS result = new FixBS(pointCount + 1);
-        IntStream.range(0, pointCount).parallel().forEach(x -> {
+        for (int x = 0; x < pointCount; x++) {
             for (int y = x + 1; y < pointCount; y++) {
                 for (int z = y + 1; z < pointCount; z++) {
                     if (line(x, y) == line(y, z)) {
@@ -456,18 +449,14 @@ public class Liner {
                             continue;
                         }
                         int sCard = hull(x, y, z, w).cardinality();
-                        if (!result.get(sCard)) {
-                            synchronized (result) {
-                                result.set(sCard);
-                            }
-                        }
+                        result.set(sCard);
                         if (!full && sCard == pointCount) {
-                            return;
+                            return result;
                         }
                     }
                 }
             }
-        });
+        }
         return result;
     }
 
