@@ -292,12 +292,11 @@ public class Liner {
         FixBS result = new FixBS(pointCount);
         for (int x = first.nextSetBit(0); x >= 0; x = first.nextSetBit(x + 1)) {
             for (int y = second.nextSetBit(0); y >= 0; y = second.nextSetBit(y + 1)) {
-                if (x == y) {
+                int xy = line(x, y);
+                if (xy < 0) {
                     continue;
                 }
-                for (int p : lines[line(x, y)]) {
-                    result.set(p);
-                }
+                result.or(flags[xy]);
             }
         }
         FixBS removal = new FixBS(pointCount);
@@ -423,8 +422,9 @@ public class Liner {
         FixBS result = new FixBS(pointCount + 1);
         IntStream.range(0, pointCount).parallel().forEach(x -> {
             for (int y = x + 1; y < pointCount; y++) {
+                int xy = line(x, y);
                 for (int z = y + 1; z < pointCount; z++) {
-                    if (line(x, y) == line(y, z)) {
+                    if (xy == line(y, z)) {
                         continue;
                     }
                     int card = hull(x, y, z).cardinality();
