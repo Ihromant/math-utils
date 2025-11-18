@@ -1023,7 +1023,7 @@ public class BatchLinerTest {
     }
 
     @SneakyThrows
-    private static void orbits(Liner p, SubGroup gr, int i) {
+    public static void orbits(Liner p, SubGroup gr, int i) {
         PermutationGroup perm = (PermutationGroup) gr.group();
         FixBS elems = gr.elems();
         QuickFind pts = new QuickFind(p.pointCount());

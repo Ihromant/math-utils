@@ -5,6 +5,7 @@ import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
@@ -838,5 +839,28 @@ public class BibdFinder6CyclicTest {
         System.out.println("Auth order " + perm.order());
         Files.writeString(Path.of("/home/ihromant/maths/g-spaces", "auths" + k + "-" + g.name() + "-fix" + fixed + "-" + fp + ".txt"),
                 Arrays.deepToString(lnr.lines()) + "\n" + Arrays.deepToString(perm.permutations()));
+    }
+
+    @Test
+    public void orbits() throws IOException {
+        String des = "[[{0, 1, 3}, {0, 4, 12}, {0, 6, 16}, {0, 7, 20}], [[0, 2, 8, 9]]]"
+                .replace('{', '[').replace('}', ']');
+        int[][][] bks = new ObjectMapper().readValue(des, int[][][].class);
+        int[][] base = Stream.concat(Arrays.stream(bks[0]), Arrays.stream(bks[1])).toArray(int[][]::new);
+        int fixed = 4;
+        int k = 4;
+        Group g = GroupIndex.group(21, 1);
+        Liner lnr = generateLiner(g, fixed, k, base);
+        Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+        System.out.println(freq);
+        String fp = freq.toString().replace(" ", "");
+        String str = Files.readString(Path.of("/home/ihromant/maths/g-spaces", "auths" + k + "-" + g.name() + "-fix" + fixed + "-" + fp + ".txt"));
+        PermutationGroup perm = new PermutationGroup(new ObjectMapper().readValue(str.lines().skip(1).findFirst().orElseThrow(), int[][].class));
+        Map<Integer, List<SubGroup>> gsg = perm.asTable().groupedSubGroups();
+        for (List<SubGroup> sgs : gsg.values()) {
+            for (SubGroup sg : sgs) {
+                BatchLinerTest.orbits(lnr, new SubGroup(perm, sg.elems()), 0);
+            }
+        }
     }
 }
