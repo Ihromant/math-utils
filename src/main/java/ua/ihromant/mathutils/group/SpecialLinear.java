@@ -7,14 +7,14 @@ import ua.ihromant.mathutils.vector.MatrixInverseFiniteField;
 import java.util.Arrays;
 import java.util.stream.IntStream;
 
-public class SimpleLinear implements Group {
+public class SpecialLinear implements Group {
     private final int dim;
     private final GaloisField fd;
     private final int matCount;
     private final int[] mapGl;
     private final int[] gl;
 
-    public SimpleLinear(int dim, GaloisField fd) {
+    public SpecialLinear(int dim, GaloisField fd) {
         this.dim = dim;
         this.fd = fd;
         this.matCount = LinearSpace.pow(fd.cardinality(), dim * dim);

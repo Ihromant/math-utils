@@ -34,7 +34,7 @@ public class GroupTest {
         GeneralLinear gl = new GeneralLinear(2, new GaloisField(4));
         assertEquals(180, gl.order());
         testCorrectness(gl, false);
-        SimpleLinear sl = new SimpleLinear(2, new GaloisField(4));
+        SpecialLinear sl = new SpecialLinear(2, new GaloisField(4));
         assertEquals(60, sl.order());
         assertTrue(sl.isSimple());
         testCorrectness(sl, false);
@@ -281,7 +281,7 @@ public class GroupTest {
 
     @Test
     public void testFactor() {
-        SimpleLinear sl = new SimpleLinear(2, new GaloisField(5));
+        SpecialLinear sl = new SpecialLinear(2, new GaloisField(5));
         FixBS els = FixBS.of(sl.order(), sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{4, 0}, {0, 4}}));
         FactorGroup psl = new FactorGroup(sl, els);
         testCorrectness(psl, false);

@@ -4,6 +4,8 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class FactorGroup implements Group {
@@ -53,6 +55,36 @@ public class FactorGroup implements Group {
     @Override
     public int inv(int a) {
         return table.inv(a);
+    }
+
+    @Override
+    public int[] squareRoots(int from) {
+        return table.squareRoots(from);
+    }
+
+    @Override
+    public int order(int a) {
+        return table.order(a);
+    }
+
+    @Override
+    public int mul(int a, int cff) {
+        return table.mul(a, cff);
+    }
+
+    @Override
+    public TableGroup asTable() {
+        return table;
+    }
+
+    @Override
+    public int[][] auth() {
+        return table.auth();
+    }
+
+    @Override
+    public Map<Integer, List<SubGroup>> groupedSubGroups() {
+        return table.groupedSubGroups();
     }
 
     @Override

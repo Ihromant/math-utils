@@ -13,7 +13,7 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
-import ua.ihromant.mathutils.group.SimpleLinear;
+import ua.ihromant.mathutils.group.SpecialLinear;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
@@ -982,7 +982,7 @@ public class BatchLinerTest {
 
     @Test
     public void testRot25_3() throws IOException {
-        SimpleLinear sl = new SimpleLinear(2, new GaloisField(3));
+        SpecialLinear sl = new SpecialLinear(2, new GaloisField(3));
         int v = 25;
         int[][] burattiBase = new int[][]{
                 {sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{2, 0}, {0, 2}}), 24},
