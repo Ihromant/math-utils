@@ -278,4 +278,14 @@ public class GroupTest {
         inter = new GapInteractor();
         System.out.println(inter.groupCount(64));
     }
+
+    @Test
+    public void testFactor() {
+        SimpleLinear sl = new SimpleLinear(2, new GaloisField(5));
+        FixBS els = FixBS.of(sl.order(), sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{4, 0}, {0, 4}}));
+        FactorGroup psl = new FactorGroup(sl, els);
+        testCorrectness(psl, false);
+        assertEquals(60, psl.order());
+        assertTrue(psl.isSimple());
+    }
 }
