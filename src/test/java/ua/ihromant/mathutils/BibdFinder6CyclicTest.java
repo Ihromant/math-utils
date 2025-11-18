@@ -78,7 +78,7 @@ public class BibdFinder6CyclicTest {
                 if (des.fixedCount > fixed) {
                     return true;
                 }
-                if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                     return true;
                 }
                 if (des.fixedCount < fixed) {
@@ -92,7 +92,7 @@ public class BibdFinder6CyclicTest {
                         return true;
                     }
                     PrintStream ps = openIfMissing(-1, streams, k, group, fixed);
-                    ps.println(Arrays.deepToString(des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
+                    ps.println(Arrays.deepToString(Arrays.stream(des.curr).map(st -> st.block.toArray()).toArray(int[][]::new)));
                     ps.flush();
                 }
                 return false;
@@ -123,7 +123,7 @@ public class BibdFinder6CyclicTest {
                 if (existing.get() != null) {
                     return true;
                 }
-                if (des.curr.size() == fixed) {
+                if (des.curr.length == fixed) {
                     if (!orderTwoPresent(orderTwo, des)) {
                         existing.set(des);
                     }
@@ -188,7 +188,7 @@ public class BibdFinder6CyclicTest {
             if (des.fixedCount > fixed) {
                 return true;
             }
-            if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+            if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
             if (des.fixedCount < fixed) {
@@ -201,8 +201,8 @@ public class BibdFinder6CyclicTest {
                 if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                     return true;
                 }
-                PrintStream ps = openIfMissing(des.curr.size(), streams, k, group, fixed);
-                ps.println(Arrays.deepToString(des.curr.stream().map(st -> st.block.toArray()).toArray(int[][]::new)));
+                PrintStream ps = openIfMissing(des.curr.length, streams, k, group, fixed);
+                ps.println(Arrays.deepToString(Arrays.stream(des.curr).map(st -> st.block.toArray()).toArray(int[][]::new)));
                 ps.flush();
             }
             return false;
@@ -411,12 +411,12 @@ public class BibdFinder6CyclicTest {
             return;
         }
         int[][] auths = table.auth();
-        List<List<StabState>> initial = new ArrayList<>();
+        List<StabState[]> initial = new ArrayList<>();
         Predicate<Des> pred = des -> {
             if (des.fixedCount > fixed) {
                 return true;
             }
-            if (des.curr.size() == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+            if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
             if (des.fixedCount < fixed) {
@@ -444,7 +444,7 @@ public class BibdFinder6CyclicTest {
         System.out.println("Initial size " + initial.size() + " " + GroupIndex.identify(group) + " " + (ord + fixed) + " " + k + " auths: " + auths.length);
         AtomicInteger ai = new AtomicInteger();
         initial.stream().parallel().forEach(lst -> {
-            FixBS ftr = lst.stream().map(StabState::filter).reduce(new FixBS(ord), FixBS::union);
+            FixBS ftr = Arrays.stream(lst).map(StabState::filter).reduce(new FixBS(ord), FixBS::union);
             int bn = (ord - 1 - ftr.cardinality()) / k / (k - 1);
             FixBS whiteList = ftr.copy();
             whiteList.flip(1, ord);
@@ -452,10 +452,10 @@ public class BibdFinder6CyclicTest {
                 if (des.length < bn) {
                     return false;
                 }
-                int[][] base = Stream.concat(lst.stream().map(st -> st.block.toArray()),
+                int[][] base = Stream.concat(Arrays.stream(lst).map(st -> st.block.toArray()),
                         Arrays.stream(des)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
                 Liner lnr = generateLiner(table, fixed, k, base);
-                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(lst.stream().map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
+                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(lst).map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
                 return true;
             };
             if (bn == 0) {
@@ -516,17 +516,18 @@ public class BibdFinder6CyclicTest {
         return new Liner(v, lines.toArray(int[][]::new));
     }
 
-    private record Des(List<StabState> curr, int filterCard, FixBS available, int idx, int fixedCount) {
+    private record Des(StabState[] curr, int filterCard, FixBS available, int idx, int fixedCount) {
         private Des accept(StabState state, FixBS intersecting, int idx, int k) {
-            List<StabState> nextCurr = new ArrayList<>(curr);
-            nextCurr.add(state);
+            int cl = curr.length;
+            StabState[] nextCurr = Arrays.copyOf(curr, cl + 1);
+            nextCurr[cl] = state;
             return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx, state.size < k ? fixedCount + 1 : fixedCount);
         }
 
         private static Des empty(int statesSize) {
             FixBS available = new FixBS(statesSize);
             available.set(0, statesSize);
-            return new Des(List.of(), 0, available, -1, 0);
+            return new Des(new StabState[0], 0, available, -1, 0);
         }
     }
 
@@ -535,7 +536,7 @@ public class BibdFinder6CyclicTest {
             return;
         }
         FixBS available = des.available;
-        if (des.curr.size() < 3) {
+        if (des.curr.length < 3) {
             IntList base = new IntList(available.cardinality());
             for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
                 base.add(i);
@@ -570,15 +571,15 @@ public class BibdFinder6CyclicTest {
         return min;
     }
 
-    private static boolean bigger(List<StabState> fst, int[] auth, Group table) {
-        FixBS[] transformed = new FixBS[fst.size()];
-        for (int i = 0; i < fst.size(); i++) {
-            transformed[i] = minimalTuple(fst.get(i).block, auth, table);
+    private static boolean bigger(StabState[] fst, int[] auth, Group table) {
+        FixBS[] transformed = new FixBS[fst.length];
+        for (int i = 0; i < fst.length; i++) {
+            transformed[i] = minimalTuple(fst[i].block, auth, table);
         }
         Arrays.sort(transformed);
         int cmp = 0;
         for (int i = 0; i < transformed.length; i++) {
-            cmp = transformed[i].compareTo(fst.get(i).block);
+            cmp = transformed[i].compareTo(fst[i].block);
             if (cmp != 0) {
                 break;
             }
