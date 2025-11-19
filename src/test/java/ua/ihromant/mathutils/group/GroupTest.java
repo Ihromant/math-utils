@@ -282,8 +282,7 @@ public class GroupTest {
     @Test
     public void testFactor() {
         SpecialLinear sl = new SpecialLinear(2, new GaloisField(5));
-        FixBS els = FixBS.of(sl.order(), sl.asElem(new int[][]{{1, 0}, {0, 1}}), sl.asElem(new int[][]{{4, 0}, {0, 4}}));
-        FactorGroup psl = new FactorGroup(sl, els);
+        FactorGroup psl = sl.psl();
         testCorrectness(psl, false);
         assertEquals(60, psl.order());
         assertTrue(psl.isSimple());

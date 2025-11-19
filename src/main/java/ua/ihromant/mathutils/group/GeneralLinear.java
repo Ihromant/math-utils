@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.LinearSpace;
 import ua.ihromant.mathutils.vector.MatrixInverseFiniteField;
 
@@ -35,6 +36,14 @@ public class GeneralLinear implements Group {
             result[i][i] = 1;
         }
         return fromMatrix(result);
+    }
+
+    public int[][] asMatrix(int a) {
+        return toMatrix(gl[a]);
+    }
+
+    public int asElem(int[][] matrix) {
+        return mapGl[fromMatrix(matrix)];
     }
 
     private int[][] toMatrix(int a) {
@@ -93,5 +102,17 @@ public class GeneralLinear implements Group {
     @Override
     public String elementName(int a) {
         return Arrays.deepToString(toMatrix(gl[a]));
+    }
+
+    public FactorGroup pgl() {
+        FixBS els = new FixBS(order());
+        for (int i = 1; i < fd.cardinality(); i++) {
+            int[][] mat = new int[dim][dim];
+            for (int j = 0; j < dim; j++) {
+                mat[j][j] = i;
+            }
+            els.set(asElem(mat));
+        }
+        return new FactorGroup(this, els);
     }
 }

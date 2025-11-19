@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.LinearSpace;
 import ua.ihromant.mathutils.vector.MatrixInverseFiniteField;
 
@@ -101,5 +102,20 @@ public class SpecialLinear implements Group {
     @Override
     public String elementName(int a) {
         return Arrays.deepToString(toMatrix(gl[a]));
+    }
+
+    public FactorGroup psl() {
+        FixBS els = new FixBS(order());
+        for (int i = 1; i < fd.cardinality(); i++) {
+            if (dim % fd.mulOrder(i) != 0) {
+                continue;
+            }
+            int[][] mat = new int[dim][dim];
+            for (int j = 0; j < dim; j++) {
+                mat[j][j] = i;
+            }
+            els.set(asElem(mat));
+        }
+        return new FactorGroup(this, els);
     }
 }
