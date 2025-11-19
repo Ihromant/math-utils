@@ -72,16 +72,19 @@ public class BibdFinder6CyclicTest {
             if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
                 continue;
             }
+            Arrays.sort(stabilized, Comparator.comparing(StabState::block));
+            FixBS[] intersecting = intersecting(stabilized);
+            int[] shortLeft = shortLeft(stabilized, k);
             int[][] auths = table.auth();
             Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
             Predicate<Des> pred = des -> {
-                if (des.fixedCount > fixed) {
+                if (des.shortCount > fixed || des.shortCount + shortLeft[des.idx + 1] < fixed) {
                     return true;
                 }
                 if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                     return true;
                 }
-                if (des.fixedCount < fixed) {
+                if (des.shortCount < fixed) {
                     return false;
                 }
                 if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
@@ -97,10 +100,6 @@ public class BibdFinder6CyclicTest {
                 }
                 return false;
             };
-            Arrays.sort(stabilized, Comparator.comparing(StabState::block));
-            FixBS[] intersecting = intersecting(stabilized);
-            FixBS available = new FixBS(states.size());
-            available.set(0, states.size());
             find(stabilized, intersecting, Des.empty(states.size()), k, pred);
             streams.values().forEach(PrintStream::close);
         }
@@ -116,8 +115,6 @@ public class BibdFinder6CyclicTest {
             System.out.println("Pre checking for " + subs.length + " subgroups");
             Arrays.sort(subs, Comparator.comparing(StabState::block));
             FixBS[] intersecting = intersecting(subs);
-            FixBS available = new FixBS(subs.length);
-            available.set(0, subs.length);
             AtomicReference<Des> existing = new AtomicReference<>();
             Predicate<Des> pred = des -> {
                 if (existing.get() != null) {
@@ -138,6 +135,20 @@ public class BibdFinder6CyclicTest {
             }
         }
         return false;
+    }
+
+    private static int[] shortLeft(StabState[] states, int k) {
+        int shortCnt = Arrays.stream(states).filter(st -> st.size == k - 1).mapToInt(_ -> 1).sum();
+        int[] result = new int[states.length + 1];
+        int counter = shortCnt;
+        result[0] = counter;
+        for (int i = 0; i < states.length; i++) {
+            result[i + 1] = counter;
+            if (states[i].size == k - 1) {
+                --counter;
+            }
+        }
+        return result;
     }
 
     private static FixBS[] intersecting(StabState[] states) {
@@ -182,16 +193,19 @@ public class BibdFinder6CyclicTest {
         if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
             return;
         }
+        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
+        FixBS[] intersecting = intersecting(stabilized);
+        int[] shortLeft = shortLeft(stabilized, k);
         int[][] auths = table.auth();
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
         Predicate<Des> pred = des -> {
-            if (des.fixedCount > fixed) {
+            if (des.shortCount > fixed || des.shortCount + shortLeft[des.idx + 1] < fixed) {
                 return true;
             }
             if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
-            if (des.fixedCount < fixed) {
+            if (des.shortCount < fixed) {
                 return false;
             }
             if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
@@ -207,10 +221,6 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
-        FixBS[] intersecting = intersecting(stabilized);
-        FixBS available = new FixBS(states.size());
-        available.set(0, states.size());
         find(stabilized, intersecting, Des.empty(states.size()), k, pred);
         streams.values().forEach(PrintStream::close);
     }
@@ -410,16 +420,19 @@ public class BibdFinder6CyclicTest {
         if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
             return;
         }
+        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
+        FixBS[] intersecting = intersecting(stabilized);
+        int[] shortLeft = shortLeft(stabilized, k);
         int[][] auths = table.auth();
         List<StabState[]> initial = new ArrayList<>();
         Predicate<Des> pred = des -> {
-            if (des.fixedCount > fixed) {
+            if (des.shortCount > fixed || des.shortCount + shortLeft[des.idx + 1] < fixed) {
                 return true;
             }
             if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
                 return true;
             }
-            if (des.fixedCount < fixed) {
+            if (des.shortCount < fixed) {
                 return false;
             }
             if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
@@ -435,8 +448,6 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
-        FixBS[] intersecting = intersecting(stabilized);
         find(stabilized, intersecting, Des.empty(states.size()), k, pred);
         if (initial.isEmpty()) {
             return;
@@ -516,12 +527,12 @@ public class BibdFinder6CyclicTest {
         return new Liner(v, lines.toArray(int[][]::new));
     }
 
-    private record Des(StabState[] curr, int filterCard, FixBS available, int idx, int fixedCount) {
+    private record Des(StabState[] curr, int filterCard, FixBS available, int idx, int shortCount) {
         private Des accept(StabState state, FixBS intersecting, int idx, int k) {
             int cl = curr.length;
             StabState[] nextCurr = Arrays.copyOf(curr, cl + 1);
             nextCurr[cl] = state;
-            return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx, state.size < k ? fixedCount + 1 : fixedCount);
+            return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx, state.size < k ? shortCount + 1 : shortCount);
         }
 
         private static Des empty(int statesSize) {
