@@ -68,7 +68,7 @@ public class BibdFinder6CyclicTest {
                 searchStabilized(table, state, k, 0, cons);
             }
             System.out.println("Stabilized " + states.size());
-            List<StabState> stabilized = new ArrayList<>(states.values());
+            StabState[] stabilized = states.values().toArray(StabState[]::new);
             if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
                 continue;
             }
@@ -97,7 +97,7 @@ public class BibdFinder6CyclicTest {
                 }
                 return false;
             };
-            stabilized.sort(Comparator.comparing(StabState::block));
+            Arrays.sort(stabilized, Comparator.comparing(StabState::block));
             FixBS[] intersecting = intersecting(stabilized);
             FixBS available = new FixBS(states.size());
             available.set(0, states.size());
@@ -106,18 +106,18 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private static boolean preCheckFailed(FixBS orderTwo, List<StabState> stabilized, int k, int fixed) {
-        List<StabState> subs = stabilized.stream().filter(st -> st.size == k - 1).collect(Collectors.toList());
-        if (subs.size() < fixed) {
+    private static boolean preCheckFailed(FixBS orderTwo, StabState[] stabilized, int k, int fixed) {
+        StabState[] subs = Arrays.stream(stabilized).filter(st -> st.size == k - 1).toArray(StabState[]::new);
+        if (subs.length < fixed) {
             System.out.println("Pre check failed");
             return true;
         }
-        if (k % 2 == 1 && subs.size() != stabilized.size()) {
-            System.out.println("Pre checking for " + subs.size() + " subgroups");
-            subs.sort(Comparator.comparing(st -> st.block));
+        if (k % 2 == 1 && subs.length != stabilized.length) {
+            System.out.println("Pre checking for " + subs.length + " subgroups");
+            Arrays.sort(subs, Comparator.comparing(StabState::block));
             FixBS[] intersecting = intersecting(subs);
-            FixBS available = new FixBS(subs.size());
-            available.set(0, subs.size());
+            FixBS available = new FixBS(subs.length);
+            available.set(0, subs.length);
             AtomicReference<Des> existing = new AtomicReference<>();
             Predicate<Des> pred = des -> {
                 if (existing.get() != null) {
@@ -131,7 +131,7 @@ public class BibdFinder6CyclicTest {
                 }
                 return false;
             };
-            find(subs, intersecting, Des.empty(subs.size()), k, pred);
+            find(subs, intersecting, Des.empty(subs.length), k, pred);
             if (existing.get() == null) {
                 System.out.println("Pre check failed");
                 return true;
@@ -140,13 +140,13 @@ public class BibdFinder6CyclicTest {
         return false;
     }
 
-    private static FixBS[] intersecting(List<StabState> states) {
-        FixBS[] intersecting = new FixBS[states.size()];
-        IntStream.range(0, states.size()).parallel().forEach(i -> {
-            FixBS comp = new FixBS(states.size());
-            FixBS ftr = states.get(i).filter;
-            for (int j = 0; j < states.size(); j++) {
-                if (ftr.intersects(states.get(j).filter)) {
+    private static FixBS[] intersecting(StabState[] states) {
+        FixBS[] intersecting = new FixBS[states.length];
+        IntStream.range(0, states.length).parallel().forEach(i -> {
+            FixBS comp = new FixBS(states.length);
+            FixBS ftr = states[i].filter;
+            for (int j = 0; j < states.length; j++) {
+                if (ftr.intersects(states[j].filter)) {
                     comp.set(j);
                 }
             }
@@ -178,7 +178,7 @@ public class BibdFinder6CyclicTest {
             searchStabilized(table, state, k, 0, cons);
         }
         System.out.println("Stabilized " + states.size());
-        List<StabState> stabilized = new ArrayList<>(states.values());
+        StabState[] stabilized = states.values().toArray(StabState[]::new);
         if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
             return;
         }
@@ -207,7 +207,7 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        stabilized.sort(Comparator.comparing(StabState::block));
+        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
         FixBS[] intersecting = intersecting(stabilized);
         FixBS available = new FixBS(states.size());
         available.set(0, states.size());
@@ -405,7 +405,7 @@ public class BibdFinder6CyclicTest {
             StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
             searchStabilized(table, state, k, 0, cons);
         }
-        List<StabState> stabilized = new ArrayList<>(states.values());
+        StabState[] stabilized = states.values().toArray(StabState[]::new);
         System.out.println("Stabilized size " + states.size());
         if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
             return;
@@ -435,7 +435,7 @@ public class BibdFinder6CyclicTest {
             }
             return false;
         };
-        stabilized.sort(Comparator.comparing(StabState::block));
+        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
         FixBS[] intersecting = intersecting(stabilized);
         find(stabilized, intersecting, Des.empty(states.size()), k, pred);
         if (initial.isEmpty()) {
@@ -531,7 +531,7 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private static void find(List<StabState> states, FixBS[] intersecting, Des des, int k, Predicate<Des> pred) {
+    private static void find(StabState[] states, FixBS[] intersecting, Des des, int k, Predicate<Des> pred) {
         if (pred.test(des)) {
             return;
         }
@@ -542,11 +542,11 @@ public class BibdFinder6CyclicTest {
                 base.add(i);
             }
             Arrays.stream(base.toArray()).parallel().forEach(i -> {
-                find(states, intersecting, des.accept(states.get(i), intersecting[i], i, k), k, pred);
+                find(states, intersecting, des.accept(states[i], intersecting[i], i, k), k, pred);
             });
         } else {
             for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-                find(states, intersecting, des.accept(states.get(i), intersecting[i], i, k), k, pred);
+                find(states, intersecting, des.accept(states[i], intersecting[i], i, k), k, pred);
             }
         }
     }
