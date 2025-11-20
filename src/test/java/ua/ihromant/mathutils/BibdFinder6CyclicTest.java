@@ -79,7 +79,7 @@ public class BibdFinder6CyclicTest {
                     }
                     StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
                     Arrays.sort(states, Comparator.comparing(StabState::block));
-                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
+                    if (Arrays.stream(auths).anyMatch(auth -> bigger(states, auth, table))) {
                         return false;
                     }
                     PrintStream ps = openIfMissing(-1, streams, k, group, fixed);
@@ -175,7 +175,7 @@ public class BibdFinder6CyclicTest {
                 }
                 StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
                 Arrays.sort(states, Comparator.comparing(StabState::block));
-                if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
+                if (Arrays.stream(auths).anyMatch(auth -> bigger(states, auth, table))) {
                     return false;
                 }
                 PrintStream ps = openIfMissing(states.length, streams, k, group, fixed);
@@ -395,7 +395,7 @@ public class BibdFinder6CyclicTest {
                 }
                 StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
                 Arrays.sort(states, Comparator.comparing(StabState::block));
-                if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
+                if (Arrays.stream(auths).anyMatch(auth -> bigger(states, auth, table))) {
                     return false;
                 }
                 synchronized (initial) {
