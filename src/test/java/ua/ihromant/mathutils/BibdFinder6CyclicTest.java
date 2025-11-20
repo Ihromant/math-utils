@@ -74,12 +74,12 @@ public class BibdFinder6CyclicTest {
                     if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
                         return false;
                     }
+                    if (even && orderTwoPresent(orderTwo, des)) {
+                        return false;
+                    }
                     StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
                     Arrays.sort(states, Comparator.comparing(StabState::block));
                     if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
-                        return true;
-                    }
-                    if (even && orderTwoPresent(orderTwo, des)) {
                         return false;
                     }
                     PrintStream ps = openIfMissing(-1, streams, k, group, fixed);
@@ -170,12 +170,12 @@ public class BibdFinder6CyclicTest {
                 if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
                     return false;
                 }
+                if (even && orderTwoPresent(orderTwo, des)) {
+                    return false;
+                }
                 StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
                 Arrays.sort(states, Comparator.comparing(StabState::block));
                 if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
-                    return true;
-                }
-                if (even && orderTwoPresent(orderTwo, des)) {
                     return false;
                 }
                 PrintStream ps = openIfMissing(states.length, streams, k, group, fixed);
@@ -390,12 +390,12 @@ public class BibdFinder6CyclicTest {
                 if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
                     return false;
                 }
+                if (even && orderTwoPresent(orderTwo, des)) {
+                    return false;
+                }
                 StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
                 Arrays.sort(states, Comparator.comparing(StabState::block));
                 if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
-                    return true;
-                }
-                if (even && orderTwoPresent(orderTwo, des)) {
                     return false;
                 }
                 synchronized (initial) {
