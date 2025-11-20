@@ -31,7 +31,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -53,101 +52,76 @@ public class BibdFinder6CyclicTest {
             Group table = group.asTable();
             int ord = table.order();
             FixBS orderTwo = orderTwo(table);
-            Map<FixBS, StabState> states = new HashMap<>();
-            Consumer<StabState> cons = st -> {
-                if (st.stabilizer.cardinality() > 1) {
-                    states.putIfAbsent(st.filter, st);
-                }
-            };
-            if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
-                table.subGroups().stream().filter(sg -> sg.order() == k || sg.order() == k - 1)
-                        .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
-            } else {
-                FixBS zero = FixBS.of(ord, 0);
-                StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
-                searchStabilized(table, state, k, 0, cons);
+            List<Des> shortDes = generateShortDes(table, orderTwo, k, fixed);
+            if (shortDes.isEmpty()) {
+                return;
             }
-            System.out.println("Stabilized " + states.size());
-            StabState[] stabilized = states.values().toArray(StabState[]::new);
-            if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
-                continue;
-            }
+            StabState[] stabilized = getStabilized(k, table);
             Arrays.sort(stabilized, Comparator.comparing(StabState::block));
-            FixBS[] intersecting = intersecting(stabilized);
-            int[] shortLeft = shortLeft(stabilized, k);
             int[][] auths = table.auth();
+            System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
+            boolean even = isEven(k, ord);
             Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
-            Predicate<Des> pred = des -> {
-                if (des.shortCount > fixed || des.shortCount + shortLeft[des.idx + 1] < fixed) {
-                    return true;
+            for (Des sh : shortDes) {
+                FixBS shortFilter = new FixBS(ord);
+                for (StabState st : sh.curr) {
+                    shortFilter.or(st.filter);
                 }
-                if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
-                    return true;
-                }
-                if (des.shortCount < fixed) {
-                    return false;
-                }
-                if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
-                    if (ord % 2 == 0 && orderTwoPresent(orderTwo, des)) {
+                int leftFilter = ord - 1 - shortFilter.cardinality();
+                StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
+                FixBS[] intersecting = intersecting(suitable);
+                Predicate<Des> pr = des -> {
+                    if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
                         return false;
                     }
-                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                    StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
+                    Arrays.sort(states, Comparator.comparing(StabState::block));
+                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
                         return true;
                     }
+                    if (even && orderTwoPresent(orderTwo, des)) {
+                        return false;
+                    }
                     PrintStream ps = openIfMissing(-1, streams, k, group, fixed);
-                    ps.println(Arrays.deepToString(Arrays.stream(des.curr).map(st -> st.block.toArray()).toArray(int[][]::new)));
+                    ps.println(Arrays.deepToString(Arrays.stream(states).map(st -> st.block.toArray()).toArray(int[][]::new)));
                     ps.flush();
-                }
-                return false;
-            };
-            find(stabilized, intersecting, Des.empty(states.size()), k, pred);
+                    return false;
+                };
+                find(suitable, intersecting, Des.empty(suitable.length), pr);
+            }
             streams.values().forEach(PrintStream::close);
         }
     }
 
-    private static boolean preCheckFailed(FixBS orderTwo, StabState[] stabilized, int k, int fixed) {
-        StabState[] subs = Arrays.stream(stabilized).filter(st -> st.size == k - 1).toArray(StabState[]::new);
-        if (subs.length < fixed) {
-            System.out.println("Pre check failed");
-            return true;
+    private static List<Des> generateShortDes(Group table, FixBS orderTwo, int k, int fixed) {
+        if (fixed == 0) {
+            return List.of(Des.empty(1));
         }
-        if (k % 2 == 1 && subs.length != stabilized.length) {
-            System.out.println("Pre checking for " + subs.length + " subgroups");
-            Arrays.sort(subs, Comparator.comparing(StabState::block));
-            FixBS[] intersecting = intersecting(subs);
-            AtomicReference<Des> existing = new AtomicReference<>();
-            Predicate<Des> pred = des -> {
-                if (existing.get() != null) {
-                    return true;
-                }
-                if (des.curr.length == fixed) {
-                    if (!orderTwoPresent(orderTwo, des)) {
-                        existing.set(des);
-                    }
-                    return true;
-                }
+        StabState[] shorts = getShorts(k, fixed, table);
+        if (shorts.length < fixed) {
+            return List.of();
+        }
+        Arrays.sort(shorts, Comparator.comparing(StabState::block));
+        System.out.println("Shorts size " + shorts.length);
+        FixBS[] intersecting = intersecting(shorts);
+        List<Des> result = new ArrayList<>();
+        boolean odd = k % 2 == 1 && table.order() % 2 == 0;
+        Predicate<Des> pr = des -> {
+            if (des.curr.length < fixed) {
                 return false;
-            };
-            find(subs, intersecting, Des.empty(subs.length), k, pred);
-            if (existing.get() == null) {
-                System.out.println("Pre check failed");
+            }
+            if (des.curr.length + shorts.length - des.idx - 1 < fixed) {
                 return true;
             }
-        }
-        return false;
-    }
-
-    private static int[] shortLeft(StabState[] states, int k) {
-        int shortCnt = Arrays.stream(states).filter(st -> st.size == k - 1).mapToInt(_ -> 1).sum();
-        int[] result = new int[states.length + 1];
-        int counter = shortCnt;
-        result[0] = counter;
-        for (int i = 0; i < states.length; i++) {
-            result[i + 1] = counter;
-            if (states[i].size == k - 1) {
-                --counter;
+            if (odd && orderTwoPresent(orderTwo, des)) {
+                return true;
             }
-        }
+            synchronized (result) {
+                result.add(des);
+            }
+            return true;
+        };
+        find(shorts, intersecting, Des.empty(shorts.length), pr);
         return result;
     }
 
@@ -174,55 +148,48 @@ public class BibdFinder6CyclicTest {
         int ord = table.order();
         int k = 6;
         FixBS orderTwo = orderTwo(table);
-        Map<FixBS, StabState> states = new HashMap<>();
-        Consumer<StabState> cons = st -> {
-            if (st.stabilizer.cardinality() > 1) {
-                states.putIfAbsent(st.filter, st);
-            }
-        };
-        if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
-            table.subGroups().stream().filter(sg -> sg.order() == k || sg.order() == k - 1)
-                    .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
-        } else {
-            FixBS zero = FixBS.of(ord, 0);
-            StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
-            searchStabilized(table, state, k, 0, cons);
-        }
-        System.out.println("Stabilized " + states.size());
-        StabState[] stabilized = states.values().toArray(StabState[]::new);
-        if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
+        List<Des> shortDes = generateShortDes(table, orderTwo, k, fixed);
+        if (shortDes.isEmpty()) {
             return;
         }
+        StabState[] stabilized = getStabilized(k, table);
         Arrays.sort(stabilized, Comparator.comparing(StabState::block));
-        FixBS[] intersecting = intersecting(stabilized);
-        int[] shortLeft = shortLeft(stabilized, k);
         int[][] auths = table.auth();
+        System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
+        boolean even = isEven(k, ord);
         Map<Integer, PrintStream> streams = new ConcurrentHashMap<>();
-        Predicate<Des> pred = des -> {
-            if (des.shortCount > fixed || des.shortCount + shortLeft[des.idx + 1] < fixed) {
-                return true;
+        for (Des sh : shortDes) {
+            FixBS shortFilter = new FixBS(ord);
+            for (StabState st : sh.curr) {
+                shortFilter.or(st.filter);
             }
-            if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
-                return true;
-            }
-            if (des.shortCount < fixed) {
-                return false;
-            }
-            if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0 && orderTwoPresent(orderTwo, des)) {
+            int leftFilter = ord - 1 - shortFilter.cardinality();
+            StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
+            FixBS[] intersecting = intersecting(suitable);
+            Predicate<Des> pr = des -> {
+                if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
                     return false;
                 }
-                if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
+                StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
+                Arrays.sort(states, Comparator.comparing(StabState::block));
+                if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
                     return true;
                 }
-                PrintStream ps = openIfMissing(des.curr.length, streams, k, group, fixed);
-                ps.println(Arrays.deepToString(Arrays.stream(des.curr).map(st -> st.block.toArray()).toArray(int[][]::new)));
+                if (even && orderTwoPresent(orderTwo, des)) {
+                    return false;
+                }
+                PrintStream ps = openIfMissing(states.length, streams, k, group, fixed);
+                ps.println(Arrays.deepToString(Arrays.stream(states).map(st -> st.block.toArray()).toArray(int[][]::new)));
                 ps.flush();
-            }
-            return false;
-        };
-        find(stabilized, intersecting, Des.empty(states.size()), k, pred);
+                return false;
+            };
+            find(suitable, intersecting, Des.empty(suitable.length), pr);
+        }
         streams.values().forEach(PrintStream::close);
+    }
+
+    private static boolean isEven(int k, int ord) {
+        return k % 2 == 0 && ord % 2 == 0;
     }
 
     private static PrintStream openIfMissing(int cnt, Map<Integer, PrintStream> streams, int k, Group group, int fixed) {
@@ -401,54 +368,43 @@ public class BibdFinder6CyclicTest {
         Group table = group.asTable();
         int ord = table.order();
         FixBS orderTwo = orderTwo(table);
-        Map<FixBS, StabState> states = new HashMap<>();
-        Consumer<StabState> cons = st -> {
-            if (st.stabilizer.cardinality() > 1) {
-                states.putIfAbsent(st.filter, st);
-            }
-        };
-        if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
-            table.subGroups().stream().filter(sg -> sg.order() == k || sg.order() == k - 1)
-                    .forEach(sg -> cons.accept(StabState.fromBlock(table, k, sg.elems())));
-        } else {
-            FixBS zero = FixBS.of(ord, 0);
-            StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
-            searchStabilized(table, state, k, 0, cons);
-        }
-        StabState[] stabilized = states.values().toArray(StabState[]::new);
-        System.out.println("Stabilized size " + states.size());
-        if (preCheckFailed(orderTwo, stabilized, k, fixed)) {
+        List<Des> shortDes = generateShortDes(table, orderTwo, k, fixed);
+        if (shortDes.isEmpty()) {
             return;
         }
+        StabState[] stabilized = getStabilized(k, table);
         Arrays.sort(stabilized, Comparator.comparing(StabState::block));
-        FixBS[] intersecting = intersecting(stabilized);
-        int[] shortLeft = shortLeft(stabilized, k);
         int[][] auths = table.auth();
+        System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
+        boolean even = isEven(k, ord);
         List<StabState[]> initial = new ArrayList<>();
-        Predicate<Des> pred = des -> {
-            if (des.shortCount > fixed || des.shortCount + shortLeft[des.idx + 1] < fixed) {
-                return true;
+        for (Des sh : shortDes) {
+            FixBS shortFilter = new FixBS(ord);
+            for (StabState st : sh.curr) {
+                shortFilter.or(st.filter);
             }
-            if (des.curr.length == 1 && Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
-                return true;
-            }
-            if (des.shortCount < fixed) {
-                return false;
-            }
-            if ((ord - 1 - des.filterCard) % (k * (k - 1)) == 0) {
-                if (ord % 2 == 0 && orderTwoPresent(orderTwo, des)) {
+            int leftFilter = ord - 1 - shortFilter.cardinality();
+            StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
+            FixBS[] intersecting = intersecting(suitable);
+            Predicate<Des> pr = des -> {
+                if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
+                    return false;
+                }
+                StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
+                Arrays.sort(states, Comparator.comparing(StabState::block));
+                if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(states, auth, table))) {
+                    return true;
+                }
+                if (even && orderTwoPresent(orderTwo, des)) {
                     return false;
                 }
                 synchronized (initial) {
-                    if (Arrays.stream(auths).parallel().anyMatch(auth -> bigger(des.curr, auth, table))) {
-                        return true;
-                    }
-                    initial.add(des.curr);
+                    initial.add(states);
                 }
-            }
-            return false;
-        };
-        find(stabilized, intersecting, Des.empty(states.size()), k, pred);
+                return false;
+            };
+            find(suitable, intersecting, Des.empty(suitable.length), pr);
+        }
         if (initial.isEmpty()) {
             return;
         }
@@ -481,6 +437,33 @@ public class BibdFinder6CyclicTest {
                 System.out.println(inc);
             }
         });
+    }
+
+    private static StabState[] getShorts(int k, int fixed, Group table) {
+        if (fixed == 0) {
+            return new StabState[0];
+        }
+        return table.subGroups().stream().filter(sg -> sg.order() == k - 1)
+                .map(sg -> StabState.fromBlock(table, k, sg.elems())).toArray(StabState[]::new);
+    }
+
+    private static StabState[] getStabilized(int k, Group table) {
+        int ord = table.order();
+        if (Combinatorics.isPrime(k) || Arrays.stream(Combinatorics.factorize(k)).noneMatch(fac -> ord % fac == 0)) {
+            return table.subGroups().stream().filter(sg -> sg.order() == k)
+                            .map(sg -> StabState.fromBlock(table, k, sg.elems())).toArray(StabState[]::new);
+        } else {
+            Map<FixBS, StabState> states = new HashMap<>();
+            Consumer<StabState> cons = st -> {
+                if (st.stabilizer.cardinality() > 1) {
+                    states.putIfAbsent(st.filter, st);
+                }
+            };
+            FixBS zero = FixBS.of(ord, 0);
+            StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
+            searchStabilized(table, state, k, 0, cons);
+            return states.values().toArray(StabState[]::new);
+        }
     }
 
     private static boolean orderTwoPresent(FixBS orderTwo, Des des) {
@@ -527,23 +510,23 @@ public class BibdFinder6CyclicTest {
         return new Liner(v, lines.toArray(int[][]::new));
     }
 
-    private record Des(StabState[] curr, int filterCard, FixBS available, int idx, int shortCount) {
-        private Des accept(StabState state, FixBS intersecting, int idx, int k) {
+    private record Des(StabState[] curr, int filterCard, FixBS available, int idx) {
+        private Des accept(StabState state, FixBS intersecting, int idx) {
             int cl = curr.length;
             StabState[] nextCurr = Arrays.copyOf(curr, cl + 1);
             nextCurr[cl] = state;
-            return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx, state.size < k ? shortCount + 1 : shortCount);
+            return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx);
         }
 
         private static Des empty(int statesSize) {
             FixBS available = new FixBS(statesSize);
             available.set(0, statesSize);
-            return new Des(new StabState[0], 0, available, -1, 0);
+            return new Des(new StabState[0], 0, available, -1);
         }
     }
 
-    private static void find(StabState[] states, FixBS[] intersecting, Des des, int k, Predicate<Des> pred) {
-        if (pred.test(des)) {
+    private static void find(StabState[] states, FixBS[] intersecting, Des des, Predicate<Des> pr) {
+        if (pr.test(des)) {
             return;
         }
         FixBS available = des.available;
@@ -553,11 +536,11 @@ public class BibdFinder6CyclicTest {
                 base.add(i);
             }
             Arrays.stream(base.toArray()).parallel().forEach(i -> {
-                find(states, intersecting, des.accept(states[i], intersecting[i], i, k), k, pred);
+                find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
             });
         } else {
             for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-                find(states, intersecting, des.accept(states[i], intersecting[i], i, k), k, pred);
+                find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
             }
         }
     }
@@ -599,7 +582,7 @@ public class BibdFinder6CyclicTest {
     }
 
     private static void searchStabilized(Group group, StabState state, int k, int prev, Consumer<StabState> cons) {
-        if (state.size() == k || (state.size == (k - 1) && state.block.equals(state.stabilizer))) {
+        if (state.size() == k) {
             cons.accept(state);
         } else {
             for (int el = prev + 1; el < group.order(); el++) {
