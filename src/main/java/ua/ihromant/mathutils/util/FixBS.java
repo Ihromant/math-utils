@@ -544,4 +544,13 @@ public record FixBS(long[] words) implements Comparable<FixBS> {
         int mod = desired % 64;
         return Long.bitCount(words[words.length - 1]) == (mod == 0 ? 64 : mod);
     }
+
+    public int cardinality(int from) {
+        int idx = wordIndex(from);
+        int sum = Long.bitCount(words[idx] >>> (from & 63));
+        for (int i = idx + 1; i < words.length; i++) {
+            sum += Long.bitCount(words[i]);
+        }
+        return sum;
+    }
 }

@@ -40,6 +40,15 @@ public class FixBSTest {
     }
 
     @Test
+    public void testCardinality() {
+        FixBS fbs = new FixBS(90);
+        fbs.set(5, 85);
+        assertEquals(45, fbs.cardinality(40));
+        assertEquals(80, fbs.cardinality(5));
+        assertEquals(10, fbs.cardinality(75));
+    }
+
+    @Test
     public void testLength() {
         FixBS fbs = new FixBS(193);
         assertEquals(0, fbs.length());
