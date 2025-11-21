@@ -71,10 +71,10 @@ public class BibdFinder6CyclicTest {
                 StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
                 FixBS[] intersecting = intersecting(suitable);
                 Predicate<Des> pr = des -> {
-                    if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
+                    if ((leftFilter - des.filter.cardinality()) % (k * (k - 1)) != 0) {
                         return false;
                     }
-                    if (even && orderTwoPresent(orderTwo, des)) {
+                    if (even && !orderTwo.diff(des.filter).isEmpty()) {
                         return false;
                     }
                     StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
@@ -87,15 +87,16 @@ public class BibdFinder6CyclicTest {
                     ps.flush();
                     return false;
                 };
-                find(suitable, intersecting, Des.empty(suitable.length), pr);
+                find(suitable, intersecting, Des.empty(ord, suitable.length), pr);
             }
             streams.values().forEach(PrintStream::close);
         }
     }
 
     private static List<Des> generateShortDes(Group table, FixBS orderTwo, int k, int fixed) {
+        int ord = table.order();
         if (fixed == 0) {
-            return List.of(Des.empty(1));
+            return List.of(Des.empty(ord, 1));
         }
         StabState[] shorts = getShorts(k, fixed, table);
         if (shorts.length < fixed) {
@@ -105,7 +106,7 @@ public class BibdFinder6CyclicTest {
         System.out.println("Shorts size " + shorts.length);
         FixBS[] intersecting = intersecting(shorts);
         List<Des> result = new ArrayList<>();
-        boolean odd = k % 2 == 1 && table.order() % 2 == 0;
+        boolean odd = k % 2 == 1 && ord % 2 == 0;
         Predicate<Des> pr = des -> {
             if (des.curr.length < fixed) {
                 return false;
@@ -113,7 +114,7 @@ public class BibdFinder6CyclicTest {
             if (des.curr.length + shorts.length - des.idx - 1 < fixed) {
                 return true;
             }
-            if (odd && orderTwoPresent(orderTwo, des)) {
+            if (odd && !orderTwo.diff(des.filter).isEmpty()) {
                 return true;
             }
             synchronized (result) {
@@ -121,7 +122,7 @@ public class BibdFinder6CyclicTest {
             }
             return true;
         };
-        find(shorts, intersecting, Des.empty(shorts.length), pr);
+        find(shorts, intersecting, Des.empty(ord, shorts.length), pr);
         return result;
     }
 
@@ -167,10 +168,10 @@ public class BibdFinder6CyclicTest {
             StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
             FixBS[] intersecting = intersecting(suitable);
             Predicate<Des> pr = des -> {
-                if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
+                if ((leftFilter - des.filter.cardinality()) % (k * (k - 1)) != 0) {
                     return false;
                 }
-                if (even && orderTwoPresent(orderTwo, des)) {
+                if (even && !orderTwo.diff(des.filter).isEmpty()) {
                     return false;
                 }
                 StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
@@ -183,7 +184,7 @@ public class BibdFinder6CyclicTest {
                 ps.flush();
                 return false;
             };
-            find(suitable, intersecting, Des.empty(suitable.length), pr);
+            find(suitable, intersecting, Des.empty(ord, suitable.length), pr);
         }
         streams.values().forEach(PrintStream::close);
     }
@@ -387,10 +388,10 @@ public class BibdFinder6CyclicTest {
             StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
             FixBS[] intersecting = intersecting(suitable);
             Predicate<Des> pr = des -> {
-                if ((leftFilter - des.filterCard) % (k * (k - 1)) != 0) {
+                if ((leftFilter - des.filter.cardinality()) % (k * (k - 1)) != 0) {
                     return false;
                 }
-                if (even && orderTwoPresent(orderTwo, des)) {
+                if (even && !orderTwo.diff(des.filter).isEmpty()) {
                     return false;
                 }
                 StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
@@ -403,7 +404,7 @@ public class BibdFinder6CyclicTest {
                 }
                 return false;
             };
-            find(suitable, intersecting, Des.empty(suitable.length), pr);
+            find(suitable, intersecting, Des.empty(ord, suitable.length), pr);
         }
         if (initial.isEmpty()) {
             return;
@@ -460,18 +461,10 @@ public class BibdFinder6CyclicTest {
                 }
             };
             FixBS zero = FixBS.of(ord, 0);
-            StabState state = new StabState(zero, zero, new FixBS(ord), 0, zero, 1);
+            StabState state = new StabState(zero, zero, new FixBS(ord), zero, 1);
             searchStabilized(table, state, k, 0, cons);
             return states.values().toArray(StabState[]::new);
         }
-    }
-
-    private static boolean orderTwoPresent(FixBS orderTwo, Des des) {
-        FixBS copy = orderTwo.copy();
-        for (StabState state : des.curr) {
-            copy.andNot(state.filter);
-        }
-        return !copy.isEmpty();
     }
 
     private static Liner generateLiner(Group table, int fixed, int k, int[][] base) {
@@ -510,18 +503,18 @@ public class BibdFinder6CyclicTest {
         return new Liner(v, lines.toArray(int[][]::new));
     }
 
-    private record Des(StabState[] curr, int filterCard, FixBS available, int idx) {
+    private record Des(StabState[] curr, FixBS filter, FixBS available, int idx) {
         private Des accept(StabState state, FixBS intersecting, int idx) {
             int cl = curr.length;
             StabState[] nextCurr = Arrays.copyOf(curr, cl + 1);
             nextCurr[cl] = state;
-            return new Des(nextCurr, filterCard + state.filterCard, available.diff(intersecting), idx);
+            return new Des(nextCurr, filter.union(state.filter), available.diff(intersecting), idx);
         }
 
-        private static Des empty(int statesSize) {
+        private static Des empty(int ord, int statesSize) {
             FixBS available = new FixBS(statesSize);
             available.set(0, statesSize);
-            return new Des(new StabState[0], 0, available, -1);
+            return new Des(new StabState[0], new FixBS(ord), available, -1);
         }
     }
 
@@ -617,11 +610,11 @@ public class BibdFinder6CyclicTest {
         }
     }
 
-    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, int filterCard, FixBS selfDiff, int size) {
+    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int size) {
         public static StabState fromBlock(Group g, int k, FixBS block) {
             FixBS empty = new FixBS(g.order());
             FixBS zero = FixBS.of(g.order(), 0);
-            StabState result = new StabState(zero, zero, empty, 0, zero, 1);
+            StabState result = new StabState(zero, zero, empty, zero, 1);
             for (int el = block.nextSetBit(1); el >= 0; el = block.nextSetBit(el + 1)) {
                 if (result.block().get(el)) {
                     continue;
@@ -681,7 +674,7 @@ public class BibdFinder6CyclicTest {
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
-            return new StabState(newBlock, newStabilizer, newFilter, newFilter.cardinality(), newSelfDiff, sz);
+            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
         }
 
         private StabState acceptElem(Group group, int val, int k) {
@@ -737,7 +730,7 @@ public class BibdFinder6CyclicTest {
             if (sz > 2 && sz > k / 2 && newStabilizer.cardinality() == 1) {
                 return null;
             }
-            return new StabState(newBlock, newStabilizer, newFilter, newFilter.cardinality(), newSelfDiff, sz);
+            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
         }
     }
 
