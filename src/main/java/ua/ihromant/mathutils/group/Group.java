@@ -9,12 +9,13 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -158,27 +159,41 @@ public interface Group {
     }
 
     default Map<Integer, List<SubGroup>> groupedSubGroups() {
-        Map<Integer, List<SubGroup>> result = new HashMap<>();
+        Map<Integer, List<SubGroup>> result = new ConcurrentHashMap<>();
         int order = order();
-        FixBS all = new FixBS(order);
-        all.set(0, order);
-        FixBS init = new FixBS(order);
-        init.set(0);
-        result.put(1, List.of(new SubGroup(this, init)));
+        result.put(1, new ArrayList<>(List.of(new SubGroup(this, FixBS.of(order, 0)))));
         int[][] auths = auth();
-        find(init, 0, order, sg -> {
-            FixBS elems = sg.elems();
+        IntStream.range(1, order).parallel().forEach(i -> {
+            FixBS cycle = cycle(i);
+            if (cycle.nextSetBit(1) < i) {
+                return;
+            }
             for (int[] arr : auths) {
                 FixBS oElems = new FixBS(order);
-                for (int el = elems.nextSetBit(0); el >= 0; el = elems.nextSetBit(el + 1)) {
+                for (int el = cycle.nextSetBit(0); el >= 0; el = cycle.nextSetBit(el + 1)) {
                     oElems.set(arr[el]);
                 }
-                if (oElems.compareTo(elems) < 0) {
+                if (oElems.compareTo(cycle) < 0) {
                     return;
                 }
             }
-            result.computeIfAbsent(elems.cardinality(), _ -> new ArrayList<>()).add(sg);
+            result.computeIfAbsent(cycle.cardinality(), _ -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(new SubGroup(this, cycle));
+            find(cycle, i, order, sg -> {
+                FixBS elems = sg.elems();
+                for (int[] arr : auths) {
+                    FixBS oElems = new FixBS(order);
+                    for (int el = elems.nextSetBit(0); el >= 0; el = elems.nextSetBit(el + 1)) {
+                        oElems.set(arr[el]);
+                    }
+                    if (oElems.compareTo(elems) < 0) {
+                        return;
+                    }
+                }
+                result.computeIfAbsent(elems.cardinality(), _ -> Collections.synchronizedList(new ArrayList<>())).add(sg);
+            });
         });
+        result.values().forEach(l -> l.sort(Comparator.comparing(SubGroup::elems)));
         return result;
     }
 
