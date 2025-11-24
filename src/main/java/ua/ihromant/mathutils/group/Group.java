@@ -175,8 +175,18 @@ public interface Group {
                     return;
                 }
             }
-            result.computeIfAbsent(elems.cardinality(), uu -> new ArrayList<>()).add(sg);
+            result.computeIfAbsent(elems.cardinality(), _ -> new ArrayList<>()).add(sg);
         });
+        return result;
+    }
+
+    default FixBS cycle(int from) {
+        FixBS result = new FixBS(order());
+        int el = from;
+        do {
+            el = op(el, from);
+            result.set(el);
+        } while (el != from);
         return result;
     }
 
@@ -197,10 +207,10 @@ public interface Group {
             }
             return;
         }
-        if (genList.size() + 1 >= currGens.get().length) {
-            return;
-        }
         for (int gen = currGroup.nextClearBit(0); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
+            if (genList.size() + 1 >= currGens.get().length) {
+                return;
+            }
             IntList nextGenList = genList.copy();
             nextGenList.add(gen);
             FixBS nextGroup = currGroup.copy();
@@ -227,20 +237,22 @@ public interface Group {
     default int[][] auth() {
         List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int order = order();
-        FixBS init = FixBS.of(order, 0);
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
         for (int i = 0; i < order; i++) {
             int ord = order(i);
-            byOrders.computeIfAbsent(ord, uu -> new FixBS(order)).set(i);
+            byOrders.computeIfAbsent(ord, _ -> new FixBS(order)).set(i);
         }
         int[][] bOrd = new int[byOrders.lastKey() + 1][0];
         for (Map.Entry<Integer, FixBS> e : byOrders.entrySet()) {
             bOrd[e.getKey()] = e.getValue().toArray();
         }
-        IntList list = new IntList(order);
         AtomicReference<int[]> ar = new AtomicReference<>();
         ar.set(IntStream.range(0, order()).toArray());
-        gens(list, init, ar);
+        IntStream.range(1, order).parallel().forEach(i -> {
+            IntList list = new IntList(order);
+            list.add(i);
+            gens(list, cycle(i), ar);
+        });
         int[] gens = ar.get();
         int ord = order(gens[0]);
         Arrays.stream(bOrd[ord]).parallel().forEach(v -> {

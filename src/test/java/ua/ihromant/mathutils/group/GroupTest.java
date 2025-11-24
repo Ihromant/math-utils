@@ -287,4 +287,11 @@ public class GroupTest {
         assertEquals(60, psl.order());
         assertTrue(psl.isSimple());
     }
+
+    @Test
+    public void testMathieu() {
+        Group mathieu = PermutationGroup.mathieu11().asTable();
+        assertEquals(7920, mathieu.order());
+        assertEquals(7920, mathieu.auth().length);
+    }
 }
