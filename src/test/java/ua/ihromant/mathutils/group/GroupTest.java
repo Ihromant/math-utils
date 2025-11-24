@@ -292,6 +292,7 @@ public class GroupTest {
     public void testMathieu() {
         Group mathieu = PermutationGroup.mathieu11().asTable();
         assertEquals(7920, mathieu.order());
+        assertEquals(7920, mathieu.innerAuth().length);
         assertEquals(7920, mathieu.auth().length);
     }
 }

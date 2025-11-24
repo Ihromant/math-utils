@@ -12,7 +12,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -232,6 +234,19 @@ public interface Group {
         }
         result.andNot(currGroup);
         return result;
+    }
+
+    default int[][] innerAuth() {
+        Set<int[]> result = new TreeSet<>(Combinatorics::compareArr);
+        for (int conj = 0; conj < order(); conj++) {
+            int[] arr = new int[order()];
+            int inv = inv(conj);
+            for (int el = 0; el < order(); el++) {
+                arr[el] = op(op(inv, el), conj);
+            }
+            result.add(arr);
+        }
+        return result.toArray(int[][]::new);
     }
 
     default int[][] auth() {
