@@ -18,7 +18,7 @@ public record FixBS(long[] words) implements Comparable<FixBS> {
     }
 
     public static int len(int n) {
-        return wordIndex(n - 1) + 1;
+        return n == 0 ? 0 : wordIndex(n - 1) + 1;
     }
 
     @JsonCreator
