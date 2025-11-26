@@ -218,14 +218,15 @@ public interface Group {
 
     private void gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
+        int sz = genList.size();
         if (currGroup.isFull(ord)) {
-            if (currGens.get().length > genList.size()) {
+            if (currGens.get().length > sz) {
                 currGens.set(genList.toArray());
             }
             return;
         }
-        for (int gen = currGroup.nextClearBit(0); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
-            if (genList.size() + 1 >= currGens.get().length) {
+        for (int gen = currGroup.nextClearBit(genList.get(sz - 1)); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
+            if (sz + 1 >= currGens.get().length) {
                 return;
             }
             IntList nextGenList = genList.copy();
