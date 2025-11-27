@@ -87,6 +87,69 @@ public class TernaryAutomorphisms {
         return result;
     }
 
+    public static int[][] automorphismsAffinePar(Liner proj, int dl) {
+        List<int[]> result = Collections.synchronizedList(new ArrayList<>());
+        AtomicReference<Pr> ref = new AtomicReference<>();
+        int pc = proj.pointCount();
+        int order = proj.line(0).length - 1;
+        int[] line = proj.line(dl);
+        Arrays.stream(line).parallel().forEach(h -> {
+            for (int v : line) {
+                if (v == h) {
+                    continue;
+                }
+                for (int o = 0; o < pc; o++) {
+                    if (proj.flag(dl, o)) {
+                        continue;
+                    }
+                    int oh = proj.line(o, h);
+                    int ov = proj.line(o, v);
+                    for (int e = 0; e < pc; e++) {
+                        if (proj.flag(dl, e) || proj.flag(ov, e) || proj.flag(oh, e)) {
+                            continue;
+                        }
+                        int w = proj.intersection(proj.line(e, h), ov);
+                        int u = proj.intersection(proj.line(e, v), oh);
+                        Quad base = new Quad(o, u, w, e);
+                        ProjectiveTernaryRing ring = new ProjectiveTernaryRing("", proj, base);
+                        int two = ring.op(1, 1, 1);
+                        if (two == 0) {
+                            continue;
+                        }
+                        CharVals cv = CharVals.of(ring, two, order);
+                        if (!cv.induced()) {
+                            continue;
+                        }
+                        Pr pair = ref.updateAndGet(old -> Objects.requireNonNullElseGet(old,
+                                () -> new Pr(ring, fillTernarMapping(ring.toMatrix(), cv, two, order))));
+                        if (!pair.map().chr().equals(cv.chr())) {
+                            continue;
+                        }
+                        TernaryRing matrix = ring.toMatrix();
+                        int[] ringIsomorphism = ringIsomorphism(pair.map(), matrix);
+                        if (ringIsomorphism == null) {
+                            continue;
+                        }
+                        int[] map = new int[order * order + order + 1];
+                        for (int i = 0; i < order; i++) {
+                            for (int j = 0; j < order; j++) {
+                                int fromPt = pair.ring().withCrd(i, j);
+                                int toPt = ring.withCrd(ringIsomorphism[i], ringIsomorphism[j]);
+                                map[fromPt] = toPt;
+                            }
+                            int fromDir = pair.ring().withDirection(i);
+                            int toDir = ring.withDirection(ringIsomorphism[i]);
+                            map[fromDir] = toDir;
+                        }
+                        map[pair.ring().horDir()] = ring.horDir();
+                        result.add(map);
+                    }
+                }
+            }
+        });
+        return result.toArray(int[][]::new);
+    }
+
     public static List<int[]> automorphismsAffine(Liner aff) {
         List<int[]> result = new ArrayList<>();
         AffineTernaryRing first = null;
