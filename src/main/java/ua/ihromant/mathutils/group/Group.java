@@ -138,15 +138,8 @@ public interface Group {
     private void find(FixBS currGroup, int prev, int order, Consumer<SubGroup> cons) {
         ex: for (int gen = currGroup.nextClearBit(prev + 1); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
             FixBS nextGroup = currGroup.copy();
-            FixBS additional = new FixBS(order);
-            int ord = order(gen);
-            int comb = 0;
-            for (int i = 1; i < ord; i++) {
-                comb = op(comb, gen);
-                if (!currGroup.get(comb)) {
-                    additional.set(comb);
-                }
-            }
+            FixBS additional = cycle(gen);
+            additional.andNot(currGroup);
             do {
                 if (additional.nextSetBit(0) < gen) {
                     continue ex;
@@ -216,14 +209,15 @@ public interface Group {
         return new SubGroup(this, result);
     }
 
-    private void gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
+    private void gens(int cap, IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
         int sz = genList.size();
         if (currGroup.isFull(ord)) {
             currGens.updateAndGet(old -> old.length > sz ? genList.toArray() : old);
         }
         for (int gen = currGroup.nextClearBit(genList.get(sz - 1)); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
-            if (sz + 1 >= currGens.get().length) {
+            int len = currGens.get().length;
+            if (cap >= len || sz + 1 >= len) {
                 return;
             }
             IntList nextGenList = genList.copy();
@@ -234,7 +228,7 @@ public interface Group {
             do {
                 nextGroup.or(additional);
             } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
-            gens(nextGenList, nextGroup, currGens);
+            gens(cap, nextGenList, nextGroup, currGens);
         }
     }
 
@@ -263,6 +257,10 @@ public interface Group {
     }
 
     default int[][] auth() {
+        return auth(2);
+    }
+
+    default int[][] auth(int genCap) {
         List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int order = order();
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
@@ -279,7 +277,7 @@ public interface Group {
         IntStream.range(1, order).parallel().forEach(i -> {
             IntList list = new IntList(order);
             list.add(i);
-            gens(list, cycle(i), ar);
+            gens(genCap, list, cycle(i), ar);
         });
         int[] gens = ar.get();
         int ord = order(gens[0]);
