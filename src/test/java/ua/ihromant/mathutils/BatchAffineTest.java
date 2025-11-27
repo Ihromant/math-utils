@@ -5,7 +5,6 @@ import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
-import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.plane.AffineTernaryRing;
 import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
@@ -20,6 +19,8 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -48,72 +49,31 @@ public class BatchAffineTest {
     public void testDilations() throws IOException {
         String name = "bbs4";
         int k = 16;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                int[] infty = proj.line(dl);
-                int[] partialPoints = new int[proj.pointCount()];
-                Arrays.fill(partialPoints, -1);
-                Arrays.stream(infty).forEach(i -> partialPoints[i] = i);
-                int[] partialLines = new int[proj.lineCount()];
-                Arrays.fill(partialLines, -1);
-                partialLines[dl] = dl;
-                int[][] dilations = Automorphisms.autArrayOld(proj, partialPoints, partialLines);
-                PermutationGroup dilGr = new PermutationGroup(dilations);
-                AffinePlane aff = new AffinePlane(proj, dl);
-                PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
-                        || IntStream.range(0, dil.length).filter(j -> !proj.flag(dl, j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
-                System.out.println(name + " dropped " + dl + " dilations size " + dilGr.order() + " comm dil " + dilGr.isCommutative()
-                        + " translations size " + translations.order() + " comm trans " + translations.isCommutative()
-                        + " orders " + IntStream.range(0, dilGr.order()).boxed().collect(Collectors.groupingBy(dilGr::order, Collectors.counting())));
-                for (int i : aff.points()) {
-                    int[][] withFixed = Arrays.stream(dilations).filter(dil -> dil[i] == i).toArray(int[][]::new);
-                    PermutationGroup gr = new PermutationGroup(withFixed);
-                    if (gr.order() == 1) {
-                        continue;
-                    }
-                    System.out.println("For point " + i + " group size " + gr.order() + " commutative " + gr.isCommutative() + " orders " + IntStream.range(0, gr.order()).boxed().collect(Collectors.groupingBy(gr::order, Collectors.counting())));
+        Liner proj = readProj(k, name);
+        for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+            int[] infty = proj.line(dl);
+            int[] partialPoints = new int[proj.pointCount()];
+            Arrays.fill(partialPoints, -1);
+            Arrays.stream(infty).forEach(i -> partialPoints[i] = i);
+            int[] partialLines = new int[proj.lineCount()];
+            Arrays.fill(partialLines, -1);
+            partialLines[dl] = dl;
+            int[][] dilations = Automorphisms.autArrayOld(proj, partialPoints, partialLines);
+            PermutationGroup dilGr = new PermutationGroup(dilations);
+            AffinePlane aff = new AffinePlane(proj, dl);
+            PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
+                    || IntStream.range(0, dil.length).filter(j -> !proj.flag(dl, j)).allMatch(j -> dil[j] != j)).toArray(int[][]::new));
+            System.out.println(name + " dropped " + dl + " dilations size " + dilGr.order() + " comm dil " + dilGr.isCommutative()
+                    + " translations size " + translations.order() + " comm trans " + translations.isCommutative()
+                    + " orders " + IntStream.range(0, dilGr.order()).boxed().collect(Collectors.groupingBy(dilGr::order, Collectors.counting())));
+            for (int i : aff.points()) {
+                int[][] withFixed = Arrays.stream(dilations).filter(dil -> dil[i] == i).toArray(int[][]::new);
+                PermutationGroup gr = new PermutationGroup(withFixed);
+                if (gr.order() == 1) {
+                    continue;
                 }
+                System.out.println("For point " + i + " group size " + gr.order() + " commutative " + gr.isCommutative() + " orders " + IntStream.range(0, gr.order()).boxed().collect(Collectors.groupingBy(gr::order, Collectors.counting())));
             }
-        }
-    }
-
-    @Test
-    public void testAutomorphisms() throws IOException {
-        String name = "hall9";
-        int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                long time = System.currentTimeMillis();
-                System.out.println(name + " dropped " + dl + " count " + new AffinePlane(proj, dl).toLiner().autCountNew() + " time " + (System.currentTimeMillis() - time));
-            }
-        }
-    }
-
-    @Test
-    public void testNonIsomorphic() throws IOException {
-        String name = "hughes9";
-        int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            Map<FixBS, Integer> nonIsomorphic = new HashMap<>();
-            for (int dl : IntStream.range(0, k * k + k + 1).toArray()) {
-                Partition partition = new Partition(proj.pointCount() + proj.lineCount(), new int[][]{
-                        IntStream.range(0, proj.pointCount()).toArray(),
-                        {dl + proj.pointCount()},
-                        IntStream.range(0, proj.lineCount()).filter(l -> l != dl).map(i -> i + proj.pointCount()).toArray()
-                });
-                Integer v = nonIsomorphic.putIfAbsent(proj.getCanonical(partition), dl);
-                System.out.println(dl + " " + (v == null ? "Unique" : "Non Unique"));
-            }
-            System.out.println("Non isomorphic " + nonIsomorphic.values());
         }
     }
 
@@ -122,17 +82,13 @@ public class BatchAffineTest {
         String name = "dhall9";
         int k = 9;
         System.out.println(name);
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            int cnt = k * k + k + 1;
-            int[] arr = IntStream.range(0, cnt).toArray();
-            for (int dl : dropped.getOrDefault(name, arr)) {
-                String[] ranks = Stream.<Supplier<String>>of(() -> translationRank(proj, k, dl), () -> shearRank(proj, k, dl), () -> centralRank(proj, k, dl),
-                        () -> hyperScaleRank(proj, k, dl)).parallel().map(Supplier::get).toArray(String[]::new);
-                System.out.println(dl + " " + ranks[0] + " " + ranks[1] + " " + ranks[2] + " " + ranks[3]);
-            }
+        Liner proj = readProj(k, name);
+        int cnt = k * k + k + 1;
+        int[] arr = IntStream.range(0, cnt).toArray();
+        for (int dl : dropped.getOrDefault(name, arr)) {
+            String[] ranks = Stream.<Supplier<String>>of(() -> translationRank(proj, k, dl), () -> shearRank(proj, k, dl), () -> centralRank(proj, k, dl),
+                    () -> hyperScaleRank(proj, k, dl)).parallel().map(Supplier::get).toArray(String[]::new);
+            System.out.println(dl + " " + ranks[0] + " " + ranks[1] + " " + ranks[2] + " " + ranks[3]);
         }
     }
 
@@ -525,89 +481,82 @@ public class BatchAffineTest {
     public void testTriangles() throws IOException {
         String name = "dhall9";
         int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
-                Liner liner = new AffinePlane(proj, dl).toLiner();
-                long time = System.currentTimeMillis();
-                PermutationGroup permGroup = liner.automorphisms();
-                System.out.println(name + " dropped " + dl + " time " + (System.currentTimeMillis() - time) + " count " + permGroup.order());
-                int[] triangles = new int[liner.triangleCount()];
-                Arrays.fill(triangles, -1);
-                for (int i = 0; i < triangles.length; i++) {
-                    if (triangles[i] >= 0) {
-                        continue;
-                    }
-                    Triangle tr = liner.trOf(i);
-                    for (int j = 0; j < permGroup.order(); j++) {
-                        int[] perm = permGroup.permutation(j);
-                        Triangle applied = new Triangle(perm[tr.o()], perm[tr.u()], perm[tr.w()]);
-                        triangles[liner.trIdx(applied)] = i;
-                    }
+        Liner proj = readProj(k, name);
+        for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+            Liner liner = new AffinePlane(proj, dl).toLiner();
+            long time = System.currentTimeMillis();
+            PermutationGroup permGroup = liner.automorphisms();
+            System.out.println(name + " dropped " + dl + " time " + (System.currentTimeMillis() - time) + " count " + permGroup.order());
+            int[] triangles = new int[liner.triangleCount()];
+            Arrays.fill(triangles, -1);
+            for (int i = 0; i < triangles.length; i++) {
+                if (triangles[i] >= 0) {
+                    continue;
                 }
-                Map<Integer, Long> counts = Arrays.stream(triangles).boxed().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-                System.out.println(counts);
+                Triangle tr = liner.trOf(i);
+                for (int j = 0; j < permGroup.order(); j++) {
+                    int[] perm = permGroup.permutation(j);
+                    Triangle applied = new Triangle(perm[tr.o()], perm[tr.u()], perm[tr.w()]);
+                    triangles[liner.trIdx(applied)] = i;
+                }
             }
+            Map<Integer, Long> counts = Arrays.stream(triangles).boxed().collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+            System.out.println(counts);
         }
     }
 
     @Test
     public void calculateCentralMatrix() throws IOException {
         int k = 16;
-        for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
             String name = f.getName();
             if ("desarg.txt".equals(f.getName())) {
                 continue;
             }
-            try (InputStream is = new FileInputStream(f);
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readProj(br);
-                int[][] central = new int[proj.pointCount()][proj.lineCount()];
-                IntStream.range(0, proj.pointCount()).parallel().forEach(o -> {
-                    for (int l = 0; l < proj.lineCount(); l++) {
-                        central[o][l]++;
-                        int a = findA(proj, o, l);
-                        int oa = proj.line(o, a);
-                        ex: for (int a1 : proj.line(oa)) {
-                            if (a == a1 || o == a1 || proj.flag(l, a1)) {
+            Liner proj = readProj(k, name);
+            int[][] central = new int[proj.pointCount()][proj.lineCount()];
+            IntStream.range(0, proj.pointCount()).parallel().forEach(o -> {
+                for (int l = 0; l < proj.lineCount(); l++) {
+                    central[o][l]++;
+                    int a = findA(proj, o, l);
+                    int oa = proj.line(o, a);
+                    ex:
+                    for (int a1 : proj.line(oa)) {
+                        if (a == a1 || o == a1 || proj.flag(l, a1)) {
+                            continue;
+                        }
+                        for (int ob : proj.lines(o)) {
+                            if (ob == l || ob == oa) {
                                 continue;
                             }
-                            for (int ob : proj.lines(o)) {
-                                if (ob == l || ob == oa) {
+                            for (int oc : proj.lines(o)) {
+                                if (oc == l || oc == oa || oc == ob) {
                                     continue;
                                 }
-                                for (int oc : proj.lines(o)) {
-                                    if (oc == l || oc == oa || oc == ob) {
+                                for (int b : proj.points(ob)) {
+                                    if (b == o || proj.flag(l, b)) {
                                         continue;
                                     }
-                                    for (int b : proj.points(ob)) {
-                                        if (b == o || proj.flag(l, b)) {
+                                    for (int c : proj.points(oc)) {
+                                        if (c == o || proj.flag(l, c)) {
                                             continue;
                                         }
-                                        for (int c : proj.points(oc)) {
-                                            if (c == o || proj.flag(l, c)) {
-                                                continue;
-                                            }
-                                            int b1 = proj.intersection(ob, proj.line(proj.intersection(proj.line(a, b), l), a1));
-                                            int c1 = proj.intersection(oc, proj.line(proj.intersection(proj.line(a, c), l), a1));
-                                            if (!proj.flag(l, proj.intersection(proj.line(b, c), proj.line(b1, c1)))) {
-                                                continue ex;
-                                            }
+                                        int b1 = proj.intersection(ob, proj.line(proj.intersection(proj.line(a, b), l), a1));
+                                        int c1 = proj.intersection(oc, proj.line(proj.intersection(proj.line(a, c), l), a1));
+                                        if (!proj.flag(l, proj.intersection(proj.line(b, c), proj.line(b1, c1)))) {
+                                            continue ex;
                                         }
                                     }
                                 }
                             }
-                            central[o][l]++;
                         }
+                        central[o][l]++;
                     }
-                });
-                System.out.println(name);
-                //calculateParameters(proj, central);
-                Arrays.stream(central).forEach(ln -> System.out.println(Arrays.stream(ln).mapToObj(i -> Integer.toString(i, 36)).collect(Collectors.joining())));
-            }
+                }
+            });
+            System.out.println(name);
+            //calculateParameters(proj, central);
+            Arrays.stream(central).forEach(ln -> System.out.println(Arrays.stream(ln).mapToObj(i -> Integer.toString(i, 36)).collect(Collectors.joining())));
         }
     }
 
@@ -678,81 +627,77 @@ public class BatchAffineTest {
     public void testBiloopCorrectness() throws IOException {
         String name = "dhall9";
         int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            int dl = 1;
-            Liner liner = new AffinePlane(proj, dl).toLiner();
-            for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
-                TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
-                for (int x : tr.elements()) {
-                    for (int b : tr.elements()) {
-                        assertEquals(b, tr.op(x, 0, b));
-                        assertEquals(b, tr.op(0, x, b));
-                    }
-                    assertEquals(x, tr.op(x, 1, 0));
-                    assertEquals(x, tr.op(1, x, 0));
+        Liner proj = readProj(k, name);
+        int dl = 1;
+        Liner liner = new AffinePlane(proj, dl).toLiner();
+        for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
+            TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
+            for (int x : tr.elements()) {
+                for (int b : tr.elements()) {
+                    assertEquals(b, tr.op(x, 0, b));
+                    assertEquals(b, tr.op(0, x, b));
                 }
-                for (int a : tr.elements()) {
-                    for (int x : tr.elements()) {
-                        for (int y : tr.elements()) {
-                            int b = IntStream.range(0, tr.order()).filter(c -> tr.op(x, a, c) == y).findAny().orElseThrow();
-                            for (int c : tr.elements()) {
-                                if (b == c) {
+                assertEquals(x, tr.op(x, 1, 0));
+                assertEquals(x, tr.op(1, x, 0));
+            }
+            for (int a : tr.elements()) {
+                for (int x : tr.elements()) {
+                    for (int y : tr.elements()) {
+                        int b = IntStream.range(0, tr.order()).filter(c -> tr.op(x, a, c) == y).findAny().orElseThrow();
+                        for (int c : tr.elements()) {
+                            if (b == c) {
+                                continue;
+                            }
+                            if (tr.op(x, a, c) == y) {
+                                fail();
+                            }
+                        }
+                    }
+                }
+            }
+            for (int a : tr.elements()) {
+                for (int b : tr.elements()) {
+                    for (int c : tr.elements()) {
+                        if (c == a) {
+                            continue;
+                        }
+                        for (int d : tr.elements()) {
+                            int x = IntStream.range(0, tr.order()).filter(y -> tr.op(y, a, b) == tr.op(y, c, d)).findAny().orElseThrow();
+                            for (int y : tr.elements()) {
+                                if (x == y) {
                                     continue;
                                 }
-                                if (tr.op(x, a, c) == y) {
+                                if (tr.op(y, a, b) == tr.op(y, c, d)) {
                                     fail();
                                 }
                             }
                         }
                     }
                 }
-                for (int a : tr.elements()) {
-                    for (int b : tr.elements()) {
-                        for (int c : tr.elements()) {
-                            if (c == a) {
-                                continue;
+            }
+            for (int x1 : tr.elements()) {
+                for (int y1 : tr.elements()) {
+                    for (int x2 : tr.elements()) {
+                        if (x1 == x2) {
+                            continue;
+                        }
+                        for (int y2 : tr.elements()) {
+                            IntPair ab = null;
+                            for (int a : tr.elements()) {
+                                for (int b : tr.elements()) {
+                                    if (tr.op(x1, a, b) == y1 && tr.op(x2, a, b) == y2) {
+                                        ab = new IntPair(a, b);
+                                    }
+                                }
                             }
-                            for (int d : tr.elements()) {
-                                int x = IntStream.range(0, tr.order()).filter(y -> tr.op(y, a, b) == tr.op(y, c, d)).findAny().orElseThrow();
-                                for (int y : tr.elements()) {
-                                    if (x == y) {
+                            assertNotNull(ab);
+                            for (int a1 : tr.elements()) {
+                                for (int b1 : tr.elements()) {
+                                    if (a1 == ab.fst() && b1 == ab.snd()) {
                                         continue;
                                     }
-                                    if (tr.op(y, a, b) == tr.op(y, c, d)) {
+                                    if (tr.op(x1, a1, b1) == y1 && tr.op(x2, a1, b1) == y2) {
                                         fail();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                for (int x1 : tr.elements()) {
-                    for (int y1 : tr.elements()) {
-                        for (int x2 : tr.elements()) {
-                            if (x1 == x2) {
-                                continue;
-                            }
-                            for (int y2 : tr.elements()) {
-                                IntPair ab = null;
-                                for (int a : tr.elements()) {
-                                    for (int b : tr.elements()) {
-                                        if (tr.op(x1, a, b) == y1 && tr.op(x2, a, b) == y2) {
-                                            ab = new IntPair(a, b);
-                                        }
-                                    }
-                                }
-                                assertNotNull(ab);
-                                for (int a1 : tr.elements()) {
-                                    for (int b1 : tr.elements()) {
-                                        if (a1 == ab.fst() && b1 == ab.snd()) {
-                                            continue;
-                                        }
-                                        if (tr.op(x1, a1, b1) == y1 && tr.op(x2, a1, b1) == y2) {
-                                            fail();
-                                        }
                                     }
                                 }
                             }
@@ -767,34 +712,31 @@ public class BatchAffineTest {
     public void testGolden() throws IOException {
         String name = "hughes9";
         int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            int dl = 3;
-            System.out.println(name + "-" + dl + "-" + k);
-            Liner liner = new AffinePlane(proj, dl).toLiner();
-            for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
-                TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
-                TreeMap<Integer, Boolean> elems = new TreeMap<>();
-                for (int el : tr.elements()) {
-                    if (tr.mul(el, el) != tr.add(1, el)) {
-                        continue;
-                    }
-                    boolean leftDistr = true;
-                    ex: for (int x : tr.elements()) {
-                        for (int y : tr.elements()) {
-                            if (tr.mul(el, tr.add(x, y)) != tr.add(tr.mul(el, x), tr.mul(el, y))) {
-                                leftDistr = false;
-                                break ex;
-                            }
+        Liner proj = readProj(k, name);
+        int dl = 3;
+        System.out.println(name + "-" + dl + "-" + k);
+        Liner liner = new AffinePlane(proj, dl).toLiner();
+        for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
+            TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
+            TreeMap<Integer, Boolean> elems = new TreeMap<>();
+            for (int el : tr.elements()) {
+                if (tr.mul(el, el) != tr.add(1, el)) {
+                    continue;
+                }
+                boolean leftDistr = true;
+                ex:
+                for (int x : tr.elements()) {
+                    for (int y : tr.elements()) {
+                        if (tr.mul(el, tr.add(x, y)) != tr.add(tr.mul(el, x), tr.mul(el, y))) {
+                            leftDistr = false;
+                            break ex;
                         }
                     }
-                    elems.put(el, leftDistr);
                 }
-                if (!elems.isEmpty()) {
-                    System.out.println("Triangle " + triangle + " " + elems);
-                }
+                elems.put(el, leftDistr);
+            }
+            if (!elems.isEmpty()) {
+                System.out.println("Triangle " + triangle + " " + elems);
             }
         }
     }
@@ -803,29 +745,25 @@ public class BatchAffineTest {
     public void testEquality() throws IOException {
         String name = "dhall9";
         int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            int[][] hBijections = Combinatorics.permutations(IntStream.range(0, k).toArray()).toArray(int[][]::new);
-            Liner proj = readProj(br);
-            Liner liner = new AffinePlane(proj, 0).toLiner();
-            TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
-            TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
-            assertFalse(tr0.trEquals(tr1));
-            assertFalse(tr0.isotopic(tr1, hBijections));
-            TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
-            assertTrue(tr1.trEquals(tr2));
-            assertTrue(tr1.isotopic(tr2, hBijections));
-            assertEquals(tr0.characteristic(), tr1.characteristic());
-            TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
-            TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
-            assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
-            assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
-            TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
-            assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
-            assertTrue(tr0.isotopic(tr17, hBijections) && !tr1.isotopic(tr17, hBijections));
-            assertEquals(tr0.characteristic(), tr17.characteristic());
-        }
+        int[][] hBijections = Combinatorics.permutations(IntStream.range(0, k).toArray()).toArray(int[][]::new);
+        Liner proj = readProj(k, name);
+        Liner liner = new AffinePlane(proj, 0).toLiner();
+        TernaryRing tr0 = new AffineTernaryRing(liner, liner.trOf(0));
+        TernaryRing tr1 = new AffineTernaryRing(liner, liner.trOf(1));
+        assertFalse(tr0.trEquals(tr1));
+        assertFalse(tr0.isotopic(tr1, hBijections));
+        TernaryRing tr2 = new AffineTernaryRing(liner, liner.trOf(2));
+        assertTrue(tr1.trEquals(tr2));
+        assertTrue(tr1.isotopic(tr2, hBijections));
+        assertEquals(tr0.characteristic(), tr1.characteristic());
+        TernaryRing tr18 = new AffineTernaryRing(liner, liner.trOf(18));
+        TernaryRing tr24 = new AffineTernaryRing(liner, liner.trOf(24));
+        assertTrue(!tr18.trEquals(tr0) && !tr18.trEquals(tr1));
+        assertTrue(!tr24.trEquals(tr0) && !tr24.trEquals(tr1) && !tr24.trEquals(tr18));
+        TernaryRing tr17 = new AffineTernaryRing(liner, liner.trOf(17));
+        assertTrue(tr0.trEquals(tr17) && !tr1.trEquals(tr17));
+        assertTrue(tr0.isotopic(tr17, hBijections) && !tr1.isotopic(tr17, hBijections));
+        assertEquals(tr0.characteristic(), tr17.characteristic());
     }
 
     @Test
@@ -835,27 +773,23 @@ public class BatchAffineTest {
         String plName = tokens[0];
         int dl = Integer.parseInt(tokens[1]);
         int k = Integer.parseInt(tokens[2]);
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            Liner liner = new AffinePlane(proj, dl).toLiner();
-            for (int triangle : uniqueTriangles.get(name)) {
-                Triangle tr = liner.trOf(triangle);
-                int[] fixedPoints = new int[liner.pointCount()];
-                Arrays.fill(fixedPoints, -1);
-                fixedPoints[tr.o()] = tr.o();
-                fixedPoints[tr.u()] = tr.u();
-                fixedPoints[tr.w()] = tr.w();
-                int[] fixedLines = new int[liner.lineCount()];
-                Arrays.fill(fixedLines, -1);
-                fixedLines[liner.line(tr.o(), tr.u())] = liner.line(tr.o(), tr.u());
-                fixedLines[liner.line(tr.o(), tr.w())] = liner.line(tr.o(), tr.w());
-                fixedLines[liner.line(tr.u(), tr.w())] = liner.line(tr.u(), tr.w());
-                PermutationGroup perm = new PermutationGroup(Automorphisms.autArrayOld(liner, fixedPoints, fixedLines));
-                TernaryRing ring = new AffineTernaryRing(liner, tr);
-                System.out.println(triangle + " " + perm.order() + " " + perm.isCommutative() + " " + ring.isLinear());
-            }
+        Liner proj = readProj(k, plName);
+        Liner liner = new AffinePlane(proj, dl).toLiner();
+        for (int triangle : uniqueTriangles.get(name)) {
+            Triangle tr = liner.trOf(triangle);
+            int[] fixedPoints = new int[liner.pointCount()];
+            Arrays.fill(fixedPoints, -1);
+            fixedPoints[tr.o()] = tr.o();
+            fixedPoints[tr.u()] = tr.u();
+            fixedPoints[tr.w()] = tr.w();
+            int[] fixedLines = new int[liner.lineCount()];
+            Arrays.fill(fixedLines, -1);
+            fixedLines[liner.line(tr.o(), tr.u())] = liner.line(tr.o(), tr.u());
+            fixedLines[liner.line(tr.o(), tr.w())] = liner.line(tr.o(), tr.w());
+            fixedLines[liner.line(tr.u(), tr.w())] = liner.line(tr.u(), tr.w());
+            PermutationGroup perm = new PermutationGroup(Automorphisms.autArrayOld(liner, fixedPoints, fixedLines));
+            TernaryRing ring = new AffineTernaryRing(liner, tr);
+            System.out.println(triangle + " " + perm.order() + " " + perm.isCommutative() + " " + ring.isLinear());
         }
     }
 
@@ -866,27 +800,23 @@ public class BatchAffineTest {
         String plName = tokens[0];
         int dl = Integer.parseInt(tokens[1]);
         int k = Integer.parseInt(tokens[2]);
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            Liner liner = new AffinePlane(proj, dl).toLiner();
-            Map<Integer, List<TernaryRing>> byIso = new HashMap<>();
-            ex: for (int triangle : uniqueTriangles.get(name)) {
-                Triangle tr = liner.trOf(triangle);
-                TernaryRing ring = new AffineTernaryRing(liner, tr);
-                for (Map.Entry<Integer, List<TernaryRing>> e : byIso.entrySet()) {
-                    if (e.getValue().getFirst().biLoopEquals(ring, true, true)) {
-                        e.getValue().add(ring);
-                        continue ex;
-                    }
+        Liner proj = readProj(k, plName);
+        Liner liner = new AffinePlane(proj, dl).toLiner();
+        Map<Integer, List<TernaryRing>> byIso = new HashMap<>();
+        ex: for (int triangle : uniqueTriangles.get(name)) {
+            Triangle tr = liner.trOf(triangle);
+            TernaryRing ring = new AffineTernaryRing(liner, tr);
+            for (Map.Entry<Integer, List<TernaryRing>> e : byIso.entrySet()) {
+                if (e.getValue().getFirst().biLoopEquals(ring, true, true)) {
+                    e.getValue().add(ring);
+                    continue ex;
                 }
-                List<TernaryRing> nl = new ArrayList<>();
-                nl.add(ring);
-                byIso.put(triangle, nl);
             }
-            System.out.println(byIso);
+            List<TernaryRing> nl = new ArrayList<>();
+            nl.add(ring);
+            byIso.put(triangle, nl);
         }
+        System.out.println(byIso);
     }
 
     @Test
@@ -896,33 +826,29 @@ public class BatchAffineTest {
         String plName = tokens[0];
         int dl = Integer.parseInt(tokens[1]);
         int k = Integer.parseInt(tokens[2]);
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            Liner liner = new AffinePlane(proj, dl).toLiner();
-            System.out.println(name + " dropped line " + dl);
-            for (int triangle : uniqueTriangles.get(name)) {
-                TernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
-                System.out.println("triangle:" + String.format("%8d", triangle)
-                        + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
-                        + ", rgtd:" + (ring.isRightDistributive() ? 1 : 0)
-                        + ", addass:" + (ring.addAssoc() ? 1 : 0)
-                        + ", mulass:" + (ring.mulAssoc() ? 1 : 0)
-                        + ", addcom:" + (ring.addComm() ? 1 : 0)
-                        + ", mulcom:" + (ring.mulComm() ? 1 : 0)
-                        + ", addTSI:" + (ring.addTwoSidedInverse() ? 1 : 0)
-                        + ", mulTSI:" + (ring.mulTwoSidedInverse() ? 1 : 0)
-                        + ", lAddInv:" + (ring.addLeftInverse() ? 1 : 0)
-                        + ", rAddInv:" + (ring.addRightInverse() ? 1 : 0)
-                        + ", lMulInv:" + (ring.mulLeftInverse() ? 1 : 0)
-                        + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
-                        + ", linear:" + (ring.isLinear() ? 1 : 0)
-                        + ", 1comm:" + (ring.oneComm() ? 1 : 0)
-                        + ", addPAss:" + (ring.addPowerAssoc() ? 1 : 0)
-                        + ", mulPAss:" + (ring.mulPowerAssoc() ? 1 : 0)
-                );
-            }
+        Liner proj = readProj(k, plName);
+        Liner liner = new AffinePlane(proj, dl).toLiner();
+        System.out.println(name + " dropped line " + dl);
+        for (int triangle : uniqueTriangles.get(name)) {
+            TernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
+            System.out.println("triangle:" + String.format("%8d", triangle)
+                    + ", lftd:" + (ring.isLeftDistributive() ? 1 : 0)
+                    + ", rgtd:" + (ring.isRightDistributive() ? 1 : 0)
+                    + ", addass:" + (ring.addAssoc() ? 1 : 0)
+                    + ", mulass:" + (ring.mulAssoc() ? 1 : 0)
+                    + ", addcom:" + (ring.addComm() ? 1 : 0)
+                    + ", mulcom:" + (ring.mulComm() ? 1 : 0)
+                    + ", addTSI:" + (ring.addTwoSidedInverse() ? 1 : 0)
+                    + ", mulTSI:" + (ring.mulTwoSidedInverse() ? 1 : 0)
+                    + ", lAddInv:" + (ring.addLeftInverse() ? 1 : 0)
+                    + ", rAddInv:" + (ring.addRightInverse() ? 1 : 0)
+                    + ", lMulInv:" + (ring.mulLeftInverse() ? 1 : 0)
+                    + ", rMulInv:" + (ring.mulRightInverse() ? 1 : 0)
+                    + ", linear:" + (ring.isLinear() ? 1 : 0)
+                    + ", 1comm:" + (ring.oneComm() ? 1 : 0)
+                    + ", addPAss:" + (ring.addPowerAssoc() ? 1 : 0)
+                    + ", mulPAss:" + (ring.mulPowerAssoc() ? 1 : 0)
+            );
         }
     }
 
@@ -933,54 +859,50 @@ public class BatchAffineTest {
         String plName = tokens[0];
         int dl = Integer.parseInt(tokens[1]);
         int k = Integer.parseInt(tokens[2]);
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            Liner liner = new AffinePlane(proj, dl).toLiner();
-            boolean notFanoFound = false;
-            boolean linearFound = false;
-            for (int a = 0; a < liner.pointCount(); a++) {
-                for (int b = a + 1; b < liner.pointCount(); b++) {
-                    int ab = liner.line(a, b);
-                    for (int c = b + 1; c < liner.pointCount(); c++) {
-                        if (liner.collinear(a, b, c)) {
+        Liner proj = readProj(k, plName);
+        Liner liner = new AffinePlane(proj, dl).toLiner();
+        boolean notFanoFound = false;
+        boolean linearFound = false;
+        for (int a = 0; a < liner.pointCount(); a++) {
+            for (int b = a + 1; b < liner.pointCount(); b++) {
+                int ab = liner.line(a, b);
+                for (int c = b + 1; c < liner.pointCount(); c++) {
+                    if (liner.collinear(a, b, c)) {
+                        continue;
+                    }
+                    AffineTernaryRing ring = new AffineTernaryRing(liner, new Triangle(a, b, c));
+                    if (!linearFound && ring.isLinear()) {
+                        linearFound = true;
+                        printLinearTables("dhall-80-16", ring);
+                    }
+                    int ac = liner.line(a, c);
+                    int bc = liner.line(b, c);
+                    for (int d = c + 1; d < liner.pointCount(); d++) {
+                        if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
                             continue;
                         }
-                        AffineTernaryRing ring = new AffineTernaryRing(liner, new Triangle(a, b, c));
-                        if (!linearFound && ring.isLinear()) {
-                            linearFound = true;
-                            printLinearTables("dhall-80-16", ring);
+                        int ad = liner.line(a, d);
+                        int bd = liner.line(b, d);
+                        int cd = liner.line(c, d);
+                        int cnt = 0;
+                        int abcd = liner.intersection(ab, cd);
+                        if (abcd >= 0) {
+                            cnt++;
                         }
-                        int ac = liner.line(a, c);
-                        int bc = liner.line(b, c);
-                        for (int d = c + 1; d < liner.pointCount(); d++) {
-                            if (liner.collinear(a, b, d) || liner.collinear(a, c, d) || liner.collinear(b, c, d)) {
-                                continue;
-                            }
-                            int ad = liner.line(a, d);
-                            int bd = liner.line(b, d);
-                            int cd = liner.line(c, d);
-                            int cnt = 0;
-                            int abcd = liner.intersection(ab, cd);
-                            if (abcd >= 0) {
-                                cnt++;
-                            }
-                            int acbd = liner.intersection(ac, bd);
-                            if (acbd >= 0) {
-                                cnt++;
-                            }
-                            int adbc = liner.intersection(ad, bc);
-                            if (adbc >= 0) {
-                                cnt++;
-                            }
-                            if (cnt == 1) {
-                                System.out.println("Not Boolean");
-                            }
-                            if (!notFanoFound && cnt == 3 && !liner.collinear(abcd, acbd, adbc)) {
-                                notFanoFound = true;
-                                System.out.println("Not Fano");
-                            }
+                        int acbd = liner.intersection(ac, bd);
+                        if (acbd >= 0) {
+                            cnt++;
+                        }
+                        int adbc = liner.intersection(ad, bc);
+                        if (adbc >= 0) {
+                            cnt++;
+                        }
+                        if (cnt == 1) {
+                            System.out.println("Not Boolean");
+                        }
+                        if (!notFanoFound && cnt == 3 && !liner.collinear(abcd, acbd, adbc)) {
+                            notFanoFound = true;
+                            System.out.println("Not Fano");
                         }
                     }
                 }
@@ -1027,20 +949,16 @@ public class BatchAffineTest {
         //BiConsumer<String, AffineTernaryRing> processor = BatchAffineTest::printLinearTables;
         for (String plName : dropped.keySet()) {
             int k = 9;
-            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readProj(br);
-                for (int dl : dropped.get(plName)) {
-                    Liner liner = new AffinePlane(proj, dl).toLiner();
-                    String name = plName + "-" + dl + "-" + k;
-                    System.out.println(name + " dropped line " + dl);
-                    for (int triangle : uniqueTriangles.get(name)) {
-                        AffineTernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
-                        processor.accept(name, ring);
-                    }
-                    System.out.println();
+            Liner proj = readProj(k, plName);
+            for (int dl : dropped.get(plName)) {
+                Liner liner = new AffinePlane(proj, dl).toLiner();
+                String name = plName + "-" + dl + "-" + k;
+                System.out.println(name + " dropped line " + dl);
+                for (int triangle : uniqueTriangles.get(name)) {
+                    AffineTernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
+                    processor.accept(name, ring);
                 }
+                System.out.println();
             }
         }
         processor.finish();
@@ -1095,20 +1013,16 @@ public class BatchAffineTest {
         int k = 9;
         IsotopyProcessor processor = new IsotopyProcessor(k);
         for (String plName : dropped.keySet()) {
-            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + plName + ".txt");
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readProj(br);
-                for (int dl : dropped.get(plName)) {
-                    Liner liner = new AffinePlane(proj, dl).toLiner();
-                    String name = plName + "-" + dl + "-" + k;
-                    System.out.println(name + " dropped line " + dl);
-                    for (int triangle : uniqueTriangles.get(name)) {
-                        AffineTernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
-                        processor.accept(name, ring);
-                    }
-                    System.out.println();
+            Liner proj = readProj(k, plName);
+            for (int dl : dropped.get(plName)) {
+                Liner liner = new AffinePlane(proj, dl).toLiner();
+                String name = plName + "-" + dl + "-" + k;
+                System.out.println(name + " dropped line " + dl);
+                for (int triangle : uniqueTriangles.get(name)) {
+                    AffineTernaryRing ring = new AffineTernaryRing(liner, liner.trOf(triangle));
+                    processor.accept(name, ring);
                 }
+                System.out.println();
             }
         }
         processor.finish();
@@ -1151,6 +1065,13 @@ public class BatchAffineTest {
         }
     }
 
+    public static Liner readProj(int k, String name) throws IOException {
+        name = name.indexOf('.') < 0 ? name + ".txt" : name;
+        String s = Files.readString(Path.of(Objects.requireNonNull(
+                BatchAffineTest.class.getResource("/proj" + k + "/" + name)).getPath()));
+        return new Liner(s.lines().map(l -> Arrays.stream(l.split(" ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new));
+    }
+
     public static Liner readProj(BufferedReader br) throws IOException {
         List<BitSet> list = new ArrayList<>();
         String line = br.readLine();
@@ -1168,168 +1089,160 @@ public class BatchAffineTest {
     @Test
     public void centralAuths() throws IOException {
         int k = 9;
-        String name = "hughes9.txt";
+        String name = "hughes9";
         int dl = 3;
-        try (InputStream is = new FileInputStream(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k, name));
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            List<int[]> auths = new ArrayList<>();
-            auths.add(IntStream.range(0, proj.pointCount()).toArray());
-            for (int o = 0; o < proj.pointCount(); o++) {
-                int[] lines;
-                // translation - point on infinite, line infinite
-                // shear - point infinite and on line which is not infinite
-                // homotety - point finite, line infinite
-                // hyperscale - point infinite, line finite, point does not belong to line
-                if (proj.flag(dl, o)) { // point in infinity
-                    //lines = new int[]{dl}; // translation
-                    //lines = IntStream.of(proj.lines(o)).filter(l -> l != dl).toArray(); // shear
-                    lines = proj.lines(o); // translation + shear
-                    //lines = IntStream.range(0, proj.pointCount()).toArray(); // translation + shear + hyperscale
-                } else {
-                    lines = new int[]{}; // nothing
-                    //lines = new int[]{dl}; // homotety
-                }
-                for (int l : lines) {
-                    int a = findA(proj, o, l);
-                    int oa = proj.line(o, a);
-                    ex: for (int a1 : proj.line(oa)) {
-                        int[] map = new int[proj.pointCount()];
-                        Arrays.fill(map, -1);
-                        map[o] = o;
-                        map[a] = a1;
-                        for (int pt : proj.points(l)) {
-                            map[pt] = pt;
-                        }
-                        if (a == a1 || o == a1 || proj.flag(l, a1)) {
+        Liner proj = readProj(k, name);
+        List<int[]> auths = new ArrayList<>();
+        auths.add(IntStream.range(0, proj.pointCount()).toArray());
+        for (int o = 0; o < proj.pointCount(); o++) {
+            int[] lines;
+            // translation - point on infinite, line infinite
+            // shear - point infinite and on line which is not infinite
+            // homotety - point finite, line infinite
+            // hyperscale - point infinite, line finite, point does not belong to line
+            if (proj.flag(dl, o)) { // point in infinity
+                //lines = new int[]{dl}; // translation
+                //lines = IntStream.of(proj.lines(o)).filter(l -> l != dl).toArray(); // shear
+                lines = proj.lines(o); // translation + shear
+                //lines = IntStream.range(0, proj.pointCount()).toArray(); // translation + shear + hyperscale
+            } else {
+                lines = new int[]{}; // nothing
+                //lines = new int[]{dl}; // homotety
+            }
+            for (int l : lines) {
+                int a = findA(proj, o, l);
+                int oa = proj.line(o, a);
+                ex: for (int a1 : proj.line(oa)) {
+                    int[] map = new int[proj.pointCount()];
+                    Arrays.fill(map, -1);
+                    map[o] = o;
+                    map[a] = a1;
+                    for (int pt : proj.points(l)) {
+                        map[pt] = pt;
+                    }
+                    if (a == a1 || o == a1 || proj.flag(l, a1)) {
+                        continue;
+                    }
+                    for (int ob : proj.lines(o)) {
+                        if (ob == l || ob == oa) {
                             continue;
                         }
-                        for (int ob : proj.lines(o)) {
-                            if (ob == l || ob == oa) {
+                        for (int oc : proj.lines(o)) {
+                            if (oc == l || oc == oa || oc == ob) {
                                 continue;
                             }
-                            for (int oc : proj.lines(o)) {
-                                if (oc == l || oc == oa || oc == ob) {
+                            for (int b : proj.points(ob)) {
+                                if (b == o || proj.flag(l, b)) {
                                     continue;
                                 }
-                                for (int b : proj.points(ob)) {
-                                    if (b == o || proj.flag(l, b)) {
+                                for (int c : proj.points(oc)) {
+                                    if (c == o || proj.flag(l, c)) {
                                         continue;
                                     }
-                                    for (int c : proj.points(oc)) {
-                                        if (c == o || proj.flag(l, c)) {
-                                            continue;
-                                        }
-                                        int b1 = proj.intersection(ob, proj.line(proj.intersection(proj.line(a, b), l), a1));
-                                        int c1 = proj.intersection(oc, proj.line(proj.intersection(proj.line(a, c), l), a1));
-                                        if (!proj.flag(l, proj.intersection(proj.line(b, c), proj.line(b1, c1)))) {
-                                            continue ex;
-                                        }
-                                        map[b] = b1;
-                                        map[c] = c1;
-                                        map[proj.intersection(oa, proj.line(b, c))] = proj.intersection(oa, proj.line(b1, c1));
+                                    int b1 = proj.intersection(ob, proj.line(proj.intersection(proj.line(a, b), l), a1));
+                                    int c1 = proj.intersection(oc, proj.line(proj.intersection(proj.line(a, c), l), a1));
+                                    if (!proj.flag(l, proj.intersection(proj.line(b, c), proj.line(b1, c1)))) {
+                                        continue ex;
                                     }
+                                    map[b] = b1;
+                                    map[c] = c1;
+                                    map[proj.intersection(oa, proj.line(b, c))] = proj.intersection(oa, proj.line(b1, c1));
                                 }
                             }
                         }
-                        auths.add(map);
                     }
+                    auths.add(map);
                 }
             }
-            Set<int[]> all = new TreeSet<>(Combinatorics::compareArr);
-            all.addAll(auths);
-            while (true) {
-                Set<int[]> next = new TreeSet<>(Combinatorics::compareArr);
-                for (int[] fst : all) {
-                    for (int[] snd : all) {
-                        int[] comb = new int[proj.pointCount()];
-                        for (int i = 0; i < proj.pointCount(); i++) {
-                            comb[i] = fst[snd[i]];
-                        }
-                        next.add(comb);
+        }
+        Set<int[]> all = new TreeSet<>(Combinatorics::compareArr);
+        all.addAll(auths);
+        while (true) {
+            Set<int[]> next = new TreeSet<>(Combinatorics::compareArr);
+            for (int[] fst : all) {
+                for (int[] snd : all) {
+                    int[] comb = new int[proj.pointCount()];
+                    for (int i = 0; i < proj.pointCount(); i++) {
+                        comb[i] = fst[snd[i]];
                     }
-                }
-                if (next.size() == all.size()) {
-                    break;
-                } else {
-                    all = next;
+                    next.add(comb);
                 }
             }
-            PermutationGroup gr = new PermutationGroup(all.toArray(int[][]::new));
-            System.out.println(gr.order());
-            int pc = proj.pointCount();
-            int ts = proj.pointCount() * proj.pointCount() * proj.pointCount();
-            QuickFind qf = new QuickFind(ts);
-            for (int el = 0; el < gr.order(); el++) {
-                int[] perm = gr.permutation(el);
-                for (int i = 0; i < ts; i++) {
-                    int[] abc = to(i, pc);
-                    int[] mapped = new int[]{perm[abc[0]], perm[abc[1]], perm[abc[2]]};
-                    qf.union(i, from(mapped, pc));
-                }
+            if (next.size() == all.size()) {
+                break;
+            } else {
+                all = next;
             }
-            Set<FixBS> comps = new HashSet<>(qf.components());
-            comps.removeIf(l -> {
-                int st = l.nextSetBit(0);
-                int[] abc = to(st, pc);
-                return abc[0] == abc[1] || abc[1] == abc[2] || abc[0] == abc[2]
-                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
-                        || proj.collinear(abc[0], abc[1], abc[2]);
-            });
-            System.out.println(comps.size());
+        }
+        PermutationGroup gr = new PermutationGroup(all.toArray(int[][]::new));
+        System.out.println(gr.order());
+        int pc = proj.pointCount();
+        int ts = proj.pointCount() * proj.pointCount() * proj.pointCount();
+        QuickFind qf = new QuickFind(ts);
+        for (int el = 0; el < gr.order(); el++) {
+            int[] perm = gr.permutation(el);
             for (int i = 0; i < ts; i++) {
                 int[] abc = to(i, pc);
-                int[] acb = new int[]{abc[0], abc[2], abc[1]};
-                int[] bac = new int[]{abc[1], abc[0], abc[2]};
-                int[] bca = new int[]{abc[1], abc[2], abc[0]};
-                int[] cab = new int[]{abc[2], abc[0], abc[1]};
-                int[] cba = new int[]{abc[2], abc[1], abc[0]};
-                qf.union(i, from(acb, pc));
-                qf.union(i, from(bac, pc));
-                qf.union(i, from(bca, pc));
-                qf.union(i, from(cab, pc));
-                qf.union(i, from(cba, pc));
+                int[] mapped = new int[]{perm[abc[0]], perm[abc[1]], perm[abc[2]]};
+                qf.union(i, from(mapped, pc));
             }
-            Set<FixBS> comps1 = new HashSet<>(qf.components());
-            comps1.removeIf(l -> {
-                int st = l.nextSetBit(0);
-                int[] abc = to(st, pc);
-                return abc[0] == abc[1] || abc[1] == abc[2] || abc[0] == abc[2]
-                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
-                        || proj.collinear(abc[0], abc[1], abc[2]);
-            });
-            System.out.println(comps1.size());
-            Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
-            for (FixBS comp : comps) {
-                for (FixBS comp1 : comps1) {
-                    if (comp.intersects(comp1)) {
-                        multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
-                        break;
-                    }
+        }
+        Set<FixBS> comps = new HashSet<>(qf.components());
+        comps.removeIf(l -> {
+            int st = l.nextSetBit(0);
+            int[] abc = to(st, pc);
+            return abc[0] == abc[1] || abc[1] == abc[2] || abc[0] == abc[2]
+                    || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                    || proj.collinear(abc[0], abc[1], abc[2]);
+        });
+        System.out.println(comps.size());
+        for (int i = 0; i < ts; i++) {
+            int[] abc = to(i, pc);
+            int[] acb = new int[]{abc[0], abc[2], abc[1]};
+            int[] bac = new int[]{abc[1], abc[0], abc[2]};
+            int[] bca = new int[]{abc[1], abc[2], abc[0]};
+            int[] cab = new int[]{abc[2], abc[0], abc[1]};
+            int[] cba = new int[]{abc[2], abc[1], abc[0]};
+            qf.union(i, from(acb, pc));
+            qf.union(i, from(bac, pc));
+            qf.union(i, from(bca, pc));
+            qf.union(i, from(cab, pc));
+            qf.union(i, from(cba, pc));
+        }
+        Set<FixBS> comps1 = new HashSet<>(qf.components());
+        comps1.removeIf(l -> {
+            int st = l.nextSetBit(0);
+            int[] abc = to(st, pc);
+            return abc[0] == abc[1] || abc[1] == abc[2] || abc[0] == abc[2]
+                    || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                    || proj.collinear(abc[0], abc[1], abc[2]);
+        });
+        System.out.println(comps1.size());
+        Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
+        for (FixBS comp : comps) {
+            for (FixBS comp1 : comps1) {
+                if (comp.intersects(comp1)) {
+                    multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
+                    break;
                 }
             }
-            System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
-            //System.out.println(GroupIndex.identify(gr));
         }
+        System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
+        //System.out.println(GroupIndex.identify(gr));
     }
 
     @Test
     public void testBoolean() throws IOException {
         int k = 32;
-        for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
             String name = f.getName();
-            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readProj(br);
-                System.out.println(name);
-                for (int dl = 0; dl < proj.lineCount(); dl++) {
-                    if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
-                        continue;
-                    }
-                    testBoolean(proj, dl);
+            Liner proj = readProj(k, name);
+            System.out.println(name);
+            for (int dl = 0; dl < proj.lineCount(); dl++) {
+                if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
+                    continue;
                 }
+                testBoolean(proj, dl);
             }
         }
     }
@@ -1368,109 +1281,105 @@ public class BatchAffineTest {
     @Test
     public void parallelTriangles() throws IOException {
         int k = 16;
-        String name = "dhall.txt";
+        String name = "dhall";
         int dl = 0;
-        try (InputStream is = new FileInputStream(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k, name));
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = readProj(br);
-            int pc = proj.pointCount();
-            int ts = pc * pc * pc;
-            QuickFind qf = new QuickFind(ts);
-            for (int a = 0; a < pc; a++) {
-                for (int b = 0; b < pc; b++) {
-                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, a, a}, pc));
-                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, b}, pc));
-                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, a}, pc));
-                    qf.union(from(new int[]{a, a, b}, pc), from(new int[]{b, a, a}, pc));
-                    for (int dp : proj.line(dl)) {
-                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, dp}, pc));
-                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, dp, b}, pc));
-                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{dp, a, b}, pc));
-                    }
-                    if (a == b) {
-                        continue;
-                    }
-                    int ab = proj.line(a, b);
-                    for (int c : proj.line(ab)) {
-                        qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, c}, pc));
-                    }
+        Liner proj = readProj(k, name);
+        int pc = proj.pointCount();
+        int ts = pc * pc * pc;
+        QuickFind qf = new QuickFind(ts);
+        for (int a = 0; a < pc; a++) {
+            for (int b = 0; b < pc; b++) {
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, a, a}, pc));
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, b}, pc));
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{a, b, a}, pc));
+                qf.union(from(new int[]{a, a, b}, pc), from(new int[]{b, a, a}, pc));
+                for (int dp : proj.line(dl)) {
+                    qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, dp}, pc));
+                    qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, dp, b}, pc));
+                    qf.union(from(new int[]{a, a, a}, pc), from(new int[]{dp, a, b}, pc));
                 }
-            }
-            for (int a = 0; a < pc; a++) {
-                if (proj.flag(dl, a)) {
+                if (a == b) {
                     continue;
                 }
-                for (int b = 0; b < pc; b++) {
-                    if (proj.flag(dl, b) || a == b) {
+                int ab = proj.line(a, b);
+                for (int c : proj.line(ab)) {
+                    qf.union(from(new int[]{a, a, a}, pc), from(new int[]{a, b, c}, pc));
+                }
+            }
+        }
+        for (int a = 0; a < pc; a++) {
+            if (proj.flag(dl, a)) {
+                continue;
+            }
+            for (int b = 0; b < pc; b++) {
+                if (proj.flag(dl, b) || a == b) {
+                    continue;
+                }
+                int ab = proj.line(a, b);
+                int inf = proj.intersection(dl, ab);
+                for (int c = 0; c < pc; c++) {
+                    if (proj.flag(dl, c)) {
                         continue;
                     }
-                    int ab = proj.line(a, b);
-                    int inf = proj.intersection(dl, ab);
-                    for (int c = 0; c < pc; c++) {
-                        if (proj.flag(dl, c)) {
+                    //qf.union(from(new int[]{a, b, c}, pc), from(new int[]{b, c, a}, pc));
+                    //qf.union(from(new int[]{a, b, c}, pc), from(new int[]{c, a, b}, pc));
+                    int cd = proj.line(c, inf);
+                    for (int d : proj.line(cd)) {
+                        if (proj.flag(dl, d)) {
                             continue;
                         }
-                        //qf.union(from(new int[]{a, b, c}, pc), from(new int[]{b, c, a}, pc));
-                        //qf.union(from(new int[]{a, b, c}, pc), from(new int[]{c, a, b}, pc));
-                        int cd = proj.line(c, inf);
-                        for (int d : proj.line(cd)) {
-                            if (proj.flag(dl, d)) {
-                                continue;
-                            }
-                            qf.union(from(new int[]{a, b, c}, pc), from(new int[]{a, b, d}, pc));
-                            qf.union(from(new int[]{a, c, b}, pc), from(new int[]{a, d, b}, pc));
-                            qf.union(from(new int[]{b, a, c}, pc), from(new int[]{b, a, d}, pc));
-                            qf.union(from(new int[]{b, c, a}, pc), from(new int[]{b, d, a}, pc));
-                            qf.union(from(new int[]{c, a, b}, pc), from(new int[]{d, a, b}, pc));
-                            qf.union(from(new int[]{c, b, a}, pc), from(new int[]{d, b, a}, pc));
-                        }
+                        qf.union(from(new int[]{a, b, c}, pc), from(new int[]{a, b, d}, pc));
+                        qf.union(from(new int[]{a, c, b}, pc), from(new int[]{a, d, b}, pc));
+                        qf.union(from(new int[]{b, a, c}, pc), from(new int[]{b, a, d}, pc));
+                        qf.union(from(new int[]{b, c, a}, pc), from(new int[]{b, d, a}, pc));
+                        qf.union(from(new int[]{c, a, b}, pc), from(new int[]{d, a, b}, pc));
+                        qf.union(from(new int[]{c, b, a}, pc), from(new int[]{d, b, a}, pc));
                     }
                 }
             }
-            Set<FixBS> comps = new HashSet<>(qf.components());
-            comps.removeIf(l -> {
-                int st = l.nextSetBit(0);
-                int[] abc = to(st, pc);
-                return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
-                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
-                        || proj.collinear(abc[0], abc[1], abc[2]);
-            });
-            System.out.println(comps.size());
-            for (int i = 0; i < ts; i++) {
-                int[] abc = to(i, pc);
-                int[] acb = new int[]{abc[0], abc[2], abc[1]};
-                int[] bac = new int[]{abc[1], abc[0], abc[2]};
-                int[] bca = new int[]{abc[1], abc[2], abc[0]};
-                int[] cab = new int[]{abc[2], abc[0], abc[1]};
-                int[] cba = new int[]{abc[2], abc[1], abc[0]};
-                qf.union(i, from(acb, pc));
-                qf.union(i, from(bac, pc));
-                qf.union(i, from(bca, pc));
-                qf.union(i, from(cab, pc));
-                qf.union(i, from(cba, pc));
-            }
-            Set<FixBS> comps1 = new HashSet<>(qf.components());
-            comps1.removeIf(l -> {
-                int st = l.nextSetBit(0);
-                int[] abc = to(st, pc);
-                return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
-                        || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
-                        || proj.collinear(abc[0], abc[1], abc[2]);
-            });
-            System.out.println(comps1.size());
-            Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
-            for (FixBS comp : comps) {
-                for (FixBS comp1 : comps1) {
-                    if (comp.intersects(comp1)) {
-                        multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
-                        break;
-                    }
-                }
-            }
-            System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
-            //System.out.println(GroupIndex.identify(gr));
         }
+        Set<FixBS> comps = new HashSet<>(qf.components());
+        comps.removeIf(l -> {
+            int st = l.nextSetBit(0);
+            int[] abc = to(st, pc);
+            return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
+                    || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                    || proj.collinear(abc[0], abc[1], abc[2]);
+        });
+        System.out.println(comps.size());
+        for (int i = 0; i < ts; i++) {
+            int[] abc = to(i, pc);
+            int[] acb = new int[]{abc[0], abc[2], abc[1]};
+            int[] bac = new int[]{abc[1], abc[0], abc[2]};
+            int[] bca = new int[]{abc[1], abc[2], abc[0]};
+            int[] cab = new int[]{abc[2], abc[0], abc[1]};
+            int[] cba = new int[]{abc[2], abc[1], abc[0]};
+            qf.union(i, from(acb, pc));
+            qf.union(i, from(bac, pc));
+            qf.union(i, from(bca, pc));
+            qf.union(i, from(cab, pc));
+            qf.union(i, from(cba, pc));
+        }
+        Set<FixBS> comps1 = new HashSet<>(qf.components());
+        comps1.removeIf(l -> {
+            int st = l.nextSetBit(0);
+            int[] abc = to(st, pc);
+            return abc[0] == abc[1] || abc[0] == abc[2] || abc[1] == abc[2]
+                    || proj.flag(dl, abc[0]) || proj.flag(dl, abc[1]) || proj.flag(dl, abc[2])
+                    || proj.collinear(abc[0], abc[1], abc[2]);
+        });
+        System.out.println(comps1.size());
+        Map<FixBS, List<FixBS>> multiplicities = new HashMap<>();
+        for (FixBS comp : comps) {
+            for (FixBS comp1 : comps1) {
+                if (comp.intersects(comp1)) {
+                    multiplicities.computeIfAbsent(comp1, uu -> new ArrayList<>()).add(comp);
+                    break;
+                }
+            }
+        }
+        System.out.println(Arrays.toString(multiplicities.values().stream().mapToInt(List::size).sorted().toArray()));
+        //System.out.println(GroupIndex.identify(gr));
     }
 
     private int from(int[] abc, int pc) {
@@ -1489,12 +1398,8 @@ public class BatchAffineTest {
             if ("c.txt".equals(name)) {
                 continue;
             }
-            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readProj(br);
-                System.out.println(name + " " + checkP13(proj));
-            }
+            Liner proj = readProj(k, name);
+            System.out.println(name + " " + checkP13(proj));
         }
     }
 
