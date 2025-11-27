@@ -77,13 +77,7 @@ public class PermutationGroup implements Group {
 
     @Override
     public int op(int a, int b) {
-        int[] pa = permutations[a];
-        int[] pb = permutations[b];
-        int[] map = new int[pa.length];
-        for (int i = 0; i < pa.length; i++) {
-            map[i] = pa[pb[i]];
-        }
-        return lookup.get(new Wrap(map));
+        return lookup.get(new Wrap(comb(permutations[a], permutations[b])));
     }
 
     @Override
