@@ -216,29 +216,27 @@ public interface Group {
         return new SubGroup(this, result);
     }
 
-    private void gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
+    private int[] gens(IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
         int sz = genList.size();
         if (currGroup.isFull(ord)) {
-            if (currGens.get().length > sz) {
-                currGens.set(genList.toArray());
-            }
-            return;
+            return currGens.updateAndGet(old -> old.length > sz ? genList.toArray() : old);
         }
         for (int gen = currGroup.nextClearBit(genList.get(sz - 1)); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
-            if (sz + 1 >= currGens.get().length) {
-                return;
-            }
             IntList nextGenList = genList.copy();
             nextGenList.add(gen);
             FixBS nextGroup = currGroup.copy();
-            FixBS additional = new FixBS(ord);
-            additional.set(gen);
+            FixBS additional = cycle(gen);
+            additional.andNot(currGroup);
             do {
                 nextGroup.or(additional);
             } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
-            gens(nextGenList, nextGroup, currGens);
+            int[] res = gens(nextGenList, nextGroup, currGens);
+            if (sz + 1 >= res.length) {
+                return res;
+            }
         }
+        return currGens.get();
     }
 
     private FixBS additional(FixBS currGroup, FixBS addition, int order) {
