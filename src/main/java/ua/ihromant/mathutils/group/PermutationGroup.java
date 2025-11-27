@@ -8,13 +8,11 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class PermutationGroup implements Group {
     private final int[][] permutations;
-    private final Map<Map<Integer, Integer>, Integer> lookup;
+    private final Map<Wrap, Integer> lookup;
 
     public PermutationGroup(int cnt, boolean even) {
         this(Combinatorics.permutations(IntStream.range(0, cnt).toArray())
@@ -26,9 +24,7 @@ public class PermutationGroup implements Group {
         Arrays.sort(permutations, Combinatorics::compareArr);
         this.lookup = new HashMap<>();
         for (int i = 0; i < permutations.length; i++) {
-            int[] perm = permutations[i];
-            Map<Integer, Integer> map = toMap(perm);
-            lookup.put(map, i);
+            lookup.put(new Wrap(permutations[i]), i);
         }
     }
 
@@ -79,28 +75,25 @@ public class PermutationGroup implements Group {
         return result;
     }
 
-    private static Map<Integer, Integer> toMap(int[] perm) {
-        return IntStream.range(0, perm.length).boxed().collect(Collectors.toMap(Function.identity(), p -> perm[p]));
-    }
-
     @Override
     public int op(int a, int b) {
-        Map<Integer, Integer> map = new HashMap<>();
         int[] pa = permutations[a];
         int[] pb = permutations[b];
+        int[] map = new int[pa.length];
         for (int i = 0; i < pa.length; i++) {
-            map.put(i, pa[pb[i]]);
+            map[i] = pa[pb[i]];
         }
-        return lookup.get(map);
+        return lookup.get(new Wrap(map));
     }
 
     @Override
     public int inv(int a) {
-        Map<Integer, Integer> map = new HashMap<>();
-        for (int i = 0; i < permutations[a].length; i++) {
-            map.put(permutations[a][i], i);
+        int[] perm = permutations[a];
+        int[] map = new int[perm.length];
+        for (int i = 0; i < perm.length; i++) {
+            map[perm[i]] = i;
         }
-        return lookup.get(map);
+        return lookup.get(new Wrap(map));
     }
 
     @Override
@@ -142,5 +135,18 @@ public class PermutationGroup implements Group {
         snd[4] = 5;
         snd[5] = 3;
         return PermutationGroup.byGenerators(new int[][]{cycle, snd});
+    }
+
+    private record Wrap(int[] arr) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Wrap(int[] arr1))) return false;
+            return Arrays.equals(arr, arr1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(arr);
+        }
     }
 }
