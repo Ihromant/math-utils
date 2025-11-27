@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.plane.MatrixTernaryRing;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -528,7 +529,7 @@ public class GaloisFieldTest {
         }
         MatrixTernaryRing ring = new MatrixTernaryRing(ternar, null);
         Liner lnr = ring.toProjective();
-        System.out.println(BatchAffineTest.checkP31(lnr));
+        System.out.println(TernaryAutomorphisms.isDesargues(lnr) + " " + TernaryAutomorphisms.findTranslationLine(lnr));
     }
 
     @Test

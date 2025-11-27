@@ -682,10 +682,8 @@ public class TranslationPlaneTest {
                 if (desarg.equals(name)) {
                     return;
                 }
-                try (FileInputStream is = new FileInputStream(f);
-                     InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                     BufferedReader br = new BufferedReader(isr)) {
-                    Liner proj = BatchAffineTest.readProj(br);
+                try {
+                    Liner proj = BatchAffineTest.readProj(k, name);
                     int transLine = TernaryAutomorphisms.findTranslationLine(proj);
                     if (transLine < 0) {
                         System.out.println("Not translation " + name);

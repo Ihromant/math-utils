@@ -38,6 +38,10 @@ public class Liner {
     private final int[][] beams;
     private final int[][] intersections;
 
+    public Liner(int[][] lines) {
+        this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, lines);
+    }
+
     public Liner(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;

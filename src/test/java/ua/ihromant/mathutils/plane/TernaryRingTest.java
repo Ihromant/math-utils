@@ -8,11 +8,8 @@ import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vf2.IntPair;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -36,23 +33,19 @@ public class TernaryRingTest {
             if (desargues.equals(name)) {
                 continue;
             }
-            try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name);
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = BatchAffineTest.readProj(br);
-                List<MappingList> mapping = ternarsOfProjective(proj, name);
-                System.out.println(mapping);
-                for (MappingList ml : mapping) {
-                    System.out.println("Dropped " + ml.dl());
-                    System.out.println("1plus " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::onePlus).count());
-                    System.out.println("puls1 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::pulsOne).count());
-                    System.out.println("plus1 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::plusOne).count());
-                    System.out.println("1gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::oneGen).count());
-                    System.out.println("2mul " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::twoMul).count());
-                    System.out.println("mul2 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::mulTwo).count());
-                    System.out.println("2gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::twoGen).count());
-                    System.out.println("gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::generated).count());
-                }
+            Liner proj = BatchAffineTest.readProj(k, name);
+            List<MappingList> mapping = ternarsOfProjective(proj, name);
+            System.out.println(mapping);
+            for (MappingList ml : mapping) {
+                System.out.println("Dropped " + ml.dl());
+                System.out.println("1plus " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::onePlus).count());
+                System.out.println("puls1 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::pulsOne).count());
+                System.out.println("plus1 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::plusOne).count());
+                System.out.println("1gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::oneGen).count());
+                System.out.println("2mul " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::twoMul).count());
+                System.out.println("mul2 " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::mulTwo).count());
+                System.out.println("2gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::twoGen).count());
+                System.out.println("gen " + ml.ternars().values().stream().flatMap(List::stream).filter(TernarMapping::generated).count());
             }
         }
     }
@@ -101,38 +94,34 @@ public class TernaryRingTest {
     public void orbitLines() throws IOException {
         String name = "hughes9";
         int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = BatchAffineTest.readProj(br);
-            Map<Integer, Iso> grouped = new HashMap<>();
-            int trans = TernaryAutomorphisms.findTranslationLine(proj);
-            for (int dl = 0; dl < proj.lineCount(); dl++) {
-                System.out.println(dl);
-                if (dl == trans) {
-                    grouped.put(dl, new Iso(null, List.of(dl)));
-                    continue;
-                }
-                AtomicReference<TernarMapping> induced = new AtomicReference<>();
-                Optional<Integer> iso = ternars(name, proj, dl).parallel().flatMap(rng -> {
-                    if (induced.get() == null) {
-                        TernarMapping tm = TernaryAutomorphisms.findTernarMapping(rng);
-                        if (tm.isInduced()) {
-                            induced.set(tm);
-                        }
-                    }
-                    return grouped.entrySet().stream().filter(e -> e.getValue().tm() != null && ringIsomorphic(e.getValue().tm(), rng)).map(Map.Entry::getKey).findAny().stream();
-                }).findAny();
-                if (iso.isPresent()) {
-                    grouped.get(iso.get()).ints().add(dl);
-                } else {
-                    List<Integer> lst = new ArrayList<>();
-                    lst.add(dl);
-                    grouped.put(dl, new Iso(induced.get(), lst));
-                }
+        Liner proj = BatchAffineTest.readProj(k, name);
+        Map<Integer, Iso> grouped = new HashMap<>();
+        int trans = TernaryAutomorphisms.findTranslationLine(proj);
+        for (int dl = 0; dl < proj.lineCount(); dl++) {
+            System.out.println(dl);
+            if (dl == trans) {
+                grouped.put(dl, new Iso(null, List.of(dl)));
+                continue;
             }
-            grouped.forEach((key, v) -> System.out.println(key + " " + v.ints()));
+            AtomicReference<TernarMapping> induced = new AtomicReference<>();
+            Optional<Integer> iso = ternars(name, proj, dl).parallel().flatMap(rng -> {
+                if (induced.get() == null) {
+                    TernarMapping tm = TernaryAutomorphisms.findTernarMapping(rng);
+                    if (tm.isInduced()) {
+                        induced.set(tm);
+                    }
+                }
+                return grouped.entrySet().stream().filter(e -> e.getValue().tm() != null && ringIsomorphic(e.getValue().tm(), rng)).map(Map.Entry::getKey).findAny().stream();
+            }).findAny();
+            if (iso.isPresent()) {
+                grouped.get(iso.get()).ints().add(dl);
+            } else {
+                List<Integer> lst = new ArrayList<>();
+                lst.add(dl);
+                grouped.put(dl, new Iso(induced.get(), lst));
+            }
         }
+        grouped.forEach((key, v) -> System.out.println(key + " " + v.ints()));
     }
 
     private record Iso(TernarMapping tm, List<Integer> ints) {}
@@ -219,29 +208,25 @@ public class TernaryRingTest {
     public void testCorrectness() throws IOException {
         String name = "dhall9";
         int k = 9;
-        try (InputStream is = getClass().getResourceAsStream("/proj" + k + "/" + name + ".txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            Liner proj = BatchAffineTest.readProj(br);
-            int dl = 1;
-            for (int o = 0; o < proj.pointCount(); o++) {
-                if (proj.flag(dl, o)) {
+        Liner proj = BatchAffineTest.readProj(k, name);
+        int dl = 1;
+        for (int o = 0; o < proj.pointCount(); o++) {
+            if (proj.flag(dl, o)) {
+                continue;
+            }
+            for (int u = 0; u < proj.pointCount(); u++) {
+                if (u == o || proj.flag(dl, u)) {
                     continue;
                 }
-                for (int u = 0; u < proj.pointCount(); u++) {
-                    if (u == o || proj.flag(dl, u)) {
+                int ou = proj.line(o, u);
+                for (int w = 0; w < proj.pointCount(); w++) {
+                    if (proj.flag(dl, w) || proj.flag(ou, w)) {
                         continue;
                     }
-                    int ou = proj.line(o, u);
-                    for (int w = 0; w < proj.pointCount(); w++) {
-                        if (proj.flag(dl, w) || proj.flag(ou, w)) {
-                            continue;
-                        }
-                        int ow = proj.line(o, w);
-                        int e = proj.intersection(proj.line(u, proj.intersection(dl, ow)), proj.line(w, proj.intersection(dl, ou)));
-                        TernaryRing ring = new ProjectiveTernaryRing(name, proj, new Quad(o, u, w, e));
-                        testCorrectness(ring);
-                    }
+                    int ow = proj.line(o, w);
+                    int e = proj.intersection(proj.line(u, proj.intersection(dl, ow)), proj.line(w, proj.intersection(dl, ou)));
+                    TernaryRing ring = new ProjectiveTernaryRing(name, proj, new Quad(o, u, w, e));
+                    testCorrectness(ring);
                 }
             }
         }

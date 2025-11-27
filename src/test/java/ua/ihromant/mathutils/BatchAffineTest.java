@@ -15,7 +15,6 @@ import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -95,17 +94,11 @@ public class BatchAffineTest {
     @Test
     public void testLenzBarlotti() throws IOException {
         int k = 25;
-        Arrays.stream(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()).parallel().forEach(f -> {
-            try (InputStream is = new FileInputStream(f);
-                 InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-                 BufferedReader br = new BufferedReader(isr)) {
-                Liner proj = readProj(br);
-                LenzBarlotti lb = lenzBarlotti(proj, k);
-                System.out.println(f.getName().replace(".txt", "") + " Lenz points: " + lb.lenzPts.cardinality() + ", lenz lines: " + lb.lenzLns.cardinality() + ", barlotti points: " + lb.barPts.cardinality() + ", barlotti lines: " + lb.barLns.cardinality());
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            Liner proj = readProj(k, f.getName());
+            LenzBarlotti lb = lenzBarlotti(proj, k);
+            System.out.println(f.getName().replace(".txt", "") + " Lenz points: " + lb.lenzPts.cardinality() + ", lenz lines: " + lb.lenzLns.cardinality() + ", barlotti points: " + lb.barPts.cardinality() + ", barlotti lines: " + lb.barLns.cardinality());
+        }
     }
 
     private static final String uni = """
@@ -1072,20 +1065,6 @@ public class BatchAffineTest {
         return new Liner(s.lines().map(l -> Arrays.stream(l.split(" ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new));
     }
 
-    public static Liner readProj(BufferedReader br) throws IOException {
-        List<BitSet> list = new ArrayList<>();
-        String line = br.readLine();
-        while (line != null) {
-            BitSet bs = new BitSet();
-            do {
-                Arrays.stream(line.trim().split(" ")).mapToInt(Integer::parseInt).forEach(bs::set);
-                line = br.readLine();
-            } while (line != null && line.charAt(0) == ' ');
-            list.add(bs);
-        }
-        return new Liner(list.toArray(BitSet[]::new));
-    }
-
     @Test
     public void centralAuths() throws IOException {
         int k = 9;
@@ -1388,254 +1367,6 @@ public class BatchAffineTest {
 
     private int[] to(int p, int pc) {
         return new int[]{p / pc / pc, p / pc % pc, p % pc};
-    }
-
-    @Test
-    public void testD31() throws IOException {
-        int k = 32;
-        for (File f : new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles()) {
-            String name = f.getName();
-            if ("c.txt".equals(name)) {
-                continue;
-            }
-            Liner proj = readProj(k, name);
-            System.out.println(name + " " + checkP13(proj));
-        }
-    }
-
-    public static boolean checkP2(Liner liner) {
-        for (int o = 0; o < liner.pointCount(); o++) {
-            for (int l0 : liner.lines(o)) {
-                for (int l1 : liner.lines(o)) {
-                    if (l0 == l1) {
-                        continue;
-                    }
-                    for (int a : liner.line(l0)) {
-                        if (a == o) {
-                            continue;
-                        }
-                        for (int b : liner.line(l0)) {
-                            if (b == o || b == a) {
-                                continue;
-                            }
-                            for (int c : liner.line(l0)) {
-                                if (c == o || c == a || c == b) {
-                                    continue;
-                                }
-                                for (int a1 : liner.line(l1)) {
-                                    if (a1 == o) {
-                                        continue;
-                                    }
-                                    for (int b1 : liner.line(l1)) {
-                                        if (b1 == o || b1 == a1) {
-                                            continue;
-                                        }
-                                        int x = liner.intersection(liner.line(a, b1), liner.line(b, a1));
-                                        int c1 = liner.intersection(liner.line(x, c), l1);
-                                        int y = liner.intersection(liner.line(b, c1), liner.line(b1, c));
-                                        int z = liner.intersection(liner.line(a, c1), liner.line(a1, c));
-                                        if (!liner.collinear(b, b1, z)) {
-                                            continue;
-                                        }
-                                        if (!liner.collinear(x, y, z)) {
-                                            return false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public static boolean checkP31(Liner liner) {
-        for (int o = 0; o < liner.pointCount(); o++) {
-            for (int l0 : liner.lines(o)) {
-                for (int l1 : liner.lines(o)) {
-                    if (l0 == l1) {
-                        continue;
-                    }
-                    for (int a : liner.line(l0)) {
-                        if (a == o) {
-                            continue;
-                        }
-                        for (int b : liner.line(l0)) {
-                            if (b == o || b == a) {
-                                continue;
-                            }
-                            for (int c : liner.line(l0)) {
-                                if (c == o || c == a || c == b) {
-                                    continue;
-                                }
-                                for (int a1 : liner.line(l1)) {
-                                    if (a1 == o) {
-                                        continue;
-                                    }
-                                    for (int b1 : liner.line(l1)) {
-                                        if (b1 == o || b1 == a1) {
-                                            continue;
-                                        }
-                                        int x = liner.intersection(liner.line(a, b1), liner.line(b, a1));
-                                        int c1 = liner.intersection(liner.line(x, c), l1);
-                                        int y = liner.intersection(liner.line(b, c1), liner.line(b1, c));
-                                        if (!liner.collinear(a, y, a1) || !liner.collinear(o, x, y)) {
-                                            continue;
-                                        }
-                                        int z = liner.intersection(liner.line(a, c1), liner.line(a1, c));
-                                        if (!liner.collinear(b, b1, z)) {
-                                            continue;
-                                        }
-                                        if (!liner.collinear(x, y, z)) {
-                                            return false;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public static boolean checkP13(Liner liner) {
-        int pc = liner.pointCount();
-        for (int a = 0; a < pc; a++) {
-            for (int b = a + 1; b < pc; b++) {
-                int ab = liner.line(a, b);
-                for (int a1 = 0; a1 < pc; a1++) {
-                    if (liner.flag(ab, a1)) {
-                        continue;
-                    }
-                    int aa1 = liner.line(a, a1);
-                    int a1b = liner.line(a1, b);
-                    for (int b1 = 0; b1 < pc; b1++) {
-                        if (liner.flag(ab, b1) || liner.flag(a1b, b1) || liner.flag(aa1, b1)) {
-                            continue;
-                        }
-                        int a1b1 = liner.line(a1, b1);
-                        int ab1 = liner.line(a, b1);
-                        int o = liner.intersection(ab, a1b1);
-                        int bb1 = liner.line(b, b1);
-                        int pers = liner.intersection(aa1, bb1);
-                        for (int c : liner.line(ab)) {
-                            if (c == o || c == a || c == b) {
-                                continue;
-                            }
-                            int c1 = liner.intersection(a1b1, liner.line(pers, c));
-                            int bc1 = liner.line(b, c1);
-                            int b1c = liner.line(b1, c);
-                            int ac1 = liner.line(a, c1);
-                            int a1c = liner.line(a1, c);
-                            int x = liner.intersection(ab1, a1b);
-                            int y = liner.intersection(bc1, b1c);
-                            int z = liner.intersection(ac1, a1c);
-                            int p1 = liner.intersection(ab1, bc1);
-                            int p2 = liner.intersection(a1b, b1c);
-                            if (!liner.collinear(o, p1, p2)) {
-                                continue;
-                            }
-                            if (!liner.collinear(x, y, z)) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public static boolean checkD11S(Liner liner) {
-        int pc = liner.pointCount();
-        for (int a = 0; a < pc; a++) {
-            for (int a1 = a + 1; a1 < pc; a1++) {
-                int aa1 = liner.line(a, a1);
-                for (int b = 0; b < pc; b++) {
-                    if (liner.flag(aa1, b)) {
-                        continue;
-                    }
-                    int ab = liner.line(a, b);
-                    int a1b = liner.line(a1, b);
-                    for (int b1 = 0; b1 < pc; b1++) {
-                        if (liner.flag(ab, b1) || liner.flag(a1b, b1) || liner.flag(aa1, b1)) {
-                            continue;
-                        }
-                        for (int c1 : liner.line(a1b)) {
-                            if (a1 == c1 || b == c1) {
-                                continue;
-                            }
-                            int a1b1 = liner.line(a1, b1);
-                            int bb1 = liner.line(b, b1);
-                            int o = liner.intersection(aa1, bb1);
-                            int oc1 = liner.line(o, c1);
-                            int ab1 = liner.line(a, b1);
-                            int c = liner.intersection(ab1, oc1);
-                            int ac = liner.line(a, c);
-                            int a1c1 = liner.line(a1, c1);
-                            int bc = liner.line(b, c);
-                            int b1c1 = liner.line(b1, c1);
-                            int x = liner.intersection(ab, a1b1);
-                            int y = liner.intersection(bc, b1c1);
-                            int z = liner.intersection(ac, a1c1);
-                            if (liner.collinear(o, x, z) && !liner.collinear(x, y, z)) {
-                                return false;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return true;
-    }
-
-    public static boolean checkD31(Liner liner) {
-        for (int o = 0; o < liner.pointCount(); o++) {
-            for (int la : liner.lines(o)) {
-                for (int lb : liner.lines(o)) {
-                    if (lb == la) {
-                        continue;
-                    }
-                    for (int lc : liner.lines(o)) {
-                        if (lc == lb || lc == la) {
-                            continue;
-                        }
-                        for (int a : liner.line(la)) {
-                            if (a == o) {
-                                continue;
-                            }
-                            for (int b : liner.line(lb)) {
-                                if (b == o) {
-                                    continue;
-                                }
-                                for (int c : liner.line(lc)) {
-                                    if (c == o || liner.collinear(a, b, c)) {
-                                        continue;
-                                    }
-                                    int ab = liner.line(a, b);
-                                    int bc = liner.line(b, c);
-                                    int ac = liner.line(a, c);
-                                    int a1 = liner.intersection(la, bc);
-                                    int b1 = liner.intersection(lb, ac);
-                                    int c1 = liner.intersection(lc, ab);
-                                    int x = liner.intersection(ab, liner.line(a1, b1));
-                                    int y = liner.intersection(bc, liner.line(b1, c1));
-                                    int z = liner.intersection(ac, liner.line(a1, c1));
-                                    if (liner.collinear(o, x, y) && !liner.collinear(x, y, z)) {
-                                        return false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return true;
     }
 
     private static final Map<String, int[]> dropped = Map.of(
