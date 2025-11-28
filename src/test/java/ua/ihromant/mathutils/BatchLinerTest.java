@@ -1033,7 +1033,8 @@ public class BatchLinerTest {
                 pts.union(p1, arr[p1]);
             }
         }
-        System.out.println("Liner " + i + " auths " + gr.order() + " " + GroupIndex.groupId(gr) + " " + GroupIndex.identify(gr) + " orbits " + pts.components());
+        List<FixBS> components = pts.components();
+        System.out.println("Liner " + i + " auths " + gr.order() + " " + GroupIndex.groupId(gr) + " " + GroupIndex.identify(gr) + " orbits " + components.size() + " " + components);
     }
 
     private static final String lns = """
