@@ -17,7 +17,7 @@ public class GroupIndex {
 
     public static int groupId(Group g) throws IOException {
         if (g.order() > 1500) {
-            throw new IllegalArgumentException("More than 1500");
+            return -1;
         }
         return new GapInteractor().groupId(g);
     }
