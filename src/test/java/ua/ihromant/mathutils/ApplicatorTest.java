@@ -717,15 +717,15 @@ public class ApplicatorTest {
 
     @Test
     public void testEven() throws IOException {
-        Group group = new CyclicProduct(2, 3, 3);
-        int[] comps = new int[]{1, 18};
-        int k = 3;
+        Group group = GroupIndex.group(48, 3);
+        int[] comps = new int[]{1, 1};
+        int k = 6;
         GSpace sp = new GSpace(k, group, true, comps);
         int v = sp.v();
         Map<FixBS, State> singles = new ConcurrentHashMap<>();
         FixBS evenDiffs = new FixBS(sp.diffLength());
         for (int fst : sp.oBeg()) {
-            for (int snd = fst + 1; snd < sp.v(); snd++) {
+            for (int snd = fst + 1; snd < v; snd++) {
                 int lft = sp.diffIdx(fst * v + snd);
                 if (lft == sp.diffIdx(snd * v + fst)) {
                     evenDiffs.set(lft);
@@ -740,8 +740,9 @@ public class ApplicatorTest {
             singles.putIfAbsent(st.diffSet(), st);
         };
         IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
-            IntStream.range(fst + 1, sp.v()).forEach(snd -> {
-                IntStream.range(snd + 1, sp.v()).forEach(trd -> {
+            int[] even = IntStream.range(fst + 1, v).filter(snd -> evenDiffs.get(sp.diffIdx(fst * v + snd))).toArray();
+            Arrays.stream(even).parallel().forEach(snd -> {
+                IntStream.range(fst + 1, v).forEach(trd -> {
                     State state = sp.forInitial(fst, snd, trd);
                     if (state == null) {
                         return;
