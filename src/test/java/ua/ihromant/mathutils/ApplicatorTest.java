@@ -34,6 +34,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -699,29 +700,14 @@ public class ApplicatorTest {
         return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
 
-    private static void find(List<State> states, FixBS diffs, State[] curr, int prev, FixBS diffSet, Consumer<State[]> cons) {
-        if (diffs.diff(diffSet).isEmpty()) {
-            cons.accept(curr);
-            return;
-        }
-        for (int i = prev + 1; i < states.size(); i++) {
-            State st = states.get(i);
-            if (st.diffSet().intersects(diffSet)) {
-                continue;
-            }
-            State[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
-            nextCurr[curr.length] = states.get(i);
-            find(states, diffs, nextCurr, i, diffSet.union(st.diffSet()), cons);
-        }
-    }
-
     @Test
     public void testEven() throws IOException {
-        Group group = GroupIndex.group(48, 3);
+        Group group = GroupIndex.group(48, 4);
         int[] comps = new int[]{1, 1};
         int k = 6;
         GSpace sp = new GSpace(k, group, true, comps);
         int v = sp.v();
+        int sqr = v * v;
         Map<FixBS, State> singles = new ConcurrentHashMap<>();
         FixBS evenDiffs = new FixBS(sp.diffLength());
         for (int fst : sp.oBeg()) {
@@ -737,7 +723,7 @@ public class ApplicatorTest {
             if (!st.diffSet().intersects(evenDiffs)) {
                 return;
             }
-            singles.putIfAbsent(st.diffSet(), st);
+            singles.compute(st.diffSet(), (_, old) -> old != null && old.block().compareTo(st.block()) < 0 ? old : st);
         };
         IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
             int[] even = IntStream.range(fst + 1, v).filter(snd -> evenDiffs.get(sp.diffIdx(fst * v + snd))).toArray();
@@ -751,20 +737,69 @@ public class ApplicatorTest {
                 });
             });
         });
-        List<State> base = new ArrayList<>(singles.values());
-        base.sort(Comparator.comparing(State::block));
-        System.out.println("Even blocks " + base.size());
+        State[] base = singles.values().toArray(State[]::new);
+        Arrays.sort(base, Comparator.comparing(State::block));
+        System.out.println("Even blocks " + base.length);
         List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
-        IntStream.range(0, base.size()).parallel().forEach(idx -> {
-            State st = base.get(idx);
-            find(base, evenDiffs, new State[]{st}, idx, st.diffSet(), arr -> {
-                if (!sp.parMinimal(arr)) {
-                    return;
+        FixBS[] intersecting = intersecting(base);
+        IntStream.range(0, base.length).parallel().forEach(idx -> {
+            State st = base[idx];
+            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
+                if (!evenDiffs.diff(des.diffSet).isEmpty()) {
+                    return false;
                 }
-                begins.add(arr);
+                begins.add(des.curr());
+                return true;
             });
         });
-        System.out.println(begins.size());
+        begins.removeIf(arr -> !sp.parMinimal(arr));
+        System.out.println("Initial configs " + begins.size());
+        AtomicInteger cnt = new AtomicInteger();
+        BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
+            if (!ftr.isFull(sqr)) {
+                return false;
+            }
+            Liner l = new Liner(v, Arrays.stream(arr).flatMap(st -> sp.blocks(st.block())).toArray(int[][]::new));
+            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+            return true;
+        };
+        begins.stream().parallel().forEach(tuple -> {
+            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
+            FixBS newFilter = sp.emptyFilter().copy();
+            for (State st : pr) {
+                st.updateFilter(newFilter, sp);
+            }
+            searchDesigns(sp, newFilter, pr, tuple[tuple.length - 1], 0, tCons);
+            int vl = cnt.incrementAndGet();
+            if (vl % 100 == 0) {
+                System.out.println(vl);
+            }
+        });
+    }
+
+    private static FixBS[] intersecting(State[] states) {
+        FixBS[] intersecting = new FixBS[states.length];
+        IntStream.range(0, states.length).parallel().forEach(i -> {
+            FixBS comp = new FixBS(states.length);
+            FixBS ftr = states[i].diffSet();
+            for (int j = 0; j < states.length; j++) {
+                if (ftr.intersects(states[j].diffSet())) {
+                    comp.set(j);
+                }
+            }
+            intersecting[i] = comp;
+        });
+        return intersecting;
+    }
+
+    private static void find(State[] states, FixBS[] intersecting, Des des, Predicate<Des> pr) {
+        if (pr.test(des)) {
+            return;
+        }
+        FixBS available = des.available;
+        for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
+            find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
+        }
     }
 
     private static List<int[][]> configs(Group group, int[] orbitSizes) {
@@ -805,5 +840,24 @@ public class ApplicatorTest {
             return null;
         }
         return result;
+    }
+
+    private record Des(State[] curr, FixBS diffSet, FixBS available, int idx) {
+        private Des accept(State state, FixBS intersecting, int idx) {
+            int cl = curr.length;
+            State[] nextCurr = Arrays.copyOf(curr, cl + 1);
+            nextCurr[cl] = state;
+            return new Des(nextCurr, diffSet.union(state.diffSet()), available.diff(intersecting), idx);
+        }
+
+        private static Des empty(int ord, int statesSize) {
+            FixBS available = new FixBS(statesSize);
+            available.set(0, statesSize);
+            return new Des(new State[0], new FixBS(ord), available, -1);
+        }
+
+        private static Des of(int ord, int statesSize, State state, FixBS intersecting, int idx) {
+            return empty(ord, statesSize).accept(state, intersecting, idx);
+        }
     }
 }
