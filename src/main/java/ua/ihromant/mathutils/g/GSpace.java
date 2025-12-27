@@ -302,6 +302,10 @@ public class GSpace {
         return cosets[orbIdx].gToX(g) + oBeg[orbIdx];
     }
 
+    public int[] oBeg() {
+        return oBeg;
+    }
+
     public FixBS emptyFilter() {
         return emptyFilter;
     }

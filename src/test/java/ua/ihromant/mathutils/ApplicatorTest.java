@@ -24,10 +24,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
@@ -327,83 +329,83 @@ public class ApplicatorTest {
 
     @Test
     public void twoStageMul() throws IOException {
-        int k = 8;
-        int gs = 450;
-        int mt = 2;
+        int k = 6;
+        int gs = 39;
         int c = GroupIndex.groupCount(gs);
+        int[] orbits = new int[]{1, 13, 13, 39};
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            Map<Integer, List<SubGroup>> subs = group.groupedSubGroups();
-            for (int t = 0; t < subs.getOrDefault(mt, List.of()).size(); t++) {
-                //for (int u = 0; u < subs.getOrDefault(48, List.of()).size(); u++) {
-                    GSpace space;
-                    try {
-                        space = new GSpace(k, group, true, new int[][]{{mt, t}});
-                    } catch (IllegalArgumentException e) {
-                        System.out.println("Not empty");
-                        continue;
+            List<int[][]> configs = configs(group, orbits);
+            for (int[][] config : configs) {
+                GSpace space;
+                try {
+                    space = new GSpace(k, group, true, config);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Not empty");
+                    continue;
+                }
+                int v = space.v();
+                System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " configs: "
+                        + Arrays.deepToString(config) + " auths: " + space.authLength());
+                int sqr = v * v;
+                List<State> singles = Collections.synchronizedList(new ArrayList<>());
+                IntStream.range(2, space.v()).parallel().forEach(trd -> {
+                    State state = space.forInitial(0, 1, trd);
+                    if (state == null) {
+                        return;
                     }
-                    int v = space.v();
-                    System.out.println(GroupIndex.identify(group) + " " + space.v() + " " + k + " auths: " + space.authLength());
-                    int sqr = v * v;
-                    List<State> singles = Collections.synchronizedList(new ArrayList<>());
-                    IntStream.range(2, space.v()).parallel().forEach(trd -> {
-                        State state = space.forInitial(0, 1, trd);
-                        if (state == null) {
-                            return;
-                        }
-                        searchDesignsFirst(space, state, trd, singles::add);
-                    });
-                    System.out.println("Singles size: " + singles.size());
-                    List<State[]> pairs = new ArrayList<>();
-                    List<State[]> sync = Collections.synchronizedList(pairs);
-                    BiPredicate<State[], FixBS> sCons = (arr, _) -> {
-                        if (arr.length < 2) {
-                            return false;
-                        }
-                        if (space.parMinimal(arr)) {
-                            sync.add(arr);
-                        }
+                    searchDesignsFirst(space, state, trd, singles::add);
+                });
+                System.out.println("Singles size: " + singles.size());
+                List<State[]> pairs = new ArrayList<>();
+                List<State[]> sync = Collections.synchronizedList(pairs);
+                BiPredicate<State[], FixBS> sCons = (arr, _) -> {
+                    if (!space.parMinimal(arr)) {
                         return true;
-                    };
-                    AtomicInteger cnt = new AtomicInteger();
-                    singles.stream().parallel().forEach(state -> {
-                        searchDesigns(space, space.emptyFilter(), new State[0], state, 0, sCons);
-                        int vl = cnt.incrementAndGet();
-                        if (vl % 10 == 0) {
-                            System.out.println(vl);
-                        }
-                    });
-                    System.out.println("Pairs " + pairs.size());
-                    AtomicInteger ai = new AtomicInteger();
-                    cnt.set(0);
-                    BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
-                        if (!ftr.isFull(sqr)) {
-                            return false;
-                        }
-                        if (!space.parMinimal(arr)) {
-                            return true;
-                        }
-                        ai.incrementAndGet();
-                        Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
-                        System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+                    }
+                    if (arr.length < 2) {
+                        return false;
+                    }
+                    sync.add(arr);
+                    return true;
+                };
+                AtomicInteger cnt = new AtomicInteger();
+                singles.stream().parallel().forEach(state -> {
+                    searchDesigns(space, space.emptyFilter(), new State[0], state, 0, sCons);
+                    int vl = cnt.incrementAndGet();
+                    if (vl % 10 == 0) {
+                        System.out.println(vl);
+                    }
+                });
+                System.out.println("Pairs " + pairs.size());
+                AtomicInteger ai = new AtomicInteger();
+                cnt.set(0);
+                BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
+                    if (!ftr.isFull(sqr)) {
+                        return false;
+                    }
+                    if (!space.parMinimal(arr)) {
                         return true;
-                    };
-                    pairs.stream().parallel().forEach(tuple -> {
-                        State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-                        FixBS newFilter = space.emptyFilter().copy();
-                        for (State st : pr) {
-                            st.updateFilter(newFilter, space);
-                        }
-                        searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, tCons);
-                        int vl = cnt.incrementAndGet();
-                        if (vl % 100 == 0) {
-                            System.out.println(vl);
-                        }
-                    });
-                    System.out.println("Results " + ai);
-                //}
+                    }
+                    ai.incrementAndGet();
+                    Liner l = new Liner(space.v(), Arrays.stream(arr).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+                    System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
+                    return true;
+                };
+                pairs.stream().parallel().forEach(tuple -> {
+                    State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
+                    FixBS newFilter = space.emptyFilter().copy();
+                    for (State st : pr) {
+                        st.updateFilter(newFilter, space);
+                    }
+                    searchDesigns(space, newFilter, pr, tuple[tuple.length - 1], 0, tCons);
+                    int vl = cnt.incrementAndGet();
+                    if (vl % 100 == 0) {
+                        System.out.println(vl);
+                    }
+                });
+                System.out.println("Results " + ai);
             }
         }
     }
@@ -453,6 +455,20 @@ public class ApplicatorTest {
             for (int el = prev + 1; el < v; el++) {
                 State nextState = state.acceptElem(space, space.emptyFilter(), el);
                 if (nextState != null && space.minimal(nextState.block())) {
+                    searchDesignsFirst(space, nextState, el, cons);
+                }
+            }
+        }
+    }
+
+    private static void searchDesignsFirstNoMin(GSpace space, State state, int prev, Consumer<State> cons) {
+        int v = space.v();
+        if (state.size() == space.k()) {
+            cons.accept(state);
+        } else {
+            for (int el = prev + 1; el < v; el++) {
+                State nextState = state.acceptElem(space, space.emptyFilter(), el);
+                if (nextState != null) {
                     searchDesignsFirst(space, nextState, el, cons);
                 }
             }
@@ -681,5 +697,112 @@ public class ApplicatorTest {
     private static List<FixBS> readPartial(String line, int v) {
         String[] sp = line.substring(1, line.length() - 1).split("} \\{");
         return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
+    }
+
+    private static void find(List<State> states, FixBS diffs, State[] curr, int prev, FixBS diffSet, Consumer<State[]> cons) {
+        if (diffs.diff(diffSet).isEmpty()) {
+            cons.accept(curr);
+            return;
+        }
+        for (int i = prev + 1; i < states.size(); i++) {
+            State st = states.get(i);
+            if (st.diffSet().intersects(diffSet)) {
+                continue;
+            }
+            State[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
+            nextCurr[curr.length] = states.get(i);
+            find(states, diffs, nextCurr, i, diffSet.union(st.diffSet()), cons);
+        }
+    }
+
+    @Test
+    public void testEven() throws IOException {
+        Group group = new CyclicProduct(2, 3, 3);
+        int[] comps = new int[]{1, 18};
+        int k = 3;
+        GSpace sp = new GSpace(k, group, true, comps);
+        int v = sp.v();
+        Map<FixBS, State> singles = new ConcurrentHashMap<>();
+        FixBS evenDiffs = new FixBS(sp.diffLength());
+        for (int fst : sp.oBeg()) {
+            for (int snd = fst + 1; snd < sp.v(); snd++) {
+                int lft = sp.diffIdx(fst * v + snd);
+                if (lft == sp.diffIdx(snd * v + fst)) {
+                    evenDiffs.set(lft);
+                }
+            }
+        }
+        System.out.println(GroupIndex.identify(group) + " " + evenDiffs);
+        Consumer<State> cons = st -> {
+            if (!st.diffSet().intersects(evenDiffs)) {
+                return;
+            }
+            singles.putIfAbsent(st.diffSet(), st);
+        };
+        IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
+            IntStream.range(fst + 1, sp.v()).forEach(snd -> {
+                IntStream.range(snd + 1, sp.v()).forEach(trd -> {
+                    State state = sp.forInitial(fst, snd, trd);
+                    if (state == null) {
+                        return;
+                    }
+                    searchDesignsFirstNoMin(sp, state, trd, cons);
+                });
+            });
+        });
+        List<State> base = new ArrayList<>(singles.values());
+        base.sort(Comparator.comparing(State::block));
+        System.out.println("Even blocks " + base.size());
+        List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
+        IntStream.range(0, base.size()).parallel().forEach(idx -> {
+            State st = base.get(idx);
+            find(base, evenDiffs, new State[]{st}, idx, st.diffSet(), arr -> {
+                if (!sp.parMinimal(arr)) {
+                    return;
+                }
+                begins.add(arr);
+            });
+        });
+        System.out.println(begins.size());
+    }
+
+    private static List<int[][]> configs(Group group, int[] orbitSizes) {
+        List<int[][]> result = new ArrayList<>();
+        Map<Integer, List<SubGroup>> subs = group.groupedSubGroups();
+        int[] curr = new int[orbitSizes.length];
+        int[] cap = new int[orbitSizes.length];
+        int[] sgSizes = new int[orbitSizes.length];
+        for (int i = 0; i < orbitSizes.length; i++) {
+            if (group.order() % orbitSizes[i] != 0) {
+                throw new IllegalArgumentException(group.order() + " " + Arrays.toString(orbitSizes));
+            }
+            sgSizes[i] = group.order() / orbitSizes[i];
+            cap[i] = subs.get(sgSizes[i]).size();
+        }
+        while (curr != null) {
+            int[] c = curr;
+            result.add(IntStream.range(0, sgSizes.length).mapToObj(i -> new int[]{sgSizes[i], c[i]}).toArray(int[][]::new));
+            curr = next(cap, curr);
+        }
+        return result;
+    }
+
+    private static int[] next(int[] cap, int[] curr) {
+        int[] result = curr.clone();
+        int idx = curr.length - 1;
+        boolean end = false;
+        while (idx >= 0 && !end) {
+            result[idx]++;
+            if (result[idx] < cap[idx]) {
+                end = true;
+            } else {
+                result[idx] = 0;
+                idx--;
+            }
+        }
+        if (idx < 0) {
+            return null;
+        }
+        return result;
     }
 }
