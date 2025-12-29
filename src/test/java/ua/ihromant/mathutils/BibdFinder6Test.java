@@ -528,6 +528,7 @@ public class BibdFinder6Test {
         int v = gr.order();
         int k = 6;
         int rest = v % (k * (k - 1));
+        int[] multipliers = Combinatorics.multipliers(v);
         if (rest != 0 && rest != (k - 1) * (k - 1)) {
             throw new IllegalArgumentException();
         }
@@ -535,6 +536,7 @@ public class BibdFinder6Test {
         try (FileInputStream fis = new FileInputStream(unrefined);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
+            Set<List<FixBS>> unique = ConcurrentHashMap.newKeySet();
             br.lines().forEach(l -> {
                 if (!l.contains("[[")) {
                     return;
@@ -555,8 +557,25 @@ public class BibdFinder6Test {
                         }
                         return res;
                     }).toArray(int[][]::new);
+                    int cnt = 0;
+                    int[][] minimal = des;
+                    for (int m : multipliers) {
+                        int[][] mapped = Arrays.stream(des).map(arr -> minimalTuple(arr, m, v, arr.length)).toArray(int[][]::new);
+                        Arrays.sort(mapped, Comparator.comparingInt(arr -> arr[1]));
+                        int cmp = compare(mapped, minimal);
+                        if (cmp < 0) {
+                            minimal = mapped;
+                            cnt = 1;
+                        }
+                        if (cmp == 0) {
+                            cnt++;
+                        }
+                    }
+                    if (!unique.add(Arrays.stream(minimal).map(arr -> FixBS.of(v, arr)).toList())) {
+                        return;
+                    }
                     Liner lnr = rest == 0 ? getLinerRest0(des, v, k) : getLinerRestK1K1(des, v, k);
-                    System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(des));
+                    System.out.println(cnt + " " + lnr.hyperbolicFreq() + " " + Arrays.deepToString(des));
                 });
             });
         }
