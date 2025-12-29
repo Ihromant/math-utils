@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.util.FixBS;
@@ -25,6 +26,8 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BibdFinder6Test {
+    private static final ObjectMapper om = new ObjectMapper();
+
     private record State(int[] block, FixBS filter, FixBS blackList) {
         private static State forDesign(int v, FixBS baseFilter, int[][] baseDesign, int k, int blockIdx) {
             FixBS filter = baseFilter.copy();
@@ -320,7 +323,7 @@ public class BibdFinder6Test {
             int[] block = design[0];
             for (int m : mul) {
                 int[] min = minimalTuple(block, m, v, idx);
-                if (compare(min, block) < 0) {
+                if (Combinatorics.compareArr(min, block) < 0) {
                     return true;
                 }
             }
@@ -358,7 +361,7 @@ public class BibdFinder6Test {
             int[] block = design[0];
             for (int m : mul) {
                 int[] min = minimalTuple(block, m, v, idx);
-                if (compare(min, block) < 0) {
+                if (Combinatorics.compareArr(min, block) < 0) {
                     return true;
                 }
             }
@@ -424,28 +427,14 @@ public class BibdFinder6Test {
         System.out.println("Results: " + counter.get() + ", time elapsed: " + (System.currentTimeMillis() - time));
     }
 
-    private static int compare(int[] fst, int[] snd) {
-        for (int i = 0; i < fst.length; i++) {
-            int dff = fst[i] - snd[i];
-            if (dff != 0) {
-                return dff;
-            }
-        }
-        return 0;
-    }
-
     private int compare(int[][] design, int[][] candidate) {
         for (int i = 0; i < design.length; i++) {
-            int cmp = compare(design[i], candidate[i]);
+            int cmp = Combinatorics.compareArr(design[i], candidate[i]);
             if (cmp != 0) {
                 return cmp;
             }
         }
         return 0;
-    }
-
-    private static int[] multipliers(int v) {
-        return IntStream.range(1, v).filter(m -> Combinatorics.gcd(m, v) == 1).toArray();
     }
 
     private static int[] minimalTuple(int[] tuple, int multiplier, int v, int len) {
@@ -472,7 +461,7 @@ public class BibdFinder6Test {
         Group gr = new CyclicGroup(151);
         int v = gr.order();
         int k = 6;
-        int[] multipliers = multipliers(v);
+        int[] multipliers = Combinatorics.multipliers(v);
         int rest = v % (k * (k - 1));
         boolean slanted = rest > 1;
         boolean fixed = rest == k - 1;
@@ -489,8 +478,7 @@ public class BibdFinder6Test {
                 if (!l.contains("[[")) {
                     return;
                 }
-                String[] sp = l.substring(2, l.length() - 2).split("], \\[");
-                int[][] bDes = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                int[][] bDes = om.readValue(l, int[][].class);
                 int pow = 1 << bDes.length;
                 IntStream.range(0, pow).forEach(i -> {
                     int[][] des = IntStream.range(0, bDes.length).mapToObj(j -> {
@@ -539,7 +527,8 @@ public class BibdFinder6Test {
         Group gr = new CyclicGroup(120);
         int v = gr.order();
         int k = 6;
-        if (v % k != 0 || v % (k - 1) != 0) {
+        int rest = v % (k * (k - 1));
+        if (rest != 0 && rest != (k - 1) * (k - 1)) {
             throw new IllegalArgumentException();
         }
         File unrefined = new File("/home/ihromant/maths/diffSets/nbeg", k + "-" + gr.name() + ".txt");
@@ -550,8 +539,7 @@ public class BibdFinder6Test {
                 if (!l.contains("[[")) {
                     return;
                 }
-                String[] sp = l.substring(2, l.length() - 2).split("], \\[");
-                int[][] bDes = Arrays.stream(sp).map(pt -> Arrays.stream(pt.split(", ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
+                int[][] bDes = om.readValue(l, int[][].class);
                 int pow = 1 << (bDes.length - 1);
                 IntStream.range(0, pow).forEach(i -> {
                     int[][] des = IntStream.range(0, bDes.length).mapToObj(j -> {
@@ -567,40 +555,71 @@ public class BibdFinder6Test {
                         }
                         return res;
                     }).toArray(int[][]::new);
-                    FixBS rests = new FixBS(k);
-                    for (int val : des[0]) {
-                        rests.set(val % k);
-                    }
-                    Set<int[]> lines = new TreeSet<>(Combinatorics::compareArr);
-                    IntStream.range(1, des.length).forEach(j -> {
-                        IntStream.range(0, v).forEach(m -> {
-                            lines.add(Arrays.stream(des[j]).map(p -> (p + m) % v).sorted().toArray());
-                        });
-                    });
-                    boolean fullOrbit = rests.cardinality() == k - 1;
-                    int unused = rests.nextClearBit(0);
-                    int[] fst = IntStream.concat(Arrays.stream(des[0]), IntStream.of(v + (fullOrbit ? unused : 0))).toArray();
-                    int[] slanted = IntStream.concat(IntStream.range(0, k - 1).map(j -> v * j / (k - 1)), IntStream.of(fullOrbit ? v : v + k - 1)).toArray();
-                    IntStream.range(0, v).forEach(j -> {
-                        lines.add(IntStream.range(0, k).map(m -> (v * m / k + j) % v).sorted().toArray());
-                        int[] fstTr = new int[k];
-                        int[] slantedTr = new int[k];
-                        for (int m = 0; m < k - 1; m++) {
-                            fstTr[m] = (fst[m] + j) % v;
-                            slantedTr[m] = (slanted[m] + j) % v;
-                        }
-                        fstTr[k - 1] = v + (((fullOrbit ? unused : 0) + j) % (fullOrbit ? k : k - 1));
-                        slantedTr[k - 1] = fullOrbit ? v + (j % k) : v + k - 1;
-                        Arrays.sort(fstTr);
-                        Arrays.sort(slantedTr);
-                        lines.add(fstTr);
-                        lines.add(slantedTr);
-                    });
-                    lines.add(IntStream.range(0, k).map(j -> j + v).toArray());
-                    Liner lnr = new Liner(v + k, lines.toArray(int[][]::new));
+                    Liner lnr = rest == 0 ? getLinerRest0(des, v, k) : getLinerRestK1K1(des, v, k);
                     System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(des));
                 });
             });
         }
+    }
+
+    private Liner getLinerRestK1K1(int[][] des, int v, int k) {
+        Set<int[]> lines = new TreeSet<>(Combinatorics::compareArr);
+        IntStream.range(1, des.length).forEach(j -> {
+            IntStream.range(0, v).forEach(m -> {
+                lines.add(Arrays.stream(des[j]).map(p -> (p + m) % v).sorted().toArray());
+            });
+        });
+        int[] fst = des[0];
+        int[] slanted = IntStream.range(0, k - 1).map(j -> v * j / (k - 1)).toArray();
+        IntStream.range(0, v).forEach(j -> {
+            int[] fstTr = new int[k];
+            int[] slantedTr = new int[k];
+            for (int m = 0; m < k - 1; m++) {
+                fstTr[m] = (fst[m] + j) % v;
+                slantedTr[m] = (slanted[m] + j) % v;
+            }
+            fstTr[k - 1] = v + (j % (k - 1));
+            slantedTr[k - 1] = v + k - 1;
+            Arrays.sort(fstTr);
+            Arrays.sort(slantedTr);
+            lines.add(fstTr);
+            lines.add(slantedTr);
+        });
+        lines.add(IntStream.range(0, k).map(j -> j + v).toArray());
+        return new Liner(v + k, lines.toArray(int[][]::new));
+    }
+
+    private static Liner getLinerRest0(int[][] des, int v, int k) {
+        FixBS rests = new FixBS(k);
+        for (int val : des[0]) {
+            rests.set(val % k);
+        }
+        Set<int[]> lines = new TreeSet<>(Combinatorics::compareArr);
+        IntStream.range(1, des.length).forEach(j -> {
+            IntStream.range(0, v).forEach(m -> {
+                lines.add(Arrays.stream(des[j]).map(p -> (p + m) % v).sorted().toArray());
+            });
+        });
+        boolean fullOrbit = rests.cardinality() == k - 1;
+        int unused = rests.nextClearBit(0);
+        int[] fst = IntStream.concat(Arrays.stream(des[0]), IntStream.of(v + (fullOrbit ? unused : 0))).toArray();
+        int[] slanted = IntStream.concat(IntStream.range(0, k - 1).map(j -> v * j / (k - 1)), IntStream.of(fullOrbit ? v : v + k - 1)).toArray();
+        IntStream.range(0, v).forEach(j -> {
+            lines.add(IntStream.range(0, k).map(m -> (v * m / k + j) % v).sorted().toArray());
+            int[] fstTr = new int[k];
+            int[] slantedTr = new int[k];
+            for (int m = 0; m < k - 1; m++) {
+                fstTr[m] = (fst[m] + j) % v;
+                slantedTr[m] = (slanted[m] + j) % v;
+            }
+            fstTr[k - 1] = v + (((fullOrbit ? unused : 0) + j) % (fullOrbit ? k : k - 1));
+            slantedTr[k - 1] = fullOrbit ? v + (j % k) : v + k - 1;
+            Arrays.sort(fstTr);
+            Arrays.sort(slantedTr);
+            lines.add(fstTr);
+            lines.add(slantedTr);
+        });
+        lines.add(IntStream.range(0, k).map(j -> j + v).toArray());
+        return new Liner(v + k, lines.toArray(int[][]::new));
     }
 }

@@ -118,23 +118,25 @@ public class Combinatorics {
     }
 
     public static int compareArr(int[] fst, int[] snd) {
-        for (int i = 0; i < fst.length; i++) {
+        int len = Math.min(fst.length, snd.length);
+        for (int i = 0; i < len; i++) {
             int cmp = fst[i] - snd[i];
             if (cmp != 0) {
                 return cmp;
             }
         }
-        return 0;
+        return fst.length - snd.length;
     }
 
     public static <T> int compareArr(T[] fst, T[] snd, Comparator<T> comp) {
-        for (int i = 0; i < fst.length; i++) {
+        int len = Math.min(fst.length, snd.length);
+        for (int i = 0; i < len; i++) {
             int cmp = comp.compare(fst[i], snd[i]);
             if (cmp != 0) {
                 return cmp;
             }
         }
-        return 0;
+        return fst.length - snd.length;
     }
 
     public static boolean isPrime(int val) {
