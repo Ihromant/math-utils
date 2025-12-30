@@ -3,6 +3,9 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
+import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.group.SubGroup;
+import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -14,6 +17,7 @@ import java.util.BitSet;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.ToLongFunction;
@@ -262,5 +266,26 @@ public class AutomorphismsTest {
             }
         }
         return true;
+    }
+
+    @Test
+    public void tstProj() throws IOException {
+        int k = 16;
+        String name = "bbs4";
+        System.out.println(name);
+        Liner proj = BatchAffineTest.readProj(k, name);
+        int[][] auths = TernaryAutomorphisms.automorphismsProjPar(proj);
+        PermutationGroup perm = new PermutationGroup(auths);
+        TableGroup table = perm.asTable();
+        System.out.println(auths.length);
+        Map<Integer, List<SubGroup>> subs = table.groupedSubGroups();
+        for (Map.Entry<Integer, List<SubGroup>> es : subs.entrySet()) {
+            if (es.getKey() < 200) {
+                continue;
+            }
+            for (SubGroup sg : es.getValue()) {
+                BatchLinerTest.orbits(proj, new SubGroup(perm, sg.elems()), 0);
+            }
+        }
     }
 }
