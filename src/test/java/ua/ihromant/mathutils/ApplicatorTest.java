@@ -818,12 +818,12 @@ public class ApplicatorTest {
         while (curr != null) {
             int[] c = curr;
             result.add(IntStream.range(0, sgSizes.length).mapToObj(i -> new int[]{sgSizes[i], c[i]}).toArray(int[][]::new));
-            curr = next(cap, curr);
+            curr = next(orbitSizes, cap, curr);
         }
         return result;
     }
 
-    private static int[] next(int[] cap, int[] curr) {
+    private static int[] next(int[] orbitSizes, int[] cap, int[] curr) {
         int[] result = curr.clone();
         int idx = curr.length - 1;
         boolean end = false;
@@ -831,6 +831,12 @@ public class ApplicatorTest {
             result[idx]++;
             if (result[idx] < cap[idx]) {
                 end = true;
+                for (int i = idx + 1; i < curr.length; i++) {
+                    if (orbitSizes[idx] != orbitSizes[i]) {
+                        continue;
+                    }
+                    result[i] = result[idx];
+                }
             } else {
                 result[idx] = 0;
                 idx--;
