@@ -85,6 +85,46 @@ public interface Group extends Loop {
         return result;
     }
 
+    default Map<Integer, List<SubGroup>> subsByConjugation() {
+        Map<Integer, List<SubGroup>> result = new ConcurrentHashMap<>();
+        int order = order();
+        result.put(1, new ArrayList<>(List.of(new SubGroup(this, FixBS.of(order, 0)))));
+        IntStream.range(1, order).parallel().forEach(i -> {
+            FixBS cycle = cycle(i);
+            if (cycle.nextSetBit(1) < i) {
+                return;
+            }
+            for (int conj = 0; conj < order(); conj++) {
+                int inv = inv(conj);
+                FixBS oElems = new FixBS(order);
+                for (int el = cycle.nextSetBit(0); el >= 0; el = cycle.nextSetBit(el + 1)) {
+                    oElems.set(op(inv, op(el, conj)));
+                }
+                if (oElems.compareTo(cycle) < 0) {
+                    return;
+                }
+            }
+            result.computeIfAbsent(cycle.cardinality(), _ -> Collections.synchronizedList(new ArrayList<>()))
+                    .add(new SubGroup(this, cycle));
+            find(cycle, i, order, sg -> {
+                FixBS elems = sg.elems();
+                for (int conj = 0; conj < order(); conj++) {
+                    int inv = inv(conj);
+                    FixBS oElems = new FixBS(order);
+                    for (int el = elems.nextSetBit(0); el >= 0; el = elems.nextSetBit(el + 1)) {
+                        oElems.set(op(inv, op(el, conj)));
+                    }
+                    if (oElems.compareTo(elems) < 0) {
+                        return;
+                    }
+                }
+                result.computeIfAbsent(elems.cardinality(), _ -> Collections.synchronizedList(new ArrayList<>())).add(sg);
+            });
+        });
+        result.values().forEach(l -> l.sort(Comparator.comparing(SubGroup::elems)));
+        return result;
+    }
+
     default SubGroup closure(FixBS from) {
         FixBS result = new FixBS(order());
         FixBS additional = from.copy();
