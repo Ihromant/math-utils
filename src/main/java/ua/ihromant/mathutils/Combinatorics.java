@@ -125,7 +125,7 @@ public class Combinatorics {
                 return cmp;
             }
         }
-        return fst.length - snd.length;
+        return snd.length - fst.length;
     }
 
     public static <T> int compareArr(T[] fst, T[] snd, Comparator<T> comp) {
@@ -136,7 +136,7 @@ public class Combinatorics {
                 return cmp;
             }
         }
-        return fst.length - snd.length;
+        return snd.length - fst.length;
     }
 
     public static boolean isPrime(int val) {
