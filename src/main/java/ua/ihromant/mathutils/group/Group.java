@@ -230,6 +230,7 @@ public interface Group extends Loop {
         for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
             for (int y = addition.nextSetBit(0); y >= 0; y = addition.nextSetBit(y + 1)) {
                 result.set(op(x, y));
+                result.set(op(y, x));
             }
         }
         result.andNot(currGroup);
