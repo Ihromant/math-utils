@@ -2,16 +2,45 @@ package ua.ihromant.mathutils.loop;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.Loop;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 public class LoopTest {
     @Test
-    public void test() {
+    public void testCorrectness() {
+        testCorrectness(new CheinExtension(new CyclicProduct(2, 2)), true);
+        testCorrectness(new CheinExtension(new PermutationGroup(3, false)), false);
+        testCorrectness(new SpecialLinearLoop(new GaloisField(2)), false);
+    }
+
+    private static void testCorrectness(Loop l, boolean associative) {
+        int nonAssoc = l.elements().map(i -> {
+            assertEquals(i, l.op(i, 0));
+            assertEquals(i, l.op(0, i));
+            int inv = l.inv(i);
+            assertEquals(0, l.op(inv, i));
+            assertEquals(0, l.op(i, inv));
+            return l.elements().map(j -> {
+                return l.elements().map(k -> {
+                    assertEquals(l.op(l.op(i, j), l.op(k, i)), l.op(l.op(i, l.op(j, k)), i));
+                    return l.op(l.op(i, j), k) != l.op(i, l.op(j, k)) ? 1 : 0;
+                }).sum();
+            }).sum();
+        }).sum();
+        assertEquals(associative, nonAssoc == 0);
+    }
+
+    @Test
+    public void testPaige() {
         SpecialLinearLoop sll = new SpecialLinearLoop(new GaloisField(2));
         System.out.println(sll.order());
         List<FixBS> sl = sll.subLoops();
@@ -39,7 +68,7 @@ public class LoopTest {
     }
 
     @Test
-    public void tst() throws IOException {
+    public void testChein() throws IOException {
         for (int gs = 1; gs < 31; gs++) {
             int gc = GroupIndex.groupCount(gs);
             for (int k = 1; k <= gc; k++) {
