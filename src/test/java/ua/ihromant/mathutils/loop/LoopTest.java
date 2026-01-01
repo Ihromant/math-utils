@@ -2,8 +2,11 @@ package ua.ihromant.mathutils.loop;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
 import java.util.List;
 
 public class LoopTest {
@@ -30,6 +33,39 @@ public class LoopTest {
                 }
                 if (prod.cardinality() == sll.order()) {
                     System.out.println(a + " " + b);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void tst() throws IOException {
+        for (int gs = 1; gs < 31; gs++) {
+            int gc = GroupIndex.groupCount(gs);
+            for (int k = 1; k <= gc; k++) {
+                Group g = GroupIndex.group(gs, k);
+                CheinExtension ce = new CheinExtension(g);
+                List<FixBS> sl = ce.subLoops();
+                System.out.println(sl.size());
+                for (int i = 0; i < sl.size(); i++) {
+                    FixBS a = sl.get(i);
+                    int aCard = a.cardinality();
+                    for (int j = i + 1; j < sl.size(); j++) {
+                        FixBS b = sl.get(j);
+                        int bCard = b.cardinality();
+                        if (aCard * bCard <= ce.order() || a.intersection(b).cardinality() > 1) {
+                            continue;
+                        }
+                        FixBS prod = new FixBS(ce.order());
+                        for (int aEl = a.nextSetBit(0); aEl >= 0; aEl = a.nextSetBit(aEl + 1)) {
+                            for (int bEl = b.nextSetBit(0); bEl >= 0; bEl = b.nextSetBit(bEl + 1)) {
+                                prod.set(ce.op(aEl, bEl));
+                            }
+                        }
+                        if (prod.cardinality() == ce.order()) {
+                            System.out.println(a + " " + b);
+                        }
+                    }
                 }
             }
         }
