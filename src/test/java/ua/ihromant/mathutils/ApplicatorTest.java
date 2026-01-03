@@ -813,6 +813,9 @@ public class ApplicatorTest {
                 throw new IllegalArgumentException(group.order() + " " + Arrays.toString(orbitSizes));
             }
             sgSizes[i] = group.order() / orbitSizes[i];
+            if (!subs.containsKey(sgSizes[i])) {
+                return result;
+            }
             cap[i] = subs.get(sgSizes[i]).size();
         }
         while (curr != null) {
