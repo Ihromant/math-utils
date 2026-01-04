@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.loop;
 
 import org.junit.jupiter.api.Test;
+import org.opentest4j.AssertionFailedError;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
@@ -8,6 +9,7 @@ import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.Loop;
 import ua.ihromant.mathutils.group.PermutationGroup;
+import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
@@ -107,6 +109,41 @@ public class LoopTest {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testCheinAlt() {
+        Loop l = new CheinExtension(new CheinExtension(new CyclicGroup(7)));
+        testCorrectness(l, false);
+        // "(C7 x C7) : (C6 x S3)"
+        int[][] auth = l.auth();
+        PermutationGroup perm = new PermutationGroup(auth);
+        CyclicGroup cg = new CyclicGroup(3);
+        int[] els = perm.conjugationClasses().stream().mapToInt(cl -> cl.nextSetBit(0)).filter(el -> perm.order(el) == cg.order()).toArray();
+        for (int el : els) {
+            int[] psi = new int[cg.order()];
+            for (int i = 1; i < cg.order(); i++) {
+                psi[i] = perm.mul(el, i);
+            }
+            int cnt = l.order() * cg.order();
+            int[][] table = new int[cnt][cnt];
+            for (int a = 0; a < table.length; a++) {
+                for (int b = 0; b < table.length; b++) {
+                    int h1 = a / cg.order();
+                    int k1 = a % cg.order();
+                    int h2 = b / cg.order();
+                    int k2 = b % cg.order();
+                    table[a][b] = l.op(h1, perm.permutation(psi[k1])[h2]) * cg.order() + cg.op(k1, k2);
+                }
+            }
+            TableGroup tg = new TableGroup(table);
+            try {
+                testCorrectness(tg, false);
+                System.out.println("Moufang " + el);
+            } catch (AssertionFailedError e) {
+                System.out.println("Not Moufang " + el);
             }
         }
     }
