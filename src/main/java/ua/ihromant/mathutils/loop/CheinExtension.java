@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils.loop;
 
-import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.Loop;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -9,9 +8,9 @@ import java.util.List;
 import java.util.function.Consumer;
 
 public class CheinExtension implements Loop {
-    private final Group g;
+    private final Loop g;
 
-    public CheinExtension(Group g) {
+    public CheinExtension(Loop g) {
         this.g = g;
     }
 

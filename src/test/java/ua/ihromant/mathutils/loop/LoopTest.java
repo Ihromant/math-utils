@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.loop;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.GaloisField;
+import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
@@ -20,6 +21,7 @@ public class LoopTest {
         testCorrectness(new CheinExtension(new CyclicProduct(2, 2)), true);
         testCorrectness(new CheinExtension(new PermutationGroup(3, false)), false);
         testCorrectness(new SpecialLinearLoop(new GaloisField(2)), false);
+        testCorrectness(new CheinExtension(new CheinExtension(new CyclicGroup(7))), false);
     }
 
     private static void testCorrectness(Loop l, boolean associative) {
@@ -37,6 +39,15 @@ public class LoopTest {
             }).sum();
         }).sum();
         assertEquals(associative, nonAssoc == 0);
+        int[][] auths = l.auth();
+        for (int[] auth : auths) {
+            for (int i = 0; i < l.order(); i++) {
+                assertEquals(auth[l.inv(i)], l.inv(auth[i]));
+                for (int j = 0; j < l.order(); j++) {
+                    assertEquals(l.op(auth[i], auth[j]), auth[l.op(i, j)]);
+                }
+            }
+        }
     }
 
     @Test
