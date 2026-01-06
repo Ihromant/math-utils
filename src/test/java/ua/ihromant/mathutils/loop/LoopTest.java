@@ -20,14 +20,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class LoopTest {
     @Test
     public void testCorrectness() {
-        testCorrectness(new CheinExtension(new CyclicProduct(2, 2)), true);
-        testCorrectness(new CheinExtension(new PermutationGroup(3, false)), false);
-        testCorrectness(new SpecialLinearLoop(new GaloisField(2)), false);
-        testCorrectness(new CheinExtension(new CheinExtension(new CyclicGroup(7))), false);
+        testCorrectness(new CheinExtension(new CyclicProduct(2, 2)), true, true);
+        testCorrectness(new CheinExtension(new PermutationGroup(3, false)), false, true);
+        testCorrectness(new SpecialLinearLoop(new GaloisField(2)), false, true);
+        testCorrectness(new CheinExtension(new CheinExtension(new CyclicGroup(7))), false, true);
     }
 
-    private static void testCorrectness(Loop l, boolean associative) {
-        int nonAssoc = l.elements().map(i -> {
+    private static void testCorrectness(Loop l, boolean associative, boolean checkAuth) {
+        int nonAssoc = l.elements().parallel().map(i -> {
             assertEquals(i, l.op(i, 0));
             assertEquals(i, l.op(0, i));
             int inv = l.inv(i);
@@ -41,12 +41,14 @@ public class LoopTest {
             }).sum();
         }).sum();
         assertEquals(associative, nonAssoc == 0);
-        int[][] auths = l.auth();
-        for (int[] auth : auths) {
-            for (int i = 0; i < l.order(); i++) {
-                assertEquals(auth[l.inv(i)], l.inv(auth[i]));
-                for (int j = 0; j < l.order(); j++) {
-                    assertEquals(l.op(auth[i], auth[j]), auth[l.op(i, j)]);
+        if (checkAuth) {
+            int[][] auths = l.auth();
+            for (int[] auth : auths) {
+                for (int i = 0; i < l.order(); i++) {
+                    assertEquals(auth[l.inv(i)], l.inv(auth[i]));
+                    for (int j = 0; j < l.order(); j++) {
+                        assertEquals(l.op(auth[i], auth[j]), auth[l.op(i, j)]);
+                    }
                 }
             }
         }
@@ -116,7 +118,7 @@ public class LoopTest {
     @Test
     public void testCheinAlt() {
         Loop l = new CheinExtension(new CheinExtension(new CyclicGroup(7)));
-        testCorrectness(l, false);
+        testCorrectness(l, false, true);
         // "(C7 x C7) : (C6 x S3)"
         int[][] auth = l.auth();
         PermutationGroup perm = new PermutationGroup(auth);
@@ -140,11 +142,21 @@ public class LoopTest {
             }
             TableGroup tg = new TableGroup(table);
             try {
-                testCorrectness(tg, false);
+                testCorrectness(tg, false, true);
                 System.out.println("Moufang " + el);
             } catch (AssertionFailedError e) {
                 System.out.println("Not Moufang " + el);
             }
         }
+    }
+
+    @Test
+    public void testRajah() {
+        int p = 5;
+        int q = 11;
+        int mu = 3;
+        int phi = 10;
+        RajahLoop lp = new RajahLoop(p, q, mu, phi);
+        testCorrectness(lp, false, false);
     }
 }

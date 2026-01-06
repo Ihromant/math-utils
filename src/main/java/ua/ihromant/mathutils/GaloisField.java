@@ -210,6 +210,18 @@ public class GaloisField {
         return result;
     }
 
+    public int exponent(int base, int power) {
+        int result = 1;
+        while (power > 0) {
+            if (power % 2 == 1) {
+                result = mul(result, base);
+            }
+            base = mul(base, base);
+            power = power / 2;
+        }
+        return result;
+    }
+
     public int expOrder(int a) {
         int res = a;
         for (int i = 1; i < cardinality + 1; i++) {
