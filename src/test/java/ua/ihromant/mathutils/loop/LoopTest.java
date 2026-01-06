@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.loop;
 
 import org.junit.jupiter.api.Test;
 import org.opentest4j.AssertionFailedError;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
@@ -14,6 +15,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -152,11 +154,55 @@ public class LoopTest {
 
     @Test
     public void testRajah() {
-        int p = 5;
-        int q = 11;
-        int mu = 3;
-        int phi = 10;
+        int p = 3;
+        int q = 7;
+        int mu = 2;
+        int phi = 0;
         RajahLoop lp = new RajahLoop(p, q, mu, phi);
         testCorrectness(lp, false, false);
+    }
+
+    private static int order(RajahLoop lp, int a) {
+        int pow = 0;
+        int counter = 0;
+        do {
+            counter++;
+            pow = lp.opByDef(a, pow);
+        } while (pow != 0);
+        return counter;
+    }
+
+    @Test
+    public void testElementaryRajah() {
+        for (int q = 7; q < 100; q++) {
+            if (!Combinatorics.isPrime(q)) {
+                continue;
+            }
+            int qq = q;
+            GaloisField gf = new GaloisField(q);
+            int[] factors = Combinatorics.factorize(q - 1);
+            for (int p : factors) {
+                if (p % 2 == 0) {
+                    continue;
+                }
+                for (int mu = 2; mu < q; mu++) {
+                    if (gf.exponent(mu, p) != 1) {
+                        continue;
+                    }
+                    for (int phi = 0; phi < q; phi++) {
+                        if (p != 3 && gf.mul(phi, mu - 1) != q - 2) {
+                            continue;
+                        }
+                        System.out.println(p + " " + q + " " + mu + " " + phi);
+                        RajahLoop lp = new RajahLoop(p, q, mu, phi);
+                        boolean prime = IntStream.range(1, 2 * q * q * q).parallel().allMatch(el -> {
+                            int ord = order(lp, el);
+                            return ord == p || ord == qq;
+                        });
+                        System.out.println(prime ? "Prime" : "Not prime");
+                    }
+                }
+            }
+        }
     }
 }
