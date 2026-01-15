@@ -100,4 +100,15 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs,
             filter.or(space.difference(i));
         }
     }
+
+    public State minimizeBlock(GSpace space) {
+        FixBS min = block;
+        for (int g = 0; g < space.gOrd(); g++) {
+            FixBS mapped = space.mapBlock(block, g);
+            if (mapped.compareTo(min) < 0) {
+                min = mapped;
+            }
+        }
+        return new State(min, stabilizer, diffSet, diffs, size);
+    }
 }

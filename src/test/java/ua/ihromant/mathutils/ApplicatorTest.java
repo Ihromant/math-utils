@@ -723,7 +723,8 @@ public class ApplicatorTest {
             if (!st.diffSet().intersects(evenDiffs)) {
                 return;
             }
-            singles.compute(st.diffSet(), (_, old) -> old != null && old.block().compareTo(st.block()) < 0 ? old : st);
+            State minimized = st.minimizeBlock(sp);
+            singles.put(minimized.block(), minimized);
         };
         IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
             int[] even = IntStream.range(fst + 1, v).filter(snd -> evenDiffs.get(sp.diffIdx(fst * v + snd))).toArray();

@@ -318,15 +318,20 @@ public class GSpace {
         Set<FixBS> set = new HashSet<>(2 * group.order());
         List<int[]> res = new ArrayList<>();
         for (int g = 0; g < group.order(); g++) {
-            FixBS fbs = new FixBS(v);
-            for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
-                fbs.set(apply(g, x));
-            }
+            FixBS fbs = mapBlock(block, g);
             if (set.add(fbs)) {
                 res.add(fbs.toArray());
             }
         }
         return res.stream();
+    }
+
+    public FixBS mapBlock(FixBS block, int g) {
+        FixBS fbs = new FixBS(v);
+        for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
+            fbs.set(apply(g, x));
+        }
+        return fbs;
     }
 
     public boolean minimal(FixBS block) {
