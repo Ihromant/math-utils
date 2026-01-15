@@ -470,7 +470,7 @@ public class ApplicatorTest {
             for (int el = prev + 1; el < v; el++) {
                 State nextState = state.acceptElem(space, space.emptyFilter(), el);
                 if (nextState != null) {
-                    searchDesignsFirst(space, nextState, el, cons);
+                    searchDesignsFirstNoMin(space, nextState, el, cons);
                 }
             }
         }
@@ -728,13 +728,12 @@ public class ApplicatorTest {
         IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
             int[] even = IntStream.range(fst + 1, v).filter(snd -> evenDiffs.get(sp.diffIdx(fst * v + snd))).toArray();
             Arrays.stream(even).parallel().forEach(snd -> {
-                IntStream.range(fst + 1, v).forEach(trd -> {
-                    State state = sp.forInitial(fst, snd, trd);
-                    if (state == null) {
-                        return;
-                    }
-                    searchDesignsFirstNoMin(sp, state, trd, cons);
-                });
+                State state = new State(FixBS.of(v, fst), FixBS.of(group.order(), 0), new FixBS(sp.diffLength()), new int[sp.diffLength()][], 1)
+                        .acceptElem(sp, sp.emptyFilter(), snd);
+                if (state == null) {
+                    return;
+                }
+                searchDesignsFirstNoMin(sp, state, -1, cons);
             });
         });
         State[] base = singles.values().toArray(State[]::new);
