@@ -135,11 +135,9 @@ public class GSpace {
             int fst = oBeg[oi];
             for (int snd = fst + 1; snd < v; snd++) {
                 for (int trd = snd + 1; trd < v; trd++) {
-                    State st = Objects.requireNonNull(
+                    statesCache[oi][snd][trd] = Objects.requireNonNull(
                             new State(FixBS.of(v, fst), FixBS.of(gOrd, 0), new FixBS(sz), new int[sz][], 1)
                                     .acceptElem(this, emptyFilter, snd)).acceptElem(this, emptyFilter, trd);
-                    statesCache[oi][snd][trd] = st;
-                    statesCache[oi][trd][snd] = st;
                 }
             }
         }
