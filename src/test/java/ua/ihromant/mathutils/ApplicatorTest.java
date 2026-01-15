@@ -724,7 +724,7 @@ public class ApplicatorTest {
                 return;
             }
             State minimized = st.minimizeBlock(sp);
-            singles.put(minimized.block(), minimized);
+            singles.putIfAbsent(minimized.block(), minimized);
         };
         IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
             int[] even = IntStream.range(fst + 1, v).filter(snd -> evenDiffs.get(sp.diffIdx(fst * v + snd))).toArray();
