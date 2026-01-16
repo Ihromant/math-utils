@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.function.ToIntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -738,18 +739,19 @@ public class ApplicatorTest {
             });
         });
         State[] base = singles.values().toArray(State[]::new);
-        Arrays.sort(base, Comparator.comparing(State::block));
+        Arrays.sort(base, Comparator.comparing(st -> evenDiffs.intersection(st.diffSet())));
         System.out.println("Even blocks " + base.length);
         List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
         FixBS[] intersecting = intersecting(base);
         IntStream.range(0, base.length).parallel().forEach(idx -> {
             State st = base[idx];
             find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
-                if (!evenDiffs.diff(des.diffSet).isEmpty()) {
-                    return false;
+                int missing = evenDiffs.diff(des.diffSet).nextSetBit(0);
+                if (missing < 0) {
+                    Arrays.sort(des.curr(), Comparator.comparing(State::block));
+                    begins.add(des.curr());
                 }
-                begins.add(des.curr());
-                return true;
+                return missing;
             });
         });
         begins.removeIf(arr -> !sp.parMinimal(arr));
@@ -792,13 +794,18 @@ public class ApplicatorTest {
         return intersecting;
     }
 
-    private static void find(State[] states, FixBS[] intersecting, Des des, Predicate<Des> pr) {
-        if (pr.test(des)) {
+    private static void find(State[] states, FixBS[] intersecting, Des des, ToIntFunction<Des> pr) {
+        int nextMissing = pr.applyAsInt(des);
+        if (nextMissing < 0) {
             return;
         }
         FixBS available = des.available;
         for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-            find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
+            State st = states[i];
+            if (!st.diffSet().get(nextMissing)) {
+                break;
+            }
+            find(states, intersecting, des.accept(st, intersecting[i], i), pr);
         }
     }
 
