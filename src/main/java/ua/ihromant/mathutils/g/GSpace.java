@@ -286,6 +286,10 @@ public class GSpace {
         return statesCache[orbIdx[fst]][snd][trd];
     }
 
+    public int orbIdx(int x) {
+        return orbIdx[x];
+    }
+
     private int applyByDef(int g, int x) {
         int idx = orbIdx[x];
         int g1 = xToG(x);
