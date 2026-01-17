@@ -64,27 +64,10 @@ public class Applicator5Test {
             });
         });
         System.out.println("Initial configs " + begins.size());
-        AtomicInteger cnt = new AtomicInteger();
-        BiPredicate<State[], FixBS> tCons = (arr, ftr) -> {
-            if (!ftr.isFull(sqr)) {
-                return false;
-            }
-            Liner l = new Liner(v, Arrays.stream(arr).flatMap(st -> sp.blocks(st.block())).toArray(int[][]::new));
-            System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(arr).map(State::block).toList());
-            return true;
-        };
-        begins.stream().parallel().forEach(tuple -> {
-            State[] pr = Arrays.copyOf(tuple, tuple.length - 1);
-            FixBS newFilter = sp.emptyFilter().copy();
-            for (State st : pr) {
-                st.updateFilter(newFilter, sp);
-            }
-            //searchDesigns(sp, newFilter, pr, tuple[tuple.length - 1], 0, tCons);
-            int vl = cnt.incrementAndGet();
-            if (vl % 100 == 0) {
-                System.out.println(vl);
-            }
-        });
+        for (State[] states : begins) {
+            System.out.println(Arrays.deepToString(Arrays.stream(states).map(State::block).toArray()) + " "
+                    + Arrays.deepToString(filters(states, sp, group)));
+        }
     }
 
     private static State[] getRemovable(FixBS removableDiffs, GSpace sp, int v, Group group) {
@@ -159,8 +142,7 @@ public class Applicator5Test {
         }
         FixBS available = des.available;
         for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-            State st = states[i];
-            find(states, intersecting, des.accept(st, intersecting[i], i), pr);
+            find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
         }
     }
 
@@ -251,5 +233,31 @@ public class Applicator5Test {
                 find(orbitSize, orbitCount, nextUsed, nextLst, splits, i, cons);
             }
         }
+    }
+
+    private FixBS[][] filters(State[] states, GSpace space, Group group) {
+        int gOrd = space.gOrd();
+        int v = space.v();
+        int orbitCount = v / gOrd;
+        FixBS[][] result = new FixBS[orbitCount][orbitCount];
+        for (int i = 0; i < orbitCount; i++) {
+            for (int j = 0; j < orbitCount; j++) {
+                result[i][j] = new FixBS(gOrd);
+            }
+        }
+        for (State state : states) {
+            for (int diff = state.diffSet().nextSetBit(0); diff >= 0; diff = state.diffSet().nextSetBit(diff + 1)) {
+                int pr = space.difference(diff).nextSetBit(0);
+                int fst = pr / v;
+                int snd = pr % v;
+                int fstOrb = fst / gOrd;
+                int sndOrb = snd / gOrd;
+                if (fstOrb >= orbitCount || sndOrb >= orbitCount) {
+                    continue;
+                }
+                result[fstOrb][sndOrb].set(group.op(group.inv(fst % gOrd), snd % gOrd));
+            }
+        }
+        return result;
     }
 }
