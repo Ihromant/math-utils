@@ -535,33 +535,42 @@ public class Applicator5Test {
 
     private record RightState(IntList block, FixBS filter, FixBS outerFilter, FixBS whiteList, int idx) {
         private RightState acceptElem(int el, LeftState left, Group group) {
-            // TODO adapt to group
-            int v = group.order();
             int sz = block.size();
             IntList nextBlock = block.copy();
             nextBlock.add(el);
             FixBS newFilter = filter.copy();
             FixBS newOuterFilter = outerFilter.copy();
             FixBS newWhiteList = whiteList.copy();
-            int invEl = v - el;
+            int invEl = group.inv(el);
             for (int i = 0; i < sz; i++) {
                 int val = nextBlock.get(i);
-                int diff = el - val;
-                int outDiff = invEl + val;
+                int diff = group.op(group.inv(val), el);
+                int outDiff = group.op(invEl, val);
                 newFilter.set(diff);
                 newFilter.set(outDiff);
-                if (outDiff % 2 == 0) {
-                    newWhiteList.clear((el + outDiff / 2) % v);
+                // if tuple finished probably
+                for (int rt : group.squareRoots(diff)) {
+                    newWhiteList.clear(group.op(val, rt));
                 }
-                for (int j = 0; j <= sz; j++) {
+                for (int rt : group.squareRoots(outDiff)) {
+                    newWhiteList.clear(group.op(el, rt));
+                }
+                for (int j = 0; j <= idx; j++) {
                     int nv = nextBlock.get(j);
-                    //newWhiteList.clear((nv + diff) % v);
-                    newWhiteList.clear((nv + outDiff) % v);
+                    newWhiteList.clear(group.op(nv, diff));
+                    newWhiteList.clear(group.op(nv, outDiff));
                 }
             }
-            // TODO newOuterFilter.orModuleShifted(left.inv(), v, invEl);
-            // TODO newWhiteList.diffModuleShifted(left.diff(), v, invEl);
-            newWhiteList.diffModuleShifted(newFilter, v, invEl);
+            for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                newWhiteList.clear(group.op(el, diff));
+            }
+            for (int revDiff = left.revDiff.nextSetBit(0); revDiff >= 0; revDiff = left.revDiff.nextSetBit(revDiff + 1)) {
+                newWhiteList.clear(group.op(revDiff, el));
+            }
+            for (int j = 0; j < left.size(); j++) {
+                newOuterFilter.set(group.op(group.inv(left.block().get(j)), el)); // TODO check right to left
+            }
+
             return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
         }
 
