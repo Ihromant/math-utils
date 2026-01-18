@@ -34,6 +34,7 @@ import java.util.SequencedMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -1063,6 +1064,58 @@ public class BatchAffineTest {
         }
         //}
         //processor.finish();
+    }
+
+    @Test
+    public void testFanoChar() throws IOException {
+        int k = 16;
+        int pc = k * k + k + 1;
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            if (name.equals("desarg.txt")) {
+                continue;
+            }
+            Liner proj = readProj(k, name);
+            int tl = TernaryAutomorphisms.findTranslationLine(proj);
+            System.out.println(name);
+            Map<Integer, Integer> quantities = new ConcurrentHashMap<>();
+            IntStream.range(0, pc).parallel().forEach(dl -> {
+                if (dl == tl) {
+                    return;
+                }
+                int cnt = 0;
+                for (int o = 0; o < pc; o++) {
+                    if (proj.flag(dl, o)) {
+                        continue;
+                    }
+                    for (int u = 0; u < pc; u++) {
+                        if (u == o || proj.flag(dl, u)) {
+                            continue;
+                        }
+                        int ou = proj.line(o, u);
+                        for (int w = 0; w < pc; w++) {
+                            if (w == o || w == u || proj.flag(dl, w) || proj.flag(ou, w)) {
+                                continue;
+                            }
+                            int ow = proj.line(o, w);
+                            int e = proj.intersection(proj.line(w, proj.intersection(ou, dl)),
+                                    proj.line(u, proj.intersection(ow, dl)));
+                            int ea = proj.intersection(proj.line(e, proj.intersection(ou, dl)), proj.line(e, proj.intersection(ow, dl)));
+                            int lao = proj.line(o, ea);
+                            int ob = proj.intersection(ow, proj.line(e, proj.intersection(ou, dl)));
+                            int lab = proj.line(ob, proj.intersection(lao, dl));
+                            int xy = proj.intersection(lab, proj.line(e, proj.intersection(ow, dl)));
+                            int y = proj.intersection(proj.line(o, e), proj.line(xy, proj.intersection(ou, dl)));
+                            if (y == o) {
+                                cnt++;
+                            }
+                        }
+                    }
+                }
+                quantities.compute(cnt, (_, v) -> v == null ? 1 : v + 1);
+            });
+            System.out.println(quantities);
+        }
     }
 
     private static class IsotopyProcessor implements BiConsumer<String, AffineTernaryRing> {
