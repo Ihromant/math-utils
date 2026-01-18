@@ -3,8 +3,8 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
-import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
@@ -14,60 +14,204 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Applicator5Test {
     @Test
     public void testEven() throws IOException {
-        int k = 6;
-        boolean infinity = true;
-        Group group = new CyclicGroup(55);
-        int[] comps = infinity ? new int[]{1, 1, group.order()} : new int[]{1, 1};
-        GSpace sp = new GSpace(k, group, false, comps);
-        int v = sp.v();
-        int sqr = v * v;
-        FixBS removableDiffs = new FixBS(sp.diffLength());
-        for (int fst : sp.oBeg()) {
-            for (int snd = fst + 1; snd < v; snd++) {
-                int lft = sp.diffIdx(fst * v + snd);
-                if (lft == sp.diffIdx(snd * v + fst)) {
-                    removableDiffs.set(lft);
+        int k = 4;
+        int gs = 18;
+        int c = GroupIndex.groupCount(gs);
+        System.out.println(c);
+        for (int j = 1; j <= c; j++) {
+            Group group = GroupIndex.group(gs, j);
+            boolean infinity = true;
+            int[] comps = infinity ? new int[]{1, 1, group.order()} : new int[]{1, 1};
+            GSpace sp = new GSpace(k, group, false, comps);
+            int v = sp.v();
+            int orbitCount = v / gs;
+            FixBS removableDiffs = new FixBS(sp.diffLength());
+            for (int fst : sp.oBeg()) {
+                for (int snd = fst + 1; snd < v; snd++) {
+                    int lft = sp.diffIdx(fst * v + snd);
+                    if (lft == sp.diffIdx(snd * v + fst)) {
+                        removableDiffs.set(lft);
+                    }
+                }
+            }
+            if (infinity) {
+                int inf = v - 1;
+                for (int pt = 0; pt < v - 1; pt++) {
+                    removableDiffs.set(sp.diffIdx(pt * v + inf));
+                    removableDiffs.set(sp.diffIdx(inf * v + pt));
+                }
+            }
+            System.out.println(GroupIndex.identify(group) + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
+            State[] base = getRemovable(removableDiffs, sp, v, group);
+            System.out.println("Base blocks " + base.length);
+            List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
+            FixBS[] intersecting = intersecting(base);
+            IntStream.range(0, base.length).parallel().forEach(idx -> {
+                State st = base[idx];
+                find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
+                    if (!removableDiffs.diff(des.diffSet).isEmpty()) {
+                        return false;
+                    }
+                    Arrays.sort(des.curr(), Comparator.comparing(State::block));
+                    begins.add(des.curr());
+                    return false;
+                });
+            });
+            System.out.println("Initial configs " + begins.size());
+            for (State[] states : begins.isEmpty() ? begins : begins.subList(0, 1)) {
+                FixBS[][] filters = filters(states, sp, group);
+                List<int[][]> snc = Collections.synchronizedList(new ArrayList<>());
+                int[][] suitable = firstSuitable(states, sp);
+                for (int[] sizes : suitable) {
+                    int[] rev = new int[sizes.length];
+                    for (int i = 0; i < rev.length; i++) {
+                        rev[i] = k - sizes[rev.length - i - 1];
+                    }
+                    if (orbitCount == 2 && Combinatorics.compareArr(rev, sizes) < 0) {
+                        continue;
+                    }
+                    generateChunks(filters, sizes, sp, group, snc::add);
+                }
+                for (int[][] beg : snc) {
+                    System.out.println(Arrays.deepToString(Arrays.stream(states).map(State::block).toArray()) + " " + Arrays.deepToString(beg));
                 }
             }
         }
-        if (infinity) {
-            int inf = v - 1;
-            for (int pt = 0; pt < v - 1; pt++) {
-                removableDiffs.set(sp.diffIdx(pt * v + inf));
-                removableDiffs.set(sp.diffIdx(inf * v + pt));
-            }
+    }
+
+    private void generateChunks(FixBS[][] filters, int[] sizes, GSpace sp, Group group, Consumer<int[][]> cons) {
+        int[] freq = new int[sp.k() + 1];
+        for (int val : sizes) {
+            freq[val]++;
         }
-        System.out.println(group.name() + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
-        State[] base = getRemovable(removableDiffs, sp, v, group);
-        System.out.println("Base blocks " + base.length);
-        List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
-        FixBS[] intersecting = intersecting(base);
-        IntStream.range(0, base.length).parallel().forEach(idx -> {
-            State st = base[idx];
-            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
-                if (!removableDiffs.diff(des.diffSet).isEmpty()) {
+        int total = Arrays.stream(freq, 2, freq.length).sum();
+        System.out.println("Generate for " + sp.v() + " " + sp.k() + " " + Arrays.toString(sizes) + " " + total);
+        int[][] auths = group.auth();
+        IntList newBlock = new IntList(sp.k());
+        newBlock.add(0);
+        FixBS filter = filters[0][0];
+        FixBS whiteList = filter.copy();
+        whiteList.flip(1, group.order());
+        List<LeftState[]> triples = new ArrayList<>();
+        searchDesigns(new LeftState[0], freq, new LeftState(newBlock, filter, whiteList).acceptElem(1, group), group, sp.k(), des -> {
+            FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(group.order(), st.block.toArray())).toArray(FixBS[]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, group)).sorted().toArray(FixBS[]::new))) {
+                    return true;
+                }
+            }
+            if (des.length < Math.min(total / 2, 2)) {
+                return false;
+            }
+            triples.add(des);
+            return true;
+        });
+        System.out.println("Triples size: " + triples.size());
+        triples.stream().parallel().forEach(des -> {
+            int[] rem = freq.clone();
+            for (LeftState st : des) {
+                rem[st.block.size()]--;
+            }
+            FixBS ftr = des[des.length - 1].filter;
+            FixBS whL = ftr.copy();
+            whL.flip(1, group.order());
+            IntList nwb = new IntList(sp.k());
+            nwb.add(0);
+            searchDesigns(des, rem, new LeftState(nwb, ftr, whL).acceptElem(whL.nextSetBit(0), group), group, sp.k(), finDes -> {
+                if (finDes.length < total) {
                     return false;
                 }
-                Arrays.sort(des.curr(), Comparator.comparing(State::block));
-                begins.add(des.curr());
-                return false;
+                FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(group.order(), st.block.toArray())).toArray(FixBS[]::new);
+                for (int[] auth : auths) {
+                    if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, group)).sorted().toArray(FixBS[]::new))) {
+                        return true;
+                    }
+                }
+                List<int[]> res = Arrays.stream(base).map(FixBS::toArray).collect(Collectors.toList());
+                IntStream.range(0, freq[1]).forEach(i -> res.add(new int[]{0}));
+                IntStream.range(0, freq[0]).forEach(i -> res.add(new int[]{}));
+                cons.accept(res.toArray(int[][]::new));
+                return true;
             });
         });
-        System.out.println("Initial configs " + begins.size());
-        for (State[] states : begins) {
-            System.out.println(Arrays.deepToString(Arrays.stream(states).map(State::block).toArray()) + " "
-                    + Arrays.deepToString(filters(states, sp, group)));
+    }
+
+    private static FixBS minimalTuple(FixBS tuple, int[] auth, Group gr) {
+        int ord = gr.order();
+        FixBS base = new FixBS(ord);
+        for (int val = tuple.nextSetBit(0); val >= 0; val = tuple.nextSetBit(val + 1)) {
+            base.set(auth[val]);
         }
+        FixBS min = base;
+        for (int val = base.nextSetBit(1); val >= 0 && val < ord; val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(ord);
+            int inv = gr.inv(val);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                cnd.set(gr.op(inv, oVal));
+            }
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
+            }
+        }
+        return min;
+    }
+
+    private boolean bigger(FixBS[] base, FixBS[] cand) {
+        for (int i = 0; i < base.length; i++) {
+            int cmp = base[i].compareTo(cand[i]);
+            if (cmp < 0) {
+                return false;
+            }
+            if (cmp > 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static void searchDesigns(LeftState[] currDesign, int[] freq, LeftState state, Group gr, int k, Predicate<LeftState[]> cons) {
+        IntList block = state.block;
+        int size = state.size();
+        if (hasNext(freq, size + 1)) {
+            for (int el = state.whiteList.nextSetBit(block.getLast() + 1); el >= 0; el = state.whiteList.nextSetBit(el + 1)) {
+                LeftState nextState = state.acceptElem(el, gr);
+                searchDesigns(currDesign, freq, nextState, gr, k, cons);
+            }
+        }
+        if (freq[size] > 0) {
+            LeftState[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
+            nextDesign[currDesign.length] = state;
+            if (cons.test(nextDesign)) {
+                return;
+            }
+            IntList newBlock = new IntList(k);
+            newBlock.add(0);
+            FixBS whiteList = state.filter.copy();
+            whiteList.flip(1, gr.order());
+            LeftState nextState = new LeftState(newBlock, state.filter, whiteList).acceptElem(whiteList.nextSetBit(0), gr);
+            int[] newFreq = freq.clone();
+            newFreq[size]--;
+            searchDesigns(nextDesign, newFreq, nextState, gr, k, cons);
+        }
+    }
+
+    private static boolean hasNext(int[] freq, int from) {
+        for (int i = from; i < freq.length; i++) {
+            if (freq[i] > 0) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static State[] getRemovable(FixBS removableDiffs, GSpace sp, int v, Group group) {
@@ -259,5 +403,64 @@ public class Applicator5Test {
             }
         }
         return result;
+    }
+
+    public int[][] firstSuitable(State[] basicConf, GSpace sp) {
+        return groupedSuitable(basicConf, sp).keySet().toArray(int[][]::new);
+    }
+
+    public Map<int[], List<int[][]>> groupedSuitable(State[] basicConf, GSpace sp) {
+        TreeMap<int[], List<int[][]>> result = new TreeMap<>(Combinatorics::compareArr);
+        Arrays.stream(suitable(basicConf, sp)).forEach(arr -> {
+            int[] fst = Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray();
+            result.computeIfAbsent(fst, k -> new ArrayList<>()).add(arr);
+        });
+        return result;
+    }
+
+    public int[][][] suitable(State[] basicConf, GSpace sp) {
+        return find(basicConf, sp).stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
+    }
+
+    private record LeftState(IntList block, FixBS filter, FixBS whiteList) {
+        private LeftState acceptElem(int el, Group group) {
+            IntList nextBlock = block.copy();
+            nextBlock.add(el);
+            boolean tupleFinished = nextBlock.size() == nextBlock.arr().length;
+            FixBS newFilter = filter.copy();
+            FixBS newWhiteList = whiteList.copy();
+            int invEl = group.inv(el);
+            for (int i = 0; i < block.size(); i++) {
+                int val = block.get(i);
+                int diff = group.op(group.inv(val), el);
+                int outDiff = group.op(invEl, val);
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+                if (tupleFinished) {
+                    continue;
+                }
+                for (int rt : group.squareRoots(diff)) {
+                    newWhiteList.clear(group.op(val, rt));
+                }
+                for (int rt : group.squareRoots(outDiff)) {
+                    newWhiteList.clear(group.op(el, rt));
+                }
+                for (int j = 0; j <= block.size(); j++) {
+                    int nv = nextBlock.get(j);
+                    newWhiteList.clear(group.op(nv, diff));
+                    newWhiteList.clear(group.op(nv, outDiff));
+                }
+            }
+            if (!tupleFinished) {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear(group.op(el, diff));
+                }
+            }
+            return new LeftState(nextBlock, newFilter, newWhiteList);
+        }
+
+        private int size() {
+            return block.size();
+        }
     }
 }
