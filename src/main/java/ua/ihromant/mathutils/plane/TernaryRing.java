@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.plane;
 
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -494,6 +495,61 @@ public interface TernaryRing {
             }
         }
         return false;
+    }
+
+    record TerChar(int add, int plus, int puls) {}
+
+    default TerChar terChar() {
+        int ord = order();
+        int[][] plusMatrix = addMatrix();
+        int[][] pulsMatrix = pulsMatrix();
+        int[][][] matrix = matrix();
+        FixBS plusResult = FixBS.of(ord, 0, 1);
+        FixBS additionalPlus = plusResult.copy();
+        FixBS pulsResult = FixBS.of(ord, 0, 1);
+        FixBS additionalPuls = plusResult.copy();
+        FixBS opResult = FixBS.of(ord, 0, 1);
+        FixBS additionalOp = plusResult.copy();
+        do {
+            plusResult.or(additionalPlus);
+        } while (!(additionalPlus = additional(plusResult, additionalPlus, plusMatrix)).isEmpty());
+        do {
+            pulsResult.or(additionalPuls);
+        } while (!(additionalPuls = additional(pulsResult, additionalPuls, pulsMatrix)).isEmpty());
+        do {
+            opResult.or(additionalOp);
+        } while (!(additionalOp = additional(opResult, additionalOp, matrix)).isEmpty());
+        return new TerChar(opResult.cardinality(), plusResult.cardinality(), pulsResult.cardinality());
+    }
+
+    private static FixBS additional(FixBS currClosure, FixBS addition, int[][] matrix) {
+        FixBS result = currClosure.copy();
+        for (int a = currClosure.nextSetBit(0); a >= 0; a = currClosure.nextSetBit(a + 1)) {
+            for (int b = addition.nextSetBit(0); b >= 0; b = addition.nextSetBit(b + 1)) {
+                result.set(matrix[a][b]);
+                result.set(matrix[b][a]);
+            }
+        }
+        result.andNot(currClosure);
+        return result;
+    }
+
+    private static FixBS additional(FixBS currClosure, FixBS addition, int[][][] matrix) {
+        FixBS result = currClosure.copy();
+        for (int a = currClosure.nextSetBit(0); a >= 0; a = currClosure.nextSetBit(a + 1)) {
+            for (int b = currClosure.nextSetBit(0); b >= 0; b = currClosure.nextSetBit(b + 1)) {
+                for (int c = addition.nextSetBit(0); c >= 0; c = addition.nextSetBit(c + 1)) {
+                    result.set(matrix[a][b][c]);
+                    result.set(matrix[a][c][b]);
+                    result.set(matrix[c][a][b]);
+                    result.set(matrix[c][b][a]);
+                    result.set(matrix[b][a][c]);
+                    result.set(matrix[b][c][a]);
+                }
+            }
+        }
+        result.andNot(currClosure);
+        return result;
     }
 
     default Map<Map<Integer, Integer>, Integer> characteristic() {

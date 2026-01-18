@@ -1021,6 +1021,50 @@ public class BatchAffineTest {
         processor.finish();
     }
 
+    @Test
+    public void charTest() throws IOException {
+        int k = 16;
+        int pc = k * k + k + 1;
+        //IsotopyProcessor processor = new IsotopyProcessor(k);
+        //for (String plName : dropped.keySet()) {
+        Set<TernaryRing.TerChar> set = new HashSet<>();
+        String plName = "dbbh2";
+        Liner proj = readProj(k, plName);
+        for (int dl : new int[]{0, 1, 21, 41, 233}) {
+            //Liner liner = new AffinePlane(proj, dl).toLiner();
+            String name = plName + "-" + dl + "-" + k;
+            System.out.println(name + " dropped line " + dl);
+            for (int o = 0; o < pc; o++) {
+                if (proj.flag(dl, o)) {
+                    continue;
+                }
+                for (int u = 0; u < pc; u++) {
+                    if (u == o || proj.flag(dl, u)) {
+                        continue;
+                    }
+                    int ou = proj.line(o, u);
+                    for (int w = 0; w < pc; w++) {
+                        if (w == o || w == u || proj.flag(dl, w) || proj.flag(ou, w)) {
+                            continue;
+                        }
+                        int e = proj.intersection(proj.line(w, proj.intersection(ou, dl)),
+                                proj.line(u, proj.intersection(proj.line(o, w), dl)));
+                        Quad quad = new Quad(o, u, w, e);
+                        ProjectiveTernaryRing ptr = new ProjectiveTernaryRing("", proj, quad);
+                        if (ptr.isLinear()) {
+                            TernaryRing.TerChar tcr = ptr.terChar();
+                            if (set.add(tcr)) {
+                                System.out.println(quad + " " + ptr.terChar());
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        //}
+        //processor.finish();
+    }
+
     private static class IsotopyProcessor implements BiConsumer<String, AffineTernaryRing> {
         private final Map<Map<Map<Integer, Integer>, Integer>, Map<String, SequencedMap<String, AffineTernaryRing>>> grouped = new HashMap<>();
         private final int[][] hBijections;
