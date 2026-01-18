@@ -103,7 +103,7 @@ public class Applicator5Test {
         FixBS whiteList = filter.copy();
         whiteList.flip(1, group.order());
         List<LeftState[]> triples = new ArrayList<>();
-        searchDesigns(new LeftState[0], freq, new LeftState(newBlock, filter, whiteList).acceptElem(1, group), group, sp.k(), des -> {
+        searchDesigns(new LeftState[0], freq, new LeftState(newBlock, filter, whiteList).acceptElem(whiteList.nextSetBit(1), group), group, sp.k(), des -> {
             FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(group.order(), st.block.toArray())).toArray(FixBS[]::new);
             for (int[] auth : auths) {
                 if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, group)).sorted().toArray(FixBS[]::new))) {
