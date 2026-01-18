@@ -18,7 +18,6 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class Applicator5Test {
@@ -70,7 +69,7 @@ public class Applicator5Test {
             System.out.println("Initial configs " + begins.size());
             for (State[] states : begins.isEmpty() ? begins : begins.subList(0, 1)) {
                 FixBS[][] filters = filters(states, sp, group);
-                List<int[][]> snc = Collections.synchronizedList(new ArrayList<>());
+                List<LeftState[]> snc = Collections.synchronizedList(new ArrayList<>());
                 int[][] suitable = firstSuitable(states, sp);
                 for (int[] sizes : suitable) {
                     int[] rev = new int[sizes.length];
@@ -89,17 +88,17 @@ public class Applicator5Test {
                         if (arr[ll - 1] == null) {
                             return false;
                         }
-                        int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
+                        int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i].block.toArray(), arr[i].block.toArray()}).toArray(int[][][]::new);
                         System.out.println(Arrays.deepToString(res));
                         return true;
                     };
-                    LeftCalc[] calcs = Arrays.stream(left).map(arr -> fromBlock(arr, group)).toArray(LeftCalc[]::new);
-                    LeftCalc fstLeft = calcs[0];
+                    LeftState fstLeft = left[0];
                     RightState[] rights = new RightState[ll];
                     FixBS whiteList = new FixBS(gs);
                     whiteList.set(0, gs);
                     FixBS outerFilter = filters[0][1];
-                    for (int el : fstLeft.block()) {
+                    for (int i = 0; i < fstLeft.block().size(); i++) {
+                        int el = fstLeft.block().get(i);
                         for (int diff = outerFilter.nextSetBit(0); diff >= 0; diff = outerFilter.nextSetBit(diff + 1)) {
                             whiteList.clear(group.op(el, diff));
                         }
@@ -108,30 +107,31 @@ public class Applicator5Test {
                     if (outerFilter.isEmpty()) {
                         state = state.acceptElem(0, fstLeft, group);
                     }
-                    find(calcs, rights, state, k, group, cons);
+                    find(left, rights, state, k, group, cons);
                 });
-                for (int[][] beg : snc) {
+                for (LeftState[] beg : snc) {
                     System.out.println(Arrays.deepToString(Arrays.stream(states).map(State::block).toArray()) + " " + Arrays.deepToString(beg));
                 }
             }
         }
     }
 
-    private static void find(LeftCalc[] lefts, RightState[] rights, RightState currState, int k, Group group, Predicate<RightState[]> cons) {
+    private static void find(LeftState[] lefts, RightState[] rights, RightState currState, int k, Group group, Predicate<RightState[]> cons) {
         int idx = currState.idx;
-        LeftCalc left = lefts[idx];
-        if (currState.block().size() == k - left.len()) {
+        LeftState left = lefts[idx];
+        if (currState.block().size() == k - left.size()) {
             RightState[] nextDesign = rights.clone();
             nextDesign[idx] = currState;
             if (cons.test(nextDesign)) {
                 return;
             }
             int nextIdx = idx + 1;
-            int[] nextLeft = lefts[nextIdx].block();
+            IntList nextLeft = lefts[nextIdx].block();
             FixBS nextWhitelist = new FixBS(group.order());
             nextWhitelist.flip(0, group.order());
             FixBS outerFilter = currState.outerFilter;
-            for (int el : nextLeft) {
+            for (int i = 0; i < nextLeft.size(); i++) {
+                int el = nextLeft.get(i);
                 for (int diff = outerFilter.nextSetBit(0); diff >= 0; diff = outerFilter.nextSetBit(diff + 1)) {
                     nextWhitelist.clear(group.op(el, diff));
                 }
@@ -147,13 +147,14 @@ public class Applicator5Test {
         }
     }
 
-    private void generateChunks(FixBS[][] filters, int[] sizes, GSpace sp, Group group, Consumer<int[][]> cons) {
+    private void generateChunks(FixBS[][] filters, int[] sizes, GSpace sp, Group group, Consumer<LeftState[]> cons) {
         int[] freq = new int[sp.k() + 1];
         for (int val : sizes) {
             freq[val]++;
         }
-        int total = Arrays.stream(freq, 2, freq.length).sum();
-        System.out.println("Generate for " + sp.v() + " " + sp.k() + " " + Arrays.toString(sizes) + " " + total);
+        int total = Arrays.stream(freq).sum();
+        int totalNonTrivial = Arrays.stream(freq, 2, freq.length).sum();
+        System.out.println("Generate for " + sp.v() + " " + sp.k() + " " + Arrays.toString(sizes) + " " + totalNonTrivial);
         int[][] auths = group.auth();
         IntList newBlock = new IntList(sp.k());
         newBlock.add(0);
@@ -168,7 +169,7 @@ public class Applicator5Test {
                     return true;
                 }
             }
-            if (des.length < Math.min(total / 2, 2)) {
+            if (des.length < Math.min(totalNonTrivial / 2, 2)) {
                 return false;
             }
             triples.add(des);
@@ -186,7 +187,7 @@ public class Applicator5Test {
             IntList nwb = new IntList(sp.k());
             nwb.add(0);
             searchDesigns(des, rem, new LeftState(nwb, ftr, whL).acceptElem(whL.nextSetBit(0), group), group, sp.k(), finDes -> {
-                if (finDes.length < total) {
+                if (finDes.length < totalNonTrivial) {
                     return false;
                 }
                 FixBS[] base = Arrays.stream(finDes).map(st -> FixBS.of(group.order(), st.block.toArray())).toArray(FixBS[]::new);
@@ -195,10 +196,16 @@ public class Applicator5Test {
                         return true;
                     }
                 }
-                List<int[]> res = Arrays.stream(base).map(FixBS::toArray).collect(Collectors.toList());
-                IntStream.range(0, freq[1]).forEach(_ -> res.add(new int[]{0}));
-                IntStream.range(0, freq[0]).forEach(_ -> res.add(new int[]{}));
-                cons.accept(res.toArray(int[][]::new));
+                LeftState[] res = Arrays.copyOf(finDes, total);
+                for (int i = totalNonTrivial; i < totalNonTrivial + freq[1]; i++) {
+                    IntList block = new IntList(sp.k());
+                    block.add(0);
+                    res[i] = new LeftState(block, finDes[finDes.length - 1].filter, new FixBS(group.order()));
+                }
+                for (int i = totalNonTrivial + freq[1]; i < total; i++) {
+                    res[i] = new LeftState(new IntList(sp.k()), finDes[finDes.length - 1].filter, new FixBS(group.order()));
+                }
+                cons.accept(res);
                 return true;
             });
         });
@@ -522,25 +529,8 @@ public class Applicator5Test {
         }
     }
 
-    private record LeftCalc(int[] block, FixBS bl, FixBS inv, FixBS diff, int len) {}
-
-    private static LeftCalc fromBlock(int[] block, Group gr) {
-        int gOrd = gr.order();
-        FixBS inv = new FixBS(gOrd);
-        FixBS diff = new FixBS(gOrd);
-        FixBS bl = new FixBS(gOrd);
-        for (int i : block) {
-            bl.set(i);
-            inv.set(gr.inv(i));
-            for (int j : block) {
-                diff.set(gr.op(gr.inv(j), i));
-            }
-        }
-        return new LeftCalc(block, bl, inv, diff, block.length);
-    }
-
     private record RightState(IntList block, FixBS filter, FixBS outerFilter, FixBS whiteList, int idx) {
-        private RightState acceptElem(int el, LeftCalc left, Group group) {
+        private RightState acceptElem(int el, LeftState left, Group group) {
             // TODO adapt to group
             int v = group.order();
             int sz = block.size();
@@ -565,8 +555,8 @@ public class Applicator5Test {
                     newWhiteList.clear((nv + outDiff) % v);
                 }
             }
-            newOuterFilter.orModuleShifted(left.inv(), v, invEl);
-            newWhiteList.diffModuleShifted(left.diff(), v, invEl);
+            // TODO newOuterFilter.orModuleShifted(left.inv(), v, invEl);
+            // TODO newWhiteList.diffModuleShifted(left.diff(), v, invEl);
             newWhiteList.diffModuleShifted(newFilter, v, invEl);
             return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
         }
