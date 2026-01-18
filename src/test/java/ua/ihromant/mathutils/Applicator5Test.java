@@ -25,15 +25,15 @@ public class Applicator5Test {
     @Test
     public void testEven() throws IOException {
         int k = 4;
+        int v = 37;
         int gs = 18;
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            boolean infinity = true;
+            boolean infinity = v % gs == 1;
             int[] comps = infinity ? new int[]{1, 1, group.order()} : new int[]{1, 1};
             GSpace sp = new GSpace(k, group, false, comps);
-            int v = sp.v();
             int orbitCount = v / gs;
             FixBS removableDiffs = new FixBS(sp.diffLength());
             for (int fst : sp.oBeg()) {
@@ -82,9 +82,62 @@ public class Applicator5Test {
                     }
                     generateChunks(filters, sizes, sp, group, snc::add);
                 }
+                System.out.println("Lefts size: " + snc.size());
+                snc.stream().parallel().forEach(left -> {
+                    int ll = left.length;
+                    Predicate<RightState[]> cons = arr -> {
+                        if (arr[ll - 1] == null) {
+                            return false;
+                        }
+                        int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i], arr[i].block.toArray()}).toArray(int[][][]::new);
+                        System.out.println(Arrays.deepToString(res));
+                        return true;
+                    };
+                    LeftCalc[] calcs = Arrays.stream(left).map(arr -> fromBlock(arr, group)).toArray(LeftCalc[]::new);
+                    LeftCalc fstLeft = calcs[0];
+                    RightState[] rights = new RightState[ll];
+                    FixBS whiteList = new FixBS(gs);
+                    whiteList.set(0, gs);
+                    FixBS outerFilter = filters[0][1]; // TODO fix conf.outerFilter();
+                    for (int el : fstLeft.block()) {
+                        // TODO fix whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), conf.orbitSize() - el);
+                    }
+                    RightState state = new RightState(new IntList(k), filters[1][1], outerFilter, whiteList, 0);
+                    if (outerFilter.isEmpty()) {
+                        state = state.acceptElem(0, fstLeft, group);
+                    }
+                    find(calcs, rights, state, k, group, cons);
+                });
                 for (int[][] beg : snc) {
                     System.out.println(Arrays.deepToString(Arrays.stream(states).map(State::block).toArray()) + " " + Arrays.deepToString(beg));
                 }
+            }
+        }
+    }
+
+    private static void find(LeftCalc[] lefts, RightState[] rights, RightState currState, int k, Group group, Predicate<RightState[]> cons) {
+        int idx = currState.idx;
+        LeftCalc left = lefts[idx];
+        if (currState.block().size() == k - left.len()) {
+            RightState[] nextDesign = rights.clone();
+            nextDesign[idx] = currState;
+            if (cons.test(nextDesign)) {
+                return;
+            }
+            int nextIdx = idx + 1;
+            int[] nextLeft = lefts[nextIdx].block();
+            FixBS nextWhitelist = new FixBS(group.order());
+            nextWhitelist.flip(0, group.order());
+            for (int el : nextLeft) {
+                // TODO fix nextWhitelist.diffModuleShifted(currState.outerFilter, ol, ol - el);
+            }
+            RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
+            find(lefts, nextDesign, nextState, k, group, cons);
+        } else {
+            FixBS whiteList = currState.whiteList;
+            for (int el = whiteList.nextSetBit(currState.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
+                RightState nextState = currState.acceptElem(el, left, group);
+                find(lefts, rights, nextState, k, group, cons);
             }
         }
     }
@@ -138,8 +191,8 @@ public class Applicator5Test {
                     }
                 }
                 List<int[]> res = Arrays.stream(base).map(FixBS::toArray).collect(Collectors.toList());
-                IntStream.range(0, freq[1]).forEach(i -> res.add(new int[]{0}));
-                IntStream.range(0, freq[0]).forEach(i -> res.add(new int[]{}));
+                IntStream.range(0, freq[1]).forEach(_ -> res.add(new int[]{0}));
+                IntStream.range(0, freq[0]).forEach(_ -> res.add(new int[]{}));
                 cons.accept(res.toArray(int[][]::new));
                 return true;
             });
@@ -413,7 +466,7 @@ public class Applicator5Test {
         TreeMap<int[], List<int[][]>> result = new TreeMap<>(Combinatorics::compareArr);
         Arrays.stream(suitable(basicConf, sp)).forEach(arr -> {
             int[] fst = Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray();
-            result.computeIfAbsent(fst, k -> new ArrayList<>()).add(arr);
+            result.computeIfAbsent(fst, _ -> new ArrayList<>()).add(arr);
         });
         return result;
     }
@@ -461,6 +514,60 @@ public class Applicator5Test {
 
         private int size() {
             return block.size();
+        }
+    }
+
+    private record LeftCalc(int[] block, FixBS bl, FixBS inv, FixBS diff, int len) {}
+
+    private static LeftCalc fromBlock(int[] block, Group gr) {
+        int gOrd = gr.order();
+        FixBS inv = new FixBS(gOrd);
+        FixBS diff = new FixBS(gOrd);
+        FixBS bl = new FixBS(gOrd);
+        for (int i : block) {
+            bl.set(i);
+            inv.set(gr.inv(i));
+            for (int j : block) {
+                diff.set(gr.op(gr.inv(j), i));
+            }
+        }
+        return new LeftCalc(block, bl, inv, diff, block.length);
+    }
+
+    private record RightState(IntList block, FixBS filter, FixBS outerFilter, FixBS whiteList, int idx) {
+        private RightState acceptElem(int el, LeftCalc left, Group group) {
+            // TODO adapt to group
+            int v = group.order();
+            int sz = block.size();
+            IntList nextBlock = block.copy();
+            nextBlock.add(el);
+            FixBS newFilter = filter.copy();
+            FixBS newOuterFilter = outerFilter.copy();
+            FixBS newWhiteList = whiteList.copy();
+            int invEl = v - el;
+            for (int i = 0; i < sz; i++) {
+                int val = nextBlock.get(i);
+                int diff = el - val;
+                int outDiff = invEl + val;
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+                if (outDiff % 2 == 0) {
+                    newWhiteList.clear((el + outDiff / 2) % v);
+                }
+                for (int j = 0; j <= sz; j++) {
+                    int nv = nextBlock.get(j);
+                    //newWhiteList.clear((nv + diff) % v);
+                    newWhiteList.clear((nv + outDiff) % v);
+                }
+            }
+            newOuterFilter.orModuleShifted(left.inv(), v, invEl);
+            newWhiteList.diffModuleShifted(left.diff(), v, invEl);
+            newWhiteList.diffModuleShifted(newFilter, v, invEl);
+            return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
+        }
+
+        public int last() {
+            return block.isEmpty() ? -1 : block.getLast();
         }
     }
 }
