@@ -162,7 +162,7 @@ public class Applicator5Test {
         FixBS whiteList = filter.copy();
         whiteList.flip(1, group.order());
         List<LeftState[]> triples = new ArrayList<>();
-        searchDesigns(new LeftState[0], freq, new LeftState(newBlock, filter, whiteList).acceptElem(whiteList.nextSetBit(1), group), group, sp.k(), des -> {
+        searchDesigns(new LeftState[0], freq, new LeftState(newBlock, filter, new FixBS(group.order()), whiteList).acceptElem(whiteList.nextSetBit(1), group), group, sp.k(), des -> {
             FixBS[] base = Arrays.stream(des).map(st -> FixBS.of(group.order(), st.block.toArray())).toArray(FixBS[]::new);
             for (int[] auth : auths) {
                 if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, group)).sorted().toArray(FixBS[]::new))) {
@@ -186,7 +186,7 @@ public class Applicator5Test {
             whL.flip(1, group.order());
             IntList nwb = new IntList(sp.k());
             nwb.add(0);
-            searchDesigns(des, rem, new LeftState(nwb, ftr, whL).acceptElem(whL.nextSetBit(0), group), group, sp.k(), finDes -> {
+            searchDesigns(des, rem, new LeftState(nwb, ftr, new FixBS(group.order()), whL).acceptElem(whL.nextSetBit(0), group), group, sp.k(), finDes -> {
                 if (finDes.length < totalNonTrivial) {
                     return false;
                 }
@@ -200,10 +200,10 @@ public class Applicator5Test {
                 for (int i = totalNonTrivial; i < totalNonTrivial + freq[1]; i++) {
                     IntList block = new IntList(sp.k());
                     block.add(0);
-                    res[i] = new LeftState(block, finDes[finDes.length - 1].filter, new FixBS(group.order()));
+                    res[i] = new LeftState(block, finDes[finDes.length - 1].filter, new FixBS(group.order()), new FixBS(group.order()));
                 }
                 for (int i = totalNonTrivial + freq[1]; i < total; i++) {
-                    res[i] = new LeftState(new IntList(sp.k()), finDes[finDes.length - 1].filter, new FixBS(group.order()));
+                    res[i] = new LeftState(new IntList(sp.k()), finDes[finDes.length - 1].filter, new FixBS(group.order()), new FixBS(group.order()));
                 }
                 cons.accept(res);
                 return true;
@@ -263,7 +263,7 @@ public class Applicator5Test {
             newBlock.add(0);
             FixBS whiteList = state.filter.copy();
             whiteList.flip(1, gr.order());
-            LeftState nextState = new LeftState(newBlock, state.filter, whiteList).acceptElem(whiteList.nextSetBit(0), gr);
+            LeftState nextState = new LeftState(newBlock, state.filter, new FixBS(gr.order()), whiteList).acceptElem(whiteList.nextSetBit(0), gr);
             int[] newFreq = freq.clone();
             newFreq[size]--;
             searchDesigns(nextDesign, newFreq, nextState, gr, k, cons);
@@ -487,20 +487,24 @@ public class Applicator5Test {
         return find(basicConf, sp).stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
     }
 
-    private record LeftState(IntList block, FixBS filter, FixBS whiteList) {
+    private record LeftState(IntList block, FixBS filter, FixBS revDiff, FixBS whiteList) {
         private LeftState acceptElem(int el, Group group) {
             IntList nextBlock = block.copy();
             nextBlock.add(el);
             boolean tupleFinished = nextBlock.size() == nextBlock.arr().length;
             FixBS newFilter = filter.copy();
             FixBS newWhiteList = whiteList.copy();
+            FixBS newRevDiff = revDiff.copy();
             int invEl = group.inv(el);
             for (int i = 0; i < block.size(); i++) {
                 int val = block.get(i);
-                int diff = group.op(group.inv(val), el);
+                int invVal = group.inv(val);
+                int diff = group.op(invVal, el);
                 int outDiff = group.op(invEl, val);
                 newFilter.set(diff);
                 newFilter.set(outDiff);
+                newRevDiff.set(group.op(el, invVal));
+                newRevDiff.set(group.op(val, invEl));
                 if (tupleFinished) {
                     continue;
                 }
@@ -521,7 +525,7 @@ public class Applicator5Test {
                     newWhiteList.clear(group.op(el, diff));
                 }
             }
-            return new LeftState(nextBlock, newFilter, newWhiteList);
+            return new LeftState(nextBlock, newFilter, newRevDiff, newWhiteList);
         }
 
         private int size() {
