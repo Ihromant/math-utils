@@ -98,9 +98,11 @@ public class Applicator5Test {
                     RightState[] rights = new RightState[ll];
                     FixBS whiteList = new FixBS(gs);
                     whiteList.set(0, gs);
-                    FixBS outerFilter = filters[0][1]; // TODO fix conf.outerFilter();
+                    FixBS outerFilter = filters[0][1];
                     for (int el : fstLeft.block()) {
-                        // TODO fix whiteList.diffModuleShifted(outerFilter, conf.orbitSize(), conf.orbitSize() - el);
+                        for (int diff = outerFilter.nextSetBit(0); diff >= 0; diff = outerFilter.nextSetBit(diff + 1)) {
+                            whiteList.clear(group.op(el, diff));
+                        }
                     }
                     RightState state = new RightState(new IntList(k), filters[1][1], outerFilter, whiteList, 0);
                     if (outerFilter.isEmpty()) {
@@ -128,8 +130,11 @@ public class Applicator5Test {
             int[] nextLeft = lefts[nextIdx].block();
             FixBS nextWhitelist = new FixBS(group.order());
             nextWhitelist.flip(0, group.order());
+            FixBS outerFilter = currState.outerFilter;
             for (int el : nextLeft) {
-                // TODO fix nextWhitelist.diffModuleShifted(currState.outerFilter, ol, ol - el);
+                for (int diff = outerFilter.nextSetBit(0); diff >= 0; diff = outerFilter.nextSetBit(diff + 1)) {
+                    nextWhitelist.clear(group.op(el, diff));
+                }
             }
             RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
             find(lefts, nextDesign, nextState, k, group, cons);
