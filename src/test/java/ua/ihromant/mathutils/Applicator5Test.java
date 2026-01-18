@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public class Applicator5Test {
     @Test
@@ -88,8 +89,21 @@ public class Applicator5Test {
                         if (arr[ll - 1] == null) {
                             return false;
                         }
+                        Liner lnr = new Liner(v, Stream.concat(Arrays.stream(states).flatMap(st -> sp.blocks(st.block())),
+                                IntStream.range(0, left.length).mapToObj(i -> {
+                                    FixBS result = new FixBS(v);
+                                    IntList l = left[i].block;
+                                    IntList r = arr[i].block;
+                                    for (int ii = 0; ii < l.size(); ii++) {
+                                        result.set(l.get(ii));
+                                    }
+                                    for (int ii = 0; ii < r.size(); ii++) {
+                                        result.set(r.get(ii) + gs);
+                                    }
+                                    return result;
+                                }).flatMap(sp::blocks)).toArray(int[][]::new));
                         int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i].block.toArray(), arr[i].block.toArray()}).toArray(int[][][]::new);
-                        System.out.println(Arrays.deepToString(res));
+                        System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(res));
                         return true;
                     };
                     LeftState fstLeft = left[0];
