@@ -555,7 +555,7 @@ public class Applicator5Test {
                 for (int rt : group.squareRoots(outDiff)) {
                     newWhiteList.clear(group.op(el, rt));
                 }
-                for (int j = 0; j <= idx; j++) {
+                for (int j = 0; j <= sz; j++) {
                     int nv = nextBlock.get(j);
                     newWhiteList.clear(group.op(nv, diff));
                     newWhiteList.clear(group.op(nv, outDiff));
