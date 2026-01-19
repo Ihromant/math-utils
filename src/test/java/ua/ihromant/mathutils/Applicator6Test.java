@@ -119,7 +119,7 @@ public class Applicator6Test {
                             whiteList = clear(whiteList, group.op(el, diff));
                         }
                     }
-                    RightState state = new RightState(new IntList(k), filters[1][1], outerFilter, whiteList, 0);
+                    RightState state = new RightState(new IntList(k), filters[1][1], outerFilter, 0L, whiteList, 0);
                     if (outerFilter == 0) {
                         state = state.acceptElem(0, fstLeft, group);
                     }
@@ -149,7 +149,7 @@ public class Applicator6Test {
                     nextWhitelist = clear(nextWhitelist, group.op(el, diff));
                 }
             }
-            RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, nextWhitelist, nextIdx);
+            RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, 0L, nextWhitelist, nextIdx);
             find(lefts, nextDesign, nextState, k, group, cons);
         } else {
             long whiteList = currState.whiteList;
@@ -538,7 +538,7 @@ public class Applicator6Test {
         }
     }
 
-    private record RightState(IntList block, long filter, long outerFilter, long whiteList, int idx) {
+    private record RightState(IntList block, long filter, long outerFilter, long revDiff, long whiteList, int idx) {
         private RightState acceptElem(int el, LeftState left, Group group) {
             int sz = block.size();
             IntList nextBlock = block.copy();
@@ -546,13 +546,17 @@ public class Applicator6Test {
             long newFilter = filter;
             long newOuterFilter = outerFilter;
             long newWhiteList = whiteList;
+            long newRevDiff = revDiff;
             int invEl = group.inv(el);
             for (int i = 0; i < sz; i++) {
                 int val = nextBlock.get(i);
-                int diff = group.op(group.inv(val), el);
+                int invVal = group.inv(val);
+                int diff = group.op(invVal, el);
                 int outDiff = group.op(invEl, val);
                 newFilter = set(newFilter, diff);
                 newFilter = set(newFilter, outDiff);
+                newRevDiff = set(newRevDiff, group.op(el, invVal));
+                newRevDiff = set(newRevDiff, group.op(val, invEl));
                 // if tuple finished probably
                 for (int rt : group.squareRoots(diff)) {
                     newWhiteList = clear(newWhiteList, group.op(val, rt));
@@ -576,7 +580,7 @@ public class Applicator6Test {
                 newOuterFilter = set(newOuterFilter,group.op(group.inv(left.block().get(j)), el)); // TODO check right to left
             }
 
-            return new RightState(nextBlock, newFilter, newOuterFilter, newWhiteList, idx);
+            return new RightState(nextBlock, newFilter, newOuterFilter, newRevDiff, newWhiteList, idx);
         }
 
         public int last() {
