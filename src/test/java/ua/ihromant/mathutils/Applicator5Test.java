@@ -68,7 +68,7 @@ public class Applicator5Test {
                 });
             });
             System.out.println("Initial configs " + begins.size());
-            for (State[] states : begins.isEmpty() ? begins : begins.subList(0, 1)) {
+            for (State[] states : begins) {
                 FixBS[][] filters = filters(states, sp, group);
                 List<LeftState[]> snc = Collections.synchronizedList(new ArrayList<>());
                 int[][] suitable = firstSuitable(states, sp);
