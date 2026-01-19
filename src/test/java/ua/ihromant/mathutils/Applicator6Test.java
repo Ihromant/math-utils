@@ -88,7 +88,7 @@ public class Applicator6Test {
                 System.out.println("Lefts size: " + snc.size());
                 snc.stream().parallel().forEach(left -> {
                     int ll = left.length;
-                    Predicate<RightState[]> cons = arr -> {
+                    Predicate<MidState[]> cons = arr -> {
                         if (arr[ll - 1] == null) {
                             return false;
                         }
@@ -110,7 +110,7 @@ public class Applicator6Test {
                         return true;
                     };
                     LeftState fstLeft = left[0];
-                    RightState[] rights = new RightState[ll];
+                    MidState[] rights = new MidState[ll];
                     long whiteList = set(0L, 0, gs);
                     long outerFilter = filters[0][1];
                     for (int i = 0; i < fstLeft.block().size(); i++) {
@@ -119,7 +119,7 @@ public class Applicator6Test {
                             whiteList = clear(whiteList, group.op(el, diff));
                         }
                     }
-                    RightState state = new RightState(new IntList(k), filters[1][1], outerFilter, 0L, whiteList, 0);
+                    MidState state = new MidState(new IntList(k), filters[1][1], outerFilter, 0L, whiteList, 0);
                     if (outerFilter == 0) {
                         state = state.acceptElem(0, fstLeft, group);
                     }
@@ -130,11 +130,11 @@ public class Applicator6Test {
         }
     }
 
-    private static void find(LeftState[] lefts, RightState[] rights, RightState currState, int k, Group group, Predicate<RightState[]> cons) {
+    private static void find(LeftState[] lefts, MidState[] rights, MidState currState, int k, Group group, Predicate<MidState[]> cons) {
         int idx = currState.idx;
         LeftState left = lefts[idx];
         if (currState.block().size() == k - left.size()) {
-            RightState[] nextDesign = rights.clone();
+            MidState[] nextDesign = rights.clone();
             nextDesign[idx] = currState;
             if (cons.test(nextDesign)) {
                 return;
@@ -149,12 +149,12 @@ public class Applicator6Test {
                     nextWhitelist = clear(nextWhitelist, group.op(el, diff));
                 }
             }
-            RightState nextState = new RightState(new IntList(k), currState.filter, currState.outerFilter, 0L, nextWhitelist, nextIdx);
+            MidState nextState = new MidState(new IntList(k), currState.filter, currState.outerFilter, 0L, nextWhitelist, nextIdx);
             find(lefts, nextDesign, nextState, k, group, cons);
         } else {
             long whiteList = currState.whiteList;
             for (int el = nextSetBit(whiteList, currState.last() + 1); el >= 0; el = nextSetBit(whiteList, el + 1)) {
-                RightState nextState = currState.acceptElem(el, left, group);
+                MidState nextState = currState.acceptElem(el, left, group);
                 find(lefts, rights, nextState, k, group, cons);
             }
         }
@@ -538,8 +538,8 @@ public class Applicator6Test {
         }
     }
 
-    private record RightState(IntList block, long filter, long outerFilter, long revDiff, long whiteList, int idx) {
-        private RightState acceptElem(int el, LeftState left, Group group) {
+    private record MidState(IntList block, long filter, long outerFilter, long revDiff, long whiteList, int idx) {
+        private MidState acceptElem(int el, LeftState left, Group group) {
             int sz = block.size();
             IntList nextBlock = block.copy();
             nextBlock.add(el);
@@ -580,7 +580,7 @@ public class Applicator6Test {
                 newOuterFilter = set(newOuterFilter,group.op(group.inv(left.block().get(j)), el)); // TODO check right to left
             }
 
-            return new RightState(nextBlock, newFilter, newOuterFilter, newRevDiff, newWhiteList, idx);
+            return new MidState(nextBlock, newFilter, newOuterFilter, newRevDiff, newWhiteList, idx);
         }
 
         public int last() {
