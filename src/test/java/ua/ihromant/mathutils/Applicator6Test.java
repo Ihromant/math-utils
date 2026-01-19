@@ -302,7 +302,7 @@ public class Applicator6Test {
             nextVariant[leftSize] = nextFreq;
             MidState[] nextMids = mids.clone();
             nextMids[idx] = currState;
-            RightState prev = idx > 0 ? rights[idx - 1] : new RightState(null, filters[0][0], filters[0][2], filters[1][2], 0, -1);
+            RightState prev = idx > 0 ? rights[idx - 1] : new RightState(null, filters[2][2], filters[0][2], filters[1][2], 0, -1);
             if (k == leftSize + midSize) {
                 RightState[] nextRights = rights.clone();
                 nextRights[idx] = new RightState(new IntList(0), prev.filter(), prev.leftOuterFilter(), prev.midOuterFilter(), 0, idx);
