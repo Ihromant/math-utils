@@ -33,9 +33,10 @@ public class Applicator6Test {
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
             boolean infinity = v % gs == 1;
-            int[] comps = infinity ? new int[]{1, 1, group.order()} : new int[]{1, 1};
-            GSpace sp = new GSpace(k, group, true, comps);
             int orbitCount = v / gs;
+            int[] comps = infinity ? IntStream.concat(IntStream.range(0, orbitCount).map(_ -> 1), IntStream.of(group.order())).toArray()
+                    : IntStream.range(0, orbitCount).map(_ -> 1).toArray();
+            GSpace sp = new GSpace(k, group, true, comps);
             FixBS removableDiffs = new FixBS(sp.diffLength());
             for (int fst : sp.oBeg()) {
                 for (int snd = fst + 1; snd < v; snd++) {
