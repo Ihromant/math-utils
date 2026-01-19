@@ -577,10 +577,66 @@ public class Applicator6Test {
                 newWhiteList = clear(newWhiteList, group.op(revDiff, el));
             }
             for (int j = 0; j < left.size(); j++) {
-                newOuterFilter = set(newOuterFilter,group.op(group.inv(left.block().get(j)), el)); // TODO check right to left
+                newOuterFilter = set(newOuterFilter, group.op(group.inv(left.block().get(j)), el)); // TODO check right to left
             }
-
             return new MidState(nextBlock, newFilter, newOuterFilter, newRevDiff, newWhiteList, idx);
+        }
+
+        public int last() {
+            return block.isEmpty() ? -1 : block.getLast();
+        }
+
+        public int size() {
+            return block.size();
+        }
+    }
+
+    private record RightState(IntList block, long filter, long leftOuterFilter, long midOuterFilter, long whiteList, int idx) {
+        private RightState acceptElem(int el, LeftState left, MidState mid, Group group) {
+            int sz = block.size();
+            IntList nextBlock = block.copy();
+            nextBlock.add(el);
+            long newFilter = filter;
+            long newLeftOuterFilter = leftOuterFilter;
+            long newMidOuterFilter = midOuterFilter;
+            long newWhiteList = whiteList;
+            int invEl = group.inv(el);
+            for (int i = 0; i < sz; i++) {
+                int val = nextBlock.get(i);
+                int invVal = group.inv(val);
+                int diff = group.op(invVal, el);
+                int outDiff = group.op(invEl, val);
+                newFilter = set(newFilter, diff);
+                newFilter = set(newFilter, outDiff);
+                // if tuple finished probably
+                for (int rt : group.squareRoots(diff)) {
+                    newWhiteList = clear(newWhiteList, group.op(val, rt));
+                }
+                for (int rt : group.squareRoots(outDiff)) {
+                    newWhiteList = clear(newWhiteList, group.op(el, rt));
+                }
+                for (int j = 0; j <= sz; j++) {
+                    int nv = nextBlock.get(j);
+                    newWhiteList = clear(newWhiteList, group.op(nv, diff));
+                    newWhiteList = clear(newWhiteList, group.op(nv, outDiff));
+                }
+            }
+            for (int diff = nextSetBit(newFilter, 0); diff >= 0; diff = nextSetBit(newFilter, diff + 1)) {
+                newWhiteList = clear(newWhiteList, group.op(el, diff));
+            }
+            for (int revDiff = nextSetBit(left.revDiff, 0); revDiff >= 0; revDiff = nextSetBit(left.revDiff, revDiff + 1)) {
+                newWhiteList = clear(newWhiteList, group.op(revDiff, el));
+            }
+            for (int revDiff = nextSetBit(mid.revDiff, 0); revDiff >= 0; revDiff = nextSetBit(mid.revDiff, revDiff + 1)) {
+                newWhiteList = clear(newWhiteList, group.op(revDiff, el));
+            }
+            for (int j = 0; j < left.size(); j++) {
+                newLeftOuterFilter = set(newLeftOuterFilter, group.op(group.inv(left.block().get(j)), el));
+            }
+            for (int j = 0; j < mid.size(); j++) {
+                newMidOuterFilter = set(newMidOuterFilter, group.op(group.inv(mid.block().get(j)), el));
+            }
+            return new RightState(nextBlock, newFilter, newLeftOuterFilter, newMidOuterFilter, newWhiteList, idx);
         }
 
         public int last() {
