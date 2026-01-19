@@ -17,6 +17,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -277,6 +278,102 @@ public class Applicator6Test {
             int[] newFreq = freq.clone();
             newFreq[size]--;
             searchDesigns(nextDesign, newFreq, nextState, gr, k, cons);
+        }
+    }
+
+    private static void findMid(long[][] filters, LeftState[] lefts, MidState[] mids, RightState[] rights, MidState currState, Group group, int k, int[][] variant, BiPredicate<MidState[], RightState[]> cons) {
+        int idx = currState.idx;
+        LeftState left = lefts[idx];
+        int ol = group.order();
+        int leftSize = left.size();
+        int midSize = currState.block().size();
+        int[] freq = variant[leftSize];
+        if (hasNext(freq, midSize + 1)) {
+            long whiteList = currState.whiteList;
+            for (int el = nextSetBit(whiteList, currState.last() + 1); el >= 0; el = nextSetBit(whiteList, el + 1)) {
+                MidState nextState = currState.acceptElem(el, left, group);
+                findMid(filters, lefts, mids, rights, nextState, group, k, variant, cons);
+            }
+        }
+        if (freq[midSize] > 0) {
+            int[] nextFreq = freq.clone();
+            nextFreq[midSize]--;
+            int[][] nextVariant = variant.clone();
+            nextVariant[leftSize] = nextFreq;
+            MidState[] nextMids = mids.clone();
+            nextMids[idx] = currState;
+            RightState prev = idx > 0 ? rights[idx - 1] : new RightState(null, filters[0][0], filters[0][2], filters[1][2], 0, -1);
+            if (k == leftSize + midSize) {
+                RightState[] nextRights = rights.clone();
+                nextRights[idx] = new RightState(new IntList(0), prev.filter(), prev.leftOuterFilter(), prev.midOuterFilter(), 0, idx);
+                if (cons.test(nextMids, rights)) {
+                    return;
+                }
+                int nextIdx = idx + 1;
+                IntList nextLeft = lefts[nextIdx].block();
+                long whiteList = 0;
+                whiteList = flip(whiteList, 0, ol);
+                for (int i = 0; i < nextLeft.size(); i++) {
+                    int el = nextLeft.get(i);
+                    for (int diff = nextSetBit(currState.outerFilter, 0); diff >= 0; diff = nextSetBit(currState.outerFilter, diff + 1)) {
+                        whiteList = clear(whiteList, group.op(el, diff));
+                    }
+                }
+                MidState nextState = new MidState(new IntList(k), currState.filter, currState.outerFilter, 0L, whiteList, nextIdx);
+                findMid(filters, lefts, nextMids, nextRights, nextState, group, k, variant, cons);
+            } else {
+                long whiteList = 0;
+                whiteList = flip(whiteList, 0, ol);
+                for (int i = 0; i < left.block().size(); i++) {
+                    int el = left.block().get(i);
+                    for (int diff = nextSetBit(prev.leftOuterFilter, 0); diff >= 0; diff = nextSetBit(prev.leftOuterFilter, diff + 1)) {
+                        whiteList = clear(whiteList, group.op(el, diff));
+                    }
+                }
+                for (int i = 0; i < currState.block().size(); i++) {
+                    int el = currState.block().get(i);
+                    for (int diff = nextSetBit(prev.midOuterFilter, 0); diff >= 0; diff = nextSetBit(prev.midOuterFilter, diff + 1)) {
+                        whiteList = clear(whiteList, group.op(el, diff));
+                    }
+                }
+                RightState nextState = new RightState(new IntList(k), prev.filter(), prev.leftOuterFilter(), prev.midOuterFilter(), whiteList, idx);
+                if (prev.idx() < 0 && prev.midOuterFilter() == 0) {
+                    nextState = nextState.acceptElem(0, left, currState, group);
+                }
+                findRight(filters, lefts, nextMids, rights, currState, nextState, group, k, nextVariant, cons);
+            }
+        }
+    }
+
+    private static void findRight(long[][] filters, LeftState[] lefts, MidState[] mids, RightState[] rights, MidState currMid, RightState currState, Group group, int k, int[][] variant, BiPredicate<MidState[], RightState[]> cons) {
+        int idx = currState.idx;
+        LeftState left = lefts[idx];
+        MidState mid = mids[idx];
+        int ol = group.order();
+        if (currState.block().size() == k - left.size() - mid.size()) {
+            RightState[] nextRights = rights.clone();
+            nextRights[idx] = currState;
+            if (cons.test(mids, nextRights)) {
+                return;
+            }
+            int nextIdx = idx + 1;
+            IntList nextLeft = lefts[nextIdx].block();
+            long nextWhitelist = 0;
+            nextWhitelist = flip(nextWhitelist, 0, ol);
+            for (int i = 0; i < nextLeft.size(); i++) {
+                int el = nextLeft.get(i);
+                for (int diff = nextSetBit(currMid.outerFilter, 0); diff >= 0; diff = nextSetBit(currMid.outerFilter, diff + 1)) {
+                    nextWhitelist = clear(nextWhitelist, group.op(el, diff));
+                }
+            }
+            MidState nextState = new MidState(new IntList(k), currMid.filter, currMid.outerFilter, 0L, nextWhitelist, nextIdx);
+            findMid(filters, lefts, mids, nextRights, nextState, group, k, variant, cons);
+        } else {
+            long whiteList = currState.whiteList;
+            for (int el = nextSetBit(whiteList, currState.last() + 1); el >= 0; el = nextSetBit(whiteList, el + 1)) {
+                RightState nextState = currState.acceptElem(el, left, mid, group);
+                findRight(filters, lefts, mids, rights, currMid, nextState, group, k, variant, cons);
+            }
         }
     }
 
