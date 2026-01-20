@@ -26,9 +26,9 @@ import java.util.stream.Stream;
 public class Applicator6Test {
     @Test
     public void testEven() throws IOException {
-        int k = 6;
-        int v = 96;
-        int gs = 48;
+        int k = 5;
+        int v = 45;
+        int gs = 15;
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
@@ -55,7 +55,7 @@ public class Applicator6Test {
                 }
             }
             System.out.println(GroupIndex.identify(group) + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
-            State[] base = getRemovable(removableDiffs, sp, v, group);
+            State[] base = getStabilized(sp);
             System.out.println("Base blocks " + base.length);
             List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
             if (removableDiffs.isEmpty()) {
@@ -73,6 +73,7 @@ public class Applicator6Test {
                     return false;
                 });
             });
+            begins.sort((a, b) -> Integer.compare(b.length, a.length));
             System.out.println("Initial configs " + begins.size());
             for (State[] states : begins) {
                 AtomicInteger ai = new AtomicInteger();
@@ -462,9 +463,11 @@ public class Applicator6Test {
         return false;
     }
 
-    private static State[] getRemovable(FixBS removableDiffs, GSpace sp, int v, Group group) {
+    private static State[] getRemovable(FixBS removableDiffs, GSpace sp) {
         Map<FixBS, State> singles = new ConcurrentHashMap<>();
-        boolean inf = v % group.order() == 1;
+        int v = sp.v();
+        int gOrd = sp.gOrd();
+        boolean inf = sp.v() % sp.gOrd() == 1;
         Consumer<State> cons = st -> {
             if (!st.diffSet().intersects(removableDiffs)) {
                 return;
@@ -475,7 +478,7 @@ public class Applicator6Test {
         IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
             int[] even = IntStream.range(fst + 1, v).filter(snd -> removableDiffs.get(sp.diffIdx(fst * v + snd))).toArray();
             Arrays.stream(even).parallel().forEach(snd -> {
-                State state = new State(FixBS.of(v, fst), FixBS.of(group.order(), 0), new FixBS(sp.diffLength()), new int[sp.diffLength()][], 1)
+                State state = new State(FixBS.of(v, fst), FixBS.of(gOrd, 0), new FixBS(sp.diffLength()), new int[sp.diffLength()][], 1)
                         .acceptElem(sp, sp.emptyFilter(), snd);
                 if (state == null) {
                     return;
@@ -496,6 +499,32 @@ public class Applicator6Test {
         }
         State[] base = singles.values().toArray(State[]::new);
         Arrays.sort(base, Comparator.comparing(st -> removableDiffs.intersection(st.diffSet())));
+        return base;
+    }
+
+    private static State[] getStabilized(GSpace sp) {
+        Map<FixBS, State> singles = new ConcurrentHashMap<>();
+        int v = sp.v();
+        Consumer<State> cons = st -> {
+            if (st.stabilizer().cardinality() == 1) {
+                return;
+            }
+            State minimized = st.minimizeBlock(sp);
+            singles.putIfAbsent(minimized.block(), minimized);
+        };
+        IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
+            IntStream.range(fst + 1, v).parallel().forEach(snd -> {
+                IntStream.range(snd + 1, v).forEach(trd -> {
+                    State state = sp.forInitial(fst, snd, trd);
+                    if (state == null) {
+                        return;
+                    }
+                    searchDesignsFirstNoMin(sp, state, trd, cons);
+                });
+            });
+        });
+        State[] base = singles.values().toArray(State[]::new);
+        Arrays.sort(base, Comparator.comparing(State::block));
         return base;
     }
 
