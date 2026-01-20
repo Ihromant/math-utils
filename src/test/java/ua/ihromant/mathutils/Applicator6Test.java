@@ -17,7 +17,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -62,7 +61,6 @@ public class Applicator6Test {
             List<State[]> begins = generateBegins(removableDiffs, base, sp);
             System.out.println("Initial configs " + begins.size());
             for (State[] states : begins) {
-                AtomicInteger ai = new AtomicInteger();
                 long[][] filters = filters(states, sp, group);
                 List<LeftState[]> snc = Collections.synchronizedList(new ArrayList<>());
                 int[][] suitable = firstSuitable(states, sp);
@@ -116,7 +114,6 @@ public class Applicator6Test {
                             state = state.acceptElem(0, fstLeft, group);
                         }
                         find(left, rights, state, k, group, cons);
-                        System.out.println(ai.incrementAndGet());
                     });
                 } else {
                     Map<int[], List<int[][]>> freq = getFreq(states, sp);
@@ -191,7 +188,6 @@ public class Applicator6Test {
                 }
                 Arrays.sort(des.curr(), Comparator.comparing(State::block));
                 begins.add(des.curr());
-                System.out.println(des.curr.length);
                 return false;
             });
         });
