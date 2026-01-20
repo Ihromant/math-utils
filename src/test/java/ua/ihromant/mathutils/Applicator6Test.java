@@ -90,7 +90,7 @@ public class Applicator6Test {
                     }
                     generateChunks(filters, sizes, sp, group, snc::add);
                 }
-                System.out.println("Lefts size: " + snc.size());
+                System.out.println("Config size: " + states.length + " Lefts size: " + snc.size());
                 if (orbitCount == 2) {
                     snc.stream().parallel().forEach(left -> {
                         int ll = left.length;
