@@ -58,6 +58,9 @@ public class Applicator6Test {
             State[] base = getRemovable(removableDiffs, sp, v, group);
             System.out.println("Base blocks " + base.length);
             List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
+            if (removableDiffs.isEmpty()) {
+                begins.add(new State[0]);
+            }
             FixBS[] intersecting = intersecting(base);
             IntStream.range(0, base.length).parallel().forEach(idx -> {
                 State st = base[idx];
@@ -87,48 +90,121 @@ public class Applicator6Test {
                     generateChunks(filters, sizes, sp, group, snc::add);
                 }
                 System.out.println("Lefts size: " + snc.size());
-                snc.stream().parallel().forEach(left -> {
-                    int ll = left.length;
-                    Predicate<MidState[]> cons = arr -> {
-                        if (arr[ll - 1] == null) {
-                            return false;
+                if (orbitCount == 2) {
+                    snc.stream().parallel().forEach(left -> {
+                        int ll = left.length;
+                        Predicate<MidState[]> cons = arr -> {
+                            if (arr[ll - 1] == null) {
+                                return false;
+                            }
+                            Liner lnr = new Liner(v, Stream.concat(Arrays.stream(states).flatMap(st -> sp.blocks(st.block())),
+                                    IntStream.range(0, left.length).mapToObj(i -> {
+                                        FixBS result = new FixBS(v);
+                                        IntList l = left[i].block;
+                                        IntList r = arr[i].block;
+                                        for (int ii = 0; ii < l.size(); ii++) {
+                                            result.set(l.get(ii));
+                                        }
+                                        for (int ii = 0; ii < r.size(); ii++) {
+                                            result.set(r.get(ii) + gs);
+                                        }
+                                        return result;
+                                    }).flatMap(sp::blocks)).toArray(int[][]::new));
+                            int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i].block.toArray(), arr[i].block.toArray()}).toArray(int[][][]::new);
+                            System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(res));
+                            return true;
+                        };
+                        LeftState fstLeft = left[0];
+                        MidState[] rights = new MidState[ll];
+                        long whiteList = set(0L, 0, gs);
+                        long outerFilter = filters[0][1];
+                        for (int i = 0; i < fstLeft.block().size(); i++) {
+                            int el = fstLeft.block().get(i);
+                            for (int diff = nextSetBit(outerFilter, 0); diff >= 0; diff = nextSetBit(outerFilter, diff + 1)) {
+                                whiteList = clear(whiteList, group.op(el, diff));
+                            }
                         }
-                        Liner lnr = new Liner(v, Stream.concat(Arrays.stream(states).flatMap(st -> sp.blocks(st.block())),
-                                IntStream.range(0, left.length).mapToObj(i -> {
-                                    FixBS result = new FixBS(v);
-                                    IntList l = left[i].block;
-                                    IntList r = arr[i].block;
-                                    for (int ii = 0; ii < l.size(); ii++) {
-                                        result.set(l.get(ii));
-                                    }
-                                    for (int ii = 0; ii < r.size(); ii++) {
-                                        result.set(r.get(ii) + gs);
-                                    }
-                                    return result;
-                                }).flatMap(sp::blocks)).toArray(int[][]::new));
-                        int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{left[i].block.toArray(), arr[i].block.toArray()}).toArray(int[][][]::new);
-                        System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(res));
-                        return true;
-                    };
-                    LeftState fstLeft = left[0];
-                    MidState[] rights = new MidState[ll];
-                    long whiteList = set(0L, 0, gs);
-                    long outerFilter = filters[0][1];
-                    for (int i = 0; i < fstLeft.block().size(); i++) {
-                        int el = fstLeft.block().get(i);
-                        for (int diff = nextSetBit(outerFilter, 0); diff >= 0; diff = nextSetBit(outerFilter, diff + 1)) {
-                            whiteList = clear(whiteList, group.op(el, diff));
+                        MidState state = new MidState(new IntList(k), filters[1][1], outerFilter, 0L, whiteList, 0);
+                        if (outerFilter == 0) {
+                            state = state.acceptElem(0, fstLeft, group);
                         }
-                    }
-                    MidState state = new MidState(new IntList(k), filters[1][1], outerFilter, 0L, whiteList, 0);
-                    if (outerFilter == 0) {
-                        state = state.acceptElem(0, fstLeft, group);
-                    }
-                    find(left, rights, state, k, group, cons);
-                    System.out.println(ai.incrementAndGet());
-                });
+                        find(left, rights, state, k, group, cons);
+                        System.out.println(ai.incrementAndGet());
+                    });
+                } else {
+                    Map<int[], List<int[][]>> freq = getFreq(states, sp);
+                    snc.stream().parallel().forEach(left -> {
+                        int ll = left.length;
+                        int[] fr = new int[k + 1];
+                        for (LeftState st : left) {
+                            fr[st.block().size()]++;
+                        }
+                        for (int[][] variant : freq.get(fr)) {
+                            BiPredicate<MidState[], RightState[]> cons = (mids, rights) -> {
+                                if (rights[ll - 1] == null) {
+                                    return false;
+                                }
+                                Liner lnr = new Liner(v, Stream.concat(Arrays.stream(states).flatMap(st -> sp.blocks(st.block())),
+                                        IntStream.range(0, left.length).mapToObj(i -> {
+                                            FixBS result = new FixBS(v);
+                                            IntList l = left[i].block;
+                                            IntList m = mids[i].block;
+                                            IntList r = rights[i].block;
+                                            for (int ii = 0; ii < l.size(); ii++) {
+                                                result.set(l.get(ii));
+                                            }
+                                            for (int ii = 0; ii < m.size(); ii++) {
+                                                result.set(m.get(ii) + gs);
+                                            }
+                                            for (int ii = 0; ii < r.size(); ii++) {
+                                                result.set(r.get(ii) + 2 * gs);
+                                            }
+                                            return result;
+                                        }).flatMap(sp::blocks)).toArray(int[][]::new));
+                                int[][][] res = IntStream.range(0, ll).mapToObj(i -> new int[][]{
+                                        left[i].block.toArray(), mids[i].block.toArray(), rights[i].block.toArray()}).toArray(int[][][]::new);
+                                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.deepToString(res));
+                                return true;
+                            };
+                            LeftState fstLeft = left[0];
+                            MidState[] mids = new MidState[ll];
+                            RightState[] rights = new RightState[ll];
+                            long whiteList = 0;
+                            whiteList = flip(whiteList, 0, gs);
+                            long outerFilter = filters[0][1];
+                            for (int i = 0; i < fstLeft.size(); i++) {
+                                int el = fstLeft.block.get(i);
+                                for (int diff = nextSetBit(outerFilter, 0); diff >= 0; diff = nextSetBit(outerFilter, diff + 1)) {
+                                    whiteList = clear(whiteList, group.op(el, diff));
+                                }
+                            }
+                            MidState state = new MidState(new IntList(k), filters[1][1], outerFilter, 0L, whiteList, 0);
+                            if (outerFilter == 0) {
+                                state = state.acceptElem(0, fstLeft, group);
+                            }
+                            findMid(filters, left, mids, rights, state, group, k, variant, cons);
+                        }
+                    });
+                }
             }
         }
+    }
+
+    private static Map<int[], List<int[][]>> getFreq(State[] begins, GSpace sp) {
+        int[][][] suitable = suitable(begins, sp);
+        Map<int[], List<int[][]>> freq = new TreeMap<>(Combinatorics::compareArr);
+        for (int[][] tail : suitable) {
+            int[] base = new int[sp.k() + 1];
+            for (int[] arr : tail) {
+                base[arr[0]]++;
+            }
+            int[][] fr = new int[sp.k() + 1][sp.k() + 1];
+            for (int[] arr : tail) {
+                fr[arr[0]][arr[1]]++;
+            }
+            freq.computeIfAbsent(base, _ -> new ArrayList<>()).add(fr);
+        }
+        return freq;
     }
 
     private static void find(LeftState[] lefts, MidState[] rights, MidState currState, int k, Group group, Predicate<MidState[]> cons) {
@@ -481,7 +557,7 @@ public class Applicator6Test {
         }
     }
 
-    private List<List<int[]>> find(State[] basicConf, GSpace sp) {
+    private static List<List<int[]>> find(State[] basicConf, GSpace sp) {
         int gOrd = sp.gOrd();
         int v = sp.v();
         int orbitCount = v / gOrd;
@@ -506,13 +582,13 @@ public class Applicator6Test {
         return res;
     }
 
-    private int[][] generateSplits(int orbitCount, int k) {
+    private static int[][] generateSplits(int orbitCount, int k) {
         List<int[]> res = new ArrayList<>();
         generateSplits(k, new int[orbitCount], 0, 0, res::add);
         return res.toArray(int[][]::new);
     }
 
-    private void generateSplits(int k, int[] curr, int idx, int sum, Consumer<int[]> cons) {
+    private static void generateSplits(int k, int[] curr, int idx, int sum, Consumer<int[]> cons) {
         for (int i = 0; i <= k - sum; i++) {
             int[] nextCurr = curr.clone();
             nextCurr[idx] = i;
@@ -525,7 +601,7 @@ public class Applicator6Test {
         }
     }
 
-    private void find(int orbitSize, int orbitCount, int[][] used, List<int[]> lst, int[][] splits, int idx, Consumer<List<int[]>> cons) {
+    private static void find(int orbitSize, int orbitCount, int[][] used, List<int[]> lst, int[][] splits, int idx, Consumer<List<int[]>> cons) {
         ex: for (int i = idx; i < splits.length; i++) {
             int[] split = splits[i];
             int[][] nextUsed = new int[orbitCount][orbitCount];
@@ -585,7 +661,7 @@ public class Applicator6Test {
         return result;
     }
 
-    public int[][][] suitable(State[] basicConf, GSpace sp) {
+    public static int[][][] suitable(State[] basicConf, GSpace sp) {
         return find(basicConf, sp).stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
     }
 
