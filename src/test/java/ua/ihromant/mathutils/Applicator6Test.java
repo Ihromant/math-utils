@@ -10,6 +10,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -57,23 +59,7 @@ public class Applicator6Test {
             System.out.println(GroupIndex.identify(group) + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
             State[] base = getStabilized(sp);
             System.out.println("Base blocks " + base.length);
-            List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
-            if (removableDiffs.isEmpty()) {
-                begins.add(new State[0]);
-            }
-            FixBS[] intersecting = intersecting(base);
-            IntStream.range(0, base.length).parallel().forEach(idx -> {
-                State st = base[idx];
-                find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
-                    if (!removableDiffs.diff(des.diffSet).isEmpty()) {
-                        return false;
-                    }
-                    Arrays.sort(des.curr(), Comparator.comparing(State::block));
-                    begins.add(des.curr());
-                    return false;
-                });
-            });
-            begins.sort((a, b) -> Integer.compare(b.length, a.length));
+            List<State[]> begins = generateBegins(removableDiffs, base, sp);
             System.out.println("Initial configs " + begins.size());
             for (State[] states : begins) {
                 AtomicInteger ai = new AtomicInteger();
@@ -189,6 +175,48 @@ public class Applicator6Test {
                 }
             }
         }
+    }
+
+    private static List<State[]> generateBegins(FixBS removableDiffs, State[] base, GSpace sp) {
+        List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
+        if (removableDiffs.isEmpty()) {
+            begins.add(new State[0]);
+        }
+        FixBS[] intersecting = intersecting(base);
+        IntStream.range(0, base.length).parallel().forEach(idx -> {
+            State st = base[idx];
+            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
+                if (!removableDiffs.diff(des.diffSet).isEmpty()) {
+                    return false;
+                }
+                Arrays.sort(des.curr(), Comparator.comparing(State::block));
+                begins.add(des.curr());
+                System.out.println(des.curr.length);
+                return false;
+            });
+        });
+        begins.sort((a, b) -> Integer.compare(b.length, a.length));
+        return begins;
+    }
+
+    private static List<State[]> selectBegins(FixBS removableDiffs, State[] base, GSpace sp) {
+        Map<Integer, List<State[]>> begins = new ConcurrentHashMap<>();
+        if (removableDiffs.isEmpty()) {
+            begins.put(0, List.<State[]>of(new State[0]));
+        }
+        FixBS[] intersecting = intersecting(base);
+        IntStream.range(0, base.length).parallel().forEach(idx -> {
+            State st = base[idx];
+            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
+                if (!removableDiffs.diff(des.diffSet).isEmpty()) {
+                    return false;
+                }
+                Arrays.sort(des.curr(), Comparator.comparing(State::block));
+                begins.computeIfAbsent(des.curr.length, _ -> Collections.synchronizedList(new ArrayList<>())).add(des.curr());
+                return false;
+            });
+        });
+        return begins.values().stream().flatMap(Collection::stream).sorted((a, b) -> Integer.compare(b.length, a.length)).collect(Collectors.toList());
     }
 
     private static Map<int[], List<int[][]>> getFreq(State[] begins, GSpace sp) {
