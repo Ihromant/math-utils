@@ -1367,14 +1367,20 @@ public class BatchAffineTest {
                                     basic.add(new ArrWrap(arr));
                                 }
                             }
-                            Set<ArrWrap> additional = new HashSet<>(basic);
-                            while (!(additional = additional(basic, additional, 362880)).isEmpty()) {}
-                            System.out.println(dl + " " + q + " " + basic.size());
+                            Set<ArrWrap> closure = getClosure(basic, 362880);
+                            System.out.println(dl + " " + q + " " + closure.size());
                         }
                     }
                 }
             }
         }
+    }
+
+    private Set<ArrWrap> getClosure(Set<ArrWrap> basePerms, int cap) {
+        Set<ArrWrap> closure = new HashSet<>(basePerms);
+        Set<ArrWrap> additional = new HashSet<>(closure);
+        while (!(additional = additional(closure, additional, cap)).isEmpty()) {}
+        return closure;
     }
 
     @Test
@@ -1402,10 +1408,8 @@ public class BatchAffineTest {
                         }
                     }
                     boolean even = basic.stream().allMatch(a -> even(a.map()));
-                    int cap = even ? 181440 : 362880;
-                    Set<ArrWrap> additional = new HashSet<>(basic);
-                    while (!(additional = additional(basic, additional, cap)).isEmpty()) {}
-                    System.out.println(aName + " " + triangle + " " + basic.size());
+                    Set<ArrWrap> closure = getClosure(basic, even ? 181440 : 362880);
+                    System.out.println(aName + " " + triangle + " " + closure.size());
                 });
             }
         }
