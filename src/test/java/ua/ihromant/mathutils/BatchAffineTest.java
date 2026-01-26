@@ -1368,7 +1368,7 @@ public class BatchAffineTest {
                                 }
                             }
                             Set<ArrWrap> additional = new HashSet<>(basic);
-                            while (!(additional = additional(basic, additional, false)).isEmpty()) {}
+                            while (!(additional = additional(basic, additional, 362880)).isEmpty()) {}
                             System.out.println(dl + " " + q + " " + basic.size());
                         }
                     }
@@ -1402,15 +1402,16 @@ public class BatchAffineTest {
                         }
                     }
                     boolean even = basic.stream().allMatch(a -> even(a.map()));
+                    int cap = even ? 181440 : 362880;
                     Set<ArrWrap> additional = new HashSet<>(basic);
-                    while (!(additional = additional(basic, additional, even)).isEmpty()) {}
+                    while (!(additional = additional(basic, additional, cap)).isEmpty()) {}
                     System.out.println(aName + " " + triangle + " " + basic.size());
                 }
             }
         }
     }
 
-    private Set<ArrWrap> additional(Set<ArrWrap> currGroup, Set<ArrWrap> addition, boolean even) {
+    private Set<ArrWrap> additional(Set<ArrWrap> currGroup, Set<ArrWrap> addition, int cap) {
         Set<ArrWrap> result = new HashSet<>();
         for (ArrWrap x : currGroup) {
             for (ArrWrap y : addition) {
@@ -1422,7 +1423,7 @@ public class BatchAffineTest {
                 if (!currGroup.contains(yx)) {
                     result.add(yx);
                 }
-                if (currGroup.size() + result.size() >= (even ? 181440 : 362880)) {
+                if (currGroup.size() + result.size() >= cap) {
                     currGroup.addAll(result);
                     return Set.of();
                 }
