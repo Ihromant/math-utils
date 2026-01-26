@@ -1346,11 +1346,11 @@ public class BatchAffineTest {
                         continue;
                     }
                     for (int h : proj.line(dl)) {
+                        int oh = proj.line(o, h);
                         for (int v : proj.line(dl)) {
                             if (v == h) {
                                 continue;
                             }
-                            int oh = proj.line(o, h);
                             int ov = proj.line(o, v);
                             int e = IntStream.range(0, pc).filter(pt -> !proj.flag(oh, pt) && !proj.flag(ov, pt) && !proj.flag(infL, pt)).findAny().orElseThrow();
                             int u = proj.intersection(oh, proj.line(v, e));
@@ -1444,7 +1444,7 @@ public class BatchAffineTest {
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(map);
+            return Arrays.hashCode(map) >>> 1;
         }
     }
 
