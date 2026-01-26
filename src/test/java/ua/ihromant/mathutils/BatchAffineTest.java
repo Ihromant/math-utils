@@ -3,7 +3,6 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
-import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.plane.AffineTernaryRing;
@@ -1327,6 +1326,126 @@ public class BatchAffineTest {
             }
         }
         System.out.println("Boolean " + dl);
+    }
+
+    @Test
+    public void testPickert() throws IOException {
+        int k = 16;
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            Liner proj = readProj(k, name);
+            System.out.println(name);
+            int pc = proj.pointCount();
+            for (int dl = 0; dl < pc; dl++) {
+                if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
+                    continue;
+                }
+                int infL = dl;
+                for (int o = 0; o < pc; o++) {
+                    if (proj.flag(dl, o)) {
+                        continue;
+                    }
+                    for (int h : proj.line(dl)) {
+                        for (int v : proj.line(dl)) {
+                            if (v == h) {
+                                continue;
+                            }
+                            int oh = proj.line(o, h);
+                            int ov = proj.line(o, v);
+                            int e = IntStream.range(0, pc).filter(pt -> !proj.flag(oh, pt) && !proj.flag(ov, pt) && !proj.flag(infL, pt)).findAny().orElseThrow();
+                            int u = proj.intersection(oh, proj.line(v, e));
+                            int w = proj.intersection(ov, proj.line(h, e));
+                            Quad q = new Quad(o, u, w, e);
+                            TernaryRing rng = new ProjectiveTernaryRing("", proj, q).toMatrix();
+                            Set<ArrWrap> basic = new HashSet<>();
+                            for (int i = 1; i < rng.order(); i++) {
+                                for (int j = 0; j < rng.order(); j++) {
+                                    int[] arr = new int[k];
+                                    for (int x = 0; x < rng.order(); x++) {
+                                        arr[x] = rng.op(x, i, j);
+                                    }
+                                    basic.add(new ArrWrap(arr));
+                                }
+                            }
+                            Set<ArrWrap> additional = new HashSet<>(basic);
+                            while (!(additional = additional(basic, additional)).isEmpty()) {}
+                            System.out.println(dl + " " + q + " " + basic.size());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testPickertFor9() throws IOException {
+        int k = 9;
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            Liner proj = readProj(k, name);
+            name = name.substring(0, name.indexOf('.'));
+            System.out.println(name);
+            for (int dl : dropped.get(name)) {
+                String aName = name + "-" + dl + "-" + k;
+                System.out.println(name + " dropped line " + dl);
+                Liner liner = new AffinePlane(proj, dl).toLiner();
+                for (int triangle : uniqueTriangles.get(aName)) {
+                    AffineTernaryRing rng = new AffineTernaryRing(liner, liner.trOf(triangle));
+                    Set<ArrWrap> basic = new HashSet<>();
+                    for (int i = 1; i < rng.order(); i++) {
+                        for (int j = 0; j < rng.order(); j++) {
+                            int[] arr = new int[k];
+                            for (int x = 0; x < rng.order(); x++) {
+                                arr[x] = rng.op(x, i, j);
+                            }
+                            basic.add(new ArrWrap(arr));
+                        }
+                    }
+                    Set<ArrWrap> additional = new HashSet<>(basic);
+                    while (!(additional = additional(basic, additional)).isEmpty()) {}
+                    System.out.println(aName + " " + triangle + " " + basic.size());
+                }
+            }
+        }
+    }
+
+    private Set<ArrWrap> additional(Set<ArrWrap> currGroup, Set<ArrWrap> addition) {
+        Set<ArrWrap> result = new HashSet<>();
+        for (ArrWrap x : currGroup) {
+            for (ArrWrap y : addition) {
+                ArrWrap xy = new ArrWrap(combine(x.map, y.map));
+                ArrWrap yx = new ArrWrap(combine(y.map, x.map));
+                if (!currGroup.contains(xy)) {
+                    result.add(xy);
+                }
+                if (!currGroup.contains(yx)) {
+                    result.add(yx);
+                }
+            }
+        }
+        currGroup.addAll(result);
+        return result;
+    }
+
+    private static int[] combine(int[] a, int[] b) {
+        int[] result = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            result[i] = a[b[i]];
+        }
+        return result;
+    }
+
+    private record ArrWrap(int[] map) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ArrWrap(int[] map1))) return false;
+            return Arrays.equals(map, map1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(map);
+        }
     }
 
     @Test
