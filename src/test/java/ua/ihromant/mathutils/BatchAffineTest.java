@@ -1389,7 +1389,7 @@ public class BatchAffineTest {
                 String aName = name + "-" + dl + "-" + k;
                 System.out.println(name + " dropped line " + dl);
                 Liner liner = new AffinePlane(proj, dl).toLiner();
-                for (int triangle : uniqueTriangles.get(aName)) {
+                Arrays.stream(uniqueTriangles.get(aName)).parallel().forEach(triangle -> {
                     AffineTernaryRing rng = new AffineTernaryRing(liner, liner.trOf(triangle));
                     Set<ArrWrap> basic = new HashSet<>();
                     for (int i = 1; i < rng.order(); i++) {
@@ -1406,7 +1406,7 @@ public class BatchAffineTest {
                     Set<ArrWrap> additional = new HashSet<>(basic);
                     while (!(additional = additional(basic, additional, cap)).isEmpty()) {}
                     System.out.println(aName + " " + triangle + " " + basic.size());
-                }
+                });
             }
         }
     }
