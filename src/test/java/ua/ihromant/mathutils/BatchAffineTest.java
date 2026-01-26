@@ -1368,7 +1368,7 @@ public class BatchAffineTest {
                                 }
                             }
                             Set<ArrWrap> additional = new HashSet<>(basic);
-                            while (!(additional = additional(basic, additional)).isEmpty()) {}
+                            while (!(additional = additional(basic, additional, false)).isEmpty()) {}
                             System.out.println(dl + " " + q + " " + basic.size());
                         }
                     }
@@ -1401,15 +1401,16 @@ public class BatchAffineTest {
                             basic.add(new ArrWrap(arr));
                         }
                     }
+                    boolean even = basic.stream().allMatch(a -> even(a.map()));
                     Set<ArrWrap> additional = new HashSet<>(basic);
-                    while (!(additional = additional(basic, additional)).isEmpty()) {}
+                    while (!(additional = additional(basic, additional, even)).isEmpty()) {}
                     System.out.println(aName + " " + triangle + " " + basic.size());
                 }
             }
         }
     }
 
-    private Set<ArrWrap> additional(Set<ArrWrap> currGroup, Set<ArrWrap> addition) {
+    private Set<ArrWrap> additional(Set<ArrWrap> currGroup, Set<ArrWrap> addition, boolean even) {
         Set<ArrWrap> result = new HashSet<>();
         for (ArrWrap x : currGroup) {
             for (ArrWrap y : addition) {
@@ -1420,6 +1421,10 @@ public class BatchAffineTest {
                 }
                 if (!currGroup.contains(yx)) {
                     result.add(yx);
+                }
+                if (currGroup.size() + result.size() >= (even ? 181440 : 362880)) {
+                    currGroup.addAll(result);
+                    return Set.of();
                 }
             }
         }
@@ -1433,6 +1438,18 @@ public class BatchAffineTest {
             result[i] = a[b[i]];
         }
         return result;
+    }
+
+    private static boolean even(int[] perm) {
+        int cnt = 0;
+        for (int i = 0; i < perm.length; i++) {
+            for (int j = i + 1; j < perm.length; j++) {
+                if (perm[i] > perm[j]) {
+                    cnt++;
+                }
+            }
+        }
+        return cnt % 2 == 0;
     }
 
     private record ArrWrap(int[] map) {
