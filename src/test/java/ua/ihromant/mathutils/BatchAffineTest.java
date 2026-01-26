@@ -1376,6 +1376,30 @@ public class BatchAffineTest {
         }
     }
 
+    private Set<ArrWrap> getClosureAlt(Set<ArrWrap> gens, int cap) {
+        Set<ArrWrap> result = new HashSet<>();
+        ArrWrap fst = gens.iterator().next();
+        result.add(new ArrWrap(IntStream.range(0, fst.map.length).toArray()));
+        while (!gens.isEmpty()) {
+            ArrWrap gen = gens.iterator().next();
+            boolean added;
+            do {
+                added = false;
+                for (ArrWrap el : result.toArray(ArrWrap[]::new)) {
+                    ArrWrap xy = new ArrWrap(combine(gen.map, el.map));
+                    ArrWrap yx = new ArrWrap(combine(el.map, gen.map));
+                    added = result.add(xy) || added;
+                    added = result.add(yx) || added;
+                }
+                if (result.size() >= cap) {
+                    return result;
+                }
+            } while (added);
+            gens.remove(gen);
+        }
+        return result;
+    }
+
     private Set<ArrWrap> getClosure(Set<ArrWrap> basePerms, int cap) {
         Set<ArrWrap> closure = new HashSet<>(basePerms);
         Set<ArrWrap> additional = new HashSet<>(closure);
