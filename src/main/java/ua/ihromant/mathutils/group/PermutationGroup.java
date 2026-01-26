@@ -140,7 +140,7 @@ public class PermutationGroup implements Group {
 
         @Override
         public int hashCode() {
-            return Arrays.hashCode(arr);
+            return Arrays.hashCode(arr) >>> 1;
         }
     }
 }
