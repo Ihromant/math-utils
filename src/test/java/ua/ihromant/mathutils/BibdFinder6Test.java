@@ -14,7 +14,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Set;
@@ -136,6 +138,61 @@ public class BibdFinder6Test {
             }
             calcFirstCycles(v, k, next, nIdx, sink);
         }
+    }
+
+    @Test
+    public void testCharacteristic() {
+        int v = 91;
+        int k = 6;
+        FixBS filter = baseFilter(v, k);
+        int blocksNeeded = v / k / (k - 1);
+        int[] mul = Combinatorics.multipliers(v);
+        List<int[]> res = new ArrayList<>();
+        State base = State.forDesign(v, filter, new int[blocksNeeded][k], k, 0);
+        calcFirstCycles(v, k, base, 2, (design, idx) -> {
+            int[] block = design[0];
+            for (int m : mul) {
+                int[] min = minimalTuple(block, m, v, idx);
+                if (Combinatorics.compareArr(min, block) < 0) {
+                    return true;
+                }
+            }
+            if (idx != k) {
+                return false;
+            }
+            res.add(design[0].clone());
+            return true;
+        });
+        System.out.println(res.size());
+        res.sort(Comparator.comparing(arr -> evalFunc(v, arr)));
+        Tst designConsumer = (design, blockIdx) -> {
+            if (blockIdx + 1 != blocksNeeded) {
+                return false;
+            }
+            int idx = Collections.binarySearch(res, design[0], Comparator.comparing(arr -> evalFunc(v, arr)));
+            System.out.println(idx + " " + Arrays.deepToString(design));
+            return true;
+        };
+        res.stream().parallel().forEach(init -> {
+            int[][] design = new int[blocksNeeded][k];
+            System.arraycopy(init, 0, design[0], 0, init.length);
+            State initial = State.forDesign(v, filter, design, k, 1);
+            calcCycles(v, k, design, initial, 2, 1, designConsumer);
+        });
+    }
+
+    public static int evalFunc(int v, int[] block) {
+        int res = 0;
+        for (int i = 0; i < block.length; i++) {
+            for (int j = i + 1; j < block.length; j++) {
+                int el = block[i];
+                int oEl = block[j];
+                int diff = oEl - el;
+                int outDiff = v - diff;
+                res = res + Math.min(diff, outDiff);
+            }
+        }
+        return res;
     }
 
     private static FixBS baseFilter(int v, int k) {
