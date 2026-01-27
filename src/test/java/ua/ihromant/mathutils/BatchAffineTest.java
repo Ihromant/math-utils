@@ -1133,7 +1133,20 @@ public class BatchAffineTest {
         name = name.indexOf('.') < 0 ? name + ".txt" : name;
         String s = Files.readString(Path.of(Objects.requireNonNull(
                 BatchAffineTest.class.getResource("/proj" + k + "/" + name)).getPath()));
-        return new Liner(s.lines().map(l -> Arrays.stream(l.split(" ")).mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new));
+        List<int[]> lines = new ArrayList<>();
+        String[] lns = s.lines().toArray(String[]::new);
+        IntList lst = new IntList(k + 1);
+        for (String ln : lns) {
+            int[] ints = Arrays.stream(ln.trim().split(" ")).mapToInt(Integer::parseInt).toArray();
+            for (int pt : ints) {
+                lst.add(pt);
+            }
+            if (lst.size() == k + 1) {
+                lines.add(lst.toArray());
+                lst = new IntList(k + 1);
+            }
+        }
+        return new Liner(lines.toArray(int[][]::new));
     }
 
     @Test
@@ -1328,6 +1341,118 @@ public class BatchAffineTest {
         System.out.println("Boolean " + dl);
     }
 
+    private static final int fCap = 15 * 14 * 12 * 8;
+
+    @Test
+    public void testGrundhofer() throws IOException {
+        int k = 32;
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            Liner proj = readProj(k, name);
+            System.out.println(name);
+            int pc = proj.pointCount();
+            IntStream.range(0, pc).parallel().forEach(dl -> {
+                if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
+                    return;
+                }
+                for (int l = 0; l < pc; l++) {
+                    if (l == dl) {
+                        continue;
+                    }
+                    int lDl = proj.intersection(l, dl);
+                    int[] pts = proj.line(l);
+                    int[] idxes = new int[pc];
+                    int idx = 0;
+                    for (int pt : pts) {
+                        if (pt == lDl) {
+                            continue;
+                        }
+                        idxes[pt] = idx++;
+                    }
+                    if (initialCheck(dl, pts, lDl, proj, l, k, idxes) && advancedCheck(dl, pts, lDl, proj, l, k, idxes)) {
+                        System.out.println("Found");
+                    }
+                }
+            });
+        }
+    }
+
+    private static final int sCap = 16 * 15 * 14 * 12 * 8;
+
+    private boolean initialCheck(int dl, int[] pts, int lDl, Liner proj, int l, int k, int[] idxes) {
+        int o = pts[0] == lDl ? pts[1] : pts[0];
+        for (int u : proj.line(dl)) {
+            if (lDl == u) {
+                continue;
+            }
+            for (int v : proj.line(dl)) {
+                if (lDl == v || u == v) {
+                    continue;
+                }
+                Set<ArrWrap> gens = new HashSet<>();
+                for (int l1 : proj.lines(o)) {
+                    if (l1 == l || proj.flag(l1, u) || proj.flag(l1, v)) {
+                        continue;
+                    }
+                    int[] perm = new int[k];
+                    for (int pt : pts) {
+                        if (pt == lDl) {
+                            continue;
+                        }
+                        int l1Pt = proj.intersection(l1, proj.line(u, pt));
+                        int mapPt = proj.intersection(l, proj.line(v, l1Pt));
+                        perm[idxes[pt]] = idxes[mapPt];
+                    }
+                    gens.add(new ArrWrap(perm));
+                }
+                Set<ArrWrap> awp = getClosureAlt(gens,  sCap + 1);
+                if (awp != null && awp.size() <= sCap) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private boolean advancedCheck(int dl, int[] pts, int lDl, Liner proj, int l, int k, int[] idxes) {
+        for (int u : proj.line(dl)) {
+            if (lDl == u) {
+                continue;
+            }
+            for (int v : proj.line(dl)) {
+                if (lDl == v || u == v) {
+                    continue;
+                }
+                IntList lst = new IntList(2000);
+                for (int l1 = 0; l1 < proj.pointCount(); l1++) {
+                    if (l1 == l || proj.flag(l1, u) || proj.flag(l1, v)) {
+                        continue;
+                    }
+                    lst.add(l1);
+                }
+                Set<ArrWrap> gens = new HashSet<>();
+                for (int i = 0; i < lst.size(); i++) {
+                    int l1 = lst.get(i);
+                    int[] perm = new int[k];
+                    for (int pt : pts) {
+                        if (pt == lDl) {
+                            continue;
+                        }
+                        int l1Pt = proj.intersection(l1, proj.line(u, pt));
+                        int mapPt = proj.intersection(l, proj.line(v, l1Pt));
+                        perm[idxes[pt]] = idxes[mapPt];
+                    }
+                    gens.add(new ArrWrap(perm));
+                }
+                Set<ArrWrap> awp = getClosureAlt(gens,  fCap + 1);
+                if (awp != null && awp.size() <= fCap) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     @Test
     public void testPickert() throws IOException {
         int k = 16;
@@ -1388,6 +1513,9 @@ public class BatchAffineTest {
                 for (ArrWrap el : result.toArray(ArrWrap[]::new)) {
                     ArrWrap xy = new ArrWrap(combine(gen.map, el.map));
                     ArrWrap yx = new ArrWrap(combine(el.map, gen.map));
+                    if (xy.map == null || yx.map == null) {
+                        return null;
+                    }
                     added = result.add(xy) || added;
                     added = result.add(yx) || added;
                 }
@@ -1463,8 +1591,16 @@ public class BatchAffineTest {
 
     private static int[] combine(int[] a, int[] b) {
         int[] result = new int[a.length];
+        int fixed = 0;
         for (int i = 0; i < a.length; i++) {
-            result[i] = a[b[i]];
+            int c = a[b[i]];
+            result[i] = c;
+            if (c == i) {
+                fixed++;
+            }
+        }
+        if ((fixed & (fixed - 1)) != 0) {
+            return null;
         }
         return result;
     }
