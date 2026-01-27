@@ -49,7 +49,7 @@ public class BatchAffineTest {
         String name = "bbs4";
         int k = 16;
         Liner proj = readProj(k, name);
-        for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+        for (int dl : affine9.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
             int[] infty = proj.line(dl);
             int[] partialPoints = new int[proj.pointCount()];
             Arrays.fill(partialPoints, -1);
@@ -84,7 +84,7 @@ public class BatchAffineTest {
         Liner proj = readProj(k, name);
         int cnt = k * k + k + 1;
         int[] arr = IntStream.range(0, cnt).toArray();
-        for (int dl : dropped.getOrDefault(name, arr)) {
+        for (int dl : affine9.getOrDefault(name, arr)) {
             String[] ranks = Stream.<Supplier<String>>of(() -> translationRank(proj, k, dl), () -> shearRank(proj, k, dl), () -> centralRank(proj, k, dl),
                     () -> hyperScaleRank(proj, k, dl)).parallel().map(Supplier::get).toArray(String[]::new);
             System.out.println(dl + " " + ranks[0] + " " + ranks[1] + " " + ranks[2] + " " + ranks[3]);
@@ -450,7 +450,7 @@ public class BatchAffineTest {
         String name = "dhall9";
         int k = 9;
         Liner proj = readProj(k, name);
-        for (int dl : dropped.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
+        for (int dl : affine9.getOrDefault(name, IntStream.range(0, k * k + k + 1).toArray())) {
             Liner liner = new AffinePlane(proj, dl).toLiner();
             long time = System.currentTimeMillis();
             PermutationGroup permGroup = liner.automorphisms();
@@ -915,10 +915,10 @@ public class BatchAffineTest {
     public void batchBooleanProperties() throws IOException {
         EqualityProcessor processor = new EqualityProcessor(false, true);
         //BiConsumer<String, AffineTernaryRing> processor = BatchAffineTest::printLinearTables;
-        for (String plName : dropped.keySet()) {
+        for (String plName : affine9.keySet()) {
             int k = 9;
             Liner proj = readProj(k, plName);
-            for (int dl : dropped.get(plName)) {
+            for (int dl : affine9.get(plName)) {
                 Liner liner = new AffinePlane(proj, dl).toLiner();
                 String name = plName + "-" + dl + "-" + k;
                 System.out.println(name + " dropped line " + dl);
@@ -980,9 +980,9 @@ public class BatchAffineTest {
     public void isotopicTest() throws IOException {
         int k = 9;
         IsotopyProcessor processor = new IsotopyProcessor(k);
-        for (String plName : dropped.keySet()) {
+        for (String plName : affine9.keySet()) {
             Liner proj = readProj(k, plName);
-            for (int dl : dropped.get(plName)) {
+            for (int dl : affine9.get(plName)) {
                 Liner liner = new AffinePlane(proj, dl).toLiner();
                 String name = plName + "-" + dl + "-" + k;
                 System.out.println(name + " dropped line " + dl);
@@ -1351,7 +1351,7 @@ public class BatchAffineTest {
             Liner proj = readProj(k, name);
             System.out.println(name);
             int pc = proj.pointCount();
-            ex: for (int dl : dropped.get(name.substring(0, name.indexOf('.')))) {
+            ex: for (int dl : affine9.get(name.substring(0, name.indexOf('.')))) {
                 if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
                     continue;
                 }
@@ -1495,7 +1495,7 @@ public class BatchAffineTest {
             Liner proj = readProj(k, name);
             name = name.substring(0, name.indexOf('.'));
             System.out.println(name);
-            for (int dl : dropped.get(name)) {
+            for (int dl : affine9.get(name)) {
                 String aName = name + "-" + dl + "-" + k;
                 System.out.println(name + " dropped line " + dl);
                 Liner liner = new AffinePlane(proj, dl).toLiner();
@@ -1686,17 +1686,36 @@ public class BatchAffineTest {
         return new int[]{p / pc / pc, p / pc % pc, p % pc};
     }
 
-    private static final Map<String, int[]> dropped = Map.of(
+    private static final Map<String, int[]> affine9 = Map.of(
             "pg29", new int[]{0},
             "dhall9", new int[]{0, 1},
             "hall9", new int[]{0, 81},
             "hughes9", new int[]{0, 3}
-//            "bbh1", new int[]{0, 192, 193, 269},
-//            "bbh2", new int[]{0, 28},
-//            "dbbh2", new int[]{0, 1, 21},
-//            "bbs4", new int[]{0, 108, 270},
-//            "dbbs4", new int[]{0, 228, 241}
-            //"", new int[]{}
+    );
+
+    private static final Map<String, int[]> affine16 = Map.ofEntries(
+            Map.entry("bbh1", new int[]{0, 192, 193, 205, 269}),
+            Map.entry("bbh2", new int[]{0, 16, 28, 33, 193}),
+            Map.entry("bbs4", new int[]{0, 96, 108, 110, 254, 270}),
+            Map.entry("dbbh2", new int[]{0, 1, 21, 41, 233}),
+            Map.entry("dbbs4", new int[]{0, 36, 228, 229, 241, 249}),
+            Map.entry("ddemp", new int[]{0, 240, 256, 257}),
+            Map.entry("ddsfp", new int[]{0, 48, 80, 81}),
+            Map.entry("demp", new int[]{0, 15, 271, 272}),
+            Map.entry("desarg", new int[]{0}),
+            Map.entry("dhall", new int[]{0, 80, 81}),
+            Map.entry("djohn", new int[]{0, 24, 48, 49, 241, 253, 265}),
+            Map.entry("djowk", new int[]{0, 48, 49}),
+            Map.entry("dlmrh", new int[]{0, 48, 49}),
+            Map.entry("dmath", new int[]{0, 16, 272}),
+            Map.entry("dsfp", new int[]{0, 256, 268, 270}),
+            Map.entry("hall", new int[]{0, 5, 17}),
+            Map.entry("john", new int[]{0, 48, 64, 66, 78, 174, 177}),
+            Map.entry("jowk", new int[]{0, 3, 259}),
+            Map.entry("lmrh", new int[]{0, 3, 259}),
+            Map.entry("math", new int[]{0, 1, 17}),
+            Map.entry("semi2", new int[]{0, 256, 272}),
+            Map.entry("semi4", new int[]{0, 256, 272})
     );
 
     private static final Map<String, int[]> uniqueTriangles = Map.of("pg29-0-9", new int[]{0},
