@@ -1345,15 +1345,15 @@ public class BatchAffineTest {
 
     @Test
     public void testGrundhofer() throws IOException {
-        int k = 32;
+        int k = 9;
         for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
             String name = f.getName();
             Liner proj = readProj(k, name);
             System.out.println(name);
             int pc = proj.pointCount();
-            IntStream.range(0, pc).parallel().forEach(dl -> {
+            ex: for (int dl : dropped.get(name.substring(0, name.indexOf('.')))) {
                 if (TernaryAutomorphisms.isAffineTranslation(proj, dl)) {
-                    return;
+                    continue;
                 }
                 for (int l = 0; l < pc; l++) {
                     if (l == dl) {
@@ -1369,88 +1369,43 @@ public class BatchAffineTest {
                         }
                         idxes[pt] = idx++;
                     }
-                    if (initialCheck(dl, pts, lDl, proj, l, k, idxes) && advancedCheck(dl, pts, lDl, proj, l, k, idxes)) {
-                        System.out.println("Found");
-                    }
-                }
-            });
-        }
-    }
-
-    private static final int sCap = 16 * 15 * 14 * 12 * 8;
-
-    private boolean initialCheck(int dl, int[] pts, int lDl, Liner proj, int l, int k, int[] idxes) {
-        int o = pts[0] == lDl ? pts[1] : pts[0];
-        for (int u : proj.line(dl)) {
-            if (lDl == u) {
-                continue;
-            }
-            for (int v : proj.line(dl)) {
-                if (lDl == v || u == v) {
-                    continue;
-                }
-                Set<ArrWrap> gens = new HashSet<>();
-                for (int l1 : proj.lines(o)) {
-                    if (l1 == l || proj.flag(l1, u) || proj.flag(l1, v)) {
-                        continue;
-                    }
-                    int[] perm = new int[k];
-                    for (int pt : pts) {
-                        if (pt == lDl) {
+                    for (int u : proj.line(dl)) {
+                        if (lDl == u) {
                             continue;
                         }
-                        int l1Pt = proj.intersection(l1, proj.line(u, pt));
-                        int mapPt = proj.intersection(l, proj.line(v, l1Pt));
-                        perm[idxes[pt]] = idxes[mapPt];
-                    }
-                    gens.add(new ArrWrap(perm));
-                }
-                Set<ArrWrap> awp = getClosure(gens,  sCap + 1);
-                if (awp.size() <= sCap) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean advancedCheck(int dl, int[] pts, int lDl, Liner proj, int l, int k, int[] idxes) {
-        for (int u : proj.line(dl)) {
-            if (lDl == u) {
-                continue;
-            }
-            for (int v : proj.line(dl)) {
-                if (lDl == v || u == v) {
-                    continue;
-                }
-                IntList lst = new IntList(2000);
-                for (int l1 = 0; l1 < proj.pointCount(); l1++) {
-                    if (l1 == l || proj.flag(l1, u) || proj.flag(l1, v)) {
-                        continue;
-                    }
-                    lst.add(l1);
-                }
-                Set<ArrWrap> gens = new HashSet<>();
-                for (int i = 0; i < lst.size(); i++) {
-                    int l1 = lst.get(i);
-                    int[] perm = new int[k];
-                    for (int pt : pts) {
-                        if (pt == lDl) {
-                            continue;
+                        for (int v : proj.line(dl)) {
+                            if (lDl == v || u == v) {
+                                continue;
+                            }
+                            IntList lst = new IntList(2000);
+                            for (int l1 = 0; l1 < proj.pointCount(); l1++) {
+                                if (l1 == l || proj.flag(l1, u) || proj.flag(l1, v)) {
+                                    continue;
+                                }
+                                lst.add(l1);
+                            }
+                            for (int i = 0; i < lst.size(); i++) {
+                                int l1 = lst.get(i);
+                                int[] perm = new int[k];
+                                for (int pt : pts) {
+                                    if (pt == lDl) {
+                                        continue;
+                                    }
+                                    int l1Pt = proj.intersection(l1, proj.line(u, pt));
+                                    int mapPt = proj.intersection(l, proj.line(v, l1Pt));
+                                    perm[idxes[pt]] = idxes[mapPt];
+                                }
+                                if (!even(perm)) {
+                                    System.out.println(dl + " Full");
+                                    continue ex;
+                                }
+                            }
                         }
-                        int l1Pt = proj.intersection(l1, proj.line(u, pt));
-                        int mapPt = proj.intersection(l, proj.line(v, l1Pt));
-                        perm[idxes[pt]] = idxes[mapPt];
                     }
-                    gens.add(new ArrWrap(perm));
                 }
-                Set<ArrWrap> awp = getClosure(gens,  fCap + 1);
-                if (awp.size() <= fCap) {
-                    return true;
-                }
+                System.out.println(dl + " Alternating");
             }
         }
-        return false;
     }
 
     @Test
