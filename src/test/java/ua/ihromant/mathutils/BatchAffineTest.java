@@ -1405,8 +1405,8 @@ public class BatchAffineTest {
                     }
                     gens.add(new ArrWrap(perm));
                 }
-                Set<ArrWrap> awp = getClosureAlt(gens,  sCap + 1);
-                if (awp != null && awp.size() <= sCap) {
+                Set<ArrWrap> awp = getClosure(gens,  sCap + 1);
+                if (awp.size() <= sCap) {
                     return true;
                 }
             }
@@ -1444,8 +1444,8 @@ public class BatchAffineTest {
                     }
                     gens.add(new ArrWrap(perm));
                 }
-                Set<ArrWrap> awp = getClosureAlt(gens,  fCap + 1);
-                if (awp != null && awp.size() <= fCap) {
+                Set<ArrWrap> awp = getClosure(gens,  fCap + 1);
+                if (awp.size() <= fCap) {
                     return true;
                 }
             }
@@ -1513,9 +1513,6 @@ public class BatchAffineTest {
                 for (ArrWrap el : result.toArray(ArrWrap[]::new)) {
                     ArrWrap xy = new ArrWrap(combine(gen.map, el.map));
                     ArrWrap yx = new ArrWrap(combine(el.map, gen.map));
-                    if (xy.map == null || yx.map == null) {
-                        return null;
-                    }
                     added = result.add(xy) || added;
                     added = result.add(yx) || added;
                 }
@@ -1591,16 +1588,8 @@ public class BatchAffineTest {
 
     private static int[] combine(int[] a, int[] b) {
         int[] result = new int[a.length];
-        int fixed = 0;
         for (int i = 0; i < a.length; i++) {
-            int c = a[b[i]];
-            result[i] = c;
-            if (c == i) {
-                fixed++;
-            }
-        }
-        if ((fixed & (fixed - 1)) != 0) {
-            return null;
+            result[i] = a[b[i]];
         }
         return result;
     }
