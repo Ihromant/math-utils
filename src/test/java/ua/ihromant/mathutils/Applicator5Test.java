@@ -118,6 +118,32 @@ public class Applicator5Test {
         }
     }
 
+    private static State[] getStabilized(GSpace sp) {
+        Map<FixBS, State> singles = new ConcurrentHashMap<>();
+        int v = sp.v();
+        Consumer<State> cons = st -> {
+            if (st.stabilizer().cardinality() == 1) {
+                return;
+            }
+            State minimized = st.minimizeBlock(sp);
+            singles.putIfAbsent(minimized.block(), minimized);
+        };
+        IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
+            IntStream.range(fst + 1, v).parallel().forEach(snd -> {
+                IntStream.range(snd + 1, v).forEach(trd -> {
+                    State state = sp.forInitial(fst, snd, trd);
+                    if (state == null) {
+                        return;
+                    }
+                    searchDesignsFirstNoMin(sp, state, trd, cons);
+                });
+            });
+        });
+        State[] base = singles.values().toArray(State[]::new);
+        Arrays.sort(base, Comparator.comparing(State::block));
+        return base;
+    }
+
     private record Wrap(int[][] used) {
         @Override
         public boolean equals(Object o) {
