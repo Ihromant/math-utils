@@ -174,16 +174,34 @@ public class Applicator6Test {
         }
     }
 
+    private record Wrap(int[][] used) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Wrap(int[][] used1))) return false;
+            return Arrays.deepEquals(used, used1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.deepHashCode(used);
+        }
+    }
+
     private static List<State[]> generateBegins(FixBS removableDiffs, State[] base, GSpace sp) {
         List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
         if (removableDiffs.isEmpty()) {
             begins.add(new State[0]);
         }
         FixBS[] intersecting = intersecting(base);
+        Map<Wrap, List<List<int[]>>> confs = new ConcurrentHashMap<>();
         IntStream.range(0, base.length).parallel().forEach(idx -> {
             State st = base[idx];
             find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
                 if (!removableDiffs.diff(des.diffSet).isEmpty()) {
+                    return false;
+                }
+                int[][] used = usedDiffs(des.curr, sp, sp.v() / sp.gOrd(), sp.v());
+                if (confs.computeIfAbsent(new Wrap(used), w -> find(w.used, sp.gOrd(), sp.k())).isEmpty()) {
                     return false;
                 }
                 Arrays.sort(des.curr(), Comparator.comparing(State::block));
