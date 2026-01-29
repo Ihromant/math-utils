@@ -610,11 +610,22 @@ public class Applicator6Test {
         }
     }
 
+    private static List<List<int[]>> find(int[][] used, int gOrd, int k) {
+        int orbitCount = used.length;
+        List<List<int[]>> res = new ArrayList<>();
+        int[][] splits = generateSplits(orbitCount, k);
+        find(gOrd, orbitCount, used, new ArrayList<>(), splits, 0, res::add);
+        return res;
+    }
+
     private static List<List<int[]>> find(State[] basicConf, GSpace sp) {
         int gOrd = sp.gOrd();
         int v = sp.v();
         int orbitCount = v / gOrd;
-        List<List<int[]>> res = new ArrayList<>();
+        return find(usedDiffs(basicConf, sp, orbitCount, v), gOrd, sp.k());
+    }
+
+    private static int[][] usedDiffs(State[] basicConf, GSpace sp, int orbitCount, int v) {
         int[][] used = new int[orbitCount][orbitCount];
         for (int i = 0; i < orbitCount; i++) {
             used[i][i] = 1;
@@ -630,9 +641,7 @@ public class Applicator6Test {
                 used[fst][snd]++;
             }
         }
-        int[][] splits = generateSplits(orbitCount, sp.k());
-        find(gOrd, orbitCount, used, new ArrayList<>(), splits, 0, res::add);
-        return res;
+        return used;
     }
 
     private static int[][] generateSplits(int orbitCount, int k) {
