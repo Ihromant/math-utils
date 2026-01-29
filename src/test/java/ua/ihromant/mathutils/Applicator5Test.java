@@ -54,19 +54,7 @@ public class Applicator5Test {
             System.out.println(GroupIndex.identify(group) + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
             State[] base = getRemovable(removableDiffs, sp, v, group);
             System.out.println("Base blocks " + base.length);
-            List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
-            FixBS[] intersecting = intersecting(base);
-            IntStream.range(0, base.length).parallel().forEach(idx -> {
-                State st = base[idx];
-                find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
-                    if (!removableDiffs.diff(des.diffSet).isEmpty()) {
-                        return false;
-                    }
-                    Arrays.sort(des.curr(), Comparator.comparing(State::block));
-                    begins.add(des.curr());
-                    return false;
-                });
-            });
+            List<State[]> begins = generateBegins(base, sp, removableDiffs);
             System.out.println("Initial configs " + begins.size());
             for (State[] states : begins) {
                 FixBS[][] filters = filters(states, sp, group);
@@ -128,6 +116,45 @@ public class Applicator5Test {
                 }
             }
         }
+    }
+
+    private record Wrap(int[][] used) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof Wrap(int[][] used1))) return false;
+            return Arrays.deepEquals(used, used1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.deepHashCode(used);
+        }
+    }
+
+    private static List<State[]> generateBegins(State[] base, GSpace sp, FixBS removableDiffs) {
+        List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
+        if (removableDiffs.isEmpty()) {
+            begins.add(new State[0]);
+        }
+        FixBS[] intersecting = intersecting(base);
+        Map<Wrap, List<List<int[]>>> confs = new ConcurrentHashMap<>();
+        IntStream.range(0, base.length).parallel().forEach(idx -> {
+            State st = base[idx];
+            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
+                if (!removableDiffs.diff(des.diffSet).isEmpty()) {
+                    return false;
+                }
+                int[][] used = usedDiffs(des.curr, sp, sp.v() / sp.gOrd(), sp.v());
+                if (confs.computeIfAbsent(new Wrap(used), w -> find(w.used, sp.gOrd(), sp.k())).isEmpty()) {
+                    return false;
+                }
+                Arrays.sort(des.curr(), Comparator.comparing(State::block));
+                begins.add(des.curr());
+                return false;
+            });
+        });
+        begins.sort((a, b) -> Integer.compare(b.length, a.length));
+        return begins;
     }
 
     private static void find(LeftState[] lefts, RightState[] rights, RightState currState, int k, Group group, Predicate<RightState[]> cons) {
@@ -388,11 +415,22 @@ public class Applicator5Test {
         }
     }
 
-    private List<List<int[]>> find(State[] basicConf, GSpace sp) {
+    private static List<List<int[]>> find(int[][] used, int gOrd, int k) {
+        int orbitCount = used.length;
+        List<List<int[]>> res = new ArrayList<>();
+        int[][] splits = generateSplits(orbitCount, k);
+        find(gOrd, orbitCount, used, new ArrayList<>(), splits, 0, res::add);
+        return res;
+    }
+
+    private static List<List<int[]>> find(State[] basicConf, GSpace sp) {
         int gOrd = sp.gOrd();
         int v = sp.v();
         int orbitCount = v / gOrd;
-        List<List<int[]>> res = new ArrayList<>();
+        return find(usedDiffs(basicConf, sp, orbitCount, v), gOrd, sp.k());
+    }
+
+    private static int[][] usedDiffs(State[] basicConf, GSpace sp, int orbitCount, int v) {
         int[][] used = new int[orbitCount][orbitCount];
         for (int i = 0; i < orbitCount; i++) {
             used[i][i] = 1;
@@ -408,18 +446,16 @@ public class Applicator5Test {
                 used[fst][snd]++;
             }
         }
-        int[][] splits = generateSplits(orbitCount, sp.k());
-        find(gOrd, orbitCount, used, new ArrayList<>(), splits, 0, res::add);
-        return res;
+        return used;
     }
 
-    private int[][] generateSplits(int orbitCount, int k) {
+    private static int[][] generateSplits(int orbitCount, int k) {
         List<int[]> res = new ArrayList<>();
         generateSplits(k, new int[orbitCount], 0, 0, res::add);
         return res.toArray(int[][]::new);
     }
 
-    private void generateSplits(int k, int[] curr, int idx, int sum, Consumer<int[]> cons) {
+    private static void generateSplits(int k, int[] curr, int idx, int sum, Consumer<int[]> cons) {
         for (int i = 0; i <= k - sum; i++) {
             int[] nextCurr = curr.clone();
             nextCurr[idx] = i;
@@ -432,7 +468,7 @@ public class Applicator5Test {
         }
     }
 
-    private void find(int orbitSize, int orbitCount, int[][] used, List<int[]> lst, int[][] splits, int idx, Consumer<List<int[]>> cons) {
+    private static void find(int orbitSize, int orbitCount, int[][] used, List<int[]> lst, int[][] splits, int idx, Consumer<List<int[]>> cons) {
         ex: for (int i = idx; i < splits.length; i++) {
             int[] split = splits[i];
             int[][] nextUsed = new int[orbitCount][orbitCount];
