@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.auto.Automorphisms;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.plane.AffineTernaryRing;
@@ -1451,6 +1452,77 @@ public class BatchAffineTest {
                             System.out.println(dl + " " + q + " " + closure.size());
                         }
                     }
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testSharp() throws IOException {
+        int k = 9;
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())) {
+            String name = f.getName();
+            if ("pg29.txt".equals(name)) {
+                continue;
+            }
+            Liner proj = readProj(k, name);
+            int pc = proj.pointCount();
+            for (int dl : affine9.get(name.substring(0, name.indexOf('.')))) {
+                System.out.println(name + " dropped " + dl);
+                if ("dhall9.txt".equals(name) && dl == 0) {
+                    continue;
+                }
+                for (int l = 0; l < pc; l++) {
+                    if (l == dl) {
+                        continue;
+                    }
+                    int lDl = proj.intersection(l, dl);
+                    int[] pts = proj.line(l);
+                    int[] idxes = new int[pc];
+                    int idx = 0;
+                    for (int pt : pts) {
+                        if (pt == lDl) {
+                            continue;
+                        }
+                        idxes[pt] = idx++;
+                    }
+                    Set<ArrWrap> gens = new HashSet<>();
+                    boolean even = true;
+                    for (int u : proj.line(dl)) {
+                        if (lDl == u) {
+                            continue;
+                        }
+                        for (int v : proj.line(dl)) {
+                            if (lDl == v || u == v) {
+                                continue;
+                            }
+                            for (int par : proj.lines(lDl)) {
+                                if (par == dl || par == l) {
+                                    continue;
+                                }
+                                int[] perm = new int[k];
+                                for (int pt : pts) {
+                                    if (pt == lDl) {
+                                        continue;
+                                    }
+                                    int l1Pt = proj.intersection(par, proj.line(u, pt));
+                                    int mapPt = proj.intersection(l, proj.line(v, l1Pt));
+                                    perm[idxes[pt]] = idxes[mapPt];
+                                }
+                                if (!even(perm)) {
+                                    even = false;
+                                }
+                                gens.add(new ArrWrap(perm));
+                            }
+                        }
+                    }
+                    Set<ArrWrap> st = getClosure(gens, even ? 181440 : 362880);
+                    String gName = switch (st.size()) {
+                        case 181440 -> "A9";
+                        case 362880 -> "S9";
+                        default -> st.size() > 10000 ? ("Order " + st.size()) : GroupIndex.identify(new PermutationGroup(st.stream().map(ArrWrap::map).toArray(int[][]::new)).asTable());
+                    };
+                    System.out.println(l + " " + gName);
                 }
             }
         }
