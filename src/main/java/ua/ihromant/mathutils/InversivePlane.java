@@ -272,8 +272,8 @@ public class InversivePlane {
 
     public long autCount() {
         AtomicLong counter = new AtomicLong();
-        Consumer<int[]> cons = arr -> counter.incrementAndGet();
-        GraphWrapper wrap = GraphWrapper.forInversive(this);
+        Consumer<int[]> cons = _ -> counter.incrementAndGet();
+        GraphWrapper wrap = asGraph();
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
         return counter.get();
@@ -282,7 +282,7 @@ public class InversivePlane {
     public PermutationGroup automorphisms() {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
-        GraphWrapper wrap = GraphWrapper.forInversive(this);
+        GraphWrapper wrap = asGraph();
         AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
         NautyAlgo.search(wrap, aut);
         return new PermutationGroup(res.toArray(int[][]::new));
@@ -310,5 +310,28 @@ public class InversivePlane {
             result.compute(freq, (k, v) -> v == null ? 1 : v + 1);
         }
         return result;
+    }
+
+    public GraphWrapper asGraph() {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return pointCount + lines.length;
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < pointCount ? 0 : 1;
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                if (a < pointCount) {
+                    return b >= pointCount && flags[b - pointCount][a];
+                } else {
+                    return b < pointCount && flags[a - pointCount][b];
+                }
+            }
+        };
     }
 }

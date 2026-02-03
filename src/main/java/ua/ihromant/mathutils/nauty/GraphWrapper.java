@@ -16,54 +16,6 @@ public interface GraphWrapper {
 
     boolean edge(int a, int b);
 
-    static GraphWrapper byInc(Inc inc) {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return inc.v() + inc.b();
-            }
-
-            @Override
-            public int color(int idx) {
-                return idx < inc.v() ? 0 : 1;
-            }
-
-            @Override
-            public boolean edge(int a, int b) {
-                int pc = inc.v();
-                if (a < pc) {
-                    return b >= pc && inc.inc(b - pc, a);
-                } else {
-                    return b < pc && inc.inc(a - pc, b);
-                }
-            }
-        };
-    }
-
-    static GraphWrapper forInversive(InversivePlane inv) {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return inv.pointCount() + inv.blockCount();
-            }
-
-            @Override
-            public int color(int idx) {
-                return idx < inv.pointCount() ? 0 : 1;
-            }
-
-            @Override
-            public boolean edge(int a, int b) {
-                int pc = inv.pointCount();
-                if (a < pc) {
-                    return b >= pc && inv.flag(b - pc, a);
-                } else {
-                    return b < pc && inv.flag(a - pc, b);
-                }
-            }
-        };
-    }
-
     default Partition partition() {
         SortedMap<Integer, BitSet> colorDist = new TreeMap<>();
         IntStream.range(0, size()).forEach(i -> colorDist.computeIfAbsent(color(i), j -> new BitSet(size())).set(i));
