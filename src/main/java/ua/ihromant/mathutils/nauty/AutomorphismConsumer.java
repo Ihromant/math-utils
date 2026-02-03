@@ -18,7 +18,7 @@ public class AutomorphismConsumer implements Consumer<Partition> {
 
     @Override
     public void accept(Partition partition) {
-        FixBS currCert = graph.permutedIncidence(partition);
+        FixBS currCert = partition.permutedIncidence(graph);
         if (cert == null) {
             cert = currCert;
             permutation = partition.permutation();

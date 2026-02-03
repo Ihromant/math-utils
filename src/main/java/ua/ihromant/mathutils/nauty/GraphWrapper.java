@@ -11,21 +11,6 @@ public interface GraphWrapper {
 
     boolean edge(int a, int b);
 
-    default FixBS permutedIncidence(Partition partition) {
-        int size = size();
-        FixBS bs = new FixBS(size * size);
-        for (int l = 0; l < size; l++) {
-            int pl = partition.permute(l);
-            for (int p = 0; p < size; p++) {
-                if (edge(l, p)) {
-                    int pp = partition.permute(p);
-                    bs.set(pl * size + pp);
-                }
-            }
-        }
-        return bs;
-    }
-
     default FixBS fragment(BitSet singulars, int[] permutation) {
         int vc = size();
         FixBS res = new FixBS(vc * vc);

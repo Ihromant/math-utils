@@ -14,7 +14,7 @@ public class CanonicalConsumer implements Consumer<Partition> {
 
     @Override
     public void accept(Partition partition) {
-        FixBS permuted = graph.permutedIncidence(partition);
+        FixBS permuted = partition.permutedIncidence(graph);
         if (more(permuted)) {
             cert = permuted;
         }

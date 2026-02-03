@@ -171,4 +171,19 @@ public class Partition {
         }
         return result;
     }
+
+    public FixBS permutedIncidence(GraphWrapper graph) {
+        int size = graph.size();
+        FixBS bs = new FixBS(size * size);
+        for (int l = 0; l < size; l++) {
+            int pl = cellIdx[l];
+            for (int p = 0; p < size; p++) {
+                if (graph.edge(l, p)) {
+                    int pp = cellIdx[p];
+                    bs.set(pl * size + pp);
+                }
+            }
+        }
+        return bs;
+    }
 }
