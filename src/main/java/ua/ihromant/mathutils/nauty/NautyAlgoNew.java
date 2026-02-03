@@ -3,15 +3,14 @@ package ua.ihromant.mathutils.nauty;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
-import java.util.BitSet;
 import java.util.List;
 
 public class NautyAlgoNew {
     public static void search(GraphWrapper graph, NodeChecker checker) {
         Partition partition = Partition.partition(graph);
-        BitSet singulars = new BitSet(graph.size());
+        FixBS singulars = new FixBS(graph.size());
         partition.refine(graph, partition.subPartition(), singulars);
-        FixBS fragment = graph.fragment(singulars, partition.permutation());
+        FixBS fragment = fragment(graph, singulars, partition.permutation());
         List<FixBS> path = new ArrayList<>();
         path.add(fragment);
         if (checker.check(partition, path)) {
@@ -20,9 +19,9 @@ public class NautyAlgoNew {
     }
 
     public static void search(GraphWrapper graph, Partition partition, NodeChecker checker) {
-        BitSet singulars = partition.singulars();
+        FixBS singulars = partition.singulars();
         partition.refine(graph, partition.subPartition(), singulars);
-        FixBS fragment = graph.fragment(singulars, partition.permutation());
+        FixBS fragment = fragment(graph, singulars, partition.permutation());
         List<FixBS> path = new ArrayList<>();
         path.add(fragment);
         if (checker.check(partition, path)) {
@@ -35,8 +34,8 @@ public class NautyAlgoNew {
         int[] cell = partition.cellByIdx(smallestIdx);
         for (int sh = 0; sh < cell.length; sh++) {
             Partition next = new Partition(partition);
-            BitSet singulars = next.ort(graph, smallestIdx, sh);
-            FixBS fragment = or(graph.fragment(singulars, next.permutation()), path.getLast());
+            FixBS singulars = next.ort(graph, smallestIdx, sh);
+            FixBS fragment = or(fragment(graph, singulars, next.permutation()), path.getLast());
             List<FixBS> newPath = new ArrayList<>(path);
             newPath.add(fragment);
             if (checker.check(next, newPath)) {
@@ -48,5 +47,20 @@ public class NautyAlgoNew {
     private static FixBS or(FixBS to, FixBS from) {
         to.or(from);
         return to;
+    }
+
+    private static FixBS fragment(GraphWrapper graph, FixBS singulars, int[] permutation) {
+        int vc = graph.size();
+        FixBS res = new FixBS(vc * vc);
+        for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
+            int ut = permutation[u];
+            for (int v = 0; v < vc; v++) {
+                if (graph.edge(u, v)) {
+                    int vt = permutation[v];
+                    res.set(ut * vc + vt);
+                }
+            }
+        }
+        return res;
     }
 }

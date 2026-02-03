@@ -1,12 +1,13 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.BitSet;
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.function.Consumer;
 
 public class NautyAlgo {
     public static void search(GraphWrapper graph, Consumer<Partition> partitionConsumer) {
         Partition partition = Partition.partition(graph);
-        partition.refine(graph, partition.subPartition(), new BitSet(graph.size()));
+        partition.refine(graph, partition.subPartition(), new FixBS(graph.size()));
         search(graph, partition, partitionConsumer);
     }
 

@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
-import java.util.BitSet;
+import ua.ihromant.mathutils.util.FixBS;
 
-public record DistinguishResult(int[][] elms, int largest, BitSet singulars) {
+public record DistinguishResult(int[][] elms, int largest, FixBS singulars) {
 }

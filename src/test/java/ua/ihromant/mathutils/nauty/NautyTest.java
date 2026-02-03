@@ -5,9 +5,9 @@ import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.plane.AffinePlane;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,7 +19,7 @@ public class NautyTest {
         GraphWrapper graph = l.asGraph();
         Partition base = Partition.partition(graph);
         SubPartition alpha = base.subPartition();
-        base.refine(graph, alpha, new BitSet());
+        base.refine(graph, alpha, new FixBS(graph.size()));
         PartialLiner[] partials = new PartialLiner[]{
                 new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}}),
                 new PartialLiner(9, new int[][]{{6, 7, 8}, {4, 5, 8}}),
@@ -32,7 +32,7 @@ public class NautyTest {
             GraphWrapper partGraph = part.asGraph();
             Partition partBase = Partition.partition(partGraph);
             SubPartition partAlpha = partBase.subPartition();
-            partBase.refine(partGraph, partAlpha, new BitSet());
+            partBase.refine(partGraph, partAlpha, new FixBS(partGraph.size()));
             //System.out.println("x");
         }
         base.ort(graph, 0, 0);
@@ -198,7 +198,7 @@ public class NautyTest {
         assertArrayEquals(new int[]{7, 2, 6, 0, 4, 1, -1, 3, -1, 5}, part.getIdxes());
         assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 0, 0}, part.getCellMins());
         assertEquals(8, part.getSize());
-        DistinguishResult res = new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1, new BitSet());
+        DistinguishResult res = new DistinguishResult(new int[][]{{8}, {6}, {2}}, 1, new FixBS(part.getSize()));
         part.addButLargest(res.elms(), res.largest());
         assertArrayEquals(new int[]{7, 2, 9, 0, 4, 1, -1, 3, 8, 5}, part.getIdxes());
         assertArrayEquals(new int[]{3, 5, 1, 7, 4, 9, 2, 0, 8, 2}, part.getCellMins());

@@ -63,7 +63,7 @@ public class Partition {
         return partition[idx];
     }
 
-    public void refine(GraphWrapper graph, SubPartition alpha, BitSet singulars) {
+    public void refine(GraphWrapper graph, SubPartition alpha, FixBS singulars) {
         while (!alpha.isEmpty() && !isDiscrete()) {
             int wMin = alpha.remove();
             int idx = 0;
@@ -88,11 +88,11 @@ public class Partition {
         }
     }
 
-    public BitSet ort(GraphWrapper g, int cellIdx, int shift) {
+    public FixBS ort(GraphWrapper g, int cellIdx, int shift) {
         int[] cell = partition[cellIdx];
         int v = cell[shift];
         SubPartition singleton = new SubPartition(partition.length, v);
-        BitSet result = new BitSet(g.size());
+        FixBS result = new FixBS(g.size());
         int[] butV = new int[cell.length - 1];
         System.arraycopy(cell, 0, butV, 0, shift);
         System.arraycopy(cell, shift + 1, butV, shift, cell.length - shift - 1);
@@ -105,8 +105,8 @@ public class Partition {
         return result;
     }
 
-    public BitSet singulars() {
-        BitSet result = new BitSet(partition.length);
+    public FixBS singulars() {
+        FixBS result = new FixBS(partition.length);
         int idx = 0;
         while (idx < partition.length) {
             int[] cell = partition[idx];

@@ -2,8 +2,6 @@ package ua.ihromant.mathutils.nauty;
 
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.util.BitSet;
-
 public interface GraphWrapper {
     int size();
 
@@ -11,24 +9,9 @@ public interface GraphWrapper {
 
     boolean edge(int a, int b);
 
-    default FixBS fragment(BitSet singulars, int[] permutation) {
-        int vc = size();
-        FixBS res = new FixBS(vc * vc);
-        for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
-            int ut = permutation[u];
-            for (int v = 0; v < vc; v++) {
-                if (edge(u, v)) {
-                    int vt = permutation[v];
-                    res.set(ut * vc + vt);
-                }
-            }
-        }
-        return res;
-    }
-
     default DistinguishResult distinguish(int[] cell, int[] w) {
         int cl = cell.length;
-        BitSet singulars = new BitSet(size());
+        FixBS singulars = new FixBS(size());
         if (cl == 1 || color(cell[0]) == color(w[0])) {
             return new DistinguishResult(new int[][]{cell}, 0, singulars); // TODO not true for not bipartite graphs
         }
@@ -41,7 +24,7 @@ public interface GraphWrapper {
                 }
             }
         }
-        BitSet nonZeros = new BitSet(w.length + 1);
+        FixBS nonZeros = new FixBS(w.length + 1);
         int[] numEdgesCnt = new int[w.length + 1];
         int maxCnt = 0;
         int maxIdx = 0;
