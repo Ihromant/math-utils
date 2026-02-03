@@ -2,6 +2,8 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
+import ua.ihromant.jnauty.GraphData;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
@@ -920,29 +922,24 @@ public class BibdFinder6CyclicTest {
         Group table = group.asTable();
         int k = 6;
         int len = 2;
-        File f = new File("/home/ihromant/maths/g-spaces/initial/separated", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + "fin.txt");
+        File f = new File("/home/ihromant/maths/g-spaces/initial/separated/finished", k + "-" + group.name() + "-fix" + fixed + "-stabx" + len + "fin.txt");
         try (FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
-            Map<Map<Integer, Integer>, PartialLiner> plnrs = new ConcurrentHashMap<>();
+            Map<FixBS, Liner> lnrs = new ConcurrentHashMap<>();
             br.lines().parallel().forEach(l -> {
                 if (!l.contains("[[[")) {
                     return;
                 }
                 int[][][] base = map.readValue(l, int[][][].class);
                 Liner lnr = generateLiner(table, fixed, k, Stream.concat(Arrays.stream(base[0]), Arrays.stream(base[1])).toArray(int[][]::new));
-                Map<Integer, Integer> freq = lnr.hyperbolicFreq();
-                PartialLiner pl = new PartialLiner(lnr.lines());
-                PartialLiner existing = plnrs.computeIfAbsent(freq, _ -> pl);
-                if (pl == existing) {
-                    System.out.println(freq + " " + l);
-                } else {
-                    if (!existing.isomorphicSel(pl)) {
-                        System.out.println("Non iso " + freq + " " + l);
-                    }
+                GraphData data = JNauty.instance().automorphisms(lnr);
+                Liner existing = lnrs.putIfAbsent(new FixBS(data.canonical()), lnr);
+                if (existing == null) {
+                    System.out.println(data.autCount() + " " + lnr.hyperbolicFreq() + " " + l);
                 }
             });
-            System.out.println(plnrs.size());
+            System.out.println(lnrs.size());
         }
     }
 
