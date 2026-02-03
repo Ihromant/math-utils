@@ -30,10 +30,10 @@ public class CanonicalConsumer implements Consumer<Partition> {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        int pc = graph.pointCount();
-        for (int i = 0; i < graph.lineCount(); i++) {
-            int row = pc * i;
-            for (int j = 0; j < pc; j++) {
+        int vc = graph.size();
+        for (int i = 0; i < vc; i++) {
+            int row = vc * i;
+            for (int j = 0; j < vc; j++) {
                 int idx = row + j;
                 builder.append(cert.get(idx) ? '1' : '0');
             }

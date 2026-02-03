@@ -17,10 +17,6 @@ public interface GraphWrapper {
 
     int color(int idx);
 
-    int pointCount();
-
-    int lineCount();
-
     boolean edge(int a, int b);
 
     static GraphWrapper forFull(Liner liner) {
@@ -33,16 +29,6 @@ public interface GraphWrapper {
             @Override
             public int color(int idx) {
                 return idx < liner.pointCount() ? 0 : 1;
-            }
-
-            @Override
-            public int pointCount() {
-                return liner.pointCount();
-            }
-
-            @Override
-            public int lineCount() {
-                return liner.lineCount();
             }
 
             @Override
@@ -70,16 +56,6 @@ public interface GraphWrapper {
             }
 
             @Override
-            public int pointCount() {
-                return liner.pointCount();
-            }
-
-            @Override
-            public int lineCount() {
-                return liner.lineCount();
-            }
-
-            @Override
             public boolean edge(int a, int b) {
                 int pc = liner.pointCount();
                 if (a < pc) {
@@ -101,16 +77,6 @@ public interface GraphWrapper {
             @Override
             public int color(int idx) {
                 return idx < liner.pointCount() ? 0 : 1;
-            }
-
-            @Override
-            public int pointCount() {
-                return liner.pointCount();
-            }
-
-            @Override
-            public int lineCount() {
-                return liner.lineCount();
             }
 
             @Override
@@ -138,16 +104,6 @@ public interface GraphWrapper {
             }
 
             @Override
-            public int pointCount() {
-                return inc.v();
-            }
-
-            @Override
-            public int lineCount() {
-                return inc.b();
-            }
-
-            @Override
             public boolean edge(int a, int b) {
                 int pc = inc.v();
                 if (a < pc) {
@@ -172,16 +128,6 @@ public interface GraphWrapper {
             }
 
             @Override
-            public int pointCount() {
-                return inv.pointCount();
-            }
-
-            @Override
-            public int lineCount() {
-                return inv.blockCount();
-            }
-
-            @Override
             public boolean edge(int a, int b) {
                 int pc = inv.pointCount();
                 if (a < pc) {
@@ -202,17 +148,14 @@ public interface GraphWrapper {
     }
 
     default FixBS permutedIncidence(Partition partition) {
-        int pc = pointCount();
-        int lc = lineCount();
         int size = size();
-        FixBS bs = new FixBS(pc * lc);
-        for (int l = pc; l < size; l++) {
+        FixBS bs = new FixBS(size * size);
+        for (int l = 0; l < size; l++) {
             int pl = partition.permute(l);
-            for (int p = 0; p < pc; p++) {
+            for (int p = 0; p < size; p++) {
                 if (edge(l, p)) {
                     int pp = partition.permute(p);
-                    int li = pl - pc;
-                    bs.set(li * pc + pp);
+                    bs.set(pl * size + pp);
                 }
             }
         }
@@ -220,17 +163,14 @@ public interface GraphWrapper {
     }
 
     default FixBS fragment(BitSet singulars, int[] permutation) {
-        int pc = pointCount();
-        int lc = lineCount();
-        FixBS res = new FixBS(pc * lc);
+        int vc = size();
+        FixBS res = new FixBS(vc * vc);
         for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
             int ut = permutation[u];
-            for (int v = 0; v < size(); v++) {
+            for (int v = 0; v < vc; v++) {
                 if (edge(u, v)) {
                     int vt = permutation[v];
-                    int p = Math.min(ut, vt);
-                    int l = Math.max(ut, vt);
-                    res.set((l - pc) * pc + p);
+                    res.set(ut * vc + vt);
                 }
             }
         }
