@@ -16,7 +16,7 @@ public class NautyTest {
     @Test
     public void testRefine() {
         Liner l = new Liner(new GaloisField(2).generatePlane());
-        GraphWrapper graph = GraphWrapper.forFull(l);
+        GraphWrapper graph = l.asGraph();
         Partition base = graph.partition();
         SubPartition alpha = base.subPartition();
         base.refine(graph, alpha, new BitSet());
@@ -41,7 +41,7 @@ public class NautyTest {
     }
 
     private static String getCanonicalOld(Liner liner) {
-        GraphWrapper graph = GraphWrapper.forFull(liner);
+        GraphWrapper graph = liner.asGraph();
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);
         return cons.toString();
@@ -55,7 +55,7 @@ public class NautyTest {
     }
 
     private static String getCanonicalNew(Liner liner) {
-        GraphWrapper graph = GraphWrapper.forFull(liner);
+        GraphWrapper graph = liner.asGraph();
         CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
         NautyAlgoNew.search(graph, cons);
         return cons.toString();
