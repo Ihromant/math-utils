@@ -1,10 +1,8 @@
 package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
-import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
 import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
-import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
@@ -26,7 +24,7 @@ public interface Inc {
     Inc addLine(int[] line);
 
     static Inc empty(int v, int b) {
-        return new FixInc(IntStream.range(0, b).mapToObj(i -> new FixBS(v)).toArray(FixBS[]::new), v);
+        return new FixInc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v);
     }
 
     default String toLines() {
@@ -36,6 +34,30 @@ public interface Inc {
 
     default Iterable<int[]> blocks() {
         return () -> new BlocksIterator(this);
+    }
+
+    default GraphWrapper asGraph() {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return v() + b();
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < v() ? 0 : 1;
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                int pc = v();
+                if (a < pc) {
+                    return b >= pc && inc(b - pc, a);
+                } else {
+                    return b < pc && inc(a - pc, b);
+                }
+            }
+        };
     }
 
     class BlocksIterator implements Iterator<int[]> {
@@ -121,15 +143,8 @@ public interface Inc {
         }
     }
 
-    default FixBS getCanonicalNew() {
-        GraphWrapper graph = GraphWrapper.byInc(this);
-        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
-        NautyAlgoNew.search(graph, cons);
-        return cons.canonicalForm();
-    }
-
     default FixBS getCanonicalOld() {
-        GraphWrapper graph = GraphWrapper.byInc(this);
+        GraphWrapper graph = asGraph();
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);
         return cons.canonicalForm();

@@ -372,9 +372,33 @@ public class SimpleLiner {
     }
 
     public FixBS getCanonical() {
-        GraphWrapper graph = GraphWrapper.forSimple(this);
+        GraphWrapper graph = asGraph();
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);
         return cons.canonicalForm();
+    }
+
+    public GraphWrapper asGraph() {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return pointCount + lines.length;
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < pointCount ? 0 : 1;
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                int pc = pointCount;
+                if (a < pc) {
+                    return b >= pc && flags[b - pc][a];
+                } else {
+                    return b < pc && flags[a - pc][b];
+                }
+            }
+        };
     }
 }
