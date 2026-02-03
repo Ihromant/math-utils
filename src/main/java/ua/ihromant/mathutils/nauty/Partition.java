@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
@@ -32,10 +32,10 @@ public class Partition {
         this.cellIdx = stack.cellIdx.clone();
     }
 
-    public static Partition partition(GraphWrapper graph) {
-        int sz = graph.size();
+    public static Partition partition(NautyGraph graph) {
+        int sz = graph.vCount();
         SortedMap<Integer, FixBS> colorDist = new TreeMap<>();
-        IntStream.range(0, sz).forEach(i -> colorDist.computeIfAbsent(graph.color(i), _ -> new FixBS(sz)).set(i));
+        IntStream.range(0, sz).forEach(i -> colorDist.computeIfAbsent(graph.vColor(i), _ -> new FixBS(sz)).set(i));
         int[][] result = new int[colorDist.lastKey() + 1][0];
         colorDist.forEach((k, v) -> result[k] = v.toArray());
         return new Partition(sz, result);
@@ -63,7 +63,7 @@ public class Partition {
         return partition[idx];
     }
 
-    public void refine(GraphWrapper graph, SubPartition alpha, FixBS singulars) {
+    public void refine(NautyGraph graph, SubPartition alpha, FixBS singulars) {
         while (!alpha.isEmpty() && !isDiscrete()) {
             int wMin = alpha.remove();
             int idx = 0;
@@ -88,10 +88,10 @@ public class Partition {
         }
     }
 
-    private static DistinguishResult distinguish(GraphWrapper graph, int[] cell, int[] w) {
+    private static DistinguishResult distinguish(NautyGraph graph, int[] cell, int[] w) {
         int cl = cell.length;
-        FixBS singulars = new FixBS(graph.size());
-        if (cl == 1 || graph.color(cell[0]) == graph.color(w[0])) {
+        FixBS singulars = new FixBS(graph.vCount());
+        if (cl == 1 || graph.vColor(cell[0]) == graph.vColor(w[0])) {
             return new DistinguishResult(new int[][]{cell}, 0, singulars); // TODO not true for not bipartite graphs
         }
         int[] numEdgesDist = new int[cl];
@@ -138,11 +138,11 @@ public class Partition {
         return new DistinguishResult(result, largest, singulars);
     }
 
-    public FixBS ort(GraphWrapper g, int cellIdx, int shift) {
+    public FixBS ort(NautyGraph g, int cellIdx, int shift) {
         int[] cell = partition[cellIdx];
         int v = cell[shift];
         SubPartition singleton = new SubPartition(partition.length, v);
-        FixBS result = new FixBS(g.size());
+        FixBS result = new FixBS(g.vCount());
         int[] butV = new int[cell.length - 1];
         System.arraycopy(cell, 0, butV, 0, shift);
         System.arraycopy(cell, shift + 1, butV, shift, cell.length - shift - 1);
@@ -222,8 +222,8 @@ public class Partition {
         return result;
     }
 
-    public FixBS permutedIncidence(GraphWrapper graph) {
-        int size = graph.size();
+    public FixBS permutedIncidence(NautyGraph graph) {
+        int size = graph.vCount();
         FixBS bs = new FixBS(size * size);
         for (int l = 0; l < size; l++) {
             int pl = cellIdx[l];

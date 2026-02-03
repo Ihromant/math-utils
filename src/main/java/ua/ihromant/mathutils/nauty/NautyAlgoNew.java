@@ -1,15 +1,15 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class NautyAlgoNew {
-    public static void search(GraphWrapper graph, NodeChecker checker) {
+    public static void search(NautyGraph graph, NodeChecker checker) {
         Partition partition = Partition.partition(graph);
-        FixBS singulars = new FixBS(graph.size());
+        FixBS singulars = new FixBS(graph.vCount());
         partition.refine(graph, partition.subPartition(), singulars);
         FixBS fragment = fragment(graph, singulars, partition.permutation());
         List<FixBS> path = new ArrayList<>();
@@ -19,7 +19,7 @@ public class NautyAlgoNew {
         }
     }
 
-    public static void search(GraphWrapper graph, Partition partition, NodeChecker checker) {
+    public static void search(NautyGraph graph, Partition partition, NodeChecker checker) {
         FixBS singulars = partition.singulars();
         partition.refine(graph, partition.subPartition(), singulars);
         FixBS fragment = fragment(graph, singulars, partition.permutation());
@@ -30,7 +30,7 @@ public class NautyAlgoNew {
         }
     }
 
-    public static void search(GraphWrapper graph, Partition partition, List<FixBS> path, NodeChecker checker) {
+    public static void search(NautyGraph graph, Partition partition, List<FixBS> path, NodeChecker checker) {
         int smallestIdx = partition.firstNonTrivial();
         int[] cell = partition.cellByIdx(smallestIdx);
         for (int sh = 0; sh < cell.length; sh++) {
@@ -50,8 +50,8 @@ public class NautyAlgoNew {
         return to;
     }
 
-    private static FixBS fragment(GraphWrapper graph, FixBS singulars, int[] permutation) {
-        int vc = graph.size();
+    private static FixBS fragment(NautyGraph graph, FixBS singulars, int[] permutation) {
+        int vc = graph.vCount();
         FixBS res = new FixBS(vc * vc);
         for (int u = singulars.nextSetBit(0); u >= 0; u = singulars.nextSetBit(u + 1)) {
             int ut = permutation[u];

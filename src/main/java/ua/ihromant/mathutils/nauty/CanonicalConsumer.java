@@ -1,15 +1,15 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.function.Consumer;
 
 public class CanonicalConsumer implements Consumer<Partition> {
-    private final GraphWrapper graph;
+    private final NautyGraph graph;
     private FixBS cert;
 
-    public CanonicalConsumer(GraphWrapper graph) {
+    public CanonicalConsumer(NautyGraph graph) {
         this.graph = graph;
     }
 
@@ -31,7 +31,7 @@ public class CanonicalConsumer implements Consumer<Partition> {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        int vc = graph.size();
+        int vc = graph.vCount();
         for (int i = 0; i < vc; i++) {
             int row = vc * i;
             for (int j = 0; j < vc; j++) {

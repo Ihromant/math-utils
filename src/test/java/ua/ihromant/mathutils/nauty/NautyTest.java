@@ -18,7 +18,7 @@ public class NautyTest {
         Liner l = new Liner(new GaloisField(2).generatePlane());
         Partition base = Partition.partition(l);
         SubPartition alpha = base.subPartition();
-        base.refine(l, alpha, new FixBS(l.size()));
+        base.refine(l, alpha, new FixBS(l.vCount()));
         PartialLiner[] partials = new PartialLiner[]{
                 new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}}),
                 new PartialLiner(9, new int[][]{{6, 7, 8}, {4, 5, 8}}),
@@ -30,7 +30,7 @@ public class NautyTest {
         for (PartialLiner part : partials) {
             Partition partBase = Partition.partition(part);
             SubPartition partAlpha = partBase.subPartition();
-            partBase.refine(part, partAlpha, new FixBS(part.size()));
+            partBase.refine(part, partAlpha, new FixBS(part.vCount()));
             //System.out.println("x");
         }
         base.ort(l, 0, 0);

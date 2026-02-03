@@ -1,18 +1,18 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
 
 public class AutomorphismConsumer implements Consumer<Partition> {
-    private final GraphWrapper graph;
+    private final NautyGraph graph;
     private final Consumer<int[]> autConsumer;
     private FixBS cert;
     private int[] permutation;
 
-    public AutomorphismConsumer(GraphWrapper graph, Consumer<int[]> autConsumer) {
+    public AutomorphismConsumer(NautyGraph graph, Consumer<int[]> autConsumer) {
         this.graph = graph;
         this.autConsumer = autConsumer;
     }

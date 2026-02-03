@@ -1,15 +1,15 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.List;
 
 public class CanonicalConsumerNew implements NodeChecker {
-    private final GraphWrapper graph;
+    private final NautyGraph graph;
     private List<FixBS> certs = List.of();
 
-    public CanonicalConsumerNew(GraphWrapper graph) {
+    public CanonicalConsumerNew(NautyGraph graph) {
         this.graph = graph;
     }
 
@@ -34,7 +34,7 @@ public class CanonicalConsumerNew implements NodeChecker {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
-        int vc = graph.size();
+        int vc = graph.vCount();
         FixBS cert = certs.getLast();
         for (int i = 0; i < vc; i++) {
             int row = vc * i;

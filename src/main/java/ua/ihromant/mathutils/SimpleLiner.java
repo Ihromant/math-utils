@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.util.FixBS;
@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class SimpleLiner implements GraphWrapper {
+public class SimpleLiner implements NautyGraph {
     private final int pointCount;
     private final int ll;
     private final int[][] lines;
@@ -378,12 +378,12 @@ public class SimpleLiner implements GraphWrapper {
     }
 
     @Override
-    public int size() {
+    public int vCount() {
         return pointCount + lines.length;
     }
 
     @Override
-    public int color(int idx) {
+    public int vColor(int idx) {
         return idx < pointCount ? 0 : 1;
     }
 

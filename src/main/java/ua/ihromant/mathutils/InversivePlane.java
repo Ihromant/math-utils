@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class InversivePlane implements GraphWrapper {
+public class InversivePlane implements NautyGraph {
     private final int pointCount;
     private final int[][] lines;
     private final boolean[][] flags;
@@ -311,12 +311,12 @@ public class InversivePlane implements GraphWrapper {
     }
 
     @Override
-    public int size() {
+    public int vCount() {
         return pointCount + lines.length;
     }
 
     @Override
-    public int color(int idx) {
+    public int vColor(int idx) {
         return idx < pointCount ? 0 : 1;
     }
 

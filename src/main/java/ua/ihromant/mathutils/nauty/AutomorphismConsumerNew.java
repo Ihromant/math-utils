@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
@@ -12,7 +12,7 @@ public class AutomorphismConsumerNew implements NodeChecker {
     private List<FixBS> certs = List.of();
     private int[] permutation;
 
-    public AutomorphismConsumerNew(GraphWrapper graph, Consumer<int[]> autConsumer) {
+    public AutomorphismConsumerNew(NautyGraph graph, Consumer<int[]> autConsumer) {
         this.autConsumer = autConsumer;
     }
 

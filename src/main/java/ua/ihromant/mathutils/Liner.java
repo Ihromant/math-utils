@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Liner implements GraphWrapper {
+public class Liner implements NautyGraph {
     private final int pointCount;
     private final int[][] lines;
     private final FixBS[] flags;
@@ -851,12 +851,12 @@ public class Liner implements GraphWrapper {
     }
 
     @Override
-    public int size() {
+    public int vCount() {
         return pointCount + lines.length;
     }
 
     @Override
-    public int color(int idx) {
+    public int vColor(int idx) {
         return idx < pointCount ? 0 : 1;
     }
 

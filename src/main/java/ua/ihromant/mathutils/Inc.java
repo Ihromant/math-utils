@@ -1,6 +1,6 @@
 package ua.ihromant.mathutils;
 
-import ua.ihromant.jnauty.GraphWrapper;
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.util.FixBS;
@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public interface Inc extends GraphWrapper {
+public interface Inc extends NautyGraph {
     int v();
 
     int b();
@@ -24,12 +24,12 @@ public interface Inc extends GraphWrapper {
     Inc addLine(int[] line);
 
     @Override
-    default int size() {
+    default int vCount() {
         return v() + b();
     }
 
     @Override
-    default int color(int idx) {
+    default int vColor(int idx) {
         return idx < v() ? 0 : 1;
     }
 
