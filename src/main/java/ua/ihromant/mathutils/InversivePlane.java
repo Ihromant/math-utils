@@ -1,9 +1,9 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.jnauty.GraphWrapper;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
-import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 

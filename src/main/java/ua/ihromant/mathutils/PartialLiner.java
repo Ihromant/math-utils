@@ -1,8 +1,8 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.jnauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
-import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
 import ua.ihromant.mathutils.util.FixBS;

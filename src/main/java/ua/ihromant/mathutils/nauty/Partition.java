@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.jnauty.GraphWrapper;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;

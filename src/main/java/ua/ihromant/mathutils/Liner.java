@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.jnauty.GraphWrapper;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.PermutationGroup;
@@ -7,10 +8,8 @@ import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.CanonicalConsumer;
 import ua.ihromant.mathutils.nauty.CanonicalConsumerNew;
-import ua.ihromant.mathutils.nauty.GraphWrapper;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
-import ua.ihromant.mathutils.nauty.Partition;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
