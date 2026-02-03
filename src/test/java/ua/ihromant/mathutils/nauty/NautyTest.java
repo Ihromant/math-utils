@@ -16,10 +16,9 @@ public class NautyTest {
     @Test
     public void testRefine() {
         Liner l = new Liner(new GaloisField(2).generatePlane());
-        GraphWrapper graph = l.asGraph();
-        Partition base = Partition.partition(graph);
+        Partition base = Partition.partition(l);
         SubPartition alpha = base.subPartition();
-        base.refine(graph, alpha, new FixBS(graph.size()));
+        base.refine(l, alpha, new FixBS(l.size()));
         PartialLiner[] partials = new PartialLiner[]{
                 new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 3, 4}}),
                 new PartialLiner(9, new int[][]{{6, 7, 8}, {4, 5, 8}}),
@@ -29,42 +28,37 @@ public class NautyTest {
                 new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 5, 6}, {2, 4, 6}})
         };
         for (PartialLiner part : partials) {
-            GraphWrapper partGraph = part.asGraph();
-            Partition partBase = Partition.partition(partGraph);
+            Partition partBase = Partition.partition(part);
             SubPartition partAlpha = partBase.subPartition();
-            partBase.refine(partGraph, partAlpha, new FixBS(partGraph.size()));
+            partBase.refine(part, partAlpha, new FixBS(part.size()));
             //System.out.println("x");
         }
-        base.ort(graph, 0, 0);
-        base.ort(graph, 11, 0);
+        base.ort(l, 0, 0);
+        base.ort(l, 11, 0);
         System.out.println();
     }
 
     private static String getCanonicalOld(Liner liner) {
-        GraphWrapper graph = liner.asGraph();
-        CanonicalConsumer cons = new CanonicalConsumer(graph);
-        NautyAlgo.search(graph, cons);
+        CanonicalConsumer cons = new CanonicalConsumer(liner);
+        NautyAlgo.search(liner, cons);
         return cons.toString();
     }
 
     private static String getCanonicalOld(PartialLiner liner) {
-        GraphWrapper graph = liner.asGraph();
-        CanonicalConsumer cons = new CanonicalConsumer(graph);
-        NautyAlgo.search(graph, cons);
+        CanonicalConsumer cons = new CanonicalConsumer(liner);
+        NautyAlgo.search(liner, cons);
         return cons.toString();
     }
 
     private static String getCanonicalNew(Liner liner) {
-        GraphWrapper graph = liner.asGraph();
-        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
-        NautyAlgoNew.search(graph, cons);
+        CanonicalConsumerNew cons = new CanonicalConsumerNew(liner);
+        NautyAlgoNew.search(liner, cons);
         return cons.toString();
     }
 
     private static String getCanonicalNew(PartialLiner liner) {
-        GraphWrapper graph = liner.asGraph();
-        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
-        NautyAlgoNew.search(graph, cons);
+        CanonicalConsumerNew cons = new CanonicalConsumerNew(liner);
+        NautyAlgoNew.search(liner, cons);
         return cons.toString();
     }
 

@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
-public class InversivePlane {
+public class InversivePlane implements GraphWrapper {
     private final int pointCount;
     private final int[][] lines;
     private final boolean[][] flags;
@@ -273,18 +273,16 @@ public class InversivePlane {
     public long autCount() {
         AtomicLong counter = new AtomicLong();
         Consumer<int[]> cons = _ -> counter.incrementAndGet();
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
-        NautyAlgoNew.search(wrap, aut);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(this, cons);
+        NautyAlgoNew.search(this, aut);
         return counter.get();
     }
 
     public PermutationGroup automorphisms() {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
-        NautyAlgo.search(wrap, aut);
+        AutomorphismConsumer aut = new AutomorphismConsumer(this, cons);
+        NautyAlgo.search(this, aut);
         return new PermutationGroup(res.toArray(int[][]::new));
     }
 
@@ -312,26 +310,22 @@ public class InversivePlane {
         return result;
     }
 
-    public GraphWrapper asGraph() {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return pointCount + lines.length;
-            }
+    @Override
+    public int size() {
+        return pointCount + lines.length;
+    }
 
-            @Override
-            public int color(int idx) {
-                return idx < pointCount ? 0 : 1;
-            }
+    @Override
+    public int color(int idx) {
+        return idx < pointCount ? 0 : 1;
+    }
 
-            @Override
-            public boolean edge(int a, int b) {
-                if (a < pointCount) {
-                    return b >= pointCount && flags[b - pointCount][a];
-                } else {
-                    return b < pointCount && flags[a - pointCount][b];
-                }
-            }
-        };
+    @Override
+    public boolean edge(int a, int b) {
+        if (a < pointCount) {
+            return b >= pointCount && flags[b - pointCount][a];
+        } else {
+            return b < pointCount && flags[a - pointCount][b];
+        }
     }
 }

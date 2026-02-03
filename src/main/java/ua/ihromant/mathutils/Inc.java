@@ -10,7 +10,7 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public interface Inc {
+public interface Inc extends GraphWrapper {
     int v();
 
     int b();
@@ -23,6 +23,26 @@ public interface Inc {
 
     Inc addLine(int[] line);
 
+    @Override
+    default int size() {
+        return v() + b();
+    }
+
+    @Override
+    default int color(int idx) {
+        return idx < v() ? 0 : 1;
+    }
+
+    @Override
+    default boolean edge(int a, int b) {
+        int pc = v();
+        if (a < pc) {
+            return b >= pc && inc(b - pc, a);
+        } else {
+            return b < pc && inc(a - pc, b);
+        }
+    }
+
     static Inc empty(int v, int b) {
         return new FixInc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v);
     }
@@ -34,30 +54,6 @@ public interface Inc {
 
     default Iterable<int[]> blocks() {
         return () -> new BlocksIterator(this);
-    }
-
-    default GraphWrapper asGraph() {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return v() + b();
-            }
-
-            @Override
-            public int color(int idx) {
-                return idx < v() ? 0 : 1;
-            }
-
-            @Override
-            public boolean edge(int a, int b) {
-                int pc = v();
-                if (a < pc) {
-                    return b >= pc && inc(b - pc, a);
-                } else {
-                    return b < pc && inc(a - pc, b);
-                }
-            }
-        };
     }
 
     class BlocksIterator implements Iterator<int[]> {
@@ -144,9 +140,8 @@ public interface Inc {
     }
 
     default FixBS getCanonicalOld() {
-        GraphWrapper graph = asGraph();
-        CanonicalConsumer cons = new CanonicalConsumer(graph);
-        NautyAlgo.search(graph, cons);
+        CanonicalConsumer cons = new CanonicalConsumer(this);
+        NautyAlgo.search(this, cons);
         return cons.canonicalForm();
     }
 

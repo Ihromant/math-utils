@@ -13,13 +13,12 @@ import java.util.BitSet;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-public class PartialLiner {
+public class PartialLiner implements GraphWrapper {
     private final int pointCount;
     private final int ll;
     private final int[][] lines;
@@ -1217,29 +1216,18 @@ public class PartialLiner {
 
     public FixBS getCanonical() {
         if (canonical == null) {
-            GraphWrapper graph = asGraph();
-            CanonicalConsumer cons = new CanonicalConsumer(graph);
-            NautyAlgo.search(graph, cons);
+            CanonicalConsumer cons = new CanonicalConsumer(this);
+            NautyAlgo.search(this, cons);
             canonical = cons.canonicalForm();
         }
         return canonical;
     }
 
-    public long autCount() {
-        AtomicLong counter = new AtomicLong();
-        Consumer<int[]> cons = arr -> counter.incrementAndGet();
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
-        NautyAlgoNew.search(wrap, aut);
-        return counter.get();
-    }
-
     public int[][] automorphisms() {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
-        NautyAlgoNew.search(wrap, aut);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(this, cons);
+        NautyAlgoNew.search(this, aut);
         return res.toArray(int[][]::new);
     }
 
@@ -1337,7 +1325,7 @@ public class PartialLiner {
             return min;
         } else {
             List<int[]> res = new ArrayList<>();
-            for (int[] bl : altBlocks((l, b) -> true)) {
+            for (int[] bl : altBlocks((_, _) -> true)) {
                 res.add(bl);
             }
             return res;
@@ -1468,26 +1456,22 @@ public class PartialLiner {
         }
     }
 
-    public GraphWrapper asGraph() {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return pointCount + lines.length;
-            }
+    @Override
+    public int size() {
+        return pointCount + lines.length;
+    }
 
-            @Override
-            public int color(int idx) {
-                return idx < pointCount ? 0 : 1;
-            }
+    @Override
+    public int color(int idx) {
+        return idx < pointCount ? 0 : 1;
+    }
 
-            @Override
-            public boolean edge(int a, int b) {
-                if (a < pointCount) {
-                    return b >= pointCount && flags[b - pointCount][a];
-                } else {
-                    return b < pointCount && flags[a - pointCount][b];
-                }
-            }
-        };
+    @Override
+    public boolean edge(int a, int b) {
+        if (a < pointCount) {
+            return b >= pointCount && flags[b - pointCount][a];
+        } else {
+            return b < pointCount && flags[a - pointCount][b];
+        }
     }
 }

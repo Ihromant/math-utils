@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-public class Liner {
+public class Liner implements GraphWrapper {
     private final int pointCount;
     private final int[][] lines;
     private final FixBS[] flags;
@@ -818,71 +818,55 @@ public class Liner {
     public long autCountNew() {
         AtomicLong counter = new AtomicLong();
         Consumer<int[]> cons = _ -> counter.incrementAndGet();
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
-        NautyAlgoNew.search(wrap, aut);
+        AutomorphismConsumerNew aut = new AutomorphismConsumerNew(this, cons);
+        NautyAlgoNew.search(this, aut);
         return counter.get();
     }
 
     public long autCountOld() {
         AtomicLong counter = new AtomicLong();
         Consumer<int[]> cons = _ -> counter.incrementAndGet();
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
-        NautyAlgo.search(wrap, aut);
+        AutomorphismConsumer aut = new AutomorphismConsumer(this, cons);
+        NautyAlgo.search(this, aut);
         return counter.get();
     }
 
     public PermutationGroup automorphisms() {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
-        GraphWrapper wrap = asGraph();
-        AutomorphismConsumer aut = new AutomorphismConsumer(wrap, cons);
-        NautyAlgo.search(wrap, aut);
+        AutomorphismConsumer aut = new AutomorphismConsumer(this, cons);
+        NautyAlgo.search(this, aut);
         return new PermutationGroup(res.toArray(int[][]::new));
     }
 
     public FixBS getCanonical() {
-        GraphWrapper graph = asGraph();
-        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
-        NautyAlgoNew.search(graph, cons);
+        CanonicalConsumerNew cons = new CanonicalConsumerNew(this);
+        NautyAlgoNew.search(this, cons);
         return cons.canonicalForm();
     }
 
     public FixBS getCanonicalOld() {
-        GraphWrapper graph = asGraph();
-        CanonicalConsumer cons = new CanonicalConsumer(graph);
-        NautyAlgo.search(graph, cons);
+        CanonicalConsumer cons = new CanonicalConsumer(this);
+        NautyAlgo.search(this, cons);
         return cons.canonicalForm();
     }
 
-    public FixBS getCanonical(Partition partition) {
-        GraphWrapper graph = asGraph();
-        CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
-        NautyAlgoNew.search(graph, partition, cons);
-        return cons.canonicalForm();
+    @Override
+    public int size() {
+        return pointCount + lines.length;
     }
 
-    public GraphWrapper asGraph() {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return pointCount + lines.length;
-            }
+    @Override
+    public int color(int idx) {
+        return idx < pointCount ? 0 : 1;
+    }
 
-            @Override
-            public int color(int idx) {
-                return idx < pointCount ? 0 : 1;
-            }
-
-            @Override
-            public boolean edge(int a, int b) {
-                if (a < pointCount) {
-                    return b >= pointCount && flags[b - pointCount].get(a);
-                } else {
-                    return b < pointCount && flags[a - pointCount].get(b);
-                }
-            }
-        };
+    @Override
+    public boolean edge(int a, int b) {
+        if (a < pointCount) {
+            return b >= pointCount && flags[b - pointCount].get(a);
+        } else {
+            return b < pointCount && flags[a - pointCount].get(b);
+        }
     }
 }

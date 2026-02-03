@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-public class SimpleLiner {
+public class SimpleLiner implements GraphWrapper {
     private final int pointCount;
     private final int ll;
     private final int[][] lines;
@@ -372,33 +372,28 @@ public class SimpleLiner {
     }
 
     public FixBS getCanonical() {
-        GraphWrapper graph = asGraph();
-        CanonicalConsumer cons = new CanonicalConsumer(graph);
-        NautyAlgo.search(graph, cons);
+        CanonicalConsumer cons = new CanonicalConsumer(this);
+        NautyAlgo.search(this, cons);
         return cons.canonicalForm();
     }
 
-    public GraphWrapper asGraph() {
-        return new GraphWrapper() {
-            @Override
-            public int size() {
-                return pointCount + lines.length;
-            }
+    @Override
+    public int size() {
+        return pointCount + lines.length;
+    }
 
-            @Override
-            public int color(int idx) {
-                return idx < pointCount ? 0 : 1;
-            }
+    @Override
+    public int color(int idx) {
+        return idx < pointCount ? 0 : 1;
+    }
 
-            @Override
-            public boolean edge(int a, int b) {
-                int pc = pointCount;
-                if (a < pc) {
-                    return b >= pc && flags[b - pc][a];
-                } else {
-                    return b < pc && flags[a - pc][b];
-                }
-            }
-        };
+    @Override
+    public boolean edge(int a, int b) {
+        int pc = pointCount;
+        if (a < pc) {
+            return b >= pc && flags[b - pc][a];
+        } else {
+            return b < pc && flags[a - pc][b];
+        }
     }
 }
