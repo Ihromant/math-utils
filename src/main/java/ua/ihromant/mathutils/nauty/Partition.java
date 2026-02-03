@@ -3,7 +3,6 @@ package ua.ihromant.mathutils.nauty;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
-import java.util.BitSet;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.stream.IntStream;
@@ -69,7 +68,7 @@ public class Partition {
             int idx = 0;
             while (idx < partition.length) {
                 int[] xCell = partition[idx];
-                DistinguishResult dist = graph.distinguish(xCell, partition[cellIdx[wMin]]);
+                DistinguishResult dist = distinguish(graph, xCell, partition[cellIdx[wMin]]);
                 int[][] elms = dist.elms();
                 if (elms.length > 1) {
                     replace(idx, elms);
@@ -86,6 +85,56 @@ public class Partition {
                 }
             }
         }
+    }
+
+    private static DistinguishResult distinguish(GraphWrapper graph, int[] cell, int[] w) {
+        int cl = cell.length;
+        FixBS singulars = new FixBS(graph.size());
+        if (cl == 1 || graph.color(cell[0]) == graph.color(w[0])) {
+            return new DistinguishResult(new int[][]{cell}, 0, singulars); // TODO not true for not bipartite graphs
+        }
+        int[] numEdgesDist = new int[cl];
+        for (int i = 0; i < cl; i++) {
+            int el = cell[i];
+            for (int o : w) {
+                if (graph.edge(el, o)) {
+                    numEdgesDist[i]++;
+                }
+            }
+        }
+        FixBS nonZeros = new FixBS(w.length + 1);
+        int[] numEdgesCnt = new int[w.length + 1];
+        int maxCnt = 0;
+        int maxIdx = 0;
+        for (int i = 0; i < cl; i++) {
+            int cnt = numEdgesDist[i];
+            int val = ++numEdgesCnt[cnt];
+            nonZeros.set(cnt);
+            if (val > maxCnt || (val == maxCnt && cnt < maxIdx)) {
+                maxCnt = val;
+                maxIdx = cnt;
+            }
+        }
+        int[] idxes = new int[w.length + 1];
+        int idx = 0;
+        for (int i = nonZeros.nextSetBit(0); i >= 0; i = nonZeros.nextSetBit(i + 1)) {
+            idxes[i] = idx++;
+        }
+        int[][] result = new int[nonZeros.cardinality()][];
+        for (int ix = 0; ix < cl; ix++) {
+            int cnt = numEdgesDist[ix];
+            int i = idxes[cnt];
+            if (result[i] == null) {
+                int size = numEdgesCnt[cnt];
+                result[i] = new int[size];
+                if (size == 1) {
+                    singulars.set(cell[ix]);
+                }
+            }
+            result[i][result[i].length - numEdgesCnt[cnt]--] = cell[ix];
+        }
+        int largest = idxes[maxIdx];
+        return new DistinguishResult(result, largest, singulars);
     }
 
     public FixBS ort(GraphWrapper g, int cellIdx, int shift) {
