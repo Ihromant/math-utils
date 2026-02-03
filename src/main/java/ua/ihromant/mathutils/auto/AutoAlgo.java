@@ -8,7 +8,7 @@ import java.util.BitSet;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class Automorphisms {
+public class AutoAlgo {
     public static long autCount(Liner liner) {
         CountingConsumer cont = new CountingConsumer();
         liner.automorphisms(cont);

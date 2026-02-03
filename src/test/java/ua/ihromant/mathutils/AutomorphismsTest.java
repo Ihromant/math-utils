@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.auto.Automorphisms;
+import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -29,8 +29,8 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AutomorphismsTest {
     @Test
     public void testAutomorphisms() {
-        testSample(Automorphisms::autCount);
-        testSample(Automorphisms::autCountOld);
+        testSample(AutoAlgo::autCount);
+        testSample(AutoAlgo::autCountOld);
         testSample(Liner::autCountNew);
         testSample(Liner::autCountOld);
     }
@@ -81,10 +81,10 @@ public class AutomorphismsTest {
         int order = 5;
         Liner liner = new Liner(new GaloisField(order).generatePlane());
         long time = System.currentTimeMillis();
-        assertEquals(AUTH_COUNTS[order], Automorphisms.autCount(liner));
+        assertEquals(AUTH_COUNTS[order], AutoAlgo.autCount(liner));
         System.out.println(System.currentTimeMillis() - time);
         time = System.currentTimeMillis();
-        assertEquals(AUTH_COUNTS[order], Automorphisms.autCountOld(liner));
+        assertEquals(AUTH_COUNTS[order], AutoAlgo.autCountOld(liner));
         System.out.println(System.currentTimeMillis() - time);
         time = System.currentTimeMillis();
         assertEquals(AUTH_COUNTS[order], liner.autCountNew());
@@ -95,7 +95,7 @@ public class AutomorphismsTest {
         Liner aff1 = new AffinePlane(liner, 0).toLiner();
         Liner aff2 = new AffinePlane(liner, 1).toLiner();
         time = System.currentTimeMillis();
-        assertNotNull(Automorphisms.isomorphism(aff1, aff2));
+        assertNotNull(AutoAlgo.isomorphism(aff1, aff2));
         System.out.println(System.currentTimeMillis() - time);
     }
 
@@ -129,8 +129,8 @@ public class AutomorphismsTest {
                 "3654656"
         });
         Liner second7 = new Liner(new GaloisField(2).generatePlane());
-        assertNotNull(Automorphisms.isomorphism(first7, second7));
-        assertNotNull(Automorphisms.isomorphism(second7, first7));
+        assertNotNull(AutoAlgo.isomorphism(first7, second7));
+        assertNotNull(AutoAlgo.isomorphism(second7, first7));
         Liner first13 = Liner.byStrings(new String[]{
                 "00000011111222223334445556",
                 "13579b3469a3467867868a7897",
@@ -142,16 +142,16 @@ public class AutomorphismsTest {
                 "2468ac578bc95acbbacc9bbac9"
         });
         Liner second13 = Liner.byDiffFamily(new int[]{0, 6, 8}, new int[]{0, 9, 10});
-        assertNotNull(Automorphisms.isomorphism(first13, second13));
-        assertNotNull(Automorphisms.isomorphism(second13, first13));
-        assertNull(Automorphisms.isomorphism(alt13, first13));
+        assertNotNull(AutoAlgo.isomorphism(first13, second13));
+        assertNotNull(AutoAlgo.isomorphism(second13, first13));
+        assertNull(AutoAlgo.isomorphism(alt13, first13));
         Liner first9 = Liner.byStrings(new String[]{
                 "000011122236",
                 "134534534547",
                 "268787676858"
         });
         Liner second9 = new AffinePlane(new Liner(new GaloisField(3).generatePlane()), 0).toLiner();
-        assertNotNull(Automorphisms.isomorphism(first9, second9));
+        assertNotNull(AutoAlgo.isomorphism(first9, second9));
         Liner firstFlat15 = Liner.byStrings(new String[] {
                 "00000001111112222223333444455566678",
                 "13579bd3469ac34578b678a58ab78979c9a",
@@ -165,21 +165,21 @@ public class AutomorphismsTest {
         Liner secondFlat15 = Liner.byDiffFamily(15, new int[]{0, 6, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
         Liner secondSpace15 = Liner.byDiffFamily(15, new int[]{0, 2, 8}, new int[]{0, 1, 4}, new int[]{0, 5, 10});
         Liner thirdSpace15 = new Liner(new GaloisField(2).generateSpace());
-        assertNotNull(Automorphisms.isomorphism(firstFlat15, secondFlat15));
-        assertNotNull(Automorphisms.isomorphism(firstSpace15, secondSpace15));
-        assertNotNull(Automorphisms.isomorphism(firstSpace15, thirdSpace15));
-        assertNotNull(Automorphisms.isomorphism(firstSpace15, thirdSpace15));
-        assertNull(Automorphisms.isomorphism(firstFlat15, firstSpace15));
+        assertNotNull(AutoAlgo.isomorphism(firstFlat15, secondFlat15));
+        assertNotNull(AutoAlgo.isomorphism(firstSpace15, secondSpace15));
+        assertNotNull(AutoAlgo.isomorphism(firstSpace15, thirdSpace15));
+        assertNotNull(AutoAlgo.isomorphism(firstSpace15, thirdSpace15));
+        assertNull(AutoAlgo.isomorphism(firstFlat15, firstSpace15));
         Liner firstPartial = new Liner(9, new int[][]{{0, 1, 2}, {0, 3, 4}});
         Liner secondPartial = new Liner(9, new int[][]{{6, 7, 8}, {4, 5, 8}});
         Liner thirdPartial = new Liner(9, new int[][]{{0, 1, 2}, {3, 4, 5}});
         Liner fourthPartial = new Liner(9, new int[][]{{0, 3, 6}, {1, 4, 7}});
         Liner fifthPartial = new Liner(9, new int[][]{{0, 1, 2}, {0, 3, 4}, {1, 3, 5}});
         Liner sixthPartial = new Liner(9, new int[][]{{0, 1, 2}, {0, 5, 6}, {2, 4, 6}});
-        assertNotNull(Automorphisms.isomorphism(firstPartial, secondPartial));
-        assertNull(Automorphisms.isomorphism(firstPartial, thirdPartial));
-        assertNotNull(Automorphisms.isomorphism(thirdPartial, fourthPartial));
-        assertNotNull(Automorphisms.isomorphism(fifthPartial, sixthPartial));
+        assertNotNull(AutoAlgo.isomorphism(firstPartial, secondPartial));
+        assertNull(AutoAlgo.isomorphism(firstPartial, thirdPartial));
+        assertNotNull(AutoAlgo.isomorphism(thirdPartial, fourthPartial));
+        assertNotNull(AutoAlgo.isomorphism(fifthPartial, sixthPartial));
     }
 
     private static BitSet of(int... values) {

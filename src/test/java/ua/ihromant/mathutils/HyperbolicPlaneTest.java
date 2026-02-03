@@ -2,7 +2,7 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
-import ua.ihromant.mathutils.auto.Automorphisms;
+import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
@@ -195,7 +195,7 @@ public class HyperbolicPlaneTest {
                 "2468ace578bde96aecdbcded9cebecaeddb");
         assertEquals(15, p2.pointCount());
         assertEquals(35, p2.lineCount());
-        assertEquals(60, Automorphisms.autCountOld(p2));
+        assertEquals(60, AutoAlgo.autCountOld(p2));
         assertEquals(of(4), p2.playfairIndex());
         assertEquals(of(1), p2.hyperbolicIndex());
         assertEquals(FixBS.of(p2.pointCount() + 1, p2.pointCount()), p2.cardSubPlanes(true));
@@ -208,7 +208,7 @@ public class HyperbolicPlaneTest {
                 {6, 8, 14}, {6, 10, 18}, {6, 12, 13}, {6, 15, 17}, {7, 10, 14}, {7, 11, 17}, {7, 13, 16}, {7, 15, 18}, {8, 9, 15},
                 {8, 10, 12}, {8, 13, 17}, {9, 11, 13}, {9, 14, 16}, {11, 14, 18}, {12, 16, 17}});
         assertEquals(of(1), p3.hyperbolicIndex());
-        assertEquals(1, Automorphisms.autCountOld(p3));
+        assertEquals(1, AutoAlgo.autCountOld(p3));
 
         Liner p1 = Liner.byStrings("0000000001111111122222222333333334444455556666777788899aabbcgko",
                 "14567ghij4567cdef456789ab456789ab59adf8bce9bcf8ade9decfdfcedhlp",

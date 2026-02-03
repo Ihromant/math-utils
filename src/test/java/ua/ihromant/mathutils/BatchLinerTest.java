@@ -3,7 +3,7 @@ package ua.ihromant.mathutils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
-import ua.ihromant.mathutils.auto.Automorphisms;
+import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.group.CyclicGroup;
@@ -683,7 +683,7 @@ public class BatchLinerTest {
         int[][][] liners = readLast(getClass().getResourceAsStream("/ap-19-3.txt"), v, 3);
         for (int i = 0; i < liners.length; i++) {
             Liner liner = new Liner(v, liners[i]);
-            long ac = Automorphisms.autCountOld(liner);
+            long ac = AutoAlgo.autCountOld(liner);
             if (ac != 1) {
                 System.out.println(i + " " + liner.hyperbolicIndex() + " " + ac);
             }
@@ -756,7 +756,7 @@ public class BatchLinerTest {
                     }
                 }
             }
-            System.out.println(unique.size() + " " + uniquePairs.size() + " " + uniqueTriples.size() + " " + Automorphisms.autCountOld(new Liner(v, full)));
+            System.out.println(unique.size() + " " + uniquePairs.size() + " " + uniqueTriples.size() + " " + AutoAlgo.autCountOld(new Liner(v, full)));
             un.putAll(unique);
             unP.putAll(uniquePairs);
             unT.putAll(uniqueTriples);

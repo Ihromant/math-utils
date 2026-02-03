@@ -1,7 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.auto.Automorphisms;
+import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
@@ -58,7 +58,7 @@ public class BatchAffineTest {
             int[] partialLines = new int[proj.lineCount()];
             Arrays.fill(partialLines, -1);
             partialLines[dl] = dl;
-            int[][] dilations = Automorphisms.autArrayOld(proj, partialPoints, partialLines);
+            int[][] dilations = AutoAlgo.autArrayOld(proj, partialPoints, partialLines);
             PermutationGroup dilGr = new PermutationGroup(dilations);
             AffinePlane aff = new AffinePlane(proj, dl);
             PermutationGroup translations = new PermutationGroup(Arrays.stream(dilations).filter(dil -> PermutationGroup.identity(dil)
@@ -229,7 +229,7 @@ public class BatchAffineTest {
             for (int l : proj.lines(dir)) {
                 fixLn[l] = l;
             }
-            int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+            int[][] auths = AutoAlgo.autArrayOld(proj, fixPts, fixLn);
             BitSet forRemoval = new BitSet(cnt * cnt);
             for (int x = 0; x < cnt; x++) {
                 if (proj.flag(dl, x)) {
@@ -282,7 +282,7 @@ public class BatchAffineTest {
             }
             fixPts[o] = o;
             fixLn[dl] = dl;
-            int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+            int[][] auths = AutoAlgo.autArrayOld(proj, fixPts, fixLn);
             BitSet forRemoval = new BitSet(cnt * cnt);
             for (int x = 0; x < cnt; x++) {
                 if (x == o || proj.flag(dl, x)) {
@@ -335,7 +335,7 @@ public class BatchAffineTest {
             }
             fixLn[dl] = dl;
             fixLn[fixL] = fixL;
-            int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+            int[][] auths = AutoAlgo.autArrayOld(proj, fixPts, fixLn);
             BitSet forRemoval = new BitSet(cnt * cnt);
             for (int l : proj.lines(dir)) {
                 if (l == fixL || l == dl) {
@@ -396,7 +396,7 @@ public class BatchAffineTest {
                 fixLn[dl] = dl;
                 fixLn[fixL] = fixL;
                 fixPts[dir] = dir;
-                int[][] auths = Automorphisms.autArrayOld(proj, fixPts, fixLn);
+                int[][] auths = AutoAlgo.autArrayOld(proj, fixPts, fixLn);
                 BitSet forRemoval = new BitSet(cnt * cnt);
                 for (int d : proj.lines(dir)) {
                     if (d == dl) {
@@ -756,7 +756,7 @@ public class BatchAffineTest {
             fixedLines[liner.line(tr.o(), tr.u())] = liner.line(tr.o(), tr.u());
             fixedLines[liner.line(tr.o(), tr.w())] = liner.line(tr.o(), tr.w());
             fixedLines[liner.line(tr.u(), tr.w())] = liner.line(tr.u(), tr.w());
-            PermutationGroup perm = new PermutationGroup(Automorphisms.autArrayOld(liner, fixedPoints, fixedLines));
+            PermutationGroup perm = new PermutationGroup(AutoAlgo.autArrayOld(liner, fixedPoints, fixedLines));
             TernaryRing ring = new AffineTernaryRing(liner, tr);
             System.out.println(triangle + " " + perm.order() + " " + perm.isCommutative() + " " + ring.isLinear());
         }
