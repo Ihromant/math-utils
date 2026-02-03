@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 
 public class NautyAlgo {
     public static void search(GraphWrapper graph, Consumer<Partition> partitionConsumer) {
-        Partition partition = graph.partition();
+        Partition partition = Partition.partition(graph);
         partition.refine(graph, partition.subPartition(), new BitSet(graph.size()));
         search(graph, partition, partitionConsumer);
     }

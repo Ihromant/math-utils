@@ -1,7 +1,12 @@
 package ua.ihromant.mathutils.nauty;
 
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.IntStream;
 
 public class Partition {
     private int cellCnt;
@@ -25,6 +30,15 @@ public class Partition {
         this.cellCnt = stack.cellCnt;
         this.partition = stack.partition.clone();
         this.cellIdx = stack.cellIdx.clone();
+    }
+
+    public static Partition partition(GraphWrapper graph) {
+        int sz = graph.size();
+        SortedMap<Integer, FixBS> colorDist = new TreeMap<>();
+        IntStream.range(0, sz).forEach(i -> colorDist.computeIfAbsent(graph.color(i), _ -> new FixBS(sz)).set(i));
+        int[][] result = new int[colorDist.lastKey() + 1][0];
+        colorDist.forEach((k, v) -> result[k] = v.toArray());
+        return new Partition(sz, result);
     }
 
     private void replace(int idx, int[][] list) {

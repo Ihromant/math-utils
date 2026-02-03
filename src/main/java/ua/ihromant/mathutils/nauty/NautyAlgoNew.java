@@ -8,7 +8,7 @@ import java.util.List;
 
 public class NautyAlgoNew {
     public static void search(GraphWrapper graph, NodeChecker checker) {
-        Partition partition = graph.partition();
+        Partition partition = Partition.partition(graph);
         BitSet singulars = new BitSet(graph.size());
         partition.refine(graph, partition.subPartition(), singulars);
         FixBS fragment = graph.fragment(singulars, partition.permutation());

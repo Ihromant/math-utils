@@ -17,7 +17,7 @@ public class NautyTest {
     public void testRefine() {
         Liner l = new Liner(new GaloisField(2).generatePlane());
         GraphWrapper graph = l.asGraph();
-        Partition base = graph.partition();
+        Partition base = Partition.partition(graph);
         SubPartition alpha = base.subPartition();
         base.refine(graph, alpha, new BitSet());
         PartialLiner[] partials = new PartialLiner[]{
@@ -30,7 +30,7 @@ public class NautyTest {
         };
         for (PartialLiner part : partials) {
             GraphWrapper partGraph = part.asGraph();
-            Partition partBase = partGraph.partition();
+            Partition partBase = Partition.partition(partGraph);
             SubPartition partAlpha = partBase.subPartition();
             partBase.refine(partGraph, partAlpha, new BitSet());
             //System.out.println("x");

@@ -1,13 +1,8 @@
 package ua.ihromant.mathutils.nauty;
 
-import ua.ihromant.mathutils.Inc;
-import ua.ihromant.mathutils.InversivePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.BitSet;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.IntStream;
 
 public interface GraphWrapper {
     int size();
@@ -15,14 +10,6 @@ public interface GraphWrapper {
     int color(int idx);
 
     boolean edge(int a, int b);
-
-    default Partition partition() {
-        SortedMap<Integer, BitSet> colorDist = new TreeMap<>();
-        IntStream.range(0, size()).forEach(i -> colorDist.computeIfAbsent(color(i), j -> new BitSet(size())).set(i));
-        int[][] result = new int[colorDist.lastKey() + 1][0];
-        colorDist.forEach((k, v) -> result[k] = v.stream().toArray());
-        return new Partition(size(), result);
-    }
 
     default FixBS permutedIncidence(Partition partition) {
         int size = size();
