@@ -1217,7 +1217,7 @@ public class PartialLiner {
 
     public FixBS getCanonical() {
         if (canonical == null) {
-            GraphWrapper graph = GraphWrapper.forPartial(this);
+            GraphWrapper graph = asGraph();
             CanonicalConsumer cons = new CanonicalConsumer(graph);
             NautyAlgo.search(graph, cons);
             canonical = cons.canonicalForm();
@@ -1228,7 +1228,7 @@ public class PartialLiner {
     public long autCount() {
         AtomicLong counter = new AtomicLong();
         Consumer<int[]> cons = arr -> counter.incrementAndGet();
-        GraphWrapper wrap = GraphWrapper.forPartial(this);
+        GraphWrapper wrap = asGraph();
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
         return counter.get();
@@ -1237,7 +1237,7 @@ public class PartialLiner {
     public int[][] automorphisms() {
         List<int[]> res = new ArrayList<>();
         Consumer<int[]> cons = res::add;
-        GraphWrapper wrap = GraphWrapper.forPartial(this);
+        GraphWrapper wrap = asGraph();
         AutomorphismConsumerNew aut = new AutomorphismConsumerNew(wrap, cons);
         NautyAlgoNew.search(wrap, aut);
         return res.toArray(int[][]::new);
@@ -1466,5 +1466,28 @@ public class PartialLiner {
             curr[sz] = p;
             possibleBlocks(curr, needed - 1, cons);
         }
+    }
+
+    public GraphWrapper asGraph() {
+        return new GraphWrapper() {
+            @Override
+            public int size() {
+                return pointCount + lines.length;
+            }
+
+            @Override
+            public int color(int idx) {
+                return idx < pointCount ? 0 : 1;
+            }
+
+            @Override
+            public boolean edge(int a, int b) {
+                if (a < pointCount) {
+                    return b >= pointCount && flags[b - pointCount][a];
+                } else {
+                    return b < pointCount && flags[a - pointCount][b];
+                }
+            }
+        };
     }
 }

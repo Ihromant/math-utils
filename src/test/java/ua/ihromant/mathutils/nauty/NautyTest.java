@@ -29,7 +29,7 @@ public class NautyTest {
                 new PartialLiner(9, new int[][]{{0, 1, 2}, {0, 5, 6}, {2, 4, 6}})
         };
         for (PartialLiner part : partials) {
-            GraphWrapper partGraph = GraphWrapper.forPartial(part);
+            GraphWrapper partGraph = part.asGraph();
             Partition partBase = partGraph.partition();
             SubPartition partAlpha = partBase.subPartition();
             partBase.refine(partGraph, partAlpha, new BitSet());
@@ -48,7 +48,7 @@ public class NautyTest {
     }
 
     private static String getCanonicalOld(PartialLiner liner) {
-        GraphWrapper graph = GraphWrapper.forPartial(liner);
+        GraphWrapper graph = liner.asGraph();
         CanonicalConsumer cons = new CanonicalConsumer(graph);
         NautyAlgo.search(graph, cons);
         return cons.toString();
@@ -62,7 +62,7 @@ public class NautyTest {
     }
 
     private static String getCanonicalNew(PartialLiner liner) {
-        GraphWrapper graph = GraphWrapper.forPartial(liner);
+        GraphWrapper graph = liner.asGraph();
         CanonicalConsumerNew cons = new CanonicalConsumerNew(graph);
         NautyAlgoNew.search(graph, cons);
         return cons.toString();
