@@ -3,6 +3,8 @@ package ua.ihromant.mathutils;
 import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
+import ua.ihromant.jnauty.GraphData;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.g.GSpace;
@@ -1228,11 +1230,18 @@ public class BatchLinerTest {
             Liner lnr = new Liner(space.v(), Arrays.stream(base).flatMap(bl -> space.blocks(FixBS.of(space.v(), bl))).toArray(int[][]::new));
             Map<Integer, Integer> freq = lnr.hyperbolicFreq();
             PartialLiner plnr = new PartialLiner(lnr.lines());
-            PartialLiner existing = plnrs.computeIfAbsent(freq, ky -> plnr);
+            PartialLiner existing = plnrs.computeIfAbsent(freq, _ -> plnr);
             if (plnr == existing) {
-                //Group auth = lnr.automorphisms();
+                GraphData gd = JNauty.instance().automorphisms(lnr);
                 try {
-                    System.out.println(/*auth.order() + " " + GroupIndex.identify(auth) + " " + */freq + " " + s);
+                    String name;
+                    if (gd.autCount() != g.order()) {
+                        Group aut = new PermutationGroup(permutationClosure(gd.autGens())).asTable();
+                        name = GroupIndex.identify(aut) + " " + GroupIndex.groupId(aut);
+                    } else {
+                        name = g.name();
+                    }
+                    System.out.println(gd.autCount() + " " + name + " " + freq + " " + s);
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }
@@ -1243,5 +1252,44 @@ public class BatchLinerTest {
             }
         });
         lns.close();
+    }
+
+    private int[][] permutationClosure(int[][] generators) {
+        Set<ArrWrap> result = new HashSet<>();
+        result.add(new ArrWrap(IntStream.range(0, generators[0].length).toArray()));
+        boolean added;
+        do {
+            added = false;
+            for (ArrWrap el : result.toArray(ArrWrap[]::new)) {
+                for (int[] gen : generators) {
+                    ArrWrap xy = new ArrWrap(combine(gen, el.map));
+                    ArrWrap yx = new ArrWrap(combine(el.map, gen));
+                    added = result.add(xy) || added;
+                    added = result.add(yx) || added;
+                }
+            }
+        } while (added);
+        return result.stream().map(ArrWrap::map).toArray(int[][]::new);
+    }
+
+    private static int[] combine(int[] a, int[] b) {
+        int[] result = new int[a.length];
+        for (int i = 0; i < a.length; i++) {
+            result[i] = a[b[i]];
+        }
+        return result;
+    }
+
+    private record ArrWrap(int[] map) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ArrWrap(int[] map1))) return false;
+            return Arrays.equals(map, map1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(map) >>> 1;
+        }
     }
 }
