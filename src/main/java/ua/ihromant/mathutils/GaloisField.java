@@ -182,6 +182,9 @@ public class GaloisField {
     }
 
     public int mulOrder(int a) {
+        if (a == 0) {
+            return 0;
+        }
         int counter = 1;
         int from = 1;
         while ((from = mul(from, a)) != 1) {
