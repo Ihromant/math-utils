@@ -1292,4 +1292,41 @@ public class BatchLinerTest {
             return Arrays.hashCode(map) >>> 1;
         }
     }
+
+    @Test
+    public void filterFolder() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        Map<FixBS, Pr> lnrs = new ConcurrentHashMap<>();
+        int v = 65;
+        int k = 5;
+        String folder = "/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/";
+        for (File f : Objects.requireNonNull(new File(folder).listFiles())) {
+            System.out.println("Reading " + f.getName());
+            String content = Files.readString(f.toPath());
+            content.lines().parallel().forEach(l -> {
+                if (!l.contains("[[")) {
+                    return;
+                }
+                int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+                if (lines.length != (v * v - v) / (k * k - k)) {
+                    System.out.println("Wrong " + Arrays.deepToString(lines));
+                    return;
+                }
+                Liner lnr = new Liner(lines);
+                GraphData gd = JNauty.instance().automorphisms(lnr);
+                lnrs.putIfAbsent(new FixBS(gd.canonical()), new Pr(gd, lnr));
+            });
+        }
+        StringBuilder sb = new StringBuilder();
+        Map<Long, Long> quantities = new HashMap<>();
+        for (Pr pr : lnrs.values()) {
+            quantities.compute(pr.gd.autCount(), (_, ct) -> ct == null ? 1 : ct + 1);
+            sb.append(pr.gd.autCount()).append(' ').append(pr.lnr.hyperbolicFreq()).append(' ')
+                    .append(Arrays.deepToString(pr.lnr.lines())).append('\n');
+        }
+        System.out.println(quantities);
+        Files.writeString(Path.of(folder, "final.txt"), sb);
+    }
+
+    private record Pr(GraphData gd, Liner lnr) {}
 }
