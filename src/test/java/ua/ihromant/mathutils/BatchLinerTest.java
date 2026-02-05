@@ -1220,7 +1220,7 @@ public class BatchLinerTest {
         ObjectMapper om = new ObjectMapper();
         Group g = new SemiDirectProduct(new CyclicGroup(19), new CyclicGroup(3));
         GSpace space = new GSpace(6, g, false, 57, 3, 3, 3, 3, 3);
-        Map<Map<Integer, Integer>, PartialLiner> plnrs = new ConcurrentHashMap<>();
+        Map<FixBS, Liner> lnrs = new ConcurrentHashMap<>();
         lns.parallel().forEach(l -> {
             if (!l.contains("[{")) {
                 return;
@@ -1229,10 +1229,9 @@ public class BatchLinerTest {
             int[][] base = om.readValue(s, int[][].class);
             Liner lnr = new Liner(space.v(), Arrays.stream(base).flatMap(bl -> space.blocks(FixBS.of(space.v(), bl))).toArray(int[][]::new));
             Map<Integer, Integer> freq = lnr.hyperbolicFreq();
-            PartialLiner plnr = new PartialLiner(lnr.lines());
-            PartialLiner existing = plnrs.computeIfAbsent(freq, _ -> plnr);
-            if (plnr == existing) {
-                GraphData gd = JNauty.instance().automorphisms(lnr);
+            GraphData gd = JNauty.instance().automorphisms(lnr);
+            Liner existing = lnrs.putIfAbsent(new FixBS(gd.canonical()), lnr);
+            if (existing == null) {
                 try {
                     String name;
                     if (gd.autCount() != g.order()) {
@@ -1241,13 +1240,9 @@ public class BatchLinerTest {
                     } else {
                         name = g.name();
                     }
-                    System.out.println(gd.autCount() + " " + name + " " + freq + " " + s);
+                    System.out.println(gd.autCount() + " " + name + " " + freq + " " + Arrays.deepToString(lnr.lines()));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
-                }
-            } else {
-                if (!existing.isomorphicSel(plnr)) {
-                    System.out.println("non iso " + freq + " " + l);
                 }
             }
         });
