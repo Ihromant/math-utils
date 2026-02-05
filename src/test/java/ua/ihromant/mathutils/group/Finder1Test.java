@@ -2,7 +2,6 @@ package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Graph;
-import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.util.FixBS;
@@ -41,10 +40,8 @@ public class Finder1Test {
                     }
                 }
             }
-            FixBS p = new FixBS(possible.size());
-            p.set(0, possible.size());
-            g.bronKerbPivot(new IntList(left), p, new FixBS(possible.size()), arr -> {
-                if (arr.size() == left) {
+            g.bronKerbPivot(arr -> {
+                if (arr.cardinality() == left) {
                     int[][] lines = Stream.concat(Arrays.stream(l.lines()), Arrays.stream(arr.toArray()).mapToObj(possible::get))
                                     .toArray(int[][]::new);
                     Liner full = new Liner(v, lines);

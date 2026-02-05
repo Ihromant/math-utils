@@ -68,10 +68,10 @@ public class Liner implements NautyGraph {
         this.intersections = generateIntersections();
     }
 
-    public Liner byIncidence(boolean[][] flags) {
+    public static Liner byIncidence(boolean[][] flags) {
         int pointCount = flags[0].length;
         int[][] lines = new int[flags.length][];
-        for (int l = 0; l < lineCount(); l++) {
+        for (int l = 0; l < flags.length; l++) {
             IntList pts = new IntList(pointCount);
             for (int p = 0; p < pointCount; p++) {
                 if (flags[l][p]) {
