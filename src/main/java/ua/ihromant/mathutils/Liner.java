@@ -602,11 +602,16 @@ public class Liner implements NautyGraph {
             int[] line = line(ln);
             int[] vert = new int[k * (r - 1)];
             int cnt = 0;
+            FixBS[] comps = IntStream.range(0, k).mapToObj(_ -> new FixBS(vert.length)).toArray(FixBS[]::new);
             for (int i = 0; i < b; i++) {
-                if (intersection(ln, i) >= 0) {
-                    vert[cnt++] = i;
+                int inter = intersection(ln, i);
+                if (inter >= 0) {
+                    vert[cnt] = i;
+                    comps[Arrays.binarySearch(line, inter)].set(cnt);
+                    cnt++;
                 }
             }
+            Set<FixBS> original = Arrays.stream(comps).collect(Collectors.toSet());
             Graph g = new Graph(vert.length);
             for (int i = 0; i < vert.length; i++) {
                 for (int j = i + 1; j < vert.length; j++) {
@@ -640,6 +645,10 @@ public class Liner implements NautyGraph {
             });
             for (FixBS p : pList) {
                 int[] part = p.toArray();
+                Set<FixBS> altComps = Arrays.stream(part).mapToObj(cList::get).collect(Collectors.toSet());
+                if (altComps.equals(original)) {
+                    continue;
+                }
                 FixBS[] altInc = Arrays.stream(flags).map(FixBS::copy).toArray(FixBS[]::new);
                 for (int pt : line) {
                     for (int l : vert) {
