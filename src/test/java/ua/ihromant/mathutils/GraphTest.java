@@ -1,10 +1,14 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -97,6 +101,10 @@ public class GraphTest {
                 incidence[j][i] = l.charAt(j) == '1';
             }
         }
+        paraModifications(incidence, b, v, k, r);
+    }
+
+    public static Map<FixBS, Liner> paraModifications(boolean[][] incidence, int b, int v, int k, int r) {
         Liner lnr = Liner.byIncidence(incidence);
         FixBS orbLines = new FixBS(b);
         GraphData gd = JNauty.instance().automorphisms(lnr);
@@ -169,8 +177,9 @@ public class GraphTest {
                 GraphData altGd = JNauty.instance().automorphisms(altLnr);
                 unique.putIfAbsent(new FixBS(altGd.canonical()), altLnr);
             }
+            System.out.println(unique.size());
         }
-        System.out.println(unique.size());
+        return unique;
     }
 
     @Test
@@ -220,13 +229,29 @@ public class GraphTest {
         g2.connect(3, 4);
         g2.connect(2, 3);
         g2.connect(3, 5);
-        FixBS p = new FixBS(6);
-        p.set(0, 6);
-        IntList l = new IntList(6);
         g2.bronKerb(a -> System.out.println(Arrays.toString(a.toArray())));
         System.out.println();
 
         g2.bronKerbPivot(a -> System.out.println(Arrays.toString(a.toArray())));
         System.out.println();
+    }
+
+    @Test
+    public void testLiner() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        int[][] lns = om.readValue(Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/a.txt")), int[][].class);
+        Liner lnr = new Liner(lns);
+        int v = lnr.pointCount();
+        int b = lnr.lineCount();
+        int k = lnr.line(0).length;
+        int r = (v - 1) / (k - 1);
+        boolean[][] incidence = new boolean[b][v];
+        for (int i = 0; i < b; i++) {
+            for (int j = 0; j < v; j++) {
+                incidence[i][j] = lnr.flag(i, j);
+            }
+        }
+        Map<FixBS, Liner> unique = paraModifications(incidence, b, v, k, r);
+        System.out.println(unique.size());
     }
 }
