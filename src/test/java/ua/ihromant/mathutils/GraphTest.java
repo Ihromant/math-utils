@@ -1,14 +1,9 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
-import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
