@@ -101,17 +101,18 @@ public class GraphTest {
                 incidence[j][i] = l.charAt(j) == '1';
             }
         }
-        paraModifications(incidence, b, v, k, r);
+        List<Liner> para = paraModifications(incidence, b, v, k, r);
+        System.out.println(para.size());
     }
 
-    public static Map<FixBS, Liner> paraModifications(boolean[][] incidence, int b, int v, int k, int r) {
+    public static List<Liner> paraModifications(boolean[][] incidence, int b, int v, int k, int r) {
         Liner lnr = Liner.byIncidence(incidence);
-        FixBS orbLines = new FixBS(b);
         GraphData gd = JNauty.instance().automorphisms(lnr);
+        FixBS orbLines = new FixBS(b);
         for (int i = v; i < b + v; i++) {
             orbLines.set(gd.orbits()[i] - v);
         }
-        Map<FixBS, Liner> unique = new HashMap<>();
+        List<Liner> unique = new ArrayList<>();
         for (int ln = orbLines.nextSetBit(0); ln >= 0; ln = orbLines.nextSetBit(ln + 1)) {
             int[] line = lnr.line(ln);
             int[] vert = new int[k * (r - 1)];
@@ -121,15 +122,12 @@ public class GraphTest {
                     vert[cnt++] = i;
                 }
             }
-            System.out.println(Arrays.toString(vert));
             Graph g = new Graph(vert.length);
-            int ne = 0;
             for (int i = 0; i < vert.length; i++) {
                 for (int j = i + 1; j < vert.length; j++) {
                     int inter = lnr.intersection(vert[i], vert[j]);
                     if (inter < 0 || lnr.flag(ln, inter)) {
                         g.connect(i, j);
-                        ne++;
                     }
                 }
             }
@@ -140,9 +138,7 @@ public class GraphTest {
                 }
             });
             int ncl = cList.size();
-            System.out.println(ne + " " + ncl);
             int[][] cl = cList.stream().map(FixBS::toArray).toArray(int[][]::new);
-            System.out.println(Arrays.deepToString(cl));
             Graph g1 = new Graph(ncl);
             for (int i = 0; i < ncl; i++) {
                 for (int j = i + 1; j < ncl; j++) {
@@ -157,8 +153,6 @@ public class GraphTest {
                     pList.add(clq);
                 }
             });
-            int nPart = pList.size();
-            System.out.println(nPart + " " + pList);
             for (FixBS p : pList) {
                 int[] part = p.toArray();
                 boolean[][] altInc = Arrays.stream(incidence).map(boolean[]::clone).toArray(boolean[][]::new);
@@ -174,10 +168,8 @@ public class GraphTest {
                     }
                 }
                 Liner altLnr = Liner.byIncidence(altInc);
-                GraphData altGd = JNauty.instance().automorphisms(altLnr);
-                unique.putIfAbsent(new FixBS(altGd.canonical()), altLnr);
+                unique.add(altLnr);
             }
-            System.out.println(unique.size());
         }
         return unique;
     }
@@ -251,7 +243,7 @@ public class GraphTest {
                 incidence[i][j] = lnr.flag(i, j);
             }
         }
-        Map<FixBS, Liner> unique = paraModifications(incidence, b, v, k, r);
+        List<Liner> unique = paraModifications(incidence, b, v, k, r);
         System.out.println(unique.size());
     }
 }
