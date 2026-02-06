@@ -1,10 +1,12 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
+import ua.ihromant.mathutils.group.GeneralLinear;
 import ua.ihromant.mathutils.plane.Characteristic;
 import ua.ihromant.mathutils.plane.ProjChar;
 import ua.ihromant.mathutils.util.FixBS;
@@ -862,5 +864,124 @@ public class TranslationPlane2Test {
                     ", len=" + len +
                     ", sum=" + sum + '}';
         }
+    }
+
+    @Test
+    public void generateAndre() {
+        GaloisField fd = new GaloisField(16);
+        int[] arr = IntStream.concat(IntStream.of(1), IntStream.range(1, fd.cardinality()).filter(i -> fd.mulOrder(i) == 5)).toArray();
+        System.out.println(Arrays.toString(arr));
+        FixBS fbs = FixBS.of(fd.cardinality(), arr);
+        int[][] cosets = IntStream.range(0, fd.cardinality()).mapToObj(i -> coset(fd, i, fbs).toArray()).toArray(int[][]::new);
+        for (int i = 1; i < fd.cardinality(); i++) {
+            System.out.println(i + " " + coset(fd, i, fbs));
+        }
+        List<FixBS> cosetList = IntStream.range(1, fd.cardinality()).mapToObj(i -> coset(fd, i, fbs)).distinct().toList();
+        int[] operatorMap = new int[16];
+        for (int idx = 0; idx < cosetList.size(); idx++) {
+            for (int el : cosetList.get(idx).toArray()) {
+                operatorMap[el] = idx;
+            }
+        }
+        LinearSpace lsp = new TwoLinearSpace(4);
+        GeneralLinear gl = new GeneralLinear(4, new GaloisField(2));
+        //System.out.println(gl.order());
+        List<Operator> operators = new ArrayList<>();
+        for (int mapped1 : cosets[1]) {
+            for (int mapped2 : cosets[2]) {
+                for (int mapped4 : cosets[4]) {
+                    for (int mapped8 : cosets[8]) {
+                        int[] operator = new int[16];
+                        for (int el = 1; el < 16; el++) {
+                            int[] crds = lsp.toCrd(el);
+                            int res = 0;
+                            if (crds[0] != 0) {
+                                res = res ^ mapped1;
+                            }
+                            if (crds[1] != 0) {
+                                res = res ^ mapped2;
+                            }
+                            if (crds[2] != 0) {
+                                res = res ^ mapped4;
+                            }
+                            if (crds[3] != 0) {
+                                res = res ^ mapped8;
+                            }
+                            operator[el] = res;
+                        }
+                        if (isValid(operator, cosets)) {
+                            operators.add(new Operator(new int[]{mapped1, mapped2, mapped4, mapped8}, operator));
+                        }
+                    }
+                }
+            }
+        }
+        operators.forEach(op -> System.out.println("Fixed: " + fixedPoints(op.operator) + " " + Arrays.toString(op.operator)));
+        System.out.println(Arrays.toString(operatorMap));
+        Operator[] ops = new Operator[]{operators.get(1), operators.get(2), operators.get(3)};
+        List<FixBS> spread = new ArrayList<>();
+        for (int a = 1; a < fd.cardinality(); a++) {
+            FixBS line = FixBS.of(256, 0);
+            for (int x = 1; x < fd.cardinality(); x++) {
+                int mapped = fd.mul(ops[operatorMap[a]].operator[x], a);
+                line.set(x * fd.cardinality() + mapped);
+            }
+            spread.add(line);
+        }
+        spread.forEach(System.out::println);
+        spread.add(FixBS.of(256, IntStream.range(0, 16).toArray()));
+        spread.add(FixBS.of(256, IntStream.range(0, 16).map(i -> i * 16).toArray()));
+        FixBS union = new FixBS(256);
+        for (FixBS ln : spread) {
+            union.or(ln);
+        }
+        Set<FixBS> lines = new HashSet<>();
+        for (FixBS base : spread) {
+            for (int a = 0; a < fd.cardinality(); a++) {
+                for (int b = 0; b < fd.cardinality(); b++) {
+                    FixBS shifted = new FixBS(256);
+                    for (int pt = base.nextSetBit(0); pt >= 0; pt = base.nextSetBit(pt + 1)) {
+                        int x = pt / 16;
+                        int y = pt % 16;
+                        shifted.set(fd.add(x, a) * 16 + fd.add(y, b));
+                    }
+                    lines.add(shifted);
+                }
+            }
+        }
+        Liner lnr = new Liner(lines.stream().map(FixBS::toArray).toArray(int[][]::new));
+        System.out.println(TernaryAutomorphisms.isAffineDesargues(lnr) + " " + TernaryAutomorphisms.isAffineTranslation(lnr));
+    }
+
+    private record Operator(int[] map, int[] operator) {}
+
+    private static boolean isValid(int[] operator, int[][] cosets) {
+        if (FixBS.of(16, operator).cardinality() != 16) {
+            return false;
+        }
+        for (int i = 1; i < 16; i++) {
+            if (Arrays.binarySearch(cosets[i], operator[i]) < 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int fixedPoints(int[] operator) {
+        int result = 0;
+        for (int i = 0; i < operator.length; i++) {
+            if (operator[i] == i) {
+                result++;
+            }
+        }
+        return result;
+    }
+
+    private FixBS coset(GaloisField fd, int val, FixBS set) {
+        FixBS result = new FixBS(fd.cardinality());
+        for (int i = set.nextSetBit(0); i >= 0; i = set.nextSetBit(i + 1)) {
+            result.set(fd.mul(val, i));
+        }
+        return result;
     }
 }
