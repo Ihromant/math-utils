@@ -170,6 +170,16 @@ public class BatchLinerTest {
         assertEquals(1777, planes.size());
         assertEquals(of(3), planes.getFirst().hyperbolicIndex());
         assertEquals(FixBS.of(planes.getFirst().pointCount() + 1, 65), planes.getFirst().cardSubPlanes(true));
+        Liner liner = planes.get(7);
+        List<Liner> para = liner.paraModifications();
+        assertEquals(Map.of(1, 7200, 2, 100800, 3, 640800), liner.hyperbolicFreq());
+        assertEquals(228, para.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        para.stream().parallel().forEach(lnr -> {
+            GraphData gd = lnr.graphData();
+            unique.putIfAbsent(new FixBS(gd.canonical()), lnr);
+        });
+        assertEquals(17, unique.size());
     }
 
     @Test
