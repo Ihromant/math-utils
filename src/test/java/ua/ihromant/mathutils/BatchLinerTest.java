@@ -53,14 +53,14 @@ import java.util.zip.ZipInputStream;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BatchLinerTest {
-    private ZipInputStream getZis(InputStream is) throws IOException {
+    private static ZipInputStream getZis(InputStream is) throws IOException {
         ZipInputStream zis = new ZipInputStream(Objects.requireNonNull(is));
         zis.getNextEntry();
         return zis;
     }
 
-    private List<Liner> readPlanes(int v, int k) throws IOException {
-        try (InputStream is = getClass().getResourceAsStream("/inc/S2-" + k + "-" + v + ".inc.zip");
+    public static List<Liner> readPlanes(int v, int k) throws IOException {
+        try (InputStream is = BatchLinerTest.class.getResourceAsStream("/inc/S2-" + k + "-" + v + ".inc.zip");
              ZipInputStream zis = getZis(is);
              InputStreamReader isr = new InputStreamReader(zis);
              BufferedReader br = new BufferedReader(isr)) {
@@ -83,7 +83,7 @@ public class BatchLinerTest {
         }
     }
 
-    private Liner readPlane(int v, int b, String next, BufferedReader br) throws IOException {
+    private static Liner readPlane(int v, int b, String next, BufferedReader br) throws IOException {
         BitSet[] lines = IntStream.range(0, b).mapToObj(i -> new BitSet()).toArray(BitSet[]::new);
         for (int i = 0; i < v; i++) {
             char[] chars = next.trim().toCharArray();
