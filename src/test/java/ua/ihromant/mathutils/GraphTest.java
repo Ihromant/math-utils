@@ -11,9 +11,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -102,7 +102,13 @@ public class GraphTest {
             }
         }
         List<Liner> para = paraModifications(incidence, b, v, k, r);
-        System.out.println(para.size());
+        System.out.println("Before filtering " + para.size());
+        Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+        para.stream().parallel().forEach(lnr -> {
+            GraphData gd = lnr.graphData();
+            unique.putIfAbsent(new FixBS(gd.canonical()), lnr);
+        });
+        System.out.println("After filtering " + unique.size());
     }
 
     public static List<Liner> paraModifications(boolean[][] incidence, int b, int v, int k, int r) {
@@ -113,7 +119,7 @@ public class GraphTest {
             orbLines.set(gd.orbits()[i] - v);
         }
         List<Liner> unique = new ArrayList<>();
-        for (int ln = orbLines.nextSetBit(0); ln >= 0; ln = orbLines.nextSetBit(ln + 1)) {
+        for (int ln : orbLines.toArray()) {
             int[] line = lnr.line(ln);
             int[] vert = new int[k * (r - 1)];
             int cnt = 0;
