@@ -959,7 +959,7 @@ public class Liner implements NautyGraph {
 
     public GraphData graphData() {
         if (gd == null) {
-            gd = JNauty.instance().automorphisms(this);
+            gd = JNauty.instance().traces(this);
         }
         return gd;
     }

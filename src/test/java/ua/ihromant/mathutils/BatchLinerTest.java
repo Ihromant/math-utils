@@ -4,7 +4,6 @@ import lombok.SneakyThrows;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
-import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.fuzzy.Pair;
 import ua.ihromant.mathutils.g.GSpace;
@@ -1239,7 +1238,7 @@ public class BatchLinerTest {
             int[][] base = om.readValue(s, int[][].class);
             Liner lnr = new Liner(space.v(), Arrays.stream(base).flatMap(bl -> space.blocks(FixBS.of(space.v(), bl))).toArray(int[][]::new));
             Map<Integer, Integer> freq = lnr.hyperbolicFreq();
-            GraphData gd = JNauty.instance().automorphisms(lnr);
+            GraphData gd = lnr.graphData();
             Liner existing = lnrs.putIfAbsent(new FixBS(gd.canonical()), lnr);
             if (existing == null) {
                 try {
@@ -1318,7 +1317,7 @@ public class BatchLinerTest {
                     return;
                 }
                 Liner lnr = new Liner(lines);
-                GraphData gd = JNauty.instance().automorphisms(lnr);
+                GraphData gd = lnr.graphData();
                 lnrs.putIfAbsent(new FixBS(gd.canonical()), new Pr(gd, lnr));
             });
         }

@@ -3,7 +3,6 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
-import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
@@ -933,7 +932,7 @@ public class BibdFinder6CyclicTest {
                 }
                 int[][][] base = map.readValue(l, int[][][].class);
                 Liner lnr = generateLiner(table, fixed, k, Stream.concat(Arrays.stream(base[0]), Arrays.stream(base[1])).toArray(int[][]::new));
-                GraphData data = JNauty.instance().automorphisms(lnr);
+                GraphData data = lnr.graphData();
                 Liner existing = lnrs.putIfAbsent(new FixBS(data.canonical()), lnr);
                 if (existing == null) {
                     System.out.println(data.autCount() + " " + lnr.hyperbolicFreq() + " " + l);
