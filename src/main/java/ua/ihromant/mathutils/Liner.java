@@ -641,13 +641,12 @@ public class Liner implements NautyGraph {
             for (FixBS p : pList) {
                 int[] part = p.toArray();
                 FixBS[] altInc = Arrays.stream(flags).map(FixBS::copy).toArray(FixBS[]::new);
-                for (int i = 0; i < b; i++) {
-                    for (int j = 0; j < k; j++) {
-                        altInc[i].clear(line[j]);
+                for (int pt : line) {
+                    for (int l : vert) {
+                        altInc[l].clear(pt);
                     }
                 }
                 for (int i = 0; i < k; i++) {
-                    altInc[ln].set(line[i]);
                     for (int j = 0; j < r - 1; j++) {
                         altInc[vert[cl[part[i]][j]]].set(line[i]);
                     }

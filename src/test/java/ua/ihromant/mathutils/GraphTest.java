@@ -96,6 +96,7 @@ public class GraphTest {
         }
         Liner liner = new Liner(incidence);
         List<Liner> para = liner.paraModifications();
+        System.out.println(liner.hyperbolicFreq());
         System.out.println("Before filtering " + para.size());
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
         para.stream().parallel().forEach(lnr -> {
@@ -103,6 +104,7 @@ public class GraphTest {
             unique.putIfAbsent(new FixBS(gd.canonical()), lnr);
         });
         System.out.println("After filtering " + unique.size());
+        unique.values().forEach(lnr -> System.out.println(lnr.hyperbolicFreq()));
     }
 
     @Test
