@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.jnauty.GraphData;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
@@ -36,6 +38,7 @@ public class Liner implements NautyGraph {
     private final int[][] lookup;
     private final int[][] beams;
     private final int[][] intersections;
+    private GraphData gd;
 
     public Liner(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(l -> Arrays.stream(l).max().orElseThrow()).max().orElseThrow() + 1, lines);
@@ -867,5 +870,12 @@ public class Liner implements NautyGraph {
         } else {
             return b < pointCount && flags[a - pointCount].get(b);
         }
+    }
+
+    public GraphData graphData() {
+        if (gd == null) {
+            gd = JNauty.instance().automorphisms(this);
+        }
+        return gd;
     }
 }
