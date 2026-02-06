@@ -110,7 +110,7 @@ public class GraphTest {
                 stack.add(e.getValue());
             }
             info.setProcessed(true);
-            System.out.println(stack.size());
+            System.out.println(stack.size() + " " + graphSize);
         }
         System.out.println(graphSize);
     }
