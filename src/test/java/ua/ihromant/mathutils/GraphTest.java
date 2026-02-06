@@ -83,7 +83,7 @@ public class GraphTest {
         for (int i = 0; i < basePlanes.size(); i++) {
             Liner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
-            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i).setGraphIdx(i);
+            LinerInfo info = new LinerInfo().setLiner(lnr).setGraphIdx(i);
             liners.put(canon, info);
             stack.add(info);
         }
@@ -121,7 +121,6 @@ public class GraphTest {
     @Accessors(chain = true)
     private static class LinerInfo {
         private Liner liner;
-        private Integer baseIdx;
         private Integer graphIdx;
         private boolean processed;
     }
