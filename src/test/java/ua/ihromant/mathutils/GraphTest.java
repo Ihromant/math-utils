@@ -75,24 +75,25 @@ public class GraphTest {
 
     @Test
     public void buildGraph() throws IOException {
-        Graph graph = new Graph(10000);
+        Graph graph = new Graph(300000);
         List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
-        List<Liner> stack = new ArrayList<>(basePlanes);
-        stack.parallelStream().forEach(Liner::graphData);
-        for (int i = 0; i < stack.size(); i++) {
-            Liner lnr = stack.get(i);
+        List<LinerInfo> stack = new ArrayList<>();
+        basePlanes.parallelStream().forEach(Liner::graphData);
+        for (int i = 0; i < basePlanes.size(); i++) {
+            Liner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
             LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i).setGraphIdx(i);
             liners.put(canon, info);
+            stack.add(info);
         }
         int graphSize = stack.size();
         while (!stack.isEmpty()) {
-            Liner lnr = stack.removeLast();
-            LinerInfo info = liners.get(new FixBS(lnr.graphData().canonical()));
+            LinerInfo info = stack.removeLast();
             if (info.isProcessed()) {
                 continue;
             }
+            Liner lnr = info.getLiner();
             List<Liner> para = lnr.paraModifications();
             Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
             para.stream().parallel().forEach(l -> {
@@ -107,7 +108,7 @@ public class GraphTest {
                     continue;
                 }
                 graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
-                stack.add(e.getValue());
+                stack.add(parInfo);
             }
             info.setProcessed(true);
             System.out.println(stack.size() + " " + graphSize);
