@@ -17,7 +17,6 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -71,19 +70,44 @@ public class Liner implements NautyGraph {
         this.intersections = generateIntersections();
     }
 
-    public static Liner byIncidence(boolean[][] flags) {
-        int pointCount = flags[0].length;
-        int[][] lines = new int[flags.length][];
-        for (int l = 0; l < flags.length; l++) {
-            IntList pts = new IntList(pointCount);
-            for (int p = 0; p < pointCount; p++) {
-                if (flags[l][p]) {
-                    pts.add(p);
+    public Liner(FixBS[] incidence) {
+        this.flags = incidence;
+        int pointCount = 0;
+        int lineCount = flags.length;
+        this.lines = new int[lineCount][];
+        for (int i = 0; i < lineCount; i++) {
+            FixBS ln = flags[i];
+            int sz = ln.cardinality();
+            int[] line = new int[sz];
+            int idx = 0;
+            for (int pt = ln.nextSetBit(0); pt >= 0; pt = ln.nextSetBit(pt + 1)) {
+                line[idx++] = pt;
+                pointCount = Math.max(pointCount, pt);
+            }
+            lines[i] = line;
+        }
+        pointCount = pointCount + 1;
+        this.pointCount = pointCount;
+        int[] beamCounts = new int[pointCount];
+        for (int i = 0; i < lineCount; i++) {
+            int[] line = lines[i];
+            for (int pt : line) {
+                beamCounts[pt]++;
+            }
+        }
+        this.beams = new int[pointCount][];
+        for (int pt = 0; pt < pointCount; pt++) {
+            int bc = beamCounts[pt];
+            beams[pt] = new int[bc];
+            int idx = 0;
+            for (int ln = 0; ln < lineCount; ln++) {
+                if (flags[ln].get(pt)) {
+                    beams[pt][idx++] = ln;
                 }
             }
-            lines[l] = pts.toArray();
         }
-        return new Liner(pointCount, lines);
+        this.lookup = generateLookup();
+        this.intersections = generateIntersections();
     }
 
     public Liner(BitSet[] lines) {
@@ -563,23 +587,76 @@ public class Liner implements NautyGraph {
                 .filter(bs -> bs.cardinality() > 1).toArray(BitSet[]::new);
     }
 
-    public Liner paraModification(int block, int[] permutation) {
-        boolean[][] newInc = new boolean[lines.length][pointCount];
-        int[] base = lines[block];
-        Map<Integer, Integer> idx = new HashMap<>();
-        for (int i = 0; i < base.length; i++) {
-            idx.put(base[i], permutation[i]);
+    public List<Liner> paraModifications() {
+        GraphData gd = graphData();
+        int b = lineCount();
+        int v = pointCount;
+        int k = lines[0].length;
+        int r = (v - 1) / (k - 1);
+        FixBS orbLines = new FixBS(b);
+        for (int i = v; i < b + v; i++) {
+            orbLines.set(gd.orbits()[i] - v);
         }
-        for (int l = 0; l < lines.length; l++) {
-            for (int p = 0; p < pointCount; p++) {
-                if (intersection(l, block) < 0 || !flags[block].get(p)) {
-                    newInc[l][p] = flags[l].get(p);
-                } else {
-                    newInc[l][p] = Arrays.binarySearch(base, p) == idx.get(intersection(l, block));
+        List<Liner> result = new ArrayList<>();
+        for (int ln : orbLines.toArray()) {
+            int[] line = line(ln);
+            int[] vert = new int[k * (r - 1)];
+            int cnt = 0;
+            for (int i = 0; i < b; i++) {
+                if (intersection(ln, i) >= 0) {
+                    vert[cnt++] = i;
                 }
             }
+            Graph g = new Graph(vert.length);
+            for (int i = 0; i < vert.length; i++) {
+                for (int j = i + 1; j < vert.length; j++) {
+                    int inter = intersection(vert[i], vert[j]);
+                    if (inter < 0 || flag(ln, inter)) {
+                        g.connect(i, j);
+                    }
+                }
+            }
+            List<FixBS> cList = new ArrayList<>();
+            g.bronKerbPivot(clq -> {
+                if (clq.cardinality() == r - 1) {
+                    cList.add(clq);
+                }
+            });
+            int ncl = cList.size();
+            int[][] cl = cList.stream().map(FixBS::toArray).toArray(int[][]::new);
+            Graph g1 = new Graph(ncl);
+            for (int i = 0; i < ncl; i++) {
+                for (int j = i + 1; j < ncl; j++) {
+                    if (!cList.get(i).intersects(cList.get(j))) {
+                        g1.connect(i, j);
+                    }
+                }
+            }
+            List<FixBS> pList = new ArrayList<>();
+            g1.bronKerbPivot(clq -> {
+                if (clq.cardinality() == k) {
+                    pList.add(clq);
+                }
+            });
+            for (FixBS p : pList) {
+                int[] part = p.toArray();
+                FixBS[] altInc = Arrays.stream(flags).map(FixBS::copy).toArray(FixBS[]::new);
+                for (int i = 0; i < b; i++) {
+                    for (int j = 0; j < k; j++) {
+                        altInc[i].clear(line[j]);
+                    }
+                }
+                for (int i = 0; i < k; i++) {
+                    altInc[ln].set(line[i]);
+                    for (int j = 0; j < r - 1; j++) {
+                        altInc[vert[cl[part[i]][j]]].set(line[i]);
+                    }
+                }
+                Liner altLnr = new Liner(altInc);
+                result.add(altLnr);
+            }
         }
-        return byIncidence(newInc);
+        return result;
     }
 
     public int triangleCount() {

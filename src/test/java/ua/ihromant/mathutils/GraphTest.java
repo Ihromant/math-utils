@@ -88,20 +88,19 @@ public class GraphTest {
             """;
 
     @Test
-    public void testParamodification() {
+    public void testParaModification() {
         int b = 208;
         int v = 65;
-        int k = 5;
-        int r = (v - 1) / (k - 1);
-        boolean[][] incidence = new boolean[b][v];
+        FixBS[] incidence = IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new);
         String[] inc = INCIDENCE.lines().toArray(String[]::new);
         for (int i = 0; i < inc.length; i++) {
             String l = inc[i];
             for (int j = 0; j < l.length(); j++) {
-                incidence[j][i] = l.charAt(j) == '1';
+                incidence[j].set(i, l.charAt(j) == '1');
             }
         }
-        List<Liner> para = paraModifications(incidence, b, v, k, r);
+        Liner liner = new Liner(incidence);
+        List<Liner> para = liner.paraModifications();
         System.out.println("Before filtering " + para.size());
         Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
         para.stream().parallel().forEach(lnr -> {
@@ -109,75 +108,6 @@ public class GraphTest {
             unique.putIfAbsent(new FixBS(gd.canonical()), lnr);
         });
         System.out.println("After filtering " + unique.size());
-    }
-
-    public static List<Liner> paraModifications(boolean[][] incidence, int b, int v, int k, int r) {
-        Liner lnr = Liner.byIncidence(incidence);
-        GraphData gd = JNauty.instance().automorphisms(lnr);
-        FixBS orbLines = new FixBS(b);
-        for (int i = v; i < b + v; i++) {
-            orbLines.set(gd.orbits()[i] - v);
-        }
-        List<Liner> unique = new ArrayList<>();
-        for (int ln : orbLines.toArray()) {
-            int[] line = lnr.line(ln);
-            int[] vert = new int[k * (r - 1)];
-            int cnt = 0;
-            for (int i = 0; i < b; i++) {
-                if (lnr.intersection(ln, i) >= 0) {
-                    vert[cnt++] = i;
-                }
-            }
-            Graph g = new Graph(vert.length);
-            for (int i = 0; i < vert.length; i++) {
-                for (int j = i + 1; j < vert.length; j++) {
-                    int inter = lnr.intersection(vert[i], vert[j]);
-                    if (inter < 0 || lnr.flag(ln, inter)) {
-                        g.connect(i, j);
-                    }
-                }
-            }
-            List<FixBS> cList = new ArrayList<>();
-            g.bronKerbPivot(clq -> {
-                if (clq.cardinality() == r - 1) {
-                    cList.add(clq);
-                }
-            });
-            int ncl = cList.size();
-            int[][] cl = cList.stream().map(FixBS::toArray).toArray(int[][]::new);
-            Graph g1 = new Graph(ncl);
-            for (int i = 0; i < ncl; i++) {
-                for (int j = i + 1; j < ncl; j++) {
-                    if (!cList.get(i).intersects(cList.get(j))) {
-                        g1.connect(i, j);
-                    }
-                }
-            }
-            List<FixBS> pList = new ArrayList<>();
-            g1.bronKerbPivot(clq -> {
-                if (clq.cardinality() == k) {
-                    pList.add(clq);
-                }
-            });
-            for (FixBS p : pList) {
-                int[] part = p.toArray();
-                boolean[][] altInc = Arrays.stream(incidence).map(boolean[]::clone).toArray(boolean[][]::new);
-                for (int i = 0; i < b; i++) {
-                    for (int j = 0; j < k; j++) {
-                        altInc[i][line[j]] = false;
-                    }
-                }
-                for (int i = 0; i < k; i++) {
-                    altInc[ln][line[i]] = true;
-                    for (int j = 0; j < r - 1; j++) {
-                        altInc[vert[cl[part[i]][j]]][line[i]] = true;
-                    }
-                }
-                Liner altLnr = Liner.byIncidence(altInc);
-                unique.add(altLnr);
-            }
-        }
-        return unique;
     }
 
     @Test
@@ -232,24 +162,5 @@ public class GraphTest {
 
         g2.bronKerbPivot(a -> System.out.println(Arrays.toString(a.toArray())));
         System.out.println();
-    }
-
-    @Test
-    public void testLiner() throws IOException {
-        ObjectMapper om = new ObjectMapper();
-        int[][] lns = om.readValue(Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/a.txt")), int[][].class);
-        Liner lnr = new Liner(lns);
-        int v = lnr.pointCount();
-        int b = lnr.lineCount();
-        int k = lnr.line(0).length;
-        int r = (v - 1) / (k - 1);
-        boolean[][] incidence = new boolean[b][v];
-        for (int i = 0; i < b; i++) {
-            for (int j = 0; j < v; j++) {
-                incidence[i][j] = lnr.flag(i, j);
-            }
-        }
-        List<Liner> unique = paraModifications(incidence, b, v, k, r);
-        System.out.println(unique.size());
     }
 }
