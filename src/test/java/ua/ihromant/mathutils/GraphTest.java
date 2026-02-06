@@ -1,11 +1,19 @@
 package ua.ihromant.mathutils;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.experimental.Accessors;
 import org.junit.jupiter.api.Test;
+import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,5 +71,57 @@ public class GraphTest {
 
         g2.bronKerbPivot(a -> System.out.println(Arrays.toString(a.toArray())));
         System.out.println();
+    }
+
+    @Test
+    public void buildGraph() throws IOException {
+        Graph graph = new Graph(10000);
+        List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
+        Map<FixBS, LinerInfo> liners = new HashMap<>();
+        List<Liner> stack = new ArrayList<>(basePlanes);
+        stack.parallelStream().forEach(Liner::graphData);
+        for (int i = 0; i < stack.size(); i++) {
+            Liner lnr = stack.get(i);
+            FixBS canon = new FixBS(lnr.graphData().canonical());
+            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i).setGraphIdx(i);
+            liners.put(canon, info);
+        }
+        int graphSize = stack.size();
+        while (!stack.isEmpty()) {
+            Liner lnr = stack.removeLast();
+            LinerInfo info = liners.get(new FixBS(lnr.graphData().canonical()));
+            if (info.isProcessed()) {
+                continue;
+            }
+            List<Liner> para = lnr.paraModifications();
+            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+            para.stream().parallel().forEach(l -> {
+                GraphData gd = l.graphData();
+                unique.putIfAbsent(new FixBS(gd.canonical()), l);
+            });
+            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+                LinerInfo parInfo = liners.get(e.getKey());
+                if (parInfo == null) {
+                    parInfo = new LinerInfo().setLiner(lnr).setGraphIdx(graphSize++);
+                    liners.put(e.getKey(), parInfo);
+                    continue;
+                }
+                graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
+                stack.add(e.getValue());
+            }
+            info.setProcessed(true);
+            System.out.println(stack.size());
+        }
+        System.out.println(graphSize);
+    }
+
+    @Getter
+    @Setter
+    @Accessors(chain = true)
+    private static class LinerInfo {
+        private Liner liner;
+        private Integer baseIdx;
+        private Integer graphIdx;
+        private boolean processed;
     }
 }
