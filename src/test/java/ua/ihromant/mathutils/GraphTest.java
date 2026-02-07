@@ -79,7 +79,7 @@ public class GraphTest {
 
     @Test
     public void buildGraph() throws IOException {
-        Graph graph = new Graph(300000);
+        SparseGraph graph = new SparseGraph();
         List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
@@ -98,6 +98,7 @@ public class GraphTest {
             if (info.isProcessed()) {
                 continue;
             }
+            graph.connect(info.getGraphIdx(), info.getGraphIdx());
             Liner lnr = info.getLiner();
             List<Liner> para = lnr.paraModifications();
             Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
@@ -118,6 +119,8 @@ public class GraphTest {
             System.out.println(stack.size() + " " + graphSize);
         }
         System.out.println(graphSize);
+        List<FixBS> comps = graph.components();
+        System.out.println(graph.size() + " " + comps.size() + " " + comps);
     }
 
     @Getter

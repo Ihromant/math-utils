@@ -604,9 +604,9 @@ public class BatchLinerTest {
         }
     }
 
-    private Liner[] getLiners25() throws IOException {
+    public static Liner[] getLiners25() throws IOException {
         Liner[] designs = new Liner[18];
-        try (InputStream is = getClass().getResourceAsStream("/S(2,4,25).txt");
+        try (InputStream is = BatchLinerTest.class.getResourceAsStream("/S(2,4,25).txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line;

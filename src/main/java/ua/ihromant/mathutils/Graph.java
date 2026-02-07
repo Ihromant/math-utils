@@ -34,6 +34,10 @@ public class Graph {
         return neighbors[a].get(b);
     }
 
+    public int size() {
+        return neighbors.length;
+    }
+
     public void bronKerb(FixBS r, FixBS p, FixBS x, Consumer<FixBS> cons) {
         int fst = p.nextSetBit(0);
         if (fst < 0 && x.isEmpty()) {

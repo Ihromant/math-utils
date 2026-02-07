@@ -13,7 +13,7 @@ public class QuickFind {
 
     public QuickFind(int size) {
         this.nodes = IntStream.range(0, size).toArray();
-        this.sz = IntStream.range(0, size).map(i -> 1).toArray();
+        this.sz = IntStream.range(0, size).map(_ -> 1).toArray();
     }
 
     public int size() {
@@ -56,7 +56,7 @@ public class QuickFind {
     public List<FixBS> components() {
         Map<Integer, FixBS> map = new HashMap<>();
         for (int i = 0; i < size(); i++) {
-            map.computeIfAbsent(root(i), k -> new FixBS(size())).set(i);
+            map.computeIfAbsent(root(i), _ -> new FixBS(size())).set(i);
         }
         return map.values().stream().sorted().toList();
     }
