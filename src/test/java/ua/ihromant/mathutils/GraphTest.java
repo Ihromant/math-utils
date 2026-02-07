@@ -109,7 +109,7 @@ public class GraphTest {
             for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
                 LinerInfo parInfo = liners.get(e.getKey());
                 if (parInfo == null) {
-                    parInfo = new LinerInfo().setLiner(lnr).setGraphIdx(graphSize++);
+                    parInfo = new LinerInfo().setLiner(e.getValue()).setGraphIdx(graphSize++);
                     liners.put(e.getKey(), parInfo);
                 }
                 graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
