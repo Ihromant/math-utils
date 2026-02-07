@@ -102,4 +102,61 @@ public class Graph {
         FixBS x = new FixBS(neighbors.length);
         bronKerbPivot(r, p, x, 0, cons);
     }
+
+    public void altMaxCliques(BiConsumer<FixBS, Integer> cons) {
+        SearchContext ctx = new SearchContext(neighbors.length);
+        int[] table = new int[neighbors.length];
+        for (int i = 0; i < neighbors.length; i++) {
+            table[i] = i;
+        }
+        search(ctx, table, neighbors.length, cons);
+    }
+
+    private static class SearchContext {
+        private final FixBS currCl;
+        private int clSize;
+        private final int[][] tmpList;
+        private int tmpCount = 0;
+
+        private SearchContext(int sz) {
+            this.currCl = new FixBS(sz);
+            this.tmpList = new int[sz + 2][];
+        }
+
+        private int[] tmpArr(int n) {
+            return tmpCount > 0 ? tmpList[--tmpCount] : new int[n];
+        }
+
+        private void putArr(int[] arr) {
+            tmpList[tmpCount++] = arr;
+        }
+    }
+
+    private void search(SearchContext ctx, int[] table, int size, BiConsumer<FixBS, Integer> cons) {
+        if (size == 0) {
+            cons.accept(ctx.currCl, ctx.clSize);
+            return;
+        }
+
+        int[] newArr = ctx.tmpArr(neighbors.length);
+
+        for (int i = size - 1; i >= 0; i--) {
+            int v = table[i];
+
+            int p = 0;
+            for (int j = 0; j < i; j++) {
+                if (connected(v, table[j])) {
+                    newArr[p++] = table[j];
+                }
+            }
+
+            ctx.currCl.set(v);
+            ctx.clSize++;
+            search(ctx, newArr, p, cons);
+            ctx.currCl.clear(v);
+            ctx.clSize--;
+        }
+
+        ctx.putArr(newArr);
+    }
 }
