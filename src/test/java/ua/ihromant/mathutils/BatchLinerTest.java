@@ -564,9 +564,9 @@ public class BatchLinerTest {
 
     @Test
     public void test25_4() throws IOException {
-        Liner[] designs = getLiners25();
-        for (int i = 0; i < designs.length; i++) {
-            Liner p = designs[i];
+        List<Liner> designs = linersByStrings(25, 4);
+        for (int i = 0; i < designs.size(); i++) {
+            Liner p = designs.get(i);
             assertEquals(25, p.pointCount());
             assertEquals(50, p.lineCount());
             assertEquals(of(4), p.playfairIndex());
@@ -604,23 +604,22 @@ public class BatchLinerTest {
         }
     }
 
-    public static Liner[] getLiners25() throws IOException {
-        Liner[] designs = new Liner[18];
-        try (InputStream is = BatchLinerTest.class.getResourceAsStream("/S(2,4,25).txt");
+    public static List<Liner> linersByStrings(int v, int k) throws IOException {
+        List<Liner> result = new ArrayList<>();
+        try (InputStream is = BatchLinerTest.class.getResourceAsStream("/S(2," + k + "," + v + ").txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line;
-            int counter = 0;
             while ((line = br.readLine()) != null) {
-                String[] design = new String[4];
+                String[] design = new String[k];
                 design[0] = line;
-                design[1] = br.readLine();
-                design[2] = br.readLine();
-                design[3] = br.readLine();
-                designs[counter++] = Liner.byStrings(design);
+                for (int i = 1; i < k; i++) {
+                    design[i] = br.readLine();
+                }
+                result.add(Liner.byStrings(design));
             }
         }
-        return designs;
+        return result;
     }
 
     private void cdfForGroup(Group group, int k, Consumer<Liner> cons) throws IOException {
@@ -736,7 +735,7 @@ public class BatchLinerTest {
         int v = 25;
         int k = 4;
         //int[][][] liners = readLast(getClass().getResourceAsStream("/como-" + v + "-" + k + ".txt"), v, k);
-        int[][][] liners = Arrays.stream(getLiners25()).map(Liner::lines).toArray(int[][][]::new);
+        int[][][] liners = linersByStrings(25, 4).stream().map(Liner::lines).toArray(int[][][]::new);
         Map<FixBS, PartialLiner> un = new HashMap<>();
         Map<FixBS, PartialLiner> unP = new HashMap<>();
         Map<FixBS, PartialLiner> unT = new HashMap<>();
@@ -783,7 +782,7 @@ public class BatchLinerTest {
         int v = 25;
         int k = 4;
         int[][][] liners = readLast(getClass().getResourceAsStream("/com1-" + v + "-" + k + ".txt"), v, k);
-        FixBS[] ex = Arrays.stream(getLiners25()).map(Liner::getCanonical).toArray(FixBS[]::new);
+        FixBS[] ex = linersByStrings(25, 4).stream().map(Liner::getCanonical).toArray(FixBS[]::new);
         for (int[][] full : liners) {
             Liner pl = new Liner(v, full);
             FixBS can = pl.getCanonical();
@@ -823,29 +822,11 @@ public class BatchLinerTest {
                 .forEach(mt -> System.out.println(mt + "\n"));
     }
 
-    public static Liner[] getLiners15() throws IOException {
-        Liner[] designs = new Liner[80];
-        try (InputStream is = BatchLinerTest.class.getResourceAsStream("/S(2,3,15).txt");
-             InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
-             BufferedReader br = new BufferedReader(isr)) {
-            String line;
-            int counter = 0;
-            while ((line = br.readLine()) != null) {
-                String[] design = new String[3];
-                design[0] = line;
-                design[1] = br.readLine();
-                design[2] = br.readLine();
-                designs[counter++] = Liner.byStrings(design);
-            }
-        }
-        return designs;
-    }
-
     @Test
     public void test15_3() throws IOException {
-        Liner[] lnrs = getLiners15();
-        for (int i = 0; i < lnrs.length; i++) {
-            System.out.println(i + " " + Arrays.deepToString(lnrs[i].resolutions()));
+        List<Liner> lnrs = linersByStrings(15, 3);
+        for (int i = 0; i < lnrs.size(); i++) {
+            System.out.println(i + " " + Arrays.deepToString(lnrs.get(i).resolutions()));
         }
     }
 
