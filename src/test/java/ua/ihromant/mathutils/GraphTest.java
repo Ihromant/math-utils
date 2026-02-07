@@ -4,16 +4,20 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -87,6 +91,7 @@ public class GraphTest {
             liners.put(canon, info);
             stack.add(info);
         }
+        System.out.println("Base size " + stack.size());
         int graphSize = stack.size();
         while (!stack.isEmpty()) {
             LinerInfo info = stack.removeLast();
@@ -123,5 +128,14 @@ public class GraphTest {
         private Liner liner;
         private Integer graphIdx;
         private boolean processed;
+    }
+
+    private static List<Liner> readLiners(int v, int k) throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/" + v + "-" + k + "final.txt"));
+        return content.lines().map(l -> {
+            int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+            return new Liner(lines);
+        }).collect(Collectors.toList());
     }
 }
