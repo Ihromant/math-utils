@@ -110,7 +110,6 @@ public class GraphTest {
                 if (parInfo == null) {
                     parInfo = new LinerInfo().setLiner(lnr).setGraphIdx(graphSize++);
                     liners.put(e.getKey(), parInfo);
-                    continue;
                 }
                 graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
                 stack.add(parInfo);
