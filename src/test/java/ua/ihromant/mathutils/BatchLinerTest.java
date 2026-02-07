@@ -823,9 +823,9 @@ public class BatchLinerTest {
                 .forEach(mt -> System.out.println(mt + "\n"));
     }
 
-    private Liner[] getLiners15() throws IOException {
+    public static Liner[] getLiners15() throws IOException {
         Liner[] designs = new Liner[80];
-        try (InputStream is = getClass().getResourceAsStream("/S(2,3,15).txt");
+        try (InputStream is = BatchLinerTest.class.getResourceAsStream("/S(2,3,15).txt");
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(is));
              BufferedReader br = new BufferedReader(isr)) {
             String line;
