@@ -622,8 +622,8 @@ public class Liner implements NautyGraph {
                 }
             }
             List<FixBS> cList = new ArrayList<>();
-            g.bronKerbPivot(clq -> {
-                if (clq.cardinality() == r - 1) {
+            g.bronKerbPivot((clq, sz) -> {
+                if (sz == r - 1) {
                     cList.add(clq);
                 }
             });
@@ -638,8 +638,8 @@ public class Liner implements NautyGraph {
                 }
             }
             List<FixBS> pList = new ArrayList<>();
-            g1.bronKerbPivot(clq -> {
-                if (clq.cardinality() == k) {
+            g1.bronKerbPivot((clq, sz) -> {
+                if (sz == k) {
                     pList.add(clq);
                 }
             });
@@ -687,8 +687,8 @@ public class Liner implements NautyGraph {
             }
         }
         List<FixBS> cList = new ArrayList<>();
-        g.bronKerbPivot(clq -> {
-            if (clq.cardinality() == rs) {
+        g.bronKerbPivot((clq, sz) -> {
+            if (sz == rs) {
                 cList.add(clq);
             }
         });
@@ -702,8 +702,8 @@ public class Liner implements NautyGraph {
             }
         }
         List<FixBS> pList = new ArrayList<>();
-        g1.bronKerbPivot(clq -> {
-            if (clq.cardinality() == r) {
+        g1.bronKerbPivot((clq, sz) -> {
+            if (sz == r) {
                 pList.add(clq);
             }
         });

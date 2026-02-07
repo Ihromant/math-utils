@@ -2,7 +2,7 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.util.FixBS;
 
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
 public class Graph {
@@ -38,10 +38,10 @@ public class Graph {
         return neighbors.length;
     }
 
-    public void bronKerb(FixBS r, FixBS p, FixBS x, Consumer<FixBS> cons) {
+    public void bronKerb(FixBS r, FixBS p, FixBS x, int sz, BiConsumer<FixBS, Integer> cons) {
         int fst = p.nextSetBit(0);
         if (fst < 0 && x.isEmpty()) {
-            cons.accept(r);
+            cons.accept(r, sz);
             return;
         }
         FixBS p1 = p.copy();
@@ -49,16 +49,16 @@ public class Graph {
             FixBS r1 = r.copy();
             r1.set(v);
             FixBS neighbors = neighbors(v);
-            bronKerb(r1, p1.intersection(neighbors), x.intersection(neighbors), cons);
+            bronKerb(r1, p1.intersection(neighbors), x.intersection(neighbors), sz + 1, cons);
             p1.clear(v);
             x.set(v);
         }
     }
 
-    public void bronKerbPivot(FixBS r, FixBS p, FixBS x, Consumer<FixBS> cons) {
+    public void bronKerbPivot(FixBS r, FixBS p, FixBS x, int sz, BiConsumer<FixBS, Integer> cons) {
         int pivot = choosePivot(p, x);
         if (pivot < 0) {
-            cons.accept(r);
+            cons.accept(r, sz);
             return;
         }
         FixBS sub = p.diff(neighbors(pivot));
@@ -66,7 +66,7 @@ public class Graph {
             FixBS r1 = r.copy();
             r1.set(v);
             FixBS neighbors = neighbors(v);
-            bronKerbPivot(r1, p.intersection(neighbors), x.intersection(neighbors), cons);
+            bronKerbPivot(r1, p.intersection(neighbors), x.intersection(neighbors), sz + 1, cons);
             p.clear(v);
             x.set(v);
         }
@@ -87,19 +87,19 @@ public class Graph {
         return result;
     }
 
-    public void bronKerb(Consumer<FixBS> cons) {
+    public void bronKerb(BiConsumer<FixBS, Integer> cons) {
         FixBS r = new FixBS(neighbors.length);
         FixBS p = new FixBS(neighbors.length);
         p.set(0, neighbors.length);
         FixBS x = new FixBS(neighbors.length);
-        bronKerb(r, p, x, cons);
+        bronKerb(r, p, x, 0, cons);
     }
 
-    public void bronKerbPivot(Consumer<FixBS> cons) {
+    public void bronKerbPivot(BiConsumer<FixBS, Integer> cons) {
         FixBS r = new FixBS(neighbors.length);
         FixBS p = new FixBS(neighbors.length);
         p.set(0, neighbors.length);
         FixBS x = new FixBS(neighbors.length);
-        bronKerbPivot(r, p, x, cons);
+        bronKerbPivot(r, p, x, 0, cons);
     }
 }

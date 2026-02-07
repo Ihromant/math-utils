@@ -33,14 +33,14 @@ public class GraphTest {
                 }
             }
             List<FixBS> lst = new ArrayList<>();
-            g.bronKerbPivot(lst::add);
+            g.bronKerbPivot((el, _) -> lst.add(el));
             assertEquals(List.of(FixBS.of(n, IntStream.range(0, n).toArray())), lst);
             Graph g1 = new Graph(n);
             for (int i = 0; i < n; i++) {
                 g1.connect(i, (i + 1) % n);
             }
             lst.clear();
-            g1.bronKerbPivot(lst::add);
+            g1.bronKerbPivot((el, _) -> lst.add(el));
             assertEquals(n, lst.size());
         }
         FixBS[] arr = new FixBS[] {
@@ -59,7 +59,7 @@ public class GraphTest {
         };
         Graph g = new Graph(arr);
         List<FixBS> lst = new ArrayList<>();
-        g.bronKerbPivot(lst::add);
+        g.bronKerbPivot((el, _) -> lst.add(el));
         System.out.println(lst);
 
         Graph g2 = new Graph(6);
@@ -70,10 +70,10 @@ public class GraphTest {
         g2.connect(3, 4);
         g2.connect(2, 3);
         g2.connect(3, 5);
-        g2.bronKerb(a -> System.out.println(Arrays.toString(a.toArray())));
+        g2.bronKerb((a, _) -> System.out.println(Arrays.toString(a.toArray())));
         System.out.println();
 
-        g2.bronKerbPivot(a -> System.out.println(Arrays.toString(a.toArray())));
+        g2.bronKerbPivot((a, _) -> System.out.println(Arrays.toString(a.toArray())));
         System.out.println();
     }
 

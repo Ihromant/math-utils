@@ -40,8 +40,8 @@ public class Finder1Test {
                     }
                 }
             }
-            g.bronKerbPivot(arr -> {
-                if (arr.cardinality() == left) {
+            g.bronKerbPivot((arr, sz) -> {
+                if (sz == left) {
                     int[][] lines = Stream.concat(Arrays.stream(l.lines()), Arrays.stream(arr.toArray()).mapToObj(possible::get))
                                     .toArray(int[][]::new);
                     Liner full = new Liner(v, lines);
