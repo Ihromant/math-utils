@@ -598,7 +598,7 @@ public class Liner implements NautyGraph {
             orbLines.set(gd.orbits()[i] - v);
         }
         List<Liner> result = new ArrayList<>();
-        for (int ln : orbLines.toArray()) {
+        Arrays.stream(orbLines.toArray()).parallel().forEach(ln -> {
             int[] line = line(ln);
             int[] vert = new int[k * (r - 1)];
             int cnt = 0;
@@ -661,9 +661,11 @@ public class Liner implements NautyGraph {
                     }
                 }
                 Liner altLnr = new Liner(altInc);
-                result.add(altLnr);
+                synchronized (result) {
+                    result.add(altLnr);
+                }
             }
-        }
+        });
         return result;
     }
 
