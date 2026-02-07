@@ -622,9 +622,9 @@ public class Liner implements NautyGraph {
                 }
             }
             List<FixBS> cList = new ArrayList<>();
-            g.bronKerbPivot((clq, sz) -> {
+            g.altMaxCliques((clq, sz) -> {
                 if (sz == r - 1) {
-                    cList.add(clq);
+                    cList.add(clq.copy());
                 }
             });
             int ncl = cList.size();
@@ -638,9 +638,9 @@ public class Liner implements NautyGraph {
                 }
             }
             List<FixBS> pList = new ArrayList<>();
-            g1.bronKerbPivot((clq, sz) -> {
+            g1.altMaxCliques((clq, sz) -> {
                 if (sz == k) {
-                    pList.add(clq);
+                    pList.add(clq.copy());
                 }
             });
             for (FixBS p : pList) {
