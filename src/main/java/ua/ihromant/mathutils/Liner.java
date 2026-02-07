@@ -667,6 +667,47 @@ public class Liner implements NautyGraph {
         return result;
     }
 
+    public int[][][] resolutions() {
+        int k = lines[0].length;
+        int v = pointCount;
+        int b = lines.length;
+        if (v % k != 0 || Arrays.stream(lines).anyMatch(l -> l.length != k)) {
+            return new int[0][][];
+        }
+        int rs = v / k;
+        int r = (v - 1) / (k - 1);
+        Graph g = new Graph(b);
+        for (int i = 0; i < b; i++) {
+            for (int j = i + 1; j < b; j++) {
+                if (intersection(i, j) < 0) {
+                    g.connect(i, j);
+                }
+            }
+        }
+        List<FixBS> cList = new ArrayList<>();
+        g.bronKerbPivot(clq -> {
+            if (clq.cardinality() == rs) {
+                cList.add(clq);
+            }
+        });
+        int ncl = cList.size();
+        Graph g1 = new Graph(ncl);
+        for (int i = 0; i < ncl; i++) {
+            for (int j = i + 1; j < ncl; j++) {
+                if (!cList.get(i).intersects(cList.get(j))) {
+                    g1.connect(i, j);
+                }
+            }
+        }
+        List<FixBS> pList = new ArrayList<>();
+        g1.bronKerbPivot(clq -> {
+            if (clq.cardinality() == r) {
+                pList.add(clq);
+            }
+        });
+        return pList.stream().map(p -> p.stream().mapToObj(i -> cList.get(i).toArray()).toArray(int[][]::new)).toArray(int[][][]::new);
+    }
+
     public int triangleCount() {
         return pointCount * (pointCount - 1) * (pointCount - lines[0].length); // assuming that liner is uniform
     }

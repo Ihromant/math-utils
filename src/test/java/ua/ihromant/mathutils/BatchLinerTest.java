@@ -841,6 +841,14 @@ public class BatchLinerTest {
         return designs;
     }
 
+    @Test
+    public void test15_3() throws IOException {
+        Liner[] lnrs = getLiners15();
+        for (int i = 0; i < lnrs.length; i++) {
+            System.out.println(i + " " + Arrays.deepToString(lnrs[i].resolutions()));
+        }
+    }
+
     private static Liner[] readUnique(int v, int k) throws IOException {
         try (InputStream fis = new FileInputStream(new File("/home/ihromant/maths/diffSets/unique", k + "-" + v + ".txt"));
              InputStreamReader isr = new InputStreamReader(Objects.requireNonNull(fis));
