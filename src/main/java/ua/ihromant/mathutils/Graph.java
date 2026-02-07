@@ -26,8 +26,8 @@ public class Graph {
         neighbors[b].clear(a);
     }
 
-    public FixBS neighbors(int a) {
-        return neighbors[a];
+    public int[] adjacent(int a) {
+        return neighbors[a].toArray();
     }
 
     public boolean connected(int a, int b) {
@@ -48,8 +48,8 @@ public class Graph {
         for (int v = fst; v >= 0; v = p.nextSetBit(v + 1)) {
             FixBS r1 = r.copy();
             r1.set(v);
-            FixBS neighbors = neighbors(v);
-            bronKerb(r1, p1.intersection(neighbors), x.intersection(neighbors), sz + 1, cons);
+            FixBS adj = neighbors[v];
+            bronKerb(r1, p1.intersection(adj), x.intersection(adj), sz + 1, cons);
             p1.clear(v);
             x.set(v);
         }
@@ -61,12 +61,12 @@ public class Graph {
             cons.accept(r, sz);
             return;
         }
-        FixBS sub = p.diff(neighbors(pivot));
+        FixBS sub = p.diff(neighbors[pivot]);
         for (int v = sub.nextSetBit(0); v >= 0; v = sub.nextSetBit(v + 1)) {
             FixBS r1 = r.copy();
             r1.set(v);
-            FixBS neighbors = neighbors(v);
-            bronKerbPivot(r1, p.intersection(neighbors), x.intersection(neighbors), sz + 1, cons);
+            FixBS adj = neighbors[v];
+            bronKerbPivot(r1, p.intersection(adj), x.intersection(adj), sz + 1, cons);
             p.clear(v);
             x.set(v);
         }

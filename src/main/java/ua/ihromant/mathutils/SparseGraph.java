@@ -27,6 +27,10 @@ public class SparseGraph {
         return neighbors.get(a).contains(b);
     }
 
+    public int[] adjacent(int a) {
+        return neighbors.get(a).stream().mapToInt(Integer::intValue).sorted().toArray();
+    }
+
     public int size() {
         return neighbors.size();
     }
