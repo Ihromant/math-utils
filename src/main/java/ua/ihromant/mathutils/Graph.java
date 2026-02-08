@@ -2,6 +2,8 @@ package ua.ihromant.mathutils;
 
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
@@ -101,6 +103,32 @@ public class Graph {
         p.set(0, neighbors.length);
         FixBS x = new FixBS(neighbors.length);
         bronKerbPivot(r, p, x, 0, cons);
+    }
+
+    public void bronKerbPivotPar(BiConsumer<FixBS, Integer> cons) {
+        int pivot = -1;
+        int maxCnt = -1;
+        for (int i = 0; i < neighbors.length; i++) {
+            int card = neighbors[i].cardinality();
+            if (card > maxCnt) {
+                maxCnt = card;
+                pivot = i;
+            }
+        }
+        FixBS p = new FixBS(neighbors.length);
+        p.set(0, neighbors.length);
+        FixBS sub = p.diff(neighbors[pivot]);
+        FixBS x = new FixBS(neighbors.length);
+        List<FixBS[]> triples = new ArrayList<>();
+        for (int v = sub.nextSetBit(0); v >= 0; v = sub.nextSetBit(v + 1)) {
+            FixBS r = new FixBS(neighbors.length);
+            r.set(v);
+            FixBS adj = neighbors[v];
+            triples.add(new FixBS[]{r, p.intersection(adj), x.intersection(adj)});
+            p.clear(v);
+            x.set(v);
+        }
+        triples.parallelStream().forEach(t -> bronKerbPivot(t[0], t[1], t[2], 1, cons));
     }
 
     public void altMaxCliques(BiConsumer<FixBS, Integer> cons) {
