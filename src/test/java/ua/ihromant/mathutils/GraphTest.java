@@ -93,6 +93,7 @@ public class GraphTest {
         }
         System.out.println("Base size " + stack.size());
         int graphSize = stack.size();
+        int processed = 0;
         while (!stack.isEmpty()) {
             LinerInfo info = stack.removeLast();
             if (info.isProcessed()) {
@@ -116,7 +117,7 @@ public class GraphTest {
                 stack.add(parInfo);
             }
             info.setProcessed(true);
-            System.out.println(stack.size() + " " + graphSize);
+            System.out.println(++processed + " " + stack.size() + " " + graphSize);
         }
         System.out.println(graphSize);
         List<FixBS> comps = graph.components();
