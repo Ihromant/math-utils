@@ -17,6 +17,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -621,10 +622,10 @@ public class Liner implements NautyGraph {
                     }
                 }
             }
-            List<FixBS> cList = new ArrayList<>();
-            g.altMaxCliques((clq, sz) -> {
+            List<FixBS> cList = Collections.synchronizedList(new ArrayList<>());
+            g.bronKerbPivotPar((clq, sz) -> {
                 if (sz == r - 1) {
-                    cList.add(clq.copy());
+                    cList.add(clq);
                 }
             });
             int ncl = cList.size();
@@ -637,10 +638,10 @@ public class Liner implements NautyGraph {
                     }
                 }
             }
-            List<FixBS> pList = new ArrayList<>();
-            g1.altMaxCliques((clq, sz) -> {
+            List<FixBS> pList = Collections.synchronizedList(new ArrayList<>());
+            g1.bronKerbPivotPar((clq, sz) -> {
                 if (sz == k) {
-                    pList.add(clq.copy());
+                    pList.add(clq);
                 }
             });
             for (FixBS p : pList) {
