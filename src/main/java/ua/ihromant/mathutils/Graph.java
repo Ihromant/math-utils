@@ -65,10 +65,10 @@ public class Graph {
         }
         FixBS sub = p.diff(neighbors[pivot]);
         for (int v = sub.nextSetBit(0); v >= 0; v = sub.nextSetBit(v + 1)) {
-            FixBS r1 = r.copy();
-            r1.set(v);
             FixBS adj = neighbors[v];
-            bronKerbPivot(r1, p.intersection(adj), x.intersection(adj), sz + 1, cons);
+            r.set(v);
+            bronKerbPivot(r, p.intersection(adj), x.intersection(adj), sz + 1, cons);
+            r.clear(v);
             p.clear(v);
             x.set(v);
         }

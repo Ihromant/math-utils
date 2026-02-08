@@ -625,7 +625,7 @@ public class Liner implements NautyGraph {
             List<FixBS> cList = Collections.synchronizedList(new ArrayList<>());
             g.bronKerbPivotPar((clq, sz) -> {
                 if (sz == r - 1) {
-                    cList.add(clq);
+                    cList.add(clq.copy());
                 }
             });
             int ncl = cList.size();
@@ -641,7 +641,7 @@ public class Liner implements NautyGraph {
             List<FixBS> pList = Collections.synchronizedList(new ArrayList<>());
             g1.bronKerbPivotPar((clq, sz) -> {
                 if (sz == k) {
-                    pList.add(clq);
+                    pList.add(clq.copy());
                 }
             });
             for (FixBS p : pList) {
@@ -688,9 +688,9 @@ public class Liner implements NautyGraph {
             }
         }
         List<FixBS> cList = new ArrayList<>();
-        g.bronKerbPivot((clq, sz) -> {
+        g.bronKerbPivotPar((clq, sz) -> {
             if (sz == rs) {
-                cList.add(clq);
+                cList.add(clq.copy());
             }
         });
         int ncl = cList.size();
@@ -703,9 +703,9 @@ public class Liner implements NautyGraph {
             }
         }
         List<FixBS> pList = new ArrayList<>();
-        g1.bronKerbPivot((clq, sz) -> {
+        g1.bronKerbPivotPar((clq, sz) -> {
             if (sz == r) {
-                pList.add(clq);
+                pList.add(clq.copy());
             }
         });
         return pList.stream().map(p -> p.stream().mapToObj(i -> cList.get(i).toArray()).toArray(int[][]::new)).toArray(int[][][]::new);
