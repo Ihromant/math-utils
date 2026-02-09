@@ -79,6 +79,53 @@ public class GraphTest {
 
     @Test
     public void buildGraph() throws IOException {
+        SparseGraph graph = new SparseGraph();
+        List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
+        Map<FixBS, LinerInfo> liners = new HashMap<>();
+        List<LinerInfo> stack = new ArrayList<>();
+        basePlanes.parallelStream().forEach(Liner::graphData);
+        for (int i = 0; i < basePlanes.size(); i++) {
+            Liner lnr = basePlanes.get(i);
+            FixBS canon = new FixBS(lnr.graphData().canonical());
+            LinerInfo info = new LinerInfo().setLiner(lnr).setGraphIdx(i);
+            liners.put(canon, info);
+            stack.add(info);
+        }
+        System.out.println("Base size " + stack.size());
+        int graphSize = stack.size();
+        int processed = 0;
+        while (!stack.isEmpty()) {
+            LinerInfo info = stack.removeLast();
+            if (info.isProcessed()) {
+                continue;
+            }
+            graph.connect(info.getGraphIdx(), info.getGraphIdx());
+            Liner lnr = info.getLiner();
+            List<Liner> para = lnr.paraModifications();
+            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+            para.stream().parallel().forEach(l -> {
+                GraphData gd = l.graphData();
+                unique.putIfAbsent(new FixBS(gd.canonical()), l);
+            });
+            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+                LinerInfo parInfo = liners.get(e.getKey());
+                if (parInfo == null) {
+                    parInfo = new LinerInfo().setLiner(e.getValue()).setGraphIdx(graphSize++);
+                    liners.put(e.getKey(), parInfo);
+                }
+                graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
+                stack.add(parInfo);
+            }
+            info.setProcessed(true);
+            System.out.println(++processed + " " + stack.size() + " " + graphSize);
+        }
+        System.out.println(graphSize);
+        List<FixBS> comps = graph.components();
+        System.out.println(graph.size() + " " + comps.size() + " " + comps);
+    }
+
+    @Test
+    public void buildByComponent() throws IOException {
         List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
