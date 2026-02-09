@@ -79,7 +79,6 @@ public class GraphTest {
 
     @Test
     public void buildGraph() throws IOException {
-        SparseGraph graph = new SparseGraph();
         List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
@@ -87,41 +86,52 @@ public class GraphTest {
         for (int i = 0; i < basePlanes.size(); i++) {
             Liner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
-            LinerInfo info = new LinerInfo().setLiner(lnr).setGraphIdx(i);
+            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i);
             liners.put(canon, info);
             stack.add(info);
         }
         System.out.println("Base size " + stack.size());
-        int graphSize = stack.size();
-        int processed = 0;
         while (!stack.isEmpty()) {
-            LinerInfo info = stack.removeLast();
-            if (info.isProcessed()) {
+            LinerInfo baseInfo = stack.removeLast();
+            if (baseInfo.isProcessed()) {
                 continue;
             }
-            graph.connect(info.getGraphIdx(), info.getGraphIdx());
-            Liner lnr = info.getLiner();
-            List<Liner> para = lnr.paraModifications();
-            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
-            para.stream().parallel().forEach(l -> {
-                GraphData gd = l.graphData();
-                unique.putIfAbsent(new FixBS(gd.canonical()), l);
-            });
-            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
-                LinerInfo parInfo = liners.get(e.getKey());
-                if (parInfo == null) {
-                    parInfo = new LinerInfo().setLiner(e.getValue()).setGraphIdx(graphSize++);
-                    liners.put(e.getKey(), parInfo);
+            SparseGraph graph = new SparseGraph();
+            baseInfo.setGraphIdx(0);
+            List<LinerInfo> componentStack = new ArrayList<>();
+            componentStack.add(baseInfo);
+            System.out.println("Processing component for " + baseInfo.getBaseIdx());
+            int processed = 0;
+            while (!componentStack.isEmpty()) {
+                LinerInfo info = componentStack.removeLast();
+                if (info.isProcessed()) {
+                    continue;
                 }
-                graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
-                stack.add(parInfo);
+                graph.connect(info.getGraphIdx(), info.getGraphIdx());
+                Liner lnr = info.getLiner();
+                List<Liner> para = lnr.paraModifications();
+                Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+                para.stream().parallel().forEach(l -> {
+                    GraphData gd = l.graphData();
+                    unique.putIfAbsent(new FixBS(gd.canonical()), l);
+                });
+                for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+                    LinerInfo parInfo = liners.get(e.getKey());
+                    if (parInfo == null) {
+                        parInfo = new LinerInfo().setLiner(e.getValue());
+                        liners.put(e.getKey(), parInfo);
+                    }
+                    if (parInfo.getGraphIdx() == null) {
+                        parInfo.setGraphIdx(graph.size());
+                    }
+                    graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
+                    componentStack.add(parInfo);
+                }
+                info.setProcessed(true);
+                System.out.println(++processed + " " + componentStack.size() + " " + graph.size());
             }
-            info.setProcessed(true);
-            System.out.println(++processed + " " + stack.size() + " " + graphSize);
+            System.out.println("Component size " + graph.size());
         }
-        System.out.println(graphSize);
-        List<FixBS> comps = graph.components();
-        System.out.println(graph.size() + " " + comps.size() + " " + comps);
     }
 
     @Getter
@@ -129,6 +139,7 @@ public class GraphTest {
     @Accessors(chain = true)
     private static class LinerInfo {
         private Liner liner;
+        private Integer baseIdx;
         private Integer graphIdx;
         private boolean processed;
     }
