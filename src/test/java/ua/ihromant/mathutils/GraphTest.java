@@ -131,7 +131,7 @@ public class GraphTest {
     public void buildByComponent() throws IOException {
         int v = 28;
         int k = 4;
-        List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
+        List<Liner> basePlanes = BatchLinerTest.readPlanes(v, k);
         FixBS done = readDone(basePlanes.size(), v, k);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
@@ -143,7 +143,7 @@ public class GraphTest {
             liners.put(canon, info);
             stack.add(info);
         }
-        System.out.println("Base size " + stack.size());
+        System.out.println("Base size " + stack.size() + " " + liners.size());
         while (!stack.isEmpty()) {
             LinerInfo baseInfo = stack.removeLast();
             if (baseInfo.isProcessed()) {
