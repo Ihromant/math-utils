@@ -8,6 +8,7 @@ import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -130,13 +132,14 @@ public class GraphTest {
         int v = 28;
         int k = 4;
         List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
+        FixBS done = readDone(basePlanes.size(), v, k);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
         basePlanes.parallelStream().forEach(Liner::graphData);
         for (int i = 0; i < basePlanes.size(); i++) {
             Liner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
-            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i);
+            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i).setProcessed(done.get(i));
             liners.put(canon, info);
             stack.add(info);
         }
@@ -186,6 +189,20 @@ public class GraphTest {
         }
     }
 
+    private static FixBS readDone(int sz, int v, int k) throws IOException {
+        FixBS result = new FixBS(sz);
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph").listFiles())) {
+            if (f.getName().contains("single")) {
+                Files.readString(f.toPath()).lines().forEach(l -> result.set(Integer.parseInt(l.substring(0, l.indexOf(' ')))));
+            }
+            if (f.getName().contains("graph")) {
+                Files.readString(f.toPath()).lines().filter(l -> l.indexOf('(') >= 0)
+                        .forEach(l -> result.set(Integer.parseInt(l.substring(l.indexOf('(') + 1, l.indexOf(')')))));
+            }
+        }
+        return result;
+    }
+
     private static void dumpGraph(SparseGraph g, List<LinerInfo> processed, int v, int k) throws IOException {
         for (int i = 0; i < g.size(); i++) {
             g.disconnect(i, i);
@@ -208,10 +225,10 @@ public class GraphTest {
             }
             graph.append(": ").append(Arrays.toString(g.adjacent(i))).append(System.lineSeparator());
         }
-        Files.writeString(Path.of("/home/ihromant/maths/g-spaces/final/"+ k + "-" + v + "/graph/" + baseIdx + "graph.txt"),
-                graph, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         Files.writeString(Path.of("/home/ihromant/maths/g-spaces/final/"+ k + "-" + v + "/graph/" + baseIdx + "liners.txt"),
                 liners, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        Files.writeString(Path.of("/home/ihromant/maths/g-spaces/final/"+ k + "-" + v + "/graph/" + baseIdx + "graph.txt"),
+                graph, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 
     @Getter
