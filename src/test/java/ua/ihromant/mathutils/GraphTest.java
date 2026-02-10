@@ -11,6 +11,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -126,6 +127,8 @@ public class GraphTest {
 
     @Test
     public void buildByComponent() throws IOException {
+        int v = 28;
+        int k = 4;
         List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
@@ -148,7 +151,7 @@ public class GraphTest {
             List<LinerInfo> componentStack = new ArrayList<>();
             componentStack.add(baseInfo);
             System.out.println("Processing component for " + baseInfo.getBaseIdx());
-            int processed = 0;
+            List<LinerInfo> processed = new ArrayList<>();
             while (!componentStack.isEmpty()) {
                 LinerInfo info = componentStack.removeLast();
                 if (info.isProcessed()) {
@@ -175,10 +178,40 @@ public class GraphTest {
                     componentStack.add(parInfo);
                 }
                 info.setProcessed(true);
-                System.out.println(++processed + " " + componentStack.size() + " " + graph.size());
+                processed.add(info);
+                System.out.println(processed.size() + " " + componentStack.size() + " " + graph.size());
             }
+            dumpGraph(graph, processed, v, k);
             System.out.println("Component size " + graph.size());
         }
+    }
+
+    private static void dumpGraph(SparseGraph g, List<LinerInfo> processed, int v, int k) throws IOException {
+        for (int i = 0; i < g.size(); i++) {
+            g.disconnect(i, i);
+        }
+        LinerInfo fst = processed.getFirst();
+        int baseIdx = fst.getBaseIdx();
+        if (g.size() == 1) {
+            Files.writeString(Path.of("/home/ihromant/maths/g-spaces/final/"+ k + "-" + v + "/graph/single.txt"),
+                    baseIdx + " " + Arrays.deepToString(fst.liner.lines()) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            return;
+        }
+        StringBuilder graph = new StringBuilder();
+        StringBuilder liners = new StringBuilder();
+        for (int i = 0; i < g.size(); i++) {
+            LinerInfo info = processed.get(i);
+            liners.append(i).append(" ").append(Arrays.deepToString(fst.liner.lines())).append(System.lineSeparator());
+            graph.append(i);
+            if (info.getBaseIdx() != null) {
+                graph.append(" (").append(info.getBaseIdx()).append(")");
+            }
+            graph.append(": ").append(Arrays.toString(g.adjacent(i))).append(System.lineSeparator());
+        }
+        Files.writeString(Path.of("/home/ihromant/maths/g-spaces/final/"+ k + "-" + v + "/graph/" + baseIdx + "graph.txt"),
+                graph, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        Files.writeString(Path.of("/home/ihromant/maths/g-spaces/final/"+ k + "-" + v + "/graph/" + baseIdx + "liners.txt"),
+                liners, StandardOpenOption.CREATE, StandardOpenOption.APPEND);
     }
 
     @Getter
