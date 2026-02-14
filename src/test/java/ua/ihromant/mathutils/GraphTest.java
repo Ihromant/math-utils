@@ -249,4 +249,109 @@ public class GraphTest {
             return new Liner(lines);
         }).collect(Collectors.toList());
     }
+
+    @Test
+    public void generateFirstLayer() throws IOException {
+        List<Liner> basePlanes = readLiners(175, 7);
+        for (int i = 0; i < basePlanes.size(); i++) {
+            Liner lnr = basePlanes.get(i);
+            List<Liner> para = lnr.paraModifications();
+            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+            para.stream().parallel().forEach(l -> {
+                GraphData gd = l.graphData();
+                unique.putIfAbsent(new FixBS(gd.canonical()), l);
+            });
+            System.out.println("Generate for " + i);
+            System.out.println(lnr.graphData().autCount() + " " + lnr.hyperbolicFreq() + " " + Arrays.deepToString(lnr.lines()));
+            System.out.println("Paramodifications: ");
+            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+                System.out.println(e.getValue().graphData().autCount() + " " + e.getValue().hyperbolicFreq() + " " + Arrays.deepToString(e.getValue().lines()));
+            }
+            System.out.println();
+        }
+    }
+
+    @Test
+    public void generateLargeComponent() throws IOException {
+        int v = 65;
+        int k = 5;
+        int counter = 10000;
+        ObjectMapper om = new ObjectMapper();
+        String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/base.txt"));
+        List<Liner> basePlanes = content.lines().map(l -> {
+            int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+            return new Liner(lines);
+        }).toList();
+        Map<FixBS, LinerInfo> liners = new ConcurrentHashMap<>();
+        basePlanes.parallelStream().forEach(Liner::graphData);
+        IntStream.range(0, basePlanes.size()).parallel().forEach(i -> {
+            Liner lnr = basePlanes.get(i);
+            FixBS canon = new FixBS(lnr.graphData().canonical());
+            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i);
+            liners.put(canon, info);
+        });
+        Path grPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
+        content = Files.readString(grPath);
+        String[] lns = content.lines().toArray(String[]::new);
+        SparseGraph graph = new SparseGraph();
+        for (String ln : lns) {
+            int ix = ln.indexOf(" (");
+            if (ix < 0) {
+                ix = ln.indexOf(':');
+            }
+            int from = Integer.parseInt(ln.substring(0, ix));
+            int[] to = om.readValue(ln.substring(ln.indexOf(':') + 1), int[].class);
+            for (int t : to) {
+                graph.connect(from, t);
+            }
+        }
+        Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
+        content = Files.readString(stPath);
+        String[] reached = content.lines().toArray(String[]::new);
+        LinerInfo[] compLiners = new LinerInfo[reached.length];
+        IntStream.range(0, reached.length).parallel().forEach(i -> {
+            String l = reached[i];
+            int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+            Liner lnr = new Liner(lines);
+            LinerInfo info = liners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), _ -> new LinerInfo().setLiner(lnr));
+            info.setGraphIdx(i);
+            info.setProcessed(i < lns.length);
+            compLiners[i] = info;
+        });
+        List<LinerInfo> stack = Arrays.stream(compLiners, lns.length, compLiners.length).collect(Collectors.toList());
+        int processedCnt = lns.length;
+        while (!stack.isEmpty() && counter > 0) {
+            LinerInfo info = stack.removeFirst();
+            if (info.isProcessed()) {
+                continue;
+            }
+            graph.connect(info.getGraphIdx(), info.getGraphIdx());
+            Liner lnr = info.getLiner();
+            List<Liner> para = lnr.paraModifications();
+            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+            para.stream().parallel().forEach(l -> {
+                GraphData gd = l.graphData();
+                unique.putIfAbsent(new FixBS(gd.canonical()), l);
+            });
+            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+                LinerInfo parInfo = liners.get(e.getKey());
+                if (parInfo == null) {
+                    parInfo = new LinerInfo().setLiner(e.getValue());
+                    liners.put(e.getKey(), parInfo);
+                }
+                if (parInfo.getGraphIdx() == null) {
+                    parInfo.setGraphIdx(graph.size());
+                    Files.writeString(stPath, graph.size() + " " + Arrays.deepToString(parInfo.liner.lines()) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                }
+                graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
+                stack.add(parInfo);
+            }
+            info.setProcessed(true);
+            graph.disconnect(info.getGraphIdx(), info.getGraphIdx());
+            Files.writeString(grPath,
+                    info.getGraphIdx() + (info.getBaseIdx() != null ? " (" + info.getBaseIdx() + ")" : "") + ": " + Arrays.toString(graph.adjacent(info.getGraphIdx()))
+                            + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            System.out.println(++processedCnt + " " + stack.size() + " " + graph.size() + " " + --counter);
+        }
+    }
 }
