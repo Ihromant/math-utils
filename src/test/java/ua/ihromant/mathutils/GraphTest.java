@@ -275,7 +275,7 @@ public class GraphTest {
     public void generateLargeComponent() throws IOException {
         int v = 65;
         int k = 5;
-        int counter = 10000;
+        int counter = 20000;
         ObjectMapper om = new ObjectMapper();
         String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/base.txt"));
         List<Liner> basePlanes = content.lines().map(l -> {
@@ -321,6 +321,8 @@ public class GraphTest {
         List<LinerInfo> stack = Arrays.stream(compLiners, lns.length, compLiners.length).collect(Collectors.toList());
         int processedCnt = lns.length;
         Map<FixBS, LinerInfo> liners = new HashMap<>(syncLiners);
+        syncLiners.clear();
+        content = null;
         while (!stack.isEmpty() && counter > 0) {
             LinerInfo info = stack.removeFirst();
             if (info.isProcessed()) {
@@ -328,7 +330,7 @@ public class GraphTest {
             }
             graph.connect(info.getGraphIdx(), info.getGraphIdx());
             Liner lnr = info.getLiner();
-            List<Liner> para = lnr.paraModifications();
+            List<Liner> para = lnr.paraModificationsAlt();
             Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
             para.stream().parallel().forEach(l -> {
                 GraphData gd = l.graphData();
@@ -354,5 +356,6 @@ public class GraphTest {
                             + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             System.out.println(++processedCnt + " " + stack.size() + " " + graph.size() + " " + --counter);
         }
+        System.out.println(content);
     }
 }
