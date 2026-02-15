@@ -34,9 +34,9 @@ public class Applicator6Test {
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            boolean infinity = v % gs == 1;
+            int small = v % gs;
             int orbitCount = v / gs;
-            int[] comps = infinity ? IntStream.concat(IntStream.range(0, orbitCount).map(_ -> 1), IntStream.of(group.order())).toArray()
+            int[] comps = small != 0 ? IntStream.concat(IntStream.range(0, orbitCount).map(_ -> 1), IntStream.of(gs / small)).toArray()
                     : IntStream.range(0, orbitCount).map(_ -> 1).toArray();
             GSpace sp = new GSpace(k, group, true, comps);
             FixBS removableDiffs = new FixBS(sp.diffLength());
@@ -48,15 +48,21 @@ public class Applicator6Test {
                     }
                 }
             }
-            if (infinity) {
-                int inf = v - 1;
-                for (int pt = 0; pt < v - 1; pt++) {
-                    removableDiffs.set(sp.diffIdx(pt * v + inf));
-                    removableDiffs.set(sp.diffIdx(inf * v + pt));
+            if (small != 0) {
+                int from = orbitCount * gs;
+                for (int inf = from; inf < from + small; inf++) {
+                    for (int pt = 0; pt < from; pt++) {
+                        removableDiffs.set(sp.diffIdx(pt * v + inf));
+                        removableDiffs.set(sp.diffIdx(inf * v + pt));
+                    }
+                    for (int ii = inf + 1; ii < from + small; ii++) {
+                        removableDiffs.set(sp.diffIdx(inf * v + ii));
+                        removableDiffs.set(sp.diffIdx(ii * v + inf));
+                    }
                 }
             }
             System.out.println(GroupIndex.identify(group) + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
-            State[] base = getStabilized(sp);
+            State[] base = getStabilized(sp, removableDiffs);
             System.out.println("Base blocks " + base.length);
             List<State[]> begins = generateBegins(removableDiffs, base, sp);
             System.out.println("Initial configs " + begins.size());
@@ -544,11 +550,11 @@ public class Applicator6Test {
         return base;
     }
 
-    private static State[] getStabilized(GSpace sp) {
+    private static State[] getStabilized(GSpace sp, FixBS removableDiffs) {
         Map<FixBS, State> singles = new ConcurrentHashMap<>();
         int v = sp.v();
         Consumer<State> cons = st -> {
-            if (st.stabilizer().cardinality() == 1) {
+            if (st.stabilizer().cardinality() == 1 && !st.diffSet().intersects(removableDiffs)) {
                 return;
             }
             State minimized = st.minimizeBlock(sp);
