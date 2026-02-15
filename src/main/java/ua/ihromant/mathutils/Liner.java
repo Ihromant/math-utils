@@ -698,12 +698,24 @@ public class Liner implements NautyGraph {
                 }
             }
             Set<FixBS> original = Arrays.stream(comps).collect(Collectors.toSet());
+            int[] idxes = new int[b];
             Graph g = new Graph(vert.length);
+            Arrays.fill(idxes, -1);
             for (int i = 0; i < vert.length; i++) {
-                for (int j = i + 1; j < vert.length; j++) {
-                    int inter = intersection(vert[i], vert[j]);
-                    if (inter < 0 || flag(ln, inter)) {
-                        g.connect(i, j);
+                idxes[vert[i]] = i;
+                g.neighbors(i).set(0, vert.length);
+                g.neighbors(i).clear(i);
+            }
+            for (int i = 0; i < vert.length; i++) {
+                int[] vertLine = line(vert[i]);
+                for (int pt : vertLine) {
+                    if (Arrays.binarySearch(line, pt) >= 0) {
+                        continue;
+                    }
+                    for (int oLine : lines(pt)) {
+                        if (idxes[oLine] >= 0) {
+                            g.disconnect(i, idxes[oLine]);
+                        }
                     }
                 }
             }

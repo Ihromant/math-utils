@@ -32,6 +32,10 @@ public class Graph {
         return neighbors[a].toArray();
     }
 
+    public FixBS neighbors(int a) {
+        return neighbors[a];
+    }
+
     public boolean connected(int a, int b) {
         return neighbors[a].get(b);
     }
