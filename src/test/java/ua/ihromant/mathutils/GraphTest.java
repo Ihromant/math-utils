@@ -282,13 +282,13 @@ public class GraphTest {
             int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
             return new Liner(lines);
         }).toList();
-        Map<FixBS, LinerInfo> liners = new ConcurrentHashMap<>();
+        Map<FixBS, LinerInfo> syncLiners = new ConcurrentHashMap<>();
         basePlanes.parallelStream().forEach(Liner::graphData);
         IntStream.range(0, basePlanes.size()).parallel().forEach(i -> {
             Liner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
             LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i);
-            liners.put(canon, info);
+            syncLiners.put(canon, info);
         });
         Path grPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
         content = Files.readString(grPath);
@@ -313,13 +313,14 @@ public class GraphTest {
             String l = reached[i];
             int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
             Liner lnr = new Liner(lines);
-            LinerInfo info = liners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), _ -> new LinerInfo().setLiner(lnr));
+            LinerInfo info = syncLiners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), _ -> new LinerInfo().setLiner(lnr));
             info.setGraphIdx(i);
             info.setProcessed(i < lns.length);
             compLiners[i] = info;
         });
         List<LinerInfo> stack = Arrays.stream(compLiners, lns.length, compLiners.length).collect(Collectors.toList());
         int processedCnt = lns.length;
+        Map<FixBS, LinerInfo> liners = new HashMap<>(syncLiners);
         while (!stack.isEmpty() && counter > 0) {
             LinerInfo info = stack.removeFirst();
             if (info.isProcessed()) {
