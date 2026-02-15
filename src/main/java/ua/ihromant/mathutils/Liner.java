@@ -670,6 +670,91 @@ public class Liner implements NautyGraph {
         return result;
     }
 
+    public List<Liner> paraModificationsAlt() {
+        GraphData gd = graphData();
+        int b = lineCount();
+        int v = pointCount;
+        int k = lines[0].length;
+        int r = (v - 1) / (k - 1);
+        FixBS orbLines = new FixBS(b);
+        for (int i = v; i < b + v; i++) {
+            orbLines.set(gd.orbits()[i] - v);
+        }
+        List<Liner> result = new ArrayList<>();
+        Arrays.stream(orbLines.toArray()).parallel().forEach(ln -> {
+            int[] line = line(ln);
+            int[] vert = new int[k * (r - 1)];
+            int cnt = 0;
+            FixBS[] comps = IntStream.range(0, k).mapToObj(_ -> new FixBS(vert.length)).toArray(FixBS[]::new);
+            for (int i = 0; i < line.length; i++) {
+                int pt = line[i];
+                for (int l : lines(pt)) {
+                    if (l == ln) {
+                        continue;
+                    }
+                    vert[cnt] = l;
+                    comps[i].set(cnt);
+                    cnt++;
+                }
+            }
+            Set<FixBS> original = Arrays.stream(comps).collect(Collectors.toSet());
+            Graph g = new Graph(vert.length);
+            for (int i = 0; i < vert.length; i++) {
+                for (int j = i + 1; j < vert.length; j++) {
+                    int inter = intersection(vert[i], vert[j]);
+                    if (inter < 0 || flag(ln, inter)) {
+                        g.connect(i, j);
+                    }
+                }
+            }
+            List<FixBS> cList = Collections.synchronizedList(new ArrayList<>());
+            g.bronKerbPivotPar((clq, sz) -> {
+                if (sz == r - 1) {
+                    cList.add(clq.copy());
+                }
+            });
+            int ncl = cList.size();
+            int[][] cl = cList.stream().map(FixBS::toArray).toArray(int[][]::new);
+            Graph g1 = new Graph(ncl);
+            for (int i = 0; i < ncl; i++) {
+                for (int j = i + 1; j < ncl; j++) {
+                    if (!cList.get(i).intersects(cList.get(j))) {
+                        g1.connect(i, j);
+                    }
+                }
+            }
+            List<FixBS> pList = Collections.synchronizedList(new ArrayList<>());
+            g1.bronKerbPivotPar((clq, sz) -> {
+                if (sz == k) {
+                    pList.add(clq.copy());
+                }
+            });
+            for (FixBS p : pList) {
+                int[] part = p.toArray();
+                Set<FixBS> altComps = Arrays.stream(part).mapToObj(cList::get).collect(Collectors.toSet());
+                if (altComps.equals(original)) {
+                    continue;
+                }
+                FixBS[] altInc = Arrays.stream(flags).map(FixBS::copy).toArray(FixBS[]::new);
+                for (int pt : line) {
+                    for (int l : vert) {
+                        altInc[l].clear(pt);
+                    }
+                }
+                for (int i = 0; i < k; i++) {
+                    for (int j = 0; j < r - 1; j++) {
+                        altInc[vert[cl[part[i]][j]]].set(line[i]);
+                    }
+                }
+                Liner altLnr = new Liner(altInc);
+                synchronized (result) {
+                    result.add(altLnr);
+                }
+            }
+        });
+        return result;
+    }
+
     public int[][][] resolutions() {
         int k = lines[0].length;
         int v = pointCount;
