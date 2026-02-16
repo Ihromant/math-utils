@@ -306,11 +306,10 @@ public class GraphTest {
             }
         }
         Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
-        content = Files.readString(stPath);
-        String[] reached = content.lines().toArray(String[]::new);
-        LinerInfo[] compLiners = new LinerInfo[reached.length];
-        IntStream.range(0, reached.length).parallel().forEach(i -> {
-            String l = reached[i];
+        List<String> reached = Files.readAllLines(stPath);
+        LinerInfo[] compLiners = new LinerInfo[reached.size()];
+        IntStream.range(0, reached.size()).parallel().forEach(i -> {
+            String l = reached.get(i);
             int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
             Liner lnr = new Liner(lines);
             LinerInfo info = syncLiners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), _ -> new LinerInfo().setLiner(lnr));
@@ -322,6 +321,7 @@ public class GraphTest {
         int processedCnt = lns.length;
         Map<FixBS, LinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
+        reached.clear();
         content = null;
         while (!stack.isEmpty() && counter > 0) {
             LinerInfo info = stack.removeFirst();
