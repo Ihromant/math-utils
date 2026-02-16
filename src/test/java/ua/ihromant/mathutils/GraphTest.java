@@ -19,9 +19,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -357,5 +360,23 @@ public class GraphTest {
             System.out.println(++processedCnt + " " + stack.size() + " " + graph.size() + " " + --counter);
         }
         System.out.println(content);
+    }
+
+    @Test
+    public void integrityCheck() throws IOException {
+        int k = 5;
+        int v = 65;
+        ObjectMapper om = new ObjectMapper();
+        Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
+        Stream<String> reached = Files.lines(stPath);
+        Set<FixBS> un = ConcurrentHashMap.newKeySet();
+        AtomicInteger ai = new AtomicInteger();
+        reached.parallel().forEach(l -> {
+            int[][] lns = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+            un.add(new FixBS(new Liner(lns).graphData().canonical()));
+            ai.incrementAndGet();
+        });
+        reached.close();
+        System.out.println(un.size() + " " + ai.get());
     }
 }
