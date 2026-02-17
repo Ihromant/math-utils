@@ -260,6 +260,10 @@ public class Liner implements NautyGraph {
         return flags[line].get(point);
     }
 
+    public FixBS[] flags() {
+        return flags;
+    }
+
     public int[] line(int line) {
         return lines[line];
     }

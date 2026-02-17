@@ -187,6 +187,15 @@ public class BatchLinerTest {
             uniqueAlt.putIfAbsent(new FixBS(gd.canonical()), lnr);
         });
         assertEquals(17, uniqueAlt.size());
+        SLiner sLiner = new SLiner(liner.flags());
+        List<SLiner> paraS = sLiner.paraModificationsAlt();
+        assertEquals(228, paraS.size());
+        Map<FixBS, SLiner> uniqueS = new ConcurrentHashMap<>();
+        paraS.stream().parallel().forEach(lnr -> {
+            GraphData gd = lnr.graphData();
+            uniqueS.putIfAbsent(new FixBS(gd.canonical()), lnr);
+        });
+        assertEquals(17, uniqueS.size());
     }
 
     @Test

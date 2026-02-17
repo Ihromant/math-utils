@@ -86,12 +86,12 @@ public class GraphTest {
     @Test
     public void buildGraph() throws IOException {
         SparseGraph graph = new SparseGraph();
-        List<Liner> basePlanes = BatchLinerTest.readPlanes(28, 4);
+        List<SLiner> basePlanes = readSLiners(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
-        basePlanes.parallelStream().forEach(Liner::graphData);
+        basePlanes.parallelStream().forEach(SLiner::graphData);
         for (int i = 0; i < basePlanes.size(); i++) {
-            Liner lnr = basePlanes.get(i);
+            SLiner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
             LinerInfo info = new LinerInfo().setLiner(lnr).setGraphIdx(i);
             liners.put(canon, info);
@@ -106,14 +106,14 @@ public class GraphTest {
                 continue;
             }
             graph.connect(info.getGraphIdx(), info.getGraphIdx());
-            Liner lnr = info.getLiner();
-            List<Liner> para = lnr.paraModifications();
-            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+            SLiner lnr = info.getLiner();
+            List<SLiner> para = lnr.paraModificationsAlt();
+            Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
             para.stream().parallel().forEach(l -> {
                 GraphData gd = l.graphData();
                 unique.putIfAbsent(new FixBS(gd.canonical()), l);
             });
-            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+            for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                 LinerInfo parInfo = liners.get(e.getKey());
                 if (parInfo == null) {
                     parInfo = new LinerInfo().setLiner(e.getValue()).setGraphIdx(graphSize++);
@@ -134,13 +134,13 @@ public class GraphTest {
     public void buildByComponent() throws IOException {
         int v = 28;
         int k = 4;
-        List<Liner> basePlanes = BatchLinerTest.readPlanes(v, k);
+        List<SLiner> basePlanes = readSLiners(v, k);
         FixBS done = readDone(basePlanes.size(), v, k);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
-        basePlanes.parallelStream().forEach(Liner::graphData);
+        basePlanes.parallelStream().forEach(SLiner::graphData);
         for (int i = 0; i < basePlanes.size(); i++) {
-            Liner lnr = basePlanes.get(i);
+            SLiner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
             LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i).setProcessed(done.get(i));
             liners.put(canon, info);
@@ -164,14 +164,14 @@ public class GraphTest {
                     continue;
                 }
                 graph.connect(info.getGraphIdx(), info.getGraphIdx());
-                Liner lnr = info.getLiner();
-                List<Liner> para = lnr.paraModifications();
-                Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+                SLiner lnr = info.getLiner();
+                List<SLiner> para = lnr.paraModificationsAlt();
+                Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
                 para.stream().parallel().forEach(l -> {
                     GraphData gd = l.graphData();
                     unique.putIfAbsent(new FixBS(gd.canonical()), l);
                 });
-                for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+                for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                     LinerInfo parInfo = liners.get(e.getKey());
                     if (parInfo == null) {
                         parInfo = new LinerInfo().setLiner(e.getValue());
@@ -238,7 +238,7 @@ public class GraphTest {
     @Setter
     @Accessors(chain = true)
     private static class LinerInfo {
-        private Liner liner;
+        private SLiner liner;
         private Integer baseIdx;
         private Integer graphIdx;
         private boolean processed;
@@ -250,6 +250,15 @@ public class GraphTest {
         return content.lines().map(l -> {
             int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
             return new Liner(lines);
+        }).collect(Collectors.toList());
+    }
+
+    private static List<SLiner> readSLiners(int v, int k) throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/" + v + "-" + k + "final.txt"));
+        return content.lines().map(l -> {
+            short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
+            return new SLiner(lines);
         }).collect(Collectors.toList());
     }
 
@@ -281,14 +290,14 @@ public class GraphTest {
         int counter = 20000;
         ObjectMapper om = new ObjectMapper();
         String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/base.txt"));
-        List<Liner> basePlanes = content.lines().map(l -> {
-            int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
-            return new Liner(lines);
+        List<SLiner> basePlanes = content.lines().map(l -> {
+            short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
+            return new SLiner(lines);
         }).toList();
         Map<FixBS, LinerInfo> syncLiners = new ConcurrentHashMap<>();
-        basePlanes.parallelStream().forEach(Liner::graphData);
+        basePlanes.parallelStream().forEach(SLiner::graphData);
         IntStream.range(0, basePlanes.size()).parallel().forEach(i -> {
-            Liner lnr = basePlanes.get(i);
+            SLiner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
             LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i);
             syncLiners.put(canon, info);
@@ -313,8 +322,8 @@ public class GraphTest {
         LinerInfo[] compLiners = new LinerInfo[reached.size()];
         IntStream.range(0, reached.size()).parallel().forEach(i -> {
             String l = reached.get(i);
-            int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
-            Liner lnr = new Liner(lines);
+            short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
+            SLiner lnr = new SLiner(lines);
             LinerInfo info = syncLiners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), _ -> new LinerInfo().setLiner(lnr));
             info.setGraphIdx(i);
             info.setProcessed(i < lns.length);
@@ -332,14 +341,14 @@ public class GraphTest {
                 continue;
             }
             graph.connect(info.getGraphIdx(), info.getGraphIdx());
-            Liner lnr = info.getLiner();
-            List<Liner> para = lnr.paraModificationsAlt();
-            Map<FixBS, Liner> unique = new ConcurrentHashMap<>();
+            SLiner lnr = info.getLiner();
+            List<SLiner> para = lnr.paraModificationsAlt();
+            Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
             para.stream().parallel().forEach(l -> {
                 GraphData gd = l.graphData();
                 unique.putIfAbsent(new FixBS(gd.canonical()), l);
             });
-            for (Map.Entry<FixBS, Liner> e : unique.entrySet()) {
+            for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                 LinerInfo parInfo = liners.get(e.getKey());
                 if (parInfo == null) {
                     parInfo = new LinerInfo().setLiner(e.getValue());
