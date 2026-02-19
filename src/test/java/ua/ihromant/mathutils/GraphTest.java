@@ -244,6 +244,16 @@ public class GraphTest {
         private boolean processed;
     }
 
+    @Getter
+    @Setter
+    @Accessors(chain = true)
+    private static class SLinerInfo {
+        private long[] canon;
+        private Integer baseIdx;
+        private Integer graphIdx;
+        private boolean processed;
+    }
+
     private static List<Liner> readLiners(int v, int k) throws IOException {
         ObjectMapper om = new ObjectMapper();
         String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/" + v + "-" + k + "final.txt"));
@@ -294,12 +304,12 @@ public class GraphTest {
             short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
             return new SLiner(lines);
         }).toList();
-        Map<FixBS, LinerInfo> syncLiners = new ConcurrentHashMap<>();
+        Map<FixBS, SLinerInfo> syncLiners = new ConcurrentHashMap<>();
         basePlanes.parallelStream().forEach(SLiner::graphData);
         IntStream.range(0, basePlanes.size()).parallel().forEach(i -> {
             SLiner lnr = basePlanes.get(i);
             FixBS canon = new FixBS(lnr.graphData().canonical());
-            LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i);
+            SLinerInfo info = new SLinerInfo().setBaseIdx(i).setCanon(canon.words());
             syncLiners.put(canon, info);
         });
         Path grPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
@@ -319,29 +329,29 @@ public class GraphTest {
         }
         Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
         List<String> reached = Files.readAllLines(stPath);
-        LinerInfo[] compLiners = new LinerInfo[reached.size()];
+        SLinerInfo[] compLiners = new SLinerInfo[reached.size()];
         IntStream.range(0, reached.size()).parallel().forEach(i -> {
             String l = reached.get(i);
             short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
             SLiner lnr = new SLiner(lines);
-            LinerInfo info = syncLiners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), _ -> new LinerInfo().setLiner(lnr));
+            SLinerInfo info = syncLiners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), ky -> new SLinerInfo().setCanon(ky.words()));
             info.setGraphIdx(i);
             info.setProcessed(i < lns.length);
             compLiners[i] = info;
         });
-        List<LinerInfo> stack = Arrays.stream(compLiners, lns.length, compLiners.length).collect(Collectors.toList());
+        List<SLinerInfo> stack = Arrays.stream(compLiners, lns.length, compLiners.length).collect(Collectors.toList());
         int processedCnt = lns.length;
-        Map<FixBS, LinerInfo> liners = new HashMap<>(syncLiners);
+        Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
         reached.clear();
         content = null;
         while (!stack.isEmpty() && counter > 0) {
-            LinerInfo info = stack.removeFirst();
+            SLinerInfo info = stack.removeFirst();
             if (info.isProcessed()) {
                 continue;
             }
             graph.connect(info.getGraphIdx(), info.getGraphIdx());
-            SLiner lnr = info.getLiner();
+            SLiner lnr = SLiner.byCanon(info.getCanon(), v, k);
             List<SLiner> para = lnr.paraModificationsAlt();
             Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
             para.stream().parallel().forEach(l -> {
@@ -349,14 +359,10 @@ public class GraphTest {
                 unique.putIfAbsent(new FixBS(gd.canonical()), l);
             });
             for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
-                LinerInfo parInfo = liners.get(e.getKey());
-                if (parInfo == null) {
-                    parInfo = new LinerInfo().setLiner(e.getValue());
-                    liners.put(e.getKey(), parInfo);
-                }
+                SLinerInfo parInfo = liners.computeIfAbsent(e.getKey(), ky -> new SLinerInfo().setCanon(ky.words()));
                 if (parInfo.getGraphIdx() == null) {
                     parInfo.setGraphIdx(graph.size());
-                    Files.writeString(stPath, graph.size() + " " + Arrays.deepToString(parInfo.liner.lines()) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    Files.writeString(stPath, graph.size() + " " + Arrays.deepToString(e.getValue().lines()) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
                 }
                 graph.connect(info.getGraphIdx(), parInfo.getGraphIdx());
                 stack.add(parInfo);

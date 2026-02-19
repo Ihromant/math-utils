@@ -87,26 +87,20 @@ public class SLiner implements NautyGraph {
         }
     }
 
-    private short[][] generateLookup() {
-        short[][] result = new short[pointCount][pointCount];
-        for (short[] p : result) {
-            Arrays.fill(p, (short) -1);
-        }
-        for (short l = 0; l < lines.length; l++) {
-            short[] line = lines[l];
-            for (int i = 0; i < line.length; i++) {
-                int p1 = line[i];
-                for (int j = i + 1; j < line.length; j++) {
-                    int p2 = line[j];
-                    if (result[p1][p2] >= 0) {
-                        throw new IllegalStateException();
-                    }
-                    result[p1][p2] = l;
-                    result[p2][p1] = l;
-                }
+    public static SLiner byCanon(long[] canon, int v, int k) {
+        int b = (v * v - v) / (k * k - k);
+        int sm = b + v;
+        int sh = (sm + 63) / 64;
+        int cnt = (v + 63) / 64;
+        FixBS[] inc = new FixBS[b];
+        for (int i = 0; i < b; i++) {
+            long[] arr = new long[cnt];
+            for (int j = 0; j < cnt; j++) {
+                arr[j] = canon[(v + i) * sh + j];
             }
+            inc[i] = new FixBS(arr);
         }
-        return result;
+        return new SLiner(inc);
     }
 
     public int pointCount() {
@@ -119,6 +113,10 @@ public class SLiner implements NautyGraph {
 
     public boolean flag(int line, int point) {
         return flags[line].get(point);
+    }
+
+    public FixBS[] flags() {
+        return flags;
     }
 
     public short[] line(int line) {

@@ -49,6 +49,7 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.zip.ZipInputStream;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BatchLinerTest {
@@ -165,7 +166,9 @@ public class BatchLinerTest {
 
     @Test
     public void test65_5() throws IOException {
-        List<Liner> planes = readPlanes(65, 5);
+        int v = 65;
+        int k = 5;
+        List<Liner> planes = readPlanes(v, k);
         assertEquals(1777, planes.size());
         assertEquals(of(3), planes.getFirst().hyperbolicIndex());
         assertEquals(FixBS.of(planes.getFirst().pointCount() + 1, 65), planes.getFirst().cardSubPlanes(true));
@@ -196,6 +199,18 @@ public class BatchLinerTest {
             uniqueS.putIfAbsent(new FixBS(gd.canonical()), lnr);
         });
         assertEquals(17, uniqueS.size());
+        SLiner fromCanon = SLiner.byCanon(liner.graphData().canonical(), v, k);
+        List<SLiner> paraCanon = fromCanon.paraModificationsAlt();
+        assertEquals(228, paraCanon.size());
+        Map<FixBS, SLiner> uniqueCanon = new ConcurrentHashMap<>();
+        paraCanon.stream().parallel().forEach(lnr -> {
+            GraphData gd = lnr.graphData();
+            uniqueCanon.putIfAbsent(new FixBS(gd.canonical()), lnr);
+        });
+        assertEquals(17, uniqueCanon.size());
+        assertEquals(Map.of(1, 7200, 2, 100800, 3, 640800), new Liner(fromCanon.flags()).hyperbolicFreq());
+        assertArrayEquals(liner.graphData().canonical(), fromCanon.graphData().canonical());
+        assertEquals(uniqueS.keySet(), uniqueCanon.keySet());
     }
 
     @Test
