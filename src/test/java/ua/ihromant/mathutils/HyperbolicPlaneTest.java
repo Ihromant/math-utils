@@ -227,6 +227,18 @@ public class HyperbolicPlaneTest {
         assertEquals(of(29), p.playfairIndex());
         assertEquals(of(2, 3, 4, 5), p.hyperbolicIndex());
         assertEquals(FixBS.of(p.pointCount() + 1, p.pointCount()), p.cardSubPlanes(false)); // it's a plane, but long-running, change to true to check
+
+        CyclicProduct cp = new CyclicProduct(7, 37);
+        Liner abel = Liner.byDiffFamily(cp, new int[][]{
+                {cp.fromArr(0, 0), cp.fromArr(0, 1), cp.fromArr(0, 6), cp.fromArr(1, 4), cp.fromArr(2, 19), cp.fromArr(3, 25), cp.fromArr(6, 26)},
+                {cp.fromArr(0, 0), cp.fromArr(0, 10), cp.fromArr(0, 23), cp.fromArr(2, 3), cp.fromArr(4, 5), cp.fromArr(5, 1), cp.fromArr(6, 28)},
+                {cp.fromArr(0, 0), cp.fromArr(0, 8), cp.fromArr(0, 26), cp.fromArr(1, 13), cp.fromArr(3, 10), cp.fromArr(4, 30), cp.fromArr(5, 21)},
+                {cp.fromArr(0, 0), cp.fromArr(0, 4), cp.fromArr(1, 25), cp.fromArr(1, 34), cp.fromArr(2, 33), cp.fromArr(2, 35), cp.fromArr(4, 10)},
+                {cp.fromArr(0, 0), cp.fromArr(0, 3), cp.fromArr(1, 26), cp.fromArr(2, 7), cp.fromArr(2, 28), cp.fromArr(4, 17), cp.fromArr(4, 34)},
+                {cp.fromArr(0, 0), cp.fromArr(0, 30), cp.fromArr(1, 7), cp.fromArr(1, 22), cp.fromArr(2, 1), cp.fromArr(4, 21), cp.fromArr(4, 33)},
+                {cp.fromArr(0, 0), cp.fromArr(1, 0), cp.fromArr(2, 0), cp.fromArr(3, 0), cp.fromArr(4, 0), cp.fromArr(5, 0), cp.fromArr(6, 0)}
+        });
+        assertEquals(of(2, 3, 4, 5), abel.hyperbolicIndex());
     }
 
     @Test
