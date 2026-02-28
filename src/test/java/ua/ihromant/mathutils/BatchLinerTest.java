@@ -224,15 +224,15 @@ public class BatchLinerTest {
 
     @Test
     public void test45_5() throws IOException {
-        List<Liner> planes = getUpdated45();
+        List<Liner> planes = parseGAP(45, 5);
         assertEquals(1072, planes.size());
         IntStream.range(0, planes.size()).parallel().forEach(i -> {
             orbits(planes.get(i), i);
         });
     }
 
-    public static List<Liner> getUpdated45() throws IOException {
-        String s = Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-45-5-1.des"));
+    public static List<Liner> parseGAP(int v, int k) throws IOException {
+        String s = Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-" + v + "-" + k + "-1.des"));
         ObjectMapper om = new ObjectMapper();
         List<Liner> planes = new ArrayList<>();
         while (true) {
@@ -245,11 +245,11 @@ public class BatchLinerTest {
             bl = bl.substring(0, bl.lastIndexOf(','));
             int[][] lines = om.readValue(bl, int[][].class);
             Arrays.stream(lines).forEach(b -> {
-                for (int i = 0; i < 5; i++) {
+                for (int i = 0; i < b.length; i++) {
                     b[i]--;
                 }
             });
-            planes.add(new Liner(45, lines));
+            planes.add(new Liner(v, lines));
             s = s.substring(lIdx + 20);
         }
         return planes;
@@ -1048,7 +1048,7 @@ public class BatchLinerTest {
 
     @SneakyThrows
     private static void orbits(Liner p, int i) {
-        PermutationGroup aut = p.automorphisms();
+        PermutationGroup aut = new PermutationGroup(p.graphData().automorphisms());
         FixBS elems = new FixBS(aut.order());
         elems.set(0, aut.order());
         orbits(p, new SubGroup(aut, elems), i);
@@ -1265,7 +1265,7 @@ public class BatchLinerTest {
                 try {
                     String name;
                     if (gd.autCount() != g.order()) {
-                        Group aut = new PermutationGroup(permutationClosure(gd.autGens())).asTable();
+                        Group aut = new PermutationGroup(gd.automorphisms()).asTable();
                         name = GroupIndex.identify(aut) + " " + GroupIndex.groupId(aut);
                     } else {
                         name = g.name();
@@ -1277,45 +1277,6 @@ public class BatchLinerTest {
             }
         });
         lns.close();
-    }
-
-    private int[][] permutationClosure(int[][] generators) {
-        Set<ArrWrap> result = new HashSet<>();
-        result.add(new ArrWrap(IntStream.range(0, generators[0].length).toArray()));
-        boolean added;
-        do {
-            added = false;
-            for (ArrWrap el : result.toArray(ArrWrap[]::new)) {
-                for (int[] gen : generators) {
-                    ArrWrap xy = new ArrWrap(combine(gen, el.map));
-                    ArrWrap yx = new ArrWrap(combine(el.map, gen));
-                    added = result.add(xy) || added;
-                    added = result.add(yx) || added;
-                }
-            }
-        } while (added);
-        return result.stream().map(ArrWrap::map).toArray(int[][]::new);
-    }
-
-    private static int[] combine(int[] a, int[] b) {
-        int[] result = new int[a.length];
-        for (int i = 0; i < a.length; i++) {
-            result[i] = a[b[i]];
-        }
-        return result;
-    }
-
-    private record ArrWrap(int[] map) {
-        @Override
-        public boolean equals(Object o) {
-            if (!(o instanceof ArrWrap(int[] map1))) return false;
-            return Arrays.equals(map, map1);
-        }
-
-        @Override
-        public int hashCode() {
-            return Arrays.hashCode(map) >>> 1;
-        }
     }
 
     @Test
