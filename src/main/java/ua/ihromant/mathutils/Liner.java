@@ -542,7 +542,7 @@ public class Liner implements NautyGraph {
                 if (intersection(i, j) < 0) {
                     continue;
                 }
-                BitSet pts = new BitSet();
+                FixBS pts = new FixBS(pointCount);
                 for (int p1 : points(i)) {
                     for (int p2 : points(j)) {
                         if (p1 == p2) {
