@@ -248,7 +248,7 @@ public class IncFinderTest {
         }
     }
 
-    private static DumpConfig readLast(String prefix, int v, int k, Supplier<DumpConfig> fallback) {
+    public static DumpConfig readLast(String prefix, int v, int k, Supplier<DumpConfig> fallback) {
         try (FileInputStream fis = new FileInputStream("/home/ihromant/maths/partials/" + prefix + "-" + v + "-" + k + ".txt");
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
