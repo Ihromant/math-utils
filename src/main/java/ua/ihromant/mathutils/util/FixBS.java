@@ -541,7 +541,7 @@ public record FixBS(long[] words) implements Comparable<FixBS> {
                 return false;
             }
         }
-        int mod = desired % 64;
+        int mod = desired & 63;
         return Long.bitCount(words[words.length - 1]) == (mod == 0 ? 64 : mod);
     }
 
