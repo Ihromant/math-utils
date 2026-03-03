@@ -97,6 +97,11 @@ public record Inc(FixBS[] lines, int v, int k) implements NautyGraph {
         }
     }
 
+    @Override
+    public int eCount() {
+        return lines.length * k * 2;
+    }
+
     public String toLines() {
         return IntStream.range(0, b()).mapToObj(line -> IntStream.range(0, v()).filter(pt -> inc(line, pt)).mapToObj(String::valueOf)
                 .collect(Collectors.joining(" "))).collect(Collectors.joining("\n")) + "\n";
