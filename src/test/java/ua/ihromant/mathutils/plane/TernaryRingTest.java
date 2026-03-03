@@ -6,7 +6,6 @@ import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.Triangle;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.util.FixBS;
-import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.File;
 import java.io.IOException;
@@ -232,7 +231,7 @@ public class TernaryRingTest {
         }
     }
 
-    private static void testCorrectness(TernaryRing tr) {
+    public static void testCorrectness(TernaryRing tr) {
         for (int x : tr.elements()) {
             for (int b : tr.elements()) {
                 assertEquals(b, tr.op(x, 0, b));
@@ -283,6 +282,7 @@ public class TernaryRingTest {
                         continue;
                     }
                     for (int y2 : tr.elements()) {
+                        record IntPair(int fst, int snd) {}
                         IntPair ab = null;
                         for (int a : tr.elements()) {
                             for (int b : tr.elements()) {

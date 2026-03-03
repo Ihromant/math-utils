@@ -10,8 +10,8 @@ import ua.ihromant.mathutils.plane.AffineTernaryRing;
 import ua.ihromant.mathutils.plane.ProjectiveTernaryRing;
 import ua.ihromant.mathutils.plane.Quad;
 import ua.ihromant.mathutils.plane.TernaryRing;
+import ua.ihromant.mathutils.plane.TernaryRingTest;
 import ua.ihromant.mathutils.util.FixBS;
-import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -601,79 +601,7 @@ public class BatchAffineTest {
         Liner liner = new AffinePlane(proj, dl).toLiner();
         for (int triangle : uniqueTriangles.get(name + "-" + dl + "-" + k)) {
             TernaryRing tr = new AffineTernaryRing(liner, liner.trOf(triangle));
-            for (int x : tr.elements()) {
-                for (int b : tr.elements()) {
-                    assertEquals(b, tr.op(x, 0, b));
-                    assertEquals(b, tr.op(0, x, b));
-                }
-                assertEquals(x, tr.op(x, 1, 0));
-                assertEquals(x, tr.op(1, x, 0));
-            }
-            for (int a : tr.elements()) {
-                for (int x : tr.elements()) {
-                    for (int y : tr.elements()) {
-                        int b = IntStream.range(0, tr.order()).filter(c -> tr.op(x, a, c) == y).findAny().orElseThrow();
-                        for (int c : tr.elements()) {
-                            if (b == c) {
-                                continue;
-                            }
-                            if (tr.op(x, a, c) == y) {
-                                fail();
-                            }
-                        }
-                    }
-                }
-            }
-            for (int a : tr.elements()) {
-                for (int b : tr.elements()) {
-                    for (int c : tr.elements()) {
-                        if (c == a) {
-                            continue;
-                        }
-                        for (int d : tr.elements()) {
-                            int x = IntStream.range(0, tr.order()).filter(y -> tr.op(y, a, b) == tr.op(y, c, d)).findAny().orElseThrow();
-                            for (int y : tr.elements()) {
-                                if (x == y) {
-                                    continue;
-                                }
-                                if (tr.op(y, a, b) == tr.op(y, c, d)) {
-                                    fail();
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            for (int x1 : tr.elements()) {
-                for (int y1 : tr.elements()) {
-                    for (int x2 : tr.elements()) {
-                        if (x1 == x2) {
-                            continue;
-                        }
-                        for (int y2 : tr.elements()) {
-                            IntPair ab = null;
-                            for (int a : tr.elements()) {
-                                for (int b : tr.elements()) {
-                                    if (tr.op(x1, a, b) == y1 && tr.op(x2, a, b) == y2) {
-                                        ab = new IntPair(a, b);
-                                    }
-                                }
-                            }
-                            assertNotNull(ab);
-                            for (int a1 : tr.elements()) {
-                                for (int b1 : tr.elements()) {
-                                    if (a1 == ab.fst() && b1 == ab.snd()) {
-                                        continue;
-                                    }
-                                    if (tr.op(x1, a1, b1) == y1 && tr.op(x2, a1, b1) == y2) {
-                                        fail();
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            TernaryRingTest.testCorrectness(tr);
         }
     }
 

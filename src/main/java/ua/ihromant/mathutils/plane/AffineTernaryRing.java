@@ -2,7 +2,6 @@ package ua.ihromant.mathutils.plane;
 
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.Triangle;
-import ua.ihromant.mathutils.vf2.IntPair;
 
 import java.util.Arrays;
 
@@ -119,10 +118,6 @@ public class AffineTernaryRing implements TernaryRing {
 
     private int byIdx(int idx) {
         return diagonalOrder[idx];
-    }
-
-    public IntPair toCoordinates(int pt) {
-        return new IntPair(idxes[liner.intersection(parallel(ver, pt), oe)], idxes[liner.intersection(parallel(hor, pt), oe)]);
     }
 
     public int withCrd(int a, int b) {
