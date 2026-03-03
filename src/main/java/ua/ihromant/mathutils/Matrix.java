@@ -36,7 +36,7 @@ public record Matrix(int[][] vals) {
         }).collect(Collectors.joining(" "))).collect(Collectors.joining("\n"));
     }
 
-    public static Matrix sqrInc(FixInc inc) {
+    public static Matrix sqrInc(Inc inc) {
         int v = inc.v();
         int b = inc.b();
         int[][] res = new int[v + b][v + b];

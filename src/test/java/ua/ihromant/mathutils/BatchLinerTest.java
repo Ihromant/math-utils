@@ -830,7 +830,7 @@ public class BatchLinerTest {
         Arrays.stream(liners)
                 .map(arr -> {
                     PartialLiner lnr = new PartialLiner(v, arr);
-                    FixInc fi = (FixInc) lnr.toInc();
+                    Inc fi = lnr.toInc();
                     Matrix mt = fi.sqrInc().sqr();
                     Map<Integer, Integer> fr = new TreeMap<>();
                     for (int i = 0; i < v; i++) {

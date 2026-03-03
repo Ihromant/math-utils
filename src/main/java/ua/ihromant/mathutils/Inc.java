@@ -10,31 +10,85 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public interface Inc extends NautyGraph {
-    int v();
+public record Inc(FixBS[] lines, int v) implements NautyGraph {
+    public static Inc empty(int v, int b) {
+        return new Inc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v);
+    }
 
-    int b();
+    public int b() {
+        return lines.length;
+    }
 
-    boolean inc(int l, int pt);
+    public boolean inc(int l, int pt) {
+        return lines[l].get(pt);
+    }
 
-    void set(int l, int pt);
+    public void set(int l, int pt) {
+        lines[l].set(pt);
+    }
 
-    Inc removeTwins();
+    public Inc removeTwins() {
+        int[] beamCounts = new int[v];
+        for (FixBS line : lines) {
+            for (int pt = line.nextSetBit(0); pt >= 0; pt = line.nextSetBit(pt + 1)) {
+                beamCounts[pt]++;
+            }
+        }
+        FixBS filtered = new FixBS(v);
+        IntStream.range(0, v).filter(i -> beamCounts[i] > 1).forEach(filtered::set);
+        int pCard = filtered.cardinality();
+        if (v == pCard) {
+            return this;
+        } else {
+            FixBS[] newLines = IntStream.range(0, lines.length).mapToObj(i -> new FixBS(pCard)).toArray(FixBS[]::new);
+            int idx = 0;
+            for (int pt = filtered.nextSetBit(0); pt >= 0; pt = filtered.nextSetBit(pt + 1)) {
+                for (int l = 0; l < lines.length; l++) {
+                    if (inc(l, pt)) {
+                        newLines[l].set(idx);
+                    }
+                }
+                idx++;
+            }
+            FixBS filteredLines = new FixBS(lines.length);
+            for (int l = 0; l < newLines.length; l++) {
+                if (newLines[l].cardinality() > 1) {
+                    filteredLines.set(l);
+                }
+            }
+            int fCard = filteredLines.cardinality();
+            if (fCard == lines.length) {
+                return new Inc(newLines, pCard);
+            } else {
+                FixBS[] res = new FixBS[fCard];
+                int lIdx = 0;
+                for (int ln = filteredLines.nextSetBit(0); ln >= 0; ln = filteredLines.nextSetBit(ln + 1)) {
+                    res[lIdx++] = newLines[ln];
+                }
+                return new Inc(res, pCard);
+            }
+        }
+    }
 
-    Inc addLine(int[] line);
+    public Inc addLine(int[] line) {
+        FixBS[] next = new FixBS[lines.length + 1];
+        System.arraycopy(lines, 0, next, 0, lines.length);
+        next[lines.length] = FixBS.of(v, line);
+        return new Inc(next, v);
+    }
 
     @Override
-    default int vCount() {
+    public int vCount() {
         return v() + b();
     }
 
     @Override
-    default int vColor(int idx) {
+    public int vColor(int idx) {
         return idx < v() ? 0 : 1;
     }
 
     @Override
-    default boolean edge(int a, int b) {
+    public boolean edge(int a, int b) {
         int pc = v();
         if (a < pc) {
             return b >= pc && inc(b - pc, a);
@@ -43,20 +97,40 @@ public interface Inc extends NautyGraph {
         }
     }
 
-    static Inc empty(int v, int b) {
-        return new FixInc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v);
-    }
-
-    default String toLines() {
+    public String toLines() {
         return IntStream.range(0, b()).mapToObj(line -> IntStream.range(0, v()).filter(pt -> inc(line, pt)).mapToObj(String::valueOf)
                 .collect(Collectors.joining(" "))).collect(Collectors.joining("\n")) + "\n";
     }
 
-    default Iterable<int[]> blocks() {
+    public Iterable<int[]> blocks() {
         return () -> new BlocksIterator(this);
     }
 
-    class BlocksIterator implements Iterator<int[]> {
+    public FixBS getCanonicalOld() {
+        CanonicalConsumer cons = new CanonicalConsumer(this);
+        NautyAlgo.search(this, cons);
+        return cons.canonicalForm();
+    }
+
+    public Matrix sqrInc() {
+        int v = v();
+        int b = b();
+        int[][] res = new int[v][v];
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                int cnt = 0;
+                for (int l = 0; l < b; l++) {
+                    if (inc(l, i) && inc(l, j)) {
+                        cnt++;
+                    }
+                }
+                res[i][j] = res[j][i] = cnt;
+            }
+        }
+        return new Matrix(res);
+    }
+
+    public static class BlocksIterator implements Iterator<int[]> {
         private final Inc inc;
         private final int v;
         private final int b;
@@ -137,29 +211,5 @@ public interface Inc extends NautyGraph {
             this.hasNext = findNext(block.length - 2);
             return res;
         }
-    }
-
-    default FixBS getCanonicalOld() {
-        CanonicalConsumer cons = new CanonicalConsumer(this);
-        NautyAlgo.search(this, cons);
-        return cons.canonicalForm();
-    }
-
-    default Matrix sqrInc() {
-        int v = v();
-        int b = b();
-        int[][] res = new int[v][v];
-        for (int i = 0; i < v; i++) {
-            for (int j = i + 1; j < v; j++) {
-                int cnt = 0;
-                for (int l = 0; l < b; l++) {
-                    if (inc(l, i) && inc(l, j)) {
-                        cnt++;
-                    }
-                }
-                res[i][j] = res[j][i] = cnt;
-            }
-        }
-        return new Matrix(res);
     }
 }

@@ -129,7 +129,7 @@ public class IncFinderTest {
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private static Inc beamBlocks(int v, int k) {
+    public static Inc beamBlocks(int v, int k) {
         int r = (v - 1) / (k - 1);
         int b = r + 1;
         Inc res = Inc.empty(v, b);
