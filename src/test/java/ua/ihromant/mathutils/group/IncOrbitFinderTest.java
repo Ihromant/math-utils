@@ -71,7 +71,7 @@ public class IncOrbitFinderTest {
                 }
                 int[] idx = fbs.toArray();
                 Inc fi = new Inc(Stream.concat(Arrays.stream(inc.lines()),
-                        Arrays.stream(idx).mapToObj(i -> fstStage.get(i).block())).toArray(FixBS[]::new), v);
+                        Arrays.stream(idx).mapToObj(i -> fstStage.get(i).block())).toArray(FixBS[]::new), v, k);
                 long[] canon = JNauty.instance().traces(fi).canonical();
                 un.putIfAbsent(new FixBS(canon), fi);
             });

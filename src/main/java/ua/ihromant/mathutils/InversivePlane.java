@@ -113,7 +113,7 @@ public class InversivePlane implements NautyGraph {
 
     public Inc toInc() {
         int b = lines.length;
-        Inc res = Inc.empty(pointCount, b);
+        Inc res = Inc.empty(pointCount, lines[0].length, b);
         for (int l = 0; l < b; l++) {
             boolean[] row = flags[l];
             for (int pt = 0; pt < pointCount; pt++) {

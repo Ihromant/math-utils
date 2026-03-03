@@ -10,9 +10,9 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-public record Inc(FixBS[] lines, int v) implements NautyGraph {
-    public static Inc empty(int v, int b) {
-        return new Inc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v);
+public record Inc(FixBS[] lines, int v, int k) implements NautyGraph {
+    public static Inc empty(int v, int k, int b) {
+        return new Inc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v, k);
     }
 
     public int b() {
@@ -58,14 +58,14 @@ public record Inc(FixBS[] lines, int v) implements NautyGraph {
             }
             int fCard = filteredLines.cardinality();
             if (fCard == lines.length) {
-                return new Inc(newLines, pCard);
+                return new Inc(newLines, pCard, k);
             } else {
                 FixBS[] res = new FixBS[fCard];
                 int lIdx = 0;
                 for (int ln = filteredLines.nextSetBit(0); ln >= 0; ln = filteredLines.nextSetBit(ln + 1)) {
                     res[lIdx++] = newLines[ln];
                 }
-                return new Inc(res, pCard);
+                return new Inc(res, pCard, k);
             }
         }
     }
@@ -74,7 +74,7 @@ public record Inc(FixBS[] lines, int v) implements NautyGraph {
         FixBS[] next = new FixBS[lines.length + 1];
         System.arraycopy(lines, 0, next, 0, lines.length);
         next[lines.length] = FixBS.of(v, line);
-        return new Inc(next, v);
+        return new Inc(next, v, k);
     }
 
     @Override

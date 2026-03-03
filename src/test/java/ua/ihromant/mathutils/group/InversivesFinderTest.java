@@ -48,7 +48,7 @@ public class InversivesFinderTest {
 
     public static Inc beamBlocks(int v, int k) {
         int r = (v - 2) / (k - 2);
-        Inc res = Inc.empty(v, r);
+        Inc res = Inc.empty(v, k, r);
         for (int l = 0; l < r; l++) {
             res.set(l, 0);
             res.set(l, 1);
@@ -122,7 +122,7 @@ public class InversivesFinderTest {
                 int partialSize = lineCount - left;
                 partials = new Inc[partialsCount];
                 for (int i = 0; i < partialsCount; i++) {
-                    Inc partial = Inc.empty(v, partialSize);
+                    Inc partial = Inc.empty(v, k, partialSize);
                     for (int j = 0; j < partialSize; j++) {
                         String[] pts = br.readLine().split(" ");
                         for (int l = 0; l < k; l++) {

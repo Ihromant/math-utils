@@ -132,7 +132,7 @@ public class IncFinderTest {
     public static Inc beamBlocks(int v, int k) {
         int r = (v - 1) / (k - 1);
         int b = r + 1;
-        Inc res = Inc.empty(v, b);
+        Inc res = Inc.empty(v, k, b);
         for (int l = 0; l < r; l++) {
             res.set(l, 0);
             for (int j = 0; j < k - 1; j++) {
@@ -147,7 +147,7 @@ public class IncFinderTest {
 
     private static Inc krBlocks(int v, int k) {
         int r = (v - 1) / (k - 1);
-        Inc res = Inc.empty(v, 2 * r);
+        Inc res = Inc.empty(v, k, 2 * r);
         Liner pr = new Liner(new GaloisField(k - 1).generatePlane());
         int[][] lines = pr.lines();
         for (int l = 0; l < lines.length; l++) {
@@ -169,7 +169,7 @@ public class IncFinderTest {
     private Inc resBlocks(int v, int k) {
         int r = v / k;
         int b = r + 1;
-        Inc res = Inc.empty(v, b);
+        Inc res = Inc.empty(v, k, b);
         for (int l = 0; l < r; l++) {
             for (int j = 0; j < k; j++) {
                 res.set(l, l * k + j);
@@ -184,7 +184,7 @@ public class IncFinderTest {
     private Inc squareBlocks(int k) {
         int v = k * k;
         int b = 2 * k + 1;
-        Inc res = Inc.empty(v, b);
+        Inc res = Inc.empty(v, k, b);
         for (int i = 0; i < k; i++) {
             for (int j = 0; j < k; j++) {
                 res.set(i, i * k + j);
@@ -263,7 +263,7 @@ public class IncFinderTest {
                 int partialSize = lineCount - left;
                 partials = new Inc[partialsCount];
                 for (int i = 0; i < partialsCount; i++) {
-                    Inc partial = Inc.empty(v, partialSize);
+                    Inc partial = Inc.empty(v, k, partialSize);
                     for (int j = 0; j < partialSize; j++) {
                         String[] pts = br.readLine().split(" ");
                         for (int l = 0; l < k; l++) {
@@ -297,7 +297,7 @@ public class IncFinderTest {
                 int partialSize = lineCount - left;
                 partials = new Inc[partialsCount];
                 for (int i = 0; i < partialsCount; i++) {
-                    Inc partial = Inc.empty(v, partialSize);
+                    Inc partial = Inc.empty(v, k, partialSize);
                     for (int j = 0; j < partialSize; j++) {
                         String[] pts = br.readLine().split(" ");
                         for (int l = 0; l < k; l++) {
@@ -399,7 +399,7 @@ public class IncFinderTest {
              InputStreamReader isr = new InputStreamReader(fis);
              BufferedReader br = new BufferedReader(isr)) {
             c: while (true) {
-                Inc res = Inc.empty(v, pl);
+                Inc res = Inc.empty(v, k, pl);
                 for (int ln = 0; ln < pl; ln++) {
                     String line = br.readLine();
                     if (line == null) {
