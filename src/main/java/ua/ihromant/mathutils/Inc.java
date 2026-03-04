@@ -40,7 +40,7 @@ public record Inc(FixBS[] lines, int v, int k) implements NautyGraph {
         if (v == pCard) {
             return this;
         } else {
-            FixBS[] newLines = IntStream.range(0, lines.length).mapToObj(i -> new FixBS(pCard)).toArray(FixBS[]::new);
+            FixBS[] newLines = IntStream.range(0, lines.length).mapToObj(_ -> new FixBS(pCard)).toArray(FixBS[]::new);
             int idx = 0;
             for (int pt = filtered.nextSetBit(0); pt >= 0; pt = filtered.nextSetBit(pt + 1)) {
                 for (int l = 0; l < lines.length; l++) {
