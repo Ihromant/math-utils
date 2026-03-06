@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
@@ -7,7 +8,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.stream.IntStream;
 
-public class Graph {
+public class Graph implements NautyGraph {
     private final FixBS[] neighbors;
 
     public Graph(int size) {
@@ -28,16 +29,8 @@ public class Graph {
         neighbors[b].clear(a);
     }
 
-    public int[] adjacent(int a) {
-        return neighbors[a].toArray();
-    }
-
     public FixBS neighbors(int a) {
         return neighbors[a];
-    }
-
-    public boolean connected(int a, int b) {
-        return neighbors[a].get(b);
     }
 
     public int size() {
@@ -135,60 +128,18 @@ public class Graph {
         triples.parallelStream().forEach(t -> bronKerbPivot(t[0], t[1], t[2], 1, cons));
     }
 
-    public void altMaxCliques(BiConsumer<FixBS, Integer> cons) {
-        SearchContext ctx = new SearchContext(neighbors.length);
-        int[] table = new int[neighbors.length];
-        for (int i = 0; i < neighbors.length; i++) {
-            table[i] = i;
-        }
-        search(ctx, table, neighbors.length, cons);
+    @Override
+    public int vCount() {
+        return neighbors.length;
     }
 
-    private static class SearchContext {
-        private final FixBS currCl;
-        private int clSize;
-        private final int[][] tmpList;
-        private int tmpCount = 0;
-
-        private SearchContext(int sz) {
-            this.currCl = new FixBS(sz);
-            this.tmpList = new int[sz + 2][];
-        }
-
-        private int[] tmpArr(int n) {
-            return tmpCount > 0 ? tmpList[--tmpCount] : new int[n];
-        }
-
-        private void putArr(int[] arr) {
-            tmpList[tmpCount++] = arr;
-        }
+    @Override
+    public boolean edge(int i, int j) {
+        return neighbors[i].get(j);
     }
 
-    private void search(SearchContext ctx, int[] table, int size, BiConsumer<FixBS, Integer> cons) {
-        if (size == 0) {
-            cons.accept(ctx.currCl, ctx.clSize);
-            return;
-        }
-
-        int[] newArr = ctx.tmpArr(neighbors.length);
-
-        for (int i = size - 1; i >= 0; i--) {
-            int v = table[i];
-
-            int p = 0;
-            for (int j = 0; j < i; j++) {
-                if (connected(v, table[j])) {
-                    newArr[p++] = table[j];
-                }
-            }
-
-            ctx.currCl.set(v);
-            ctx.clSize++;
-            search(ctx, newArr, p, cons);
-            ctx.currCl.clear(v);
-            ctx.clSize--;
-        }
-
-        ctx.putArr(newArr);
+    @Override
+    public long[] neighborsArr(int i) {
+        return neighbors[i].words();
     }
 }
