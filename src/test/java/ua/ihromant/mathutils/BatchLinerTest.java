@@ -1315,4 +1315,43 @@ public class BatchLinerTest {
     }
 
     private record Pr(GraphData gd, Liner lnr) {}
+
+    @Test
+    public void inspectGraph() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        Map<FixBS, Pr> lnrs = new ConcurrentHashMap<>();
+        int v = 81;
+        int k = 5;
+        String folder = "/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph";
+        for (File f : Objects.requireNonNull(new File(folder).listFiles())) {
+            if (!f.getName().contains("liners") && !f.getName().contains("single")) {
+                continue;
+            }
+            String content = Files.readString(f.toPath());
+            String[] lns = content.lines().toArray(String[]::new);
+            IntStream.range(0, lns.length).parallel().forEach(idx -> {
+                String l = lns[idx];
+                if (!l.contains("[[")) {
+                    return;
+                }
+                int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+                if (lines.length != (v * v - v) / (k * k - k)) {
+                    System.out.println("Wrong " + Arrays.deepToString(lines));
+                    return;
+                }
+                Liner lnr = new Liner(lines);
+                GraphData gd = lnr.graphData();
+                lnrs.putIfAbsent(new FixBS(gd.canonical()), new Pr(gd, lnr));
+            });
+        }
+        Map<Long, Long> quantities = new HashMap<>();
+        for (Pr pr : lnrs.values()) {
+            quantities.compute(pr.gd.autCount(), (_, ct) -> ct == null ? 1 : ct + 1);
+            Map<Integer, Integer> freq = pr.lnr.hyperbolicFreq();
+            if (freq.size() < k - 2) {
+                System.out.println(freq);
+            }
+        }
+        System.out.println(quantities);
+    }
 }
