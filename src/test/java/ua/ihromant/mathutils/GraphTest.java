@@ -221,7 +221,7 @@ public class GraphTest {
         StringBuilder liners = new StringBuilder();
         for (int i = 0; i < g.size(); i++) {
             LinerInfo info = processed.get(i);
-            liners.append(i).append(" ").append(Arrays.deepToString(fst.liner.lines())).append(System.lineSeparator());
+            liners.append(i).append(" ").append(Arrays.deepToString(info.liner.lines())).append(System.lineSeparator());
             graph.append(i);
             if (info.getBaseIdx() != null) {
                 graph.append(" (").append(info.getBaseIdx()).append(")");
