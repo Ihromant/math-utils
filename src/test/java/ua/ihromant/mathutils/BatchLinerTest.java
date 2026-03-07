@@ -1327,10 +1327,8 @@ public class BatchLinerTest {
             if (!f.getName().contains("liners") && !f.getName().contains("single")) {
                 continue;
             }
-            String content = Files.readString(f.toPath());
-            String[] lns = content.lines().toArray(String[]::new);
-            IntStream.range(0, lns.length).parallel().forEach(idx -> {
-                String l = lns[idx];
+            List<String> content = Files.readAllLines(f.toPath());
+            content.parallelStream().forEach(l -> {
                 if (!l.contains("[[")) {
                     return;
                 }
