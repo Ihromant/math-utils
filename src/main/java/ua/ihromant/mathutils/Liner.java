@@ -17,7 +17,6 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -626,12 +625,8 @@ public class Liner implements NautyGraph {
                     }
                 }
             }
-            List<FixBS> cList = Collections.synchronizedList(new ArrayList<>());
-            g.bronKerbPivotPar((clq, sz) -> {
-                if (sz == r - 1) {
-                    cList.add(clq.copy());
-                }
-            });
+            List<FixBS> cList = new ArrayList<>();
+            JNauty.instance().maximalCliques(g, r - 1, a -> cList.add(new FixBS(a)));
             int ncl = cList.size();
             int[][] cl = cList.stream().map(FixBS::toArray).toArray(int[][]::new);
             Graph g1 = new Graph(ncl);
@@ -642,12 +637,8 @@ public class Liner implements NautyGraph {
                     }
                 }
             }
-            List<FixBS> pList = Collections.synchronizedList(new ArrayList<>());
-            g1.bronKerbPivotPar((clq, sz) -> {
-                if (sz == k) {
-                    pList.add(clq.copy());
-                }
-            });
+            List<FixBS> pList = new ArrayList<>();
+            JNauty.instance().maximalCliques(g1, k, a -> pList.add(new FixBS(a)));
             for (FixBS p : pList) {
                 int[] part = p.toArray();
                 Set<FixBS> altComps = Arrays.stream(part).mapToObj(cList::get).collect(Collectors.toSet());
@@ -723,12 +714,8 @@ public class Liner implements NautyGraph {
                     }
                 }
             }
-            List<FixBS> cList = Collections.synchronizedList(new ArrayList<>());
-            g.bronKerbPivotPar((clq, sz) -> {
-                if (sz == r - 1) {
-                    cList.add(clq.copy());
-                }
-            });
+            List<FixBS> cList = new ArrayList<>();
+            JNauty.instance().maximalCliques(g, r - 1, a -> cList.add(new FixBS(a)));
             int ncl = cList.size();
             int[][] cl = cList.stream().map(FixBS::toArray).toArray(int[][]::new);
             Graph g1 = new Graph(ncl);
@@ -739,12 +726,8 @@ public class Liner implements NautyGraph {
                     }
                 }
             }
-            List<FixBS> pList = Collections.synchronizedList(new ArrayList<>());
-            g1.bronKerbPivotPar((clq, sz) -> {
-                if (sz == k) {
-                    pList.add(clq.copy());
-                }
-            });
+            List<FixBS> pList = new ArrayList<>();
+            JNauty.instance().maximalCliques(g1, k, a -> pList.add(new FixBS(a)));
             for (FixBS p : pList) {
                 int[] part = p.toArray();
                 Set<FixBS> altComps = Arrays.stream(part).mapToObj(cList::get).collect(Collectors.toSet());
@@ -789,11 +772,7 @@ public class Liner implements NautyGraph {
             }
         }
         List<FixBS> cList = new ArrayList<>();
-        g.bronKerbPivotPar((clq, sz) -> {
-            if (sz == rs) {
-                cList.add(clq.copy());
-            }
-        });
+        JNauty.instance().maximalCliques(g, rs, a -> cList.add(new FixBS(a)));
         int ncl = cList.size();
         Graph g1 = new Graph(ncl);
         for (int i = 0; i < ncl; i++) {
@@ -804,11 +783,7 @@ public class Liner implements NautyGraph {
             }
         }
         List<FixBS> pList = new ArrayList<>();
-        g1.bronKerbPivotPar((clq, sz) -> {
-            if (sz == r) {
-                pList.add(clq.copy());
-            }
-        });
+        JNauty.instance().maximalCliques(g1, r, a -> pList.add(new FixBS(a)));
         return pList.stream().map(p -> p.stream().mapToObj(i -> cList.get(i).toArray()).toArray(int[][]::new)).toArray(int[][][]::new);
     }
 
