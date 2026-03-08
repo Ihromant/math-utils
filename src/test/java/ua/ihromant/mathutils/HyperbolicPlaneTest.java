@@ -1,14 +1,20 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
 import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -1016,87 +1022,171 @@ public class HyperbolicPlaneTest {
         return bs;
     }
 
-
-    private static final String str = "[[\"0000\", \"0001\", \"0112\", \"0222\", \"0322\", \"0412\"], [\"0000\", \"0010\", \"1402\", \"2312\", \"3212\", \"4102\"], [\"0000\", \"0011\", \"1110\", \"2021\", \"3021\", \"4410\"], [\"0000\", \"0012\", \"0120\", \"0420\", \"2002\", \"3002\"], [\"0000\", \"0101\", \"1102\", \"1421\", \"2320\", \"3022\"], [\"0000\", \"0201\", \"1012\", \"2202\", \"2311\", \"4110\"], [\"0000\", \"0401\", \"2022\", \"3220\", \"4121\", \"4402\"], [\"0000\", \"0301\", \"1410\", \"3211\", \"3302\", \"4012\"], [\"0000\", \"0102\", \"2222\", \"3121\", \"4001\", \"4320\"], [\"0000\", \"0202\", \"1211\", \"3001\", \"3110\", \"4412\"], [\"0000\", \"0121\", \"2401\", \"3120\", \"3422\", \"4202\"], [\"0000\", \"0311\", \"1201\", \"2102\", \"4212\", \"4310\"], [\"0000\", \"0111\", \"1122\", \"3222\", \"4211\", \"4300\"], [\"0000\", \"0221\", \"1412\", \"2212\", \"3100\", \"3421\"], [\"0000\", \"1400\", \"2300\", \"3200\", \"4100\", \"infty\"]]";
-
     @Test
-    public void test226_6() {
-        ObjectMapper om = new ObjectMapper();
-        String[][] arrs = om.readValue(str, String[][].class);
-        System.out.println(Arrays.deepToString(arrs));
-        int[][][] bases = Arrays.stream(arrs).map(bl -> Arrays.stream(bl).map(str -> {
-            if ("infty".equals(str)) {
-                return null;
-            }
-            int[] result = new int[4];
-            for (int i = 0; i < result.length; i++) {
-                result[i] = Integer.parseInt(str.substring(i, i + 1));
-            }
-            return result;
-        }).toArray(int[][]::new)).toArray(int[][][]::new);
-        System.out.println(Arrays.deepToString(bases));
-        Set<Set<List<Integer>>> blocks = new HashSet<>();
-        for (int[][] baseBlock : bases) {
-            for (int x0 = 0; x0 < 5; x0++) {
-                for (int x1 = 0; x1 < 5; x1++) {
-                    for (int x2 = 0; x2 < 3; x2++) {
-                        for (int x3 = 0; x3 < 3; x3++) {
-                            int[] multiplier = new int[]{x0, x1, x2, x3};
-                            Set<List<Integer>> block = new HashSet<>();
-                            for (int[] el : baseBlock) {
-                                if (el != null) {
-                                    int[] mult = mul(multiplier, el);
-                                    List<Integer> els = Arrays.stream(mult).boxed().toList();
-                                    block.add(els);
-                                } else {
-                                    block.add(null);
+    public void test226_6() throws IOException {
+        ObjectMapper om = JsonMapper.builder().enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS).build();
+        List<String> lns = Files.readAllLines(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/ref/6-226-SG(900,92).txt"));
+        for (String str : lns) {
+            int[][] arr = om.readValue(str, int[][].class);
+            //System.out.println(Arrays.deepToString(arr));
+            int[][][] bases = Arrays.stream(arr).map(bl -> Arrays.stream(bl).mapToObj(el -> {
+                if (el == -1) {
+                    return null;
+                }
+                int[] result = new int[4];
+                String s = Integer.toString(el);
+                s = "0".repeat(4 - s.length()) + s;
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = Integer.parseInt(s.substring(i, i + 1));
+                }
+                return result;
+            }).toArray(int[][]::new)).toArray(int[][][]::new);
+            //System.out.println(Arrays.deepToString(bases));
+            Set<Set<List<Integer>>> blocks = new HashSet<>();
+            for (int[][] baseBlock : bases) {
+                for (int x0 = 0; x0 < 5; x0++) {
+                    for (int x1 = 0; x1 < 5; x1++) {
+                        for (int x2 = 0; x2 < 3; x2++) {
+                            for (int x3 = 0; x3 < 3; x3++) {
+                                int[] multiplier = new int[]{x0, x1, x2, x3};
+                                Set<List<Integer>> block = new HashSet<>();
+                                for (int[] el : baseBlock) {
+                                    if (el != null) {
+                                        int[] mult = mul(multiplier, el);
+                                        List<Integer> els = Arrays.stream(mult).boxed().toList();
+                                        block.add(els);
+                                    } else {
+                                        block.add(null);
+                                    }
                                 }
+                                blocks.add(block);
                             }
-                            blocks.add(block);
                         }
                     }
                 }
             }
-        }
-        System.out.println(blocks.size());
-        Set<List<Integer>> unique = blocks.stream().flatMap(Set::stream).collect(Collectors.toSet());
-        System.out.println(unique.size());
-        List<List<Integer>> unList = unique.stream().toList();
-        Map<List<Integer>, Integer> indexes = new HashMap<>();
-        for (int i = 0; i < unList.size(); i++) {
-            indexes.put(unList.get(i), i);
-        }
-        boolean[][] usedPairs = new boolean[indexes.size()][indexes.size()];
-        for (int i = 0; i < indexes.size(); i++) {
-            usedPairs[i][i] = true;
-        }
-        for (Set<List<Integer>> line : blocks) {
-            for (List<Integer> fEl : line) {
-                for (List<Integer> sEl : line) {
-                    if (Objects.equals(fEl, sEl)) {
-                        continue;
+            //System.out.println(blocks.size());
+            Set<List<Integer>> unique = blocks.stream().flatMap(Set::stream).collect(Collectors.toSet());
+            //System.out.println(unique.size());
+            List<List<Integer>> unList = unique.stream().toList();
+            Map<List<Integer>, Integer> indexes = new HashMap<>();
+            for (int i = 0; i < unList.size(); i++) {
+                indexes.put(unList.get(i), i);
+            }
+            boolean[][] usedPairs = new boolean[indexes.size()][indexes.size()];
+            for (int i = 0; i < indexes.size(); i++) {
+                usedPairs[i][i] = true;
+            }
+            for (Set<List<Integer>> line : blocks) {
+                for (List<Integer> fEl : line) {
+                    for (List<Integer> sEl : line) {
+                        if (Objects.equals(fEl, sEl)) {
+                            continue;
+                        }
+                        int fIndex = indexes.get(fEl);
+                        int sIndex = indexes.get(sEl);
+                        if (usedPairs[fIndex][sIndex]) {
+                            throw new IllegalStateException("Error");
+                        }
+                        usedPairs[fIndex][sIndex] = true;
                     }
-                    int fIndex = indexes.get(fEl);
-                    int sIndex = indexes.get(sEl);
-                    if (usedPairs[fIndex][sIndex]) {
+                }
+            }
+            for (int i = 0; i < usedPairs.length; i++) {
+                for (int j = 0; j < usedPairs.length; j++) {
+                    if (!usedPairs[i][j]) {
                         throw new IllegalStateException("Error");
                     }
-                    usedPairs[fIndex][sIndex] = true;
                 }
             }
-        }
-        for (int i = 0; i < usedPairs.length; i++) {
-            for (int j = 0; j < usedPairs.length; j++) {
-                if (!usedPairs[i][j]) {
-                    throw new IllegalStateException("Error");
+            CyclicProduct left = new CyclicProduct(5, 5, 3);
+            SemiDirectProduct sp = new SemiDirectProduct(left, new CyclicGroup(3));
+            List<int[]> converted = new ArrayList<>();
+            for (int i = 0; i < bases.length; i++) {
+                int[][] base = bases[i];
+                int[] conv = new int[base.length];
+                for (int j = 0; j < base.length; j++) {
+                    int[] quad = base[j];
+                    if (quad == null) {
+                        conv[j] = 225;
+                    } else {
+                        conv[j] = sp.from(left.fromArr(quad), quad[3]);
+                    }
+                }
+                converted.add(conv);
+            }
+            //System.out.println(Arrays.deepToString(converted.toArray(int[][]::new)));
+            //System.out.println(lnr.hyperbolicFreq());
+            List<int[]> rightBases = new ArrayList<>();
+            for (int[] base : converted) {
+                int[] right = Arrays.stream(base).map(i -> i == sp.order() ? i : sp.inv(i)).toArray();
+                rightBases.add(right);
+            }
+            List<int[]> lnz = new ArrayList<>();
+            int infIdx = -1;
+            for (int idx = 0; idx < rightBases.size(); idx++) {
+                int[] base = rightBases.get(idx);
+                Set<FixBS> un = rightShifts(base, sp);
+                FixBS other = un.stream().min((a, b) -> Combinatorics.compareArr(a.toArray(), b.toArray())).orElseThrow();
+                if (other.get(sp.order())) {
+                    infIdx = idx;
+                }
+                int[] min = other.toArray();
+                rightBases.set(idx, min);
+                //System.out.println(Arrays.toString(base) + " " + un.size());
+                un.forEach(a -> lnz.add(a.toArray()));
+            }
+            if (infIdx != rightBases.size() - 1) {
+                int[] infArr = rightBases.get(infIdx);
+                rightBases.set(infIdx, rightBases.getLast());
+                rightBases.set(rightBases.size() - 1, infArr);
+            }
+            Liner lnr = new Liner(lnz.toArray(int[][]::new));
+            //System.out.println(lnr.hyperbolicFreq());
+            StringBuilder sb = new StringBuilder("\\item $");
+            for (int i = 0; i < rightBases.size(); i++) {
+                int[] rm = rightBases.get(i);
+                sb.append("\\{");
+                sb.append(Arrays.stream(rm).mapToObj(el -> {
+                    if (el == sp.order()) {
+                        return "\\infty";
+                    }
+                    int[] a = sp.to(el);
+                    return Arrays.stream(left.toArr(a[0])).mapToObj(Integer::toString).collect(Collectors.joining()) + a[1];
+                }).collect(Collectors.joining(", ")));
+                sb.append("\\}, ");
+                if (i % 2 == 1) {
+                    sb.append("\\newline ");
                 }
             }
+            sb.append("$");
+            System.out.println(sb);
         }
     }
 
-    private static final int[][] zero = {{1, 0}, {0, 1}};
-    private static final int[][] single = {{4, 1}, {4, 0}};
-    private static final int[][] sqr = {{0, 4}, {1, 4}};
+    private Set<FixBS> leftShifts(int[] line, Group g) {
+        Set<FixBS> result = new HashSet<>();
+        for (int i = 0; i < g.order(); i++) {
+            FixBS fbs = new FixBS(g.order() + 1);
+            for (int pt : line) {
+                fbs.set(pt == g.order() ? pt : g.op(i, pt));
+            }
+            result.add(fbs);
+        }
+        return result;
+    }
+
+    private Set<FixBS> rightShifts(int[] line, Group g) {
+        Set<FixBS> result = new HashSet<>();
+        for (int i = 0; i < g.order(); i++) {
+            FixBS fbs = new FixBS(g.order() + 1);
+            for (int pt : line) {
+                fbs.set(pt == g.order() ? pt : g.op(pt, i));
+            }
+            result.add(fbs);
+        }
+        return result;
+    }
 
     private static int[] mul(int[] x, int[] y) {
         int multiplier = x[3];
