@@ -9,6 +9,7 @@ import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -18,6 +19,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -1153,6 +1155,73 @@ public class HyperbolicPlaneTest {
                     }
                     int[] a = sp.to(el);
                     return Arrays.stream(left.toArr(a[0])).mapToObj(Integer::toString).collect(Collectors.joining()) + a[1];
+                }).collect(Collectors.joining(", ")));
+                sb.append("\\}, ");
+                if (i % 2 == 1) {
+                    sb.append("\\newline ");
+                }
+            }
+            sb.append("$");
+            System.out.println(sb);
+        }
+    }
+
+    @Test
+    public void test441_6() throws IOException {
+        ObjectMapper om = JsonMapper.builder().enable(JsonReadFeature.ALLOW_LEADING_ZEROS_FOR_NUMBERS).build();
+        List<String> lns = Files.readAllLines(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/ref/6-441-SG(1764,133).txt"));
+        for (String str : lns) {
+            int[][] arr = om.readValue(str, int[][].class);
+            //System.out.println(Arrays.deepToString(arr));
+            int[][][] bases = Arrays.stream(arr).map(bl -> Arrays.stream(bl).mapToObj(el -> {
+                int[] result = new int[4];
+                String s = Integer.toString(el);
+                s = "0".repeat(4 - s.length()) + s;
+                for (int i = 0; i < result.length; i++) {
+                    result[i] = Integer.parseInt(s.substring(i, i + 1));
+                }
+                return result;
+            }).toArray(int[][]::new)).toArray(int[][][]::new);
+            SemiDirectProduct sp = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
+            GroupProduct gp = new GroupProduct(sp, sp);
+            List<int[]> converted = new ArrayList<>();
+            for (int i = 0; i < bases.length; i++) {
+                int[][] base = bases[i];
+                int[] conv = new int[base.length];
+                for (int j = 0; j < base.length; j++) {
+                    int[] quad = base[j];
+                    conv[j] = gp.fromArr(sp.from(quad[0], quad[1]), sp.from(quad[2], quad[3]));
+                }
+                converted.add(conv);
+            }
+            //System.out.println(Arrays.deepToString(converted.toArray(int[][]::new)));
+            //System.out.println(lnr.hyperbolicFreq());
+            List<int[]> rightBases = new ArrayList<>();
+            for (int[] base : converted) {
+                int[] right = Arrays.stream(base).map(i -> i == gp.order() ? i : gp.inv(i)).toArray();
+                rightBases.add(right);
+            }
+            List<int[]> lnz = new ArrayList<>();
+            for (int idx = 0; idx < rightBases.size(); idx++) {
+                int[] base = rightBases.get(idx);
+                Set<FixBS> un = rightShifts(base, gp);
+                FixBS other = un.stream().min((a, b) -> Combinatorics.compareArr(a.toArray(), b.toArray())).orElseThrow();
+                int[] min = other.toArray();
+                rightBases.set(idx, min);
+                //System.out.println(Arrays.toString(base) + " " + un.size());
+                un.forEach(a -> lnz.add(a.toArray()));
+            }
+            rightBases.sort(Comparator.comparingInt(a -> -rightShifts(a, gp).size()));
+            Liner lnr = new Liner(lnz.toArray(int[][]::new));
+            //System.out.println(lnr.hyperbolicFreq());
+            StringBuilder sb = new StringBuilder("\\item $");
+            for (int i = 0; i < rightBases.size(); i++) {
+                int[] rm = rightBases.get(i);
+                sb.append("\\{");
+                sb.append(Arrays.stream(rm).mapToObj(el -> {
+                    int[] a = gp.toArr(el);
+                    return Arrays.stream(sp.to(a[0])).mapToObj(Integer::toString).collect(Collectors.joining())
+                            + Arrays.stream(sp.to(a[1])).mapToObj(Integer::toString).collect(Collectors.joining());
                 }).collect(Collectors.joining(", ")));
                 sb.append("\\}, ");
                 if (i % 2 == 1) {
