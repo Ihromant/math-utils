@@ -297,7 +297,7 @@ public class GraphTest {
     public void generateLargeComponent() throws IOException {
         int v = 65;
         int k = 5;
-        int counter = 20000;
+        int counter = 200000;
         ObjectMapper om = new ObjectMapper();
         String content = Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/base.txt"));
         List<SLiner> basePlanes = content.lines().map(l -> {

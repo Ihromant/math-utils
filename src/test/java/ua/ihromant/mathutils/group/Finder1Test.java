@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.group;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
@@ -40,14 +41,13 @@ public class Finder1Test {
                     }
                 }
             }
-            g.bronKerbPivot((arr, sz) -> {
-                if (sz == left) {
-                    int[][] lines = Stream.concat(Arrays.stream(l.lines()), Arrays.stream(arr.toArray()).mapToObj(possible::get))
-                                    .toArray(int[][]::new);
-                    Liner full = new Liner(v, lines);
-                    if (unique.putIfAbsent(l.getCanonical(), full) == null) {
-                        System.out.println(Arrays.deepToString(full.lines()));
-                    }
+            JNauty.instance().maximalCliques(g, left, a -> {
+                FixBS arr = new FixBS(a);
+                int[][] lines = Stream.concat(Arrays.stream(l.lines()), Arrays.stream(arr.toArray()).mapToObj(possible::get))
+                        .toArray(int[][]::new);
+                Liner full = new Liner(v, lines);
+                if (unique.putIfAbsent(new FixBS(full.graphData().canonical()), full) == null) {
+                    System.out.println(Arrays.deepToString(full.lines()));
                 }
             });
             System.out.println(possible.size());
