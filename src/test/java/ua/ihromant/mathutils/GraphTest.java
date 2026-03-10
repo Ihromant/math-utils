@@ -345,7 +345,7 @@ public class GraphTest {
                 continue;
             }
             graph.connect(info.getGraphIdx(), info.getGraphIdx());
-            SLiner lnr = SLiner.byCanon(info.getCanon(), v, k);
+            SLiner lnr = SLiner.bySmallCanon(info.getCanon(), v, k);
             List<SLiner> para = lnr.paraModificationsAlt();
             Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
             para.stream().parallel().forEach(l -> unique.putIfAbsent(l.smallCanon(), l));
