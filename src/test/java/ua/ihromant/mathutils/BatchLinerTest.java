@@ -36,6 +36,7 @@ import java.util.BitSet;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -229,16 +230,62 @@ public class BatchLinerTest {
     }
 
     public static List<Liner> parseGAP(int v, int k) throws IOException {
-        String s = Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-" + v + "-" + k + "-1.des"));
-        ObjectMapper om = new ObjectMapper();
-        List<Liner> planes = new ArrayList<>();
-        while (true) {
-            int fIdx = s.indexOf("blocks :=");
-            if (fIdx < 0) {
-                break;
+        Iterator<Liner> iter = new GAPParserIterator(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/2-" + v + "-" + k + "-1.des"));
+        List<Liner> result = new ArrayList<>();
+        while (iter.hasNext()) {
+            result.add(iter.next());
+        }
+        return result;
+    }
+
+    private static class GAPParserIterator implements Iterator<Liner> {
+        private final BufferedReader reader;
+        private final StringBuilder buffer = new StringBuilder();
+        private final ObjectMapper om = new ObjectMapper();
+
+        private Liner next;
+        private boolean finished;
+
+        private GAPParserIterator(Path path) {
+            try {
+                this.reader = Files.newBufferedReader(path);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
-            int lIdx = s.indexOf("isBinary");
-            String bl = s.substring(fIdx + "blocks :=".length(), lIdx);
+            fetch();
+        }
+
+        private void fetch() {
+            next = null;
+
+            try {
+                while (next == null && !finished) {
+                    String line = reader.readLine();
+
+                    if (line == null) {
+                        finished = true;
+                        reader.close();
+                        break;
+                    }
+
+                    next = tryExtract(line);
+                }
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private Liner tryExtract(String line) {
+            buffer.append(line);
+            if (!line.contains("isBinary")) {
+                return null;
+            }
+            int fIdx = buffer.indexOf("blocks :=");
+            if (fIdx < 0) {
+                return null;
+            }
+            int lIdx = buffer.lastIndexOf("isBinary");
+            String bl = buffer.substring(fIdx + "blocks :=".length(), lIdx);
             bl = bl.substring(0, bl.lastIndexOf(','));
             int[][] lines = om.readValue(bl, int[][].class);
             Arrays.stream(lines).forEach(b -> {
@@ -246,10 +293,24 @@ public class BatchLinerTest {
                     b[i]--;
                 }
             });
-            planes.add(new Liner(v, lines));
-            s = s.substring(lIdx + 20);
+            buffer.setLength(0);
+            return new Liner(lines);
         }
-        return planes;
+
+        @Override
+        public boolean hasNext() {
+            return next != null;
+        }
+
+        @Override
+        public Liner next() {
+            if (next == null) {
+                throw new IllegalStateException();
+            }
+            Liner result = next;
+            fetch();
+            return result;
+        }
     }
 
     @Test
