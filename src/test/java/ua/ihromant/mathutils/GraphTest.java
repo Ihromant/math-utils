@@ -89,10 +89,10 @@ public class GraphTest {
         List<SLiner> basePlanes = readSLiners(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
-        basePlanes.parallelStream().forEach(SLiner::graphData);
+        basePlanes.parallelStream().forEach(SLiner::smallCanon);
         for (int i = 0; i < basePlanes.size(); i++) {
             SLiner lnr = basePlanes.get(i);
-            FixBS canon = new FixBS(lnr.graphData().canonical());
+            FixBS canon = lnr.smallCanon();
             LinerInfo info = new LinerInfo().setLiner(lnr).setGraphIdx(i);
             liners.put(canon, info);
             stack.add(info);
@@ -109,10 +109,7 @@ public class GraphTest {
             SLiner lnr = info.getLiner();
             List<SLiner> para = lnr.paraModificationsAlt();
             Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
-            para.stream().parallel().forEach(l -> {
-                GraphData gd = l.graphData();
-                unique.putIfAbsent(new FixBS(gd.canonical()), l);
-            });
+            para.stream().parallel().forEach(l -> unique.putIfAbsent(l.smallCanon(), l));
             for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                 LinerInfo parInfo = liners.get(e.getKey());
                 if (parInfo == null) {
@@ -138,10 +135,10 @@ public class GraphTest {
         FixBS done = readDone(basePlanes.size(), v, k);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
-        basePlanes.parallelStream().forEach(SLiner::graphData);
+        basePlanes.parallelStream().forEach(SLiner::smallCanon);
         for (int i = 0; i < basePlanes.size(); i++) {
             SLiner lnr = basePlanes.get(i);
-            FixBS canon = new FixBS(lnr.graphData().canonical());
+            FixBS canon = lnr.smallCanon();
             LinerInfo info = new LinerInfo().setLiner(lnr).setBaseIdx(i).setProcessed(done.get(i));
             liners.put(canon, info);
             stack.add(info);
@@ -167,10 +164,7 @@ public class GraphTest {
                 SLiner lnr = info.getLiner();
                 List<SLiner> para = lnr.paraModificationsAlt();
                 Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
-                para.stream().parallel().forEach(l -> {
-                    GraphData gd = l.graphData();
-                    unique.putIfAbsent(new FixBS(gd.canonical()), l);
-                });
+                para.stream().parallel().forEach(l -> unique.putIfAbsent(l.smallCanon(), l));
                 for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                     LinerInfo parInfo = liners.get(e.getKey());
                     if (parInfo == null) {
@@ -305,10 +299,10 @@ public class GraphTest {
             return new SLiner(lines);
         }).toList();
         Map<FixBS, SLinerInfo> syncLiners = new ConcurrentHashMap<>();
-        basePlanes.parallelStream().forEach(SLiner::graphData);
+        basePlanes.parallelStream().forEach(SLiner::smallCanon);
         IntStream.range(0, basePlanes.size()).parallel().forEach(i -> {
             SLiner lnr = basePlanes.get(i);
-            FixBS canon = new FixBS(lnr.graphData().canonical());
+            FixBS canon = lnr.smallCanon();
             SLinerInfo info = new SLinerInfo().setBaseIdx(i).setCanon(canon.words());
             syncLiners.put(canon, info);
         });
@@ -334,7 +328,7 @@ public class GraphTest {
             String l = reached.get(i);
             short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
             SLiner lnr = new SLiner(lines);
-            SLinerInfo info = syncLiners.computeIfAbsent(new FixBS(lnr.graphData().canonical()), ky -> new SLinerInfo().setCanon(ky.words()));
+            SLinerInfo info = syncLiners.computeIfAbsent(lnr.smallCanon(), ky -> new SLinerInfo().setCanon(ky.words()));
             info.setGraphIdx(i);
             info.setProcessed(i < lns.length);
             compLiners[i] = info;
@@ -354,10 +348,7 @@ public class GraphTest {
             SLiner lnr = SLiner.byCanon(info.getCanon(), v, k);
             List<SLiner> para = lnr.paraModificationsAlt();
             Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
-            para.stream().parallel().forEach(l -> {
-                GraphData gd = l.graphData();
-                unique.putIfAbsent(new FixBS(gd.canonical()), l);
-            });
+            para.stream().parallel().forEach(l -> unique.putIfAbsent(l.smallCanon(), l));
             for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                 SLinerInfo parInfo = liners.computeIfAbsent(e.getKey(), ky -> new SLinerInfo().setCanon(ky.words()));
                 if (parInfo.getGraphIdx() == null) {

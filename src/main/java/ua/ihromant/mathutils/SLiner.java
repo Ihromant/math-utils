@@ -18,6 +18,7 @@ public class SLiner implements NautyGraph {
     private final FixBS[] flags;
     private final short[][] beams;
     private GraphData gd;
+    private FixBS smallCanon;
 
     public SLiner(short[][] lines) {
         this(Arrays.stream(lines).mapToInt(l -> l[l.length - 1]).max().orElseThrow() + 1, lines);
@@ -95,6 +96,18 @@ public class SLiner implements NautyGraph {
         for (int i = 0; i < b; i++) {
             long[] arr = new long[cnt];
             System.arraycopy(canon, (v + i) * sh, arr, 0, cnt);
+            inc[i] = new FixBS(arr);
+        }
+        return new SLiner(inc);
+    }
+
+    public static SLiner bySmallCanon(long[] canon, int v, int k) {
+        int b = (v * v - v) / (k * k - k);
+        int cnt = (v + 63) / 64;
+        FixBS[] inc = new FixBS[b];
+        for (int i = 0; i < b; i++) {
+            long[] arr = new long[cnt];
+            System.arraycopy(canon, i * cnt, arr, 0, cnt);
             inc[i] = new FixBS(arr);
         }
         return new SLiner(inc);
@@ -246,10 +259,25 @@ public class SLiner implements NautyGraph {
         }
     }
 
-    public GraphData graphData() {
+    private GraphData graphData() {
         if (gd == null) {
             gd = JNauty.instance().traces(this);
         }
         return gd;
+    }
+
+    public FixBS smallCanon() {
+        if (smallCanon == null) {
+            int sz = vCount();
+            int sh = (sz + 63) >>> 6;
+            int take = (pointCount + 63) >>> 6;
+            long[] oldCanon = graphData().canonical();
+            long[] result = new long[lines.length * take];
+            for (int i = 0; i < lines.length; i++) {
+                System.arraycopy(oldCanon, (i + pointCount) * sh, result, i * take, take);
+            }
+            smallCanon = new FixBS(result);
+        }
+        return smallCanon;
     }
 }

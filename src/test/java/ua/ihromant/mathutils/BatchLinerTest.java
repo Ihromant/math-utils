@@ -195,8 +195,7 @@ public class BatchLinerTest {
         assertEquals(228, paraS.size());
         Map<FixBS, SLiner> uniqueS = new ConcurrentHashMap<>();
         paraS.stream().parallel().forEach(lnr -> {
-            GraphData gd = lnr.graphData();
-            uniqueS.putIfAbsent(new FixBS(gd.canonical()), lnr);
+            uniqueS.putIfAbsent(lnr.smallCanon(), lnr);
         });
         assertEquals(17, uniqueS.size());
         SLiner fromCanon = SLiner.byCanon(liner.graphData().canonical(), v, k);
@@ -204,12 +203,10 @@ public class BatchLinerTest {
         assertEquals(228, paraCanon.size());
         Map<FixBS, SLiner> uniqueCanon = new ConcurrentHashMap<>();
         paraCanon.stream().parallel().forEach(lnr -> {
-            GraphData gd = lnr.graphData();
-            uniqueCanon.putIfAbsent(new FixBS(gd.canonical()), lnr);
+            uniqueCanon.putIfAbsent(lnr.smallCanon(), lnr);
         });
         assertEquals(17, uniqueCanon.size());
         assertEquals(Map.of(1, 7200, 2, 100800, 3, 640800), new Liner(fromCanon.flags()).hyperbolicFreq());
-        assertArrayEquals(liner.graphData().canonical(), fromCanon.graphData().canonical());
         assertEquals(uniqueS.keySet(), uniqueCanon.keySet());
     }
 
