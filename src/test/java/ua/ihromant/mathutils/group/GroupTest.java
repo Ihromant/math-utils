@@ -301,7 +301,7 @@ public class GroupTest {
         Group g = new PermutationGroup(5, true);
         List<SubGroup> sgs = g.subGroups();
         SubGroup fst = sgs.stream().filter(sg -> sg.order() == 3).findFirst().orElseThrow();
-        assertEquals(20, fst.leftCosets().size());
-        assertEquals(20, fst.rightCosets().size());
+        assertEquals(20, fst.leftCosets().length);
+        assertEquals(20, fst.rightCosets().length);
     }
 }

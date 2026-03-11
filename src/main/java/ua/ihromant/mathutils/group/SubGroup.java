@@ -90,9 +90,10 @@ public class SubGroup implements Group {
         return "SubGroup[" + group.name() + ", " + elems + ']';
     }
 
-    public List<FixBS> leftCosets() {
+    public FixBS[] leftCosets() {
         int ord = group.order();
-        List<FixBS> result = new ArrayList<>();
+        FixBS[] result = new FixBS[ord / arr.length];
+        int cnt = 0;
         ex: for (int g = 0; g < ord; g++) {
             FixBS cos = new FixBS(ord);
             for (int h : arr) {
@@ -102,14 +103,15 @@ public class SubGroup implements Group {
                 }
                 cos.set(mul);
             }
-            result.add(cos);
+            result[cnt++] = cos;
         }
         return result;
     }
 
-    public List<FixBS> rightCosets() {
+    public FixBS[] rightCosets() {
         int ord = group.order();
-        List<FixBS> result = new ArrayList<>();
+        FixBS[] result = new FixBS[ord / arr.length];
+        int cnt = 0;
         ex: for (int g = 0; g < ord; g++) {
             FixBS cos = new FixBS(ord);
             for (int h : arr) {
@@ -119,7 +121,7 @@ public class SubGroup implements Group {
                 }
                 cos.set(mul);
             }
-            result.add(cos);
+            result[cnt++] = cos;
         }
         return result;
     }

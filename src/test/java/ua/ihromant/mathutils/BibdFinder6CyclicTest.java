@@ -1017,7 +1017,7 @@ public class BibdFinder6CyclicTest {
         if (shortDes.isEmpty()) {
             return;
         }
-        StabState[] stabilized = getStabilized(k, table);
+        StabState[] stabilized = getStabilizedAlt(k, table);
         int[][] auths = table.auth();
         System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
         boolean even = isEven(k, ord);
@@ -1062,6 +1062,7 @@ public class BibdFinder6CyclicTest {
         }
         System.out.println("Initial size " + initial.size() + " " + GroupIndex.identify(group) + " " + (ord + fixed) + " " + k + " auths: " + auths.length);
         AtomicInteger ai = new AtomicInteger();
+        Set<FixBS> un = ConcurrentHashMap.newKeySet();
         initial.stream().parallel().forEach(lst -> {
             FixBS ftr = lst.filter;
             int bn = (ord - 1 - ftr.cardinality()) / k / (k - 1);
@@ -1074,7 +1075,9 @@ public class BibdFinder6CyclicTest {
                 int[][] base = Stream.concat(Arrays.stream(lst.curr).map(st -> st.block.toArray()),
                         Arrays.stream(des)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
                 Liner lnr = generateLiner(table, fixed, k, base);
-                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(lst.curr).map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
+                if (un.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount() + " " + lnr.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(lst.curr).map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
+                }
                 return true;
             };
             if (bn == 0) {
@@ -1089,5 +1092,49 @@ public class BibdFinder6CyclicTest {
                 System.out.println(inc);
             }
         });
+    }
+
+    private static StabState[] getStabilizedAlt(int k, Group table) {
+        List<SubGroup> sgs = table.subGroups();
+        int ord = table.order();
+        int[] suitable = IntStream.rangeClosed(2, k).filter(i -> k % i == 0 && ord % i == 0).toArray();
+        Map<FixBS, StabState> states = new HashMap<>();
+        for (int sOrd : suitable) {
+            List<SubGroup> subs = sgs.stream().filter(sg -> sg.order() == sOrd).toList();
+            for (SubGroup sg : subs) {
+                FixBS[] cosets = sg.rightCosets();
+                FixBS[] arr = new FixBS[k / sOrd];
+                arr[0] = cosets[0];
+                findStab(cosets, arr, 1, 1, a -> {
+                    FixBS block = new FixBS(ord);
+                    for (FixBS f : a) {
+                        block.or(f);
+                    }
+                    FixBS filter = new FixBS(ord);
+                    for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
+                        for (int j = block.nextSetBit(i + 1); j >= 0; j = block.nextSetBit(j + 1)) {
+                            filter.set(table.op(table.inv(i), j));
+                            filter.set(table.op(table.inv(j), i));
+                        }
+                    }
+                    if (filter.cardinality() == k * (k - 1) / sOrd) {
+                        states.compute(filter, (_, v) -> v == null ? StabState.fromBlock(table, k, block)
+                                : v.block.compareTo(block) < 0 ? v : StabState.fromBlock(table, k, block));
+                    }
+                });
+            }
+        }
+        return states.values().toArray(StabState[]::new);
+    }
+
+    private static void findStab(FixBS[] cosets, FixBS[] arr, int from, int idx, Consumer<FixBS[]> cons) {
+        if (idx == arr.length) {
+            cons.accept(arr);
+            return;
+        }
+        for (int i = from; i < cosets.length; i++) {
+            arr[idx] = cosets[i];
+            findStab(cosets, arr, i + 1, idx + 1, cons);
+        }
     }
 }
