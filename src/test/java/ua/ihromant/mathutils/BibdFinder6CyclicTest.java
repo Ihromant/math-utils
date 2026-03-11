@@ -3,6 +3,7 @@ package ua.ihromant.mathutils;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.PermutationGroup;
@@ -982,5 +983,111 @@ public class BibdFinder6CyclicTest {
                 BatchLinerTest.orbits(lnr, new SubGroup(perm, sg.elems()), 0);
             }
         }
+    }
+
+    private static void generateAlt(Group group, int fixed, int k) throws IOException {
+        Group table = group.asTable();
+        int ord = table.order();
+        FixBS orderTwo = orderTwo(table);
+        List<Des> shortDes = new ArrayList<>();
+        if (fixed == 0) {
+            shortDes.add(Des.empty(ord, 0));
+        } else {
+            StabState[] base = table.subGroups().stream().filter(sg -> sg.order() == k - 1)
+                    .map(sg -> StabState.fromBlock(table, k, sg.elems())).toArray(StabState[]::new);
+            Graph g = new Graph(base.length);
+            for (int i = 0; i < base.length; i++) {
+                for (int j = i + 1; j < base.length; j++) {
+                    if (!base[i].filter.intersects(base[j].filter)) {
+                        g.connect(i, j);
+                    }
+                }
+            }
+            boolean odd = k % 2 == 1 && ord % 2 == 0;
+            JNauty.instance().cliques(g, fixed, fixed, a -> {
+                int[] idx = new FixBS(a).toArray();
+                FixBS ftr = new FixBS(ord);
+                StabState[] arr = Arrays.stream(idx).mapToObj(i -> base[i]).peek(st -> ftr.or(st.filter)).toArray(StabState[]::new);
+                if (odd && !orderTwo.diff(ftr).isEmpty()) {
+                    return;
+                }
+                shortDes.add(new Des(arr, ftr, null, 0));
+            });
+        }
+        if (shortDes.isEmpty()) {
+            return;
+        }
+        StabState[] stabilized = getStabilized(k, table);
+        int[][] auths = table.auth();
+        System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
+        boolean even = isEven(k, ord);
+        List<Des> initial = Collections.synchronizedList(new ArrayList<>());
+        shortDes.parallelStream().forEach(sh -> {
+            int leftFilter = ord - 1 - sh.filter.cardinality();
+            if (leftFilter % (k * (k - 1)) == 0 && Arrays.stream(auths).noneMatch(auth -> bigger(sh.curr, auth, table))) {
+                initial.add(sh);
+            }
+            StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(sh.filter)).toArray(StabState[]::new);
+            if (suitable.length == 0) {
+                return;
+            }
+            Graph g = new Graph(suitable.length);
+            for (int i = 0; i < suitable.length; i++) {
+                for (int j = i + 1; j < suitable.length; j++) {
+                    if (!suitable[i].filter.intersects(suitable[j].filter)) {
+                        g.connect(i, j);
+                    }
+                }
+            }
+            JNauty.instance().cliques(g, 1, ord, a -> {
+                int[] idx = new FixBS(a).toArray();
+                FixBS ftr = sh.filter.copy();
+                StabState[] states = Stream.concat(Arrays.stream(sh.curr),
+                        Arrays.stream(idx).mapToObj(i -> suitable[i]).peek(st -> ftr.or(st.filter))).toArray(StabState[]::new);
+                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0) {
+                    return;
+                }
+                if (even && !orderTwo.diff(ftr).isEmpty()) {
+                    return;
+                }
+                Arrays.sort(states, Comparator.comparing(StabState::block));
+                if (Arrays.stream(auths).anyMatch(auth -> bigger(states, auth, table))) {
+                    return;
+                }
+                initial.add(new Des(states, ftr, null, 0));
+            });
+        });
+        if (initial.isEmpty()) {
+            return;
+        }
+        System.out.println("Initial size " + initial.size() + " " + GroupIndex.identify(group) + " " + (ord + fixed) + " " + k + " auths: " + auths.length);
+        AtomicInteger ai = new AtomicInteger();
+        initial.stream().parallel().forEach(lst -> {
+            FixBS ftr = lst.filter;
+            int bn = (ord - 1 - ftr.cardinality()) / k / (k - 1);
+            FixBS whiteList = ftr.copy();
+            whiteList.flip(1, ord);
+            Predicate<int[][]> fCons = des -> {
+                if (des.length < bn) {
+                    return false;
+                }
+                int[][] base = Stream.concat(Arrays.stream(lst.curr).map(st -> st.block.toArray()),
+                        Arrays.stream(des)).sorted(Combinatorics::compareArr).toArray(int[][]::new);
+                Liner lnr = generateLiner(table, fixed, k, base);
+                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(lst.curr).map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
+                return true;
+            };
+            if (bn == 0) {
+                fCons.test(new int[0][]);
+            } else {
+                int next = ftr.nextClearBit(1);
+                DiffState diffState = new DiffState(new int[k], 1, ftr, whiteList).acceptElem(table, next);
+                searchUniqueDesigns(table, k, new int[0][], diffState, fCons);
+            }
+            int inc = ai.incrementAndGet();
+            if (inc % 10000 == 0) {
+                System.out.println(inc);
+            }
+        });
     }
 }
