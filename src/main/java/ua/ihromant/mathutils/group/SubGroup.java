@@ -2,6 +2,9 @@ package ua.ihromant.mathutils.group;
 
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SubGroup implements Group {
     private final Group group;
     private final FixBS elems;
@@ -85,5 +88,39 @@ public class SubGroup implements Group {
     @Override
     public String toString() {
         return "SubGroup[" + group.name() + ", " + elems + ']';
+    }
+
+    public List<FixBS> leftCosets() {
+        int ord = group.order();
+        List<FixBS> result = new ArrayList<>();
+        ex: for (int g = 0; g < ord; g++) {
+            FixBS cos = new FixBS(ord);
+            for (int h : arr) {
+                int mul = group.op(g, h);
+                if (mul < g) {
+                    continue ex;
+                }
+                cos.set(mul);
+            }
+            result.add(cos);
+        }
+        return result;
+    }
+
+    public List<FixBS> rightCosets() {
+        int ord = group.order();
+        List<FixBS> result = new ArrayList<>();
+        ex: for (int g = 0; g < ord; g++) {
+            FixBS cos = new FixBS(ord);
+            for (int h : arr) {
+                int mul = group.op(h, g);
+                if (mul < g) {
+                    continue ex;
+                }
+                cos.set(mul);
+            }
+            result.add(cos);
+        }
+        return result;
     }
 }
