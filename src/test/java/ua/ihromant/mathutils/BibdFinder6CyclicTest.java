@@ -687,6 +687,22 @@ public class BibdFinder6CyclicTest {
         return cmp < 0;
     }
 
+    private static boolean bigger(List<StabState> fst, int[] auth, Group table) {
+        FixBS[] transformed = new FixBS[fst.size()];
+        for (int i = 0; i < fst.size(); i++) {
+            transformed[i] = minimalTuple(fst.get(i).block, auth, table);
+        }
+        Arrays.sort(transformed);
+        int cmp = 0;
+        for (int i = 0; i < transformed.length; i++) {
+            cmp = transformed[i].compareTo(fst.get(i).block);
+            if (cmp != 0) {
+                break;
+            }
+        }
+        return cmp < 0;
+    }
+
     private static void searchStabilized(Group group, StabState state, int k, int prev, Consumer<StabState> cons) {
         if (state.size() == k) {
             cons.accept(state);
@@ -1005,13 +1021,18 @@ public class BibdFinder6CyclicTest {
             }
             boolean odd = k % 2 == 1 && ord % 2 == 0;
             JNauty.instance().cliques(g, fixed, fixed, a -> {
-                int[] idx = new FixBS(a).toArray();
+                FixBS idx = new FixBS(a);
+                List<StabState> res = new ArrayList<>();
                 FixBS ftr = new FixBS(ord);
-                StabState[] arr = Arrays.stream(idx).mapToObj(i -> base[i]).peek(st -> ftr.or(st.filter)).toArray(StabState[]::new);
+                for (int i = idx.nextSetBit(0); i >= 0; i = idx.nextSetBit(i + 1)) {
+                    StabState st = base[i];
+                    res.add(st);
+                    ftr.or(st.filter);
+                }
                 if (odd && !orderTwo.diff(ftr).isEmpty()) {
                     return;
                 }
-                shortDes.add(new Des(arr, ftr, null, 0));
+                shortDes.add(new Des(res.toArray(StabState[]::new), ftr, null, 0));
             });
         }
         if (shortDes.isEmpty()) {
@@ -1040,21 +1061,25 @@ public class BibdFinder6CyclicTest {
                 }
             }
             JNauty.instance().cliques(g, 1, ord, a -> {
-                int[] idx = new FixBS(a).toArray();
+                FixBS idx = new FixBS(a);
                 FixBS ftr = sh.filter.copy();
-                StabState[] states = Stream.concat(Arrays.stream(sh.curr),
-                        Arrays.stream(idx).mapToObj(i -> suitable[i]).peek(st -> ftr.or(st.filter))).toArray(StabState[]::new);
+                List<StabState> states = new ArrayList<>(Arrays.asList(sh.curr));
+                for (int i = idx.nextSetBit(0); i >= 0; i = idx.nextSetBit(i + 1)) {
+                    StabState st = suitable[i];
+                    states.add(st);
+                    ftr.or(st.filter);
+                }
                 if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0) {
                     return;
                 }
                 if (even && !orderTwo.diff(ftr).isEmpty()) {
                     return;
                 }
-                Arrays.sort(states, Comparator.comparing(StabState::block));
+                states.sort(Comparator.comparing(StabState::block));
                 if (Arrays.stream(auths).anyMatch(auth -> bigger(states, auth, table))) {
                     return;
                 }
-                initial.add(new Des(states, ftr, null, 0));
+                initial.add(new Des(states.toArray(StabState[]::new), ftr, null, 0));
             });
         });
         if (initial.isEmpty()) {
