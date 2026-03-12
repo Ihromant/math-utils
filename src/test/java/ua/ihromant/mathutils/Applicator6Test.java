@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
@@ -519,6 +520,72 @@ public class Applicator6Test {
         State[] base = singles.values().toArray(State[]::new);
         Arrays.sort(base, Comparator.comparing(State::block));
         return base;
+    }
+
+    private static State[] getStabilizedAlt(GSpace sp, FixBS removableDiffs) {
+        int k = sp.k();
+        int v = sp.v();
+        Group table = sp.group();
+        List<SubGroup> sgs = table.subGroups();
+        Map<FixBS, State> states = new HashMap<>();
+        for (SubGroup sg : sgs) {
+            if (sg.order() == 1) {
+                continue;
+            }
+            List<FixBS> cosets = cosets(sp, sg, k);
+            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg()).anyMatch(cosets.get(i)::get)).toArray();
+            for (int i : initial) {
+                List<FixBS> res = new ArrayList<>();
+                FixBS fst = cosets.get(i);
+                res.add(fst);
+                findStab(cosets, res, i + 1, fst.cardinality(), k, a -> {
+                    FixBS block = new FixBS(v);
+                    for (FixBS f : a) {
+                        block.or(f);
+                    }
+                    State st = State.fromBlockNullable(sp, block);
+                    if (st != null && st.diffSet().cardinality() == k * (k - 1) / sg.order()) {
+                        states.putIfAbsent(st.diffSet(), st.minimizeBlock(sp));
+                    }
+                });
+            }
+        }
+        return states.values().toArray(State[]::new);
+    }
+
+    private static void findStab(List<FixBS> cosets, List<FixBS> arr, int from, int sz, int k, Consumer<List<FixBS>> cons) {
+        if (sz == k) {
+            cons.accept(arr);
+            return;
+        }
+        if (sz > k) {
+            return;
+        }
+        for (int i = from; i < cosets.size(); i++) {
+            FixBS cos = cosets.get(i);
+            arr.addLast(cos);
+            findStab(cosets, arr, i + 1, sz + cos.cardinality(), k, cons);
+            arr.removeLast();
+        }
+    }
+
+    private static List<FixBS> cosets(GSpace sp, SubGroup sg, int k) {
+        List<FixBS> result = new ArrayList<>();
+        ex: for (int x = 0; x < sp.v(); x++) {
+            FixBS coset = new FixBS(sp.v());
+            for (int g : sg.arr()) {
+                int app = sp.apply(g, x);
+                if (app < x) {
+                    continue ex;
+                }
+                coset.set(app);
+                if (coset.cardinality() > k) {
+                    continue ex;
+                }
+            }
+            result.add(coset);
+        }
+        return result;
     }
 
     private static void searchDesignsFirstNoMin(GSpace space, State state, int prev, Consumer<State> cons) {

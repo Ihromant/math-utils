@@ -20,6 +20,26 @@ public record State(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs,
         return result;
     }
 
+    public static State fromBlockNullable(GSpace space, FixBS block) {
+        int fst = block.nextSetBit(0);
+        int snd = block.nextSetBit(fst + 1);
+        int trd = block.nextSetBit(snd + 1);
+        State result = space.forInitial(fst, snd, trd);
+        if (result == null) {
+            return null;
+        }
+        for (int el = block.nextSetBit(trd + 1); el >= 0; el = block.nextSetBit(el + 1)) {
+            if (result.block().get(el)) {
+                continue;
+            }
+            result = result.acceptElem(space, space.emptyFilter(), el);
+            if (result == null) {
+                return null;
+            }
+        }
+        return result;
+    }
+
     public State acceptElem(GSpace gSpace, FixBS globalFilter, int val) {
         int v = gSpace.v();
         int k = gSpace.k();
