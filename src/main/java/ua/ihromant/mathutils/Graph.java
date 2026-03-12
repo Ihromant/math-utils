@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 
 public class Graph implements NautyGraph {
@@ -17,6 +18,32 @@ public class Graph implements NautyGraph {
 
     public Graph(FixBS[] neighbors) {
         this.neighbors = neighbors;
+    }
+
+    public static <T> Graph by(T[] arr, BiPredicate<T, T> pr) {
+        int len = arr.length;
+        Graph res = new Graph(len);
+        for (int i = 0; i < len; i++) {
+            for (int j = i + 1; j < len; j++) {
+                if (pr.test(arr[i], arr[j])) {
+                    res.connect(i, j);
+                }
+            }
+        }
+        return res;
+    }
+
+    public static <T> Graph by(List<T> arr, BiPredicate<T, T> pr) {
+        int len = arr.size();
+        Graph res = new Graph(len);
+        for (int i = 0; i < len; i++) {
+            for (int j = i + 1; j < len; j++) {
+                if (pr.test(arr.get(i), arr.get(j))) {
+                    res.connect(i, j);
+                }
+            }
+        }
+        return res;
     }
 
     public void connect(int a, int b) {

@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.g.GSpace;
 import ua.ihromant.mathutils.g.State;
 import ua.ihromant.mathutils.group.Group;
@@ -10,9 +11,9 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -20,19 +21,18 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Applicator6Test {
     @Test
     public void testEven() throws IOException {
-        int k = 5;
-        int v = 45;
-        int gs = 15;
+        int k = 6;
+        int v = 96;
+        int gs = 48;
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
-        for (int j = 1; j <= c; j++) {
+        for (int j = 3; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
             int small = v % gs;
             int orbitCount = v / gs;
@@ -63,10 +63,11 @@ public class Applicator6Test {
             }
             System.out.println(GroupIndex.identify(group) + " " + sp.v() + " " + k + " auths: " + sp.authLength() + " diffs: " + removableDiffs.cardinality());
             State[] base = getStabilized(sp, removableDiffs);
+            Arrays.sort(base, Comparator.comparing(State::block));
             System.out.println("Base blocks " + base.length);
-            List<State[]> begins = generateBegins(removableDiffs, base, sp);
+            List<List<State>> begins = generateBegins(removableDiffs, base, sp);
             System.out.println("Initial configs " + begins.size());
-            for (State[] states : begins) {
+            for (List<State> states : begins) {
                 long[][] filters = filters(states, sp, group);
                 List<LeftState[]> snc = Collections.synchronizedList(new ArrayList<>());
                 int[][] suitable = firstSuitable(states, sp);
@@ -80,7 +81,7 @@ public class Applicator6Test {
                     }
                     generateChunks(filters, sizes, sp, group, snc::add);
                 }
-                System.out.println("Config size: " + states.length + " Lefts size: " + snc.size());
+                System.out.println("Config size: " + states.size() + " Lefts size: " + snc.size());
                 if (orbitCount == 2) {
                     snc.stream().parallel().forEach(left -> {
                         int ll = left.length;
@@ -88,7 +89,7 @@ public class Applicator6Test {
                             if (arr[ll - 1] == null) {
                                 return false;
                             }
-                            Liner lnr = new Liner(v, Stream.concat(Arrays.stream(states).flatMap(st -> sp.blocks(st.block())),
+                            Liner lnr = new Liner(v, Stream.concat(states.stream().flatMap(st -> sp.blocks(st.block())),
                                     IntStream.range(0, left.length).mapToObj(i -> {
                                         FixBS result = new FixBS(v);
                                         IntList l = left[i].block;
@@ -134,7 +135,7 @@ public class Applicator6Test {
                                 if (rights[ll - 1] == null) {
                                     return false;
                                 }
-                                Liner lnr = new Liner(v, Stream.concat(Arrays.stream(states).flatMap(st -> sp.blocks(st.block())),
+                                Liner lnr = new Liner(v, Stream.concat(states.stream().flatMap(st -> sp.blocks(st.block())),
                                         IntStream.range(0, left.length).mapToObj(i -> {
                                             FixBS result = new FixBS(v);
                                             IntList l = left[i].block;
@@ -193,53 +194,36 @@ public class Applicator6Test {
         }
     }
 
-    private static List<State[]> generateBegins(FixBS removableDiffs, State[] base, GSpace sp) {
-        List<State[]> begins = Collections.synchronizedList(new ArrayList<>());
+    private static List<List<State>> generateBegins(FixBS removableDiffs, State[] base, GSpace sp) {
+        List<List<State>> begins = new ArrayList<>();
         if (removableDiffs.isEmpty()) {
-            begins.add(new State[0]);
+            begins.add(List.of());
         }
-        FixBS[] intersecting = intersecting(base);
-        Map<Wrap, List<List<int[]>>> confs = new ConcurrentHashMap<>();
-        IntStream.range(0, base.length).parallel().forEach(idx -> {
-            State st = base[idx];
-            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
-                if (!removableDiffs.diff(des.diffSet).isEmpty()) {
-                    return false;
-                }
-                int[][] used = usedDiffs(des.curr, sp, sp.v() / sp.gOrd(), sp.v());
-                if (confs.computeIfAbsent(new Wrap(used), w -> find(w.used, sp.gOrd(), sp.k())).isEmpty()) {
-                    return false;
-                }
-                Arrays.sort(des.curr(), Comparator.comparing(State::block));
-                begins.add(des.curr());
-                return false;
-            });
+        Map<Wrap, List<List<int[]>>> confs = new HashMap<>();
+        Graph graph = Graph.by(base, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+        JNauty.instance().cliques(graph, 1, sp.v(), a -> {
+            FixBS idx = new FixBS(a);
+            List<State> states = new ArrayList<>();
+            FixBS diffSet = new FixBS(sp.diffLength());
+            for (int i = idx.nextSetBit(0); i >= 0; i = idx.nextSetBit(i + 1)) {
+                State st = base[i];
+                states.add(st);
+                diffSet.or(st.diffSet());
+            }
+            if (!removableDiffs.diff(diffSet).isEmpty()) {
+                return;
+            }
+            int[][] used = usedDiffs(states, sp, sp.v() / sp.gOrd(), sp.v());
+            if (confs.computeIfAbsent(new Wrap(used), w -> find(w.used, sp.gOrd(), sp.k())).isEmpty()) {
+                return;
+            }
+            begins.add(states);
         });
-        begins.sort((a, b) -> Integer.compare(b.length, a.length));
+        begins.sort((a, b) -> Integer.compare(b.size(), a.size()));
         return begins;
     }
 
-    private static List<State[]> selectBegins(FixBS removableDiffs, State[] base, GSpace sp) {
-        Map<Integer, List<State[]>> begins = new ConcurrentHashMap<>();
-        if (removableDiffs.isEmpty()) {
-            begins.put(0, List.<State[]>of(new State[0]));
-        }
-        FixBS[] intersecting = intersecting(base);
-        IntStream.range(0, base.length).parallel().forEach(idx -> {
-            State st = base[idx];
-            find(base, intersecting, Des.of(sp.diffLength(), base.length, st, intersecting[idx], idx), des -> {
-                if (!removableDiffs.diff(des.diffSet).isEmpty()) {
-                    return false;
-                }
-                Arrays.sort(des.curr(), Comparator.comparing(State::block));
-                begins.computeIfAbsent(des.curr.length, _ -> Collections.synchronizedList(new ArrayList<>())).add(des.curr());
-                return false;
-            });
-        });
-        return begins.values().stream().flatMap(Collection::stream).sorted((a, b) -> Integer.compare(b.length, a.length)).collect(Collectors.toList());
-    }
-
-    private static Map<int[], List<int[][]>> getFreq(State[] begins, GSpace sp) {
+    private static Map<int[], List<int[][]>> getFreq(List<State> begins, GSpace sp) {
         int[][][] suitable = suitable(begins, sp);
         Map<int[], List<int[][]>> freq = new TreeMap<>(Combinatorics::compareArr);
         for (int[][] tail : suitable) {
@@ -511,45 +495,6 @@ public class Applicator6Test {
         return false;
     }
 
-    private static State[] getRemovable(FixBS removableDiffs, GSpace sp) {
-        Map<FixBS, State> singles = new ConcurrentHashMap<>();
-        int v = sp.v();
-        int gOrd = sp.gOrd();
-        boolean inf = sp.v() % sp.gOrd() == 1;
-        Consumer<State> cons = st -> {
-            if (!st.diffSet().intersects(removableDiffs)) {
-                return;
-            }
-            State minimized = st.minimizeBlock(sp);
-            singles.putIfAbsent(minimized.block(), minimized);
-        };
-        IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
-            int[] even = IntStream.range(fst + 1, v).filter(snd -> removableDiffs.get(sp.diffIdx(fst * v + snd))).toArray();
-            Arrays.stream(even).parallel().forEach(snd -> {
-                State state = new State(FixBS.of(v, fst), FixBS.of(gOrd, 0), new FixBS(sp.diffLength()), new int[sp.diffLength()][], 1)
-                        .acceptElem(sp, sp.emptyFilter(), snd);
-                if (state == null) {
-                    return;
-                }
-                searchDesignsFirstNoMin(sp, state, -1, cons);
-            });
-        });
-        if (inf) {
-            IntStream.of(sp.oBeg()).parallel().forEach(fst -> {
-                IntStream.range(fst + 1, v - 1).parallel().forEach(snd -> {
-                    State state = sp.forInitial(fst, snd, v - 1);
-                    if (state == null) {
-                        return;
-                    }
-                    searchDesignsFirstNoMin(sp, state, snd, cons);
-                });
-            });
-        }
-        State[] base = singles.values().toArray(State[]::new);
-        Arrays.sort(base, Comparator.comparing(st -> removableDiffs.intersection(st.diffSet())));
-        return base;
-    }
-
     private static State[] getStabilized(GSpace sp, FixBS removableDiffs) {
         Map<FixBS, State> singles = new ConcurrentHashMap<>();
         int v = sp.v();
@@ -590,50 +535,6 @@ public class Applicator6Test {
         }
     }
 
-    private static FixBS[] intersecting(State[] states) {
-        FixBS[] intersecting = new FixBS[states.length];
-        IntStream.range(0, states.length).parallel().forEach(i -> {
-            FixBS comp = new FixBS(states.length);
-            FixBS ftr = states[i].diffSet();
-            for (int j = 0; j < states.length; j++) {
-                if (ftr.intersects(states[j].diffSet())) {
-                    comp.set(j);
-                }
-            }
-            intersecting[i] = comp;
-        });
-        return intersecting;
-    }
-
-    private static void find(State[] states, FixBS[] intersecting, Des des, Predicate<Des> pr) {
-        if (pr.test(des)) {
-            return;
-        }
-        FixBS available = des.available;
-        for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
-            find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
-        }
-    }
-
-    private record Des(State[] curr, FixBS diffSet, FixBS available, int idx) {
-        private Des accept(State state, FixBS intersecting, int idx) {
-            int cl = curr.length;
-            State[] nextCurr = Arrays.copyOf(curr, cl + 1);
-            nextCurr[cl] = state;
-            return new Des(nextCurr, diffSet.union(state.diffSet()), available.diff(intersecting), idx);
-        }
-
-        private static Des empty(int ord, int statesSize) {
-            FixBS available = new FixBS(statesSize);
-            available.set(0, statesSize);
-            return new Des(new State[0], new FixBS(ord), available, -1);
-        }
-
-        private static Des of(int ord, int statesSize, State state, FixBS intersecting, int idx) {
-            return empty(ord, statesSize).accept(state, intersecting, idx);
-        }
-    }
-
     private static List<List<int[]>> find(int[][] used, int gOrd, int k) {
         int orbitCount = used.length;
         List<List<int[]>> res = new ArrayList<>();
@@ -642,14 +543,14 @@ public class Applicator6Test {
         return res;
     }
 
-    private static List<List<int[]>> find(State[] basicConf, GSpace sp) {
+    private static List<List<int[]>> find(List<State> basicConf, GSpace sp) {
         int gOrd = sp.gOrd();
         int v = sp.v();
         int orbitCount = v / gOrd;
         return find(usedDiffs(basicConf, sp, orbitCount, v), gOrd, sp.k());
     }
 
-    private static int[][] usedDiffs(State[] basicConf, GSpace sp, int orbitCount, int v) {
+    private static int[][] usedDiffs(List<State> basicConf, GSpace sp, int orbitCount, int v) {
         int[][] used = new int[orbitCount][orbitCount];
         for (int i = 0; i < orbitCount; i++) {
             used[i][i] = 1;
@@ -713,7 +614,7 @@ public class Applicator6Test {
         }
     }
 
-    private long[][] filters(State[] states, GSpace space, Group group) {
+    private long[][] filters(List<State> states, GSpace space, Group group) {
         int gOrd = space.gOrd();
         int v = space.v();
         int orbitCount = v / gOrd;
@@ -734,11 +635,11 @@ public class Applicator6Test {
         return result;
     }
 
-    public int[][] firstSuitable(State[] basicConf, GSpace sp) {
+    public int[][] firstSuitable(List<State> basicConf, GSpace sp) {
         return groupedSuitable(basicConf, sp).keySet().toArray(int[][]::new);
     }
 
-    public Map<int[], List<int[][]>> groupedSuitable(State[] basicConf, GSpace sp) {
+    public Map<int[], List<int[][]>> groupedSuitable(List<State> basicConf, GSpace sp) {
         TreeMap<int[], List<int[][]>> result = new TreeMap<>(Combinatorics::compareArr);
         Arrays.stream(suitable(basicConf, sp)).forEach(arr -> {
             int[] fst = Arrays.stream(arr).mapToInt(pr -> pr[0]).toArray();
@@ -747,7 +648,7 @@ public class Applicator6Test {
         return result;
     }
 
-    public static int[][][] suitable(State[] basicConf, GSpace sp) {
+    public static int[][][] suitable(List<State> basicConf, GSpace sp) {
         return find(basicConf, sp).stream().map(l -> l.toArray(int[][]::new)).toArray(int[][][]::new);
     }
 
