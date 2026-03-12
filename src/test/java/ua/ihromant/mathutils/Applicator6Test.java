@@ -522,7 +522,7 @@ public class Applicator6Test {
         return base;
     }
 
-    private static State[] getStabilizedAlt(GSpace sp, FixBS removableDiffs) {
+    public static State[] getStabilizedAlt(GSpace sp, FixBS removableDiffs) {
         int k = sp.k();
         int v = sp.v();
         Group table = sp.group();
@@ -544,8 +544,8 @@ public class Applicator6Test {
                         block.or(f);
                     }
                     State st = State.fromBlockNullable(sp, block);
-                    if (st != null && st.diffSet().cardinality() == k * (k - 1) / sg.order()) {
-                        states.putIfAbsent(st.diffSet(), st.minimizeBlock(sp));
+                    if (st != null && st.stabilizer().equals(sg.elems())) {
+                        states.putIfAbsent(st.diffSet(), st);
                     }
                 });
             }
