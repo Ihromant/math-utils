@@ -334,12 +334,45 @@ public class GSpace {
         return res.stream();
     }
 
+    public Stream<int[]> blocks(int[] block) {
+        Set<FixBS> set = new HashSet<>(2 * group.order());
+        List<int[]> res = new ArrayList<>();
+        for (int g = 0; g < group.order(); g++) {
+            FixBS fbs = mapBlock(block, g);
+            if (set.add(fbs)) {
+                res.add(fbs.toArray());
+            }
+        }
+        return res.stream();
+    }
+
     public FixBS mapBlock(FixBS block, int g) {
         FixBS fbs = new FixBS(v);
         for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
             fbs.set(apply(g, x));
         }
         return fbs;
+    }
+
+    public FixBS mapBlock(int[] block, int g) {
+        FixBS fbs = new FixBS(v);
+        for (int x : block) {
+            fbs.set(apply(g, x));
+        }
+        return fbs;
+    }
+
+    public FixBS evenDiffs() {
+        FixBS result = new FixBS(differences.length);
+        for (int fst : oBeg) {
+            for (int snd = fst + 1; snd < v; snd++) {
+                int lft = diffIdx(fst * v + snd);
+                if (lft == diffIdx(snd * v + fst)) {
+                    result.set(lft);
+                }
+            }
+        }
+        return result;
     }
 
     public boolean minimal(FixBS block) {
