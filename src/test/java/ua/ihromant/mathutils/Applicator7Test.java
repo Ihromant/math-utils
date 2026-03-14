@@ -43,7 +43,7 @@ public class Applicator7Test {
             BiConsumer<State[], NSState[]> fCons = (sts, nst) -> {
                 Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                         Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
-                System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State::block).toList()
+                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State::block).toList()
                         + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
             };
             if (stab.length == 0) {
@@ -74,8 +74,10 @@ public class Applicator7Test {
             init.parallelStream().forEach(states -> {
                 int dc = space.diffLength();
                 FixBS whiteList = space.emptyFilter().copy();
+                FixBS diffSet = new FixBS(space.diffLength());
                 for (State st : states) {
                     st.updateFilter(whiteList, space);
+                    diffSet.or(st.diffSet());
                     dc = dc - st.diffSet().cardinality();
                 }
                 whiteList.flip(0, v * v);
@@ -87,7 +89,7 @@ public class Applicator7Test {
                 int pr = whiteList.nextSetBit(0);
                 int fst = pr / v;
                 int snd = pr % v;
-                NSState in = new NSState(new int[]{fst}, whiteList).acceptElem(space, snd);
+                NSState in = new NSState(new int[]{fst}, diffSet, whiteList).acceptElem(space, snd);
                 searchDesigns(space, new NSState[]{in}, nst -> {
                     if (nst.length < nc) {
                         return false;
@@ -126,7 +128,7 @@ public class Applicator7Test {
             BiConsumer<State[], NSState[]> fCons = (sts, nst) -> {
                 Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                         Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
-                System.out.println(l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State::block).toList()
+                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State::block).toList()
                         + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
             };
             if (stab.length == 0) {
@@ -136,20 +138,18 @@ public class Applicator7Test {
                 FixBS arr = new FixBS(a);
                 List<State> states = new ArrayList<>();
                 FixBS diffSet = new FixBS(space.diffLength());
+                FixBS whiteList = space.emptyFilter().copy();
                 for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
                     State st = stab[i];
                     states.add(st);
                     diffSet.or(st.diffSet());
+                    st.updateFilter(whiteList, space);
                 }
                 int card = diffSet.cardinality();
                 if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
                     return;
                 }
                 int nc = (space.diffLength() - card) / k / (k - 1);
-                FixBS whiteList = space.emptyFilter().copy();
-                for (State st : states) {
-                    st.updateFilter(whiteList, space);
-                }
                 if (nc == 0) {
                     fCons.accept(states.toArray(State[]::new), new NSState[0]);
                     return;
@@ -158,7 +158,7 @@ public class Applicator7Test {
                 int pr = whiteList.nextSetBit(0);
                 int fst = pr / v;
                 int snd = pr % v;
-                NSState in = new NSState(new int[]{fst}, whiteList).acceptElem(space, snd);
+                NSState in = new NSState(new int[]{fst}, diffSet, whiteList).acceptElem(space, snd);
                 searchDesigns(space, new NSState[]{in}, nst -> {
                     if (nst.length < nc) {
                         return false;
@@ -184,7 +184,7 @@ public class Applicator7Test {
             int pair = last.whiteList().nextSetBit(0);
             int fst = pair / v;
             int snd = pair % v;
-            NSState st = new NSState(new int[]{fst}, last.whiteList()).acceptElem(space, snd);
+            NSState st = new NSState(new int[]{fst}, last.diffSet(), last.whiteList()).acceptElem(space, snd);
             nextDesign[currDesign.length] = st;
             searchDesigns(space, nextDesign, cons);
         } else {
@@ -225,7 +225,7 @@ public class Applicator7Test {
         int pr = whiteList.nextSetBit(0);
         int fst = pr / v;
         int snd = pr % v;
-        NSState in = new NSState(new int[]{fst}, whiteList).acceptElem(space, snd);
+        NSState in = new NSState(new int[]{fst}, new FixBS(space.diffLength()), whiteList).acceptElem(space, snd);
         searchDesigns(space, new NSState[]{in}, nst -> {
             if (nst.length < nc) {
                 return false;
@@ -234,4 +234,20 @@ public class Applicator7Test {
             return true;
         });
     }
+
+//    @Test
+//    public void trivialByGraph() throws IOException {
+//        Group group = GroupIndex.group(39, 1);
+//        int k = 7;
+//        GSpace space = new GSpace(k, group, false, 3, 1, 1);
+//        int v = space.v();
+//        FixBS evenDiffs = space.evenDiffs();
+//        if (!evenDiffs.isEmpty()) {
+//            throw new IllegalStateException();
+//        }
+//
+//        Predicate<NSState> cons = (nst) -> {
+//
+//        }
+//    }
 }
