@@ -131,6 +131,22 @@ public class Applicator7Test {
             if (stab.length == 0) {
                 continue;
             }
+            if (false && space.diffLength() % (k * k - k) == 0) {
+                int nc = space.diffLength() / k / (k - 1);
+                FixBS whiteList = space.emptyFilter().copy();
+                whiteList.flip(0, v * v);
+                int pr = whiteList.nextSetBit(0);
+                int fst = pr / v;
+                int snd = pr % v;
+                NSState in = new NSState(new int[]{fst}, whiteList).acceptElem(space, snd);
+                searchDesigns(space, new NSState[]{in}, nst -> {
+                    if (nst.length < nc) {
+                        return false;
+                    }
+                    fCons.accept(new State[0], nst);
+                    return true;
+                });
+            }
             JNauty.instance().cliques(g, 1, space.v(), a -> {
                 FixBS arr = new FixBS(a);
                 List<State> states = new ArrayList<>();
