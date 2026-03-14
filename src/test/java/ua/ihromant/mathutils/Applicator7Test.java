@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -131,22 +132,6 @@ public class Applicator7Test {
             if (stab.length == 0) {
                 continue;
             }
-            if (false && space.diffLength() % (k * k - k) == 0) {
-                int nc = space.diffLength() / k / (k - 1);
-                FixBS whiteList = space.emptyFilter().copy();
-                whiteList.flip(0, v * v);
-                int pr = whiteList.nextSetBit(0);
-                int fst = pr / v;
-                int snd = pr % v;
-                NSState in = new NSState(new int[]{fst}, whiteList).acceptElem(space, snd);
-                searchDesigns(space, new NSState[]{in}, nst -> {
-                    if (nst.length < nc) {
-                        return false;
-                    }
-                    fCons.accept(new State[0], nst);
-                    return true;
-                });
-            }
             JNauty.instance().cliques(g, 1, space.v(), a -> {
                 FixBS arr = new FixBS(a);
                 List<State> states = new ArrayList<>();
@@ -215,5 +200,38 @@ public class Applicator7Test {
                 }
             }
         }
+    }
+
+    @Test
+    public void testTrivial() throws IOException {
+        Group group = GroupIndex.group(39, 1);
+        int k = 7;
+        GSpace space = new GSpace(k, group, false, 3, 1, 1);
+        int v = space.v();
+        FixBS evenDiffs = space.evenDiffs();
+        if (!evenDiffs.isEmpty()) {
+            throw new IllegalStateException();
+        }
+        Consumer<NSState[]> fCons = nst -> {
+            Liner l = new Liner(space.v(), Arrays.stream(nst).flatMap(st -> space.blocks(st.block())).toArray(int[][]::new));
+            System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
+        };
+        if (space.diffLength() % (k * k - k) != 0) {
+            throw new IllegalStateException();
+        }
+        int nc = space.diffLength() / k / (k - 1);
+        FixBS whiteList = space.emptyFilter().copy();
+        whiteList.flip(0, v * v);
+        int pr = whiteList.nextSetBit(0);
+        int fst = pr / v;
+        int snd = pr % v;
+        NSState in = new NSState(new int[]{fst}, whiteList).acceptElem(space, snd);
+        searchDesigns(space, new NSState[]{in}, nst -> {
+            if (nst.length < nc) {
+                return false;
+            }
+            fCons.accept(nst);
+            return true;
+        });
     }
 }
