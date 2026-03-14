@@ -12,7 +12,9 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -235,19 +237,27 @@ public class Applicator7Test {
         });
     }
 
-//    @Test
-//    public void trivialByGraph() throws IOException {
-//        Group group = GroupIndex.group(39, 1);
-//        int k = 7;
-//        GSpace space = new GSpace(k, group, false, 3, 1, 1);
-//        int v = space.v();
-//        FixBS evenDiffs = space.evenDiffs();
-//        if (!evenDiffs.isEmpty()) {
-//            throw new IllegalStateException();
-//        }
-//
-//        Predicate<NSState> cons = (nst) -> {
-//
-//        }
-//    }
+    @Test
+    public void trivialByGraph() throws IOException {
+        Group group = GroupIndex.group(39, 1);
+        int k = 6;
+        GSpace space = new GSpace(k, group, false, 3, 1, 1);
+        int v = space.v();
+        FixBS evenDiffs = space.evenDiffs();
+        if (!evenDiffs.isEmpty()) {
+            throw new IllegalStateException();
+        }
+        Map<FixBS, NSState> states = new HashMap<>();
+        Predicate<NSState[]> cons = (nst) -> {
+            states.putIfAbsent(nst[0].diffSet(), nst[0]);
+            return true;
+        };
+        for (int fst : space.oBeg()) {
+            FixBS whiteList = space.emptyFilter().copy();
+            whiteList.flip(0, v * v);
+            NSState nst = new NSState(new int[]{fst}, new FixBS(space.diffLength()), whiteList);
+            searchDesigns(space, new NSState[]{nst}, cons);
+        }
+        System.out.println(states.size());
+    }
 }
