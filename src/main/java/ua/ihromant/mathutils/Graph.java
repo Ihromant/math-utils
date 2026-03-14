@@ -23,26 +23,26 @@ public class Graph implements NautyGraph {
     public static <T> Graph by(T[] arr, BiPredicate<T, T> pr) {
         int len = arr.length;
         Graph res = new Graph(len);
-        for (int i = 0; i < len; i++) {
-            for (int j = i + 1; j < len; j++) {
+        IntStream.range(0, len).parallel().forEach(i -> {
+            for (int j = 0; j < len; j++) {
                 if (pr.test(arr[i], arr[j])) {
-                    res.connect(i, j);
+                    res.neighbors[i].set(j);
                 }
             }
-        }
+        });
         return res;
     }
 
     public static <T> Graph by(List<T> arr, BiPredicate<T, T> pr) {
         int len = arr.size();
         Graph res = new Graph(len);
-        for (int i = 0; i < len; i++) {
-            for (int j = i + 1; j < len; j++) {
+        IntStream.range(0, len).parallel().forEach(i -> {
+            for (int j = 0; j < len; j++) {
                 if (pr.test(arr.get(i), arr.get(j))) {
-                    res.connect(i, j);
+                    res.neighbors[i].set(j);
                 }
             }
-        }
+        });
         return res;
     }
 
