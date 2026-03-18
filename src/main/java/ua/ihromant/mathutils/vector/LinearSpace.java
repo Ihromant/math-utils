@@ -147,4 +147,20 @@ public interface LinearSpace {
         }
         return result;
     }
+
+    default long mulOper(long a, long b) {
+        int[][] first = toMatrix(a);
+        int[][] second = toMatrix(b);
+        int[][] result = new int[first.length][first.length];
+        for (int i = 0; i < first.length; i++) {
+            for (int j = 0; j < first.length; j++) {
+                int sum = 0;
+                for (int k = 0; k < first.length; k++) {
+                    sum = sum + first[i][k] * second[k][j];
+                }
+                result[i][j] = sum % p();
+            }
+        }
+        return fromMatrix(result);
+    }
 }
