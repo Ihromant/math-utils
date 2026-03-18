@@ -151,11 +151,11 @@ public interface LinearSpace {
     default long mulOper(long a, long b) {
         int[][] first = toMatrix(a);
         int[][] second = toMatrix(b);
-        int[][] result = new int[first.length][first.length];
-        for (int i = 0; i < first.length; i++) {
-            for (int j = 0; j < first.length; j++) {
+        int[][] result = new int[n()][n()];
+        for (int i = 0; i < n(); i++) {
+            for (int j = 0; j < n(); j++) {
                 int sum = 0;
-                for (int k = 0; k < first.length; k++) {
+                for (int k = 0; k < n(); k++) {
                     sum = sum + first[i][k] * second[k][j];
                 }
                 result[i][j] = sum % p();
