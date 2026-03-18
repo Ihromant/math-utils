@@ -2,6 +2,9 @@ package ua.ihromant.mathutils.vector;
 
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public interface LinearSpace {
@@ -60,6 +63,35 @@ public interface LinearSpace {
             return new TwoLinearSpace(n);
         } else {
             return new PrimeLinearSpace(p, n);
+        }
+    }
+
+    default List<FixBS> subSpaces(int dim) {
+        List<FixBS> result = new ArrayList<>();
+        FixBS base = FixBS.of(cardinality(), 0);
+        subSpaces(base, dim, result::add);
+        return result;
+    }
+
+    private void subSpaces(FixBS curr, int dim, Consumer<FixBS> cons) {
+        if (dim == 0) {
+            cons.accept(curr);
+            return;
+        }
+        ex: for (int el = curr.nextClearBit(curr.previousSetBit(cardinality())); el >= 0 && el < cardinality(); el = curr.nextClearBit(el + 1)) {
+            FixBS next = curr.copy();
+            for (int bs = curr.nextSetBit(0); bs >= 0; bs = curr.nextSetBit(bs + 1)) {
+                for (int a = 0; a < p(); a++) {
+                    for (int b = 1; b < p(); b++) {
+                        int res = add(mul(a, bs), mul(b, el));
+                        if (res < el) {
+                            continue ex;
+                        }
+                        next.set(res);
+                    }
+                }
+            }
+            subSpaces(next, dim - 1, cons);
         }
     }
 }
