@@ -130,4 +130,21 @@ public interface LinearSpace {
         }
         return result;
     }
+
+    default int[][] toMatrix(long a) {
+        int[][] result = new int[n()][n()];
+        for (int i = 0; i < n() * n(); i++) {
+            result[i / n()][i % n()] = (int) (a % p());
+            a = a / p();
+        }
+        return result;
+    }
+
+    default long fromMatrix(int[][] matrix) {
+        long result = 0;
+        for (int i = n() * n() - 1; i >= 0; i--) {
+            result = result * p() + matrix[i / n()][i % n()];
+        }
+        return result;
+    }
 }
