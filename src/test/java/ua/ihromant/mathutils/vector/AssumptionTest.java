@@ -1,9 +1,16 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.jnauty.JNauty;
+import ua.ihromant.mathutils.Graph;
+import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -246,5 +253,32 @@ public class AssumptionTest {
         } else {
             map.put(line, FixBS.of(Arrays.stream(pts).max().orElseThrow() + 1, pts));
         }
+    }
+
+    @Test
+    public void testGroupable() {
+        Group gr = new CyclicProduct(2, 2, 2, 2, 2, 2);
+        int k = 4;
+        int v = gr.order();
+        int r = (v - 1) / (k - 1);
+        List<SubGroup> sgs = gr.subGroups().stream().filter(sg -> sg.order() == k).toList();
+        System.out.println(sgs.size());
+        Graph g = Graph.by(sgs, (a, b) -> a.elems().intersection(b.elems()).cardinality() == 1);
+        Set<FixBS> canons = new HashSet<>();
+        JNauty.instance().maximalCliques(g, r, a -> {
+            FixBS arr = new FixBS(a);
+            List<int[]> lns = new ArrayList<>();
+            List<FixBS> base = new ArrayList<>();
+            for (int el = arr.nextSetBit(0); el >= 0; el = arr.nextSetBit(el + 1)) {
+                SubGroup sg = sgs.get(el);
+                base.add(sg.elems());
+                Arrays.stream(sg.leftCosets()).map(FixBS::toArray).forEach(lns::add);
+            }
+            Liner lnr = new Liner(v, lns.toArray(int[][]::new));
+            if (canons.add(new FixBS(lnr.graphData().canonical()))) {
+                System.out.println(lnr.graphData().autCount() + " " + lnr.hyperbolicFreq());
+            }
+        });
+        System.out.println(canons.size());
     }
 }
