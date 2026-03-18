@@ -261,13 +261,25 @@ public class AssumptionTest {
         int k = 4;
         int v = gr.order();
         int r = (v - 1) / (k - 1);
-        List<SubGroup> sgs = gr.subGroups().stream().filter(sg -> sg.order() == k).toList();
+        List<SubGroup> baseSgs = gr.subGroups().stream().filter(sg -> sg.order() == k).toList();
+        FixBS fstElems = FixBS.of(64, 0, 1, 2, 3);
+        FixBS sndElems = FixBS.of(64, 0, 4, 8, 12);
+        FixBS trdElems = FixBS.of(64, 0, 16, 32, 48);
+        SubGroup fst = baseSgs.stream().filter(sg -> sg.elems().equals(fstElems)).findFirst().orElseThrow();
+        SubGroup snd = baseSgs.stream().filter(sg -> sg.elems().equals(sndElems)).findFirst().orElseThrow();
+        SubGroup trd = baseSgs.stream().filter(sg -> sg.elems().equals(trdElems)).findFirst().orElseThrow();
+        List<int[]> initLns = new ArrayList<>();
+        Arrays.stream(fst.leftCosets()).map(FixBS::toArray).forEach(initLns::add);
+        Arrays.stream(snd.leftCosets()).map(FixBS::toArray).forEach(initLns::add);
+        Arrays.stream(trd.leftCosets()).map(FixBS::toArray).forEach(initLns::add);
+        List<SubGroup> sgs = baseSgs.stream().filter(s -> s.elems().intersection(fst.elems()).cardinality() == 1
+                && s.elems().intersection(snd.elems()).cardinality() == 1 && s.elems().intersection(trd.elems()).cardinality() == 1).toList();
         System.out.println(sgs.size());
         Graph g = Graph.by(sgs, (a, b) -> a.elems().intersection(b.elems()).cardinality() == 1);
         Set<FixBS> canons = new HashSet<>();
-        JNauty.instance().maximalCliques(g, r, a -> {
+        JNauty.instance().maximalCliques(g, r - 3, a -> {
             FixBS arr = new FixBS(a);
-            List<int[]> lns = new ArrayList<>();
+            List<int[]> lns = new ArrayList<>(initLns);
             List<FixBS> base = new ArrayList<>();
             for (int el = arr.nextSetBit(0); el >= 0; el = arr.nextSetBit(el + 1)) {
                 SubGroup sg = sgs.get(el);
