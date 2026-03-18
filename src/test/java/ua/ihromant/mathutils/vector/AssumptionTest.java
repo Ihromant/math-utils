@@ -5,13 +5,19 @@ import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
+import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -19,6 +25,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AssumptionTest {
     @Test
@@ -292,5 +303,134 @@ public class AssumptionTest {
             }
         });
         System.out.println(canons.size());
+    }
+
+    @Test
+    public void groupableLiners() {
+        Path path = Path.of("/home/ihromant/maths/g-spaces/final/4-64/large.txt");
+        LinearSpace sp = LinearSpace.of(2, 6);
+        List<Long> gens = new ArrayList<>();
+        gens.add(fromMapping(sp, new int[]{4, 8, 16, 32, 1, 2}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 16, 32, 4, 8}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, 16}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, sp.add(16, 32)}));
+        List<Long> baseStab = closure(sp, gens).stream().sorted().toList();
+        FixBS fst = sp.hull(1, 2);
+        fst.set(0);
+        FixBS snd = sp.hull(4, 8);
+        snd.set(0);
+        FixBS trd = sp.hull(16, 32);
+        trd.set(0);
+        int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
+        Set<FixBS> fixed = Set.of(fst, snd, trd);
+        for (Long op : baseStab) {
+            Set<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+            assertEquals(mapped, fixed);
+        }
+        List<FixBS> subs = sp.subSpaces(2);
+        assertEquals(subs, subs.stream().sorted().toList());
+        List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
+        List<List<FixBS>> bases = new ArrayList<>();
+        findBases(sp, baseStab, init, init, fixed, 0, s -> {
+            bases.add(s.stream().sorted().toList());
+        });
+        System.out.println(bases.size());
+        System.out.println(bases.stream().collect(Collectors.groupingBy(List::size, Collectors.counting())));
+        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        AtomicInteger ai = new AtomicInteger();
+        bases.parallelStream().forEach(base -> {
+            List<FixBS> initLns = new ArrayList<>();
+            base.forEach(s -> initLns.addAll(sp.cosets(s)));
+            FixBS union = base.stream().reduce(FixBS::union).orElseThrow();
+            List<FixBS> suitable = subs.stream().filter(s -> s.intersection(union).cardinality() == 1).toList();
+            Graph g = Graph.by(suitable, (a, b) -> a.intersection(b).cardinality() == 1);
+            if (suitable.isEmpty()) {
+                return;
+            }
+            JNauty.instance().maximalCliques(g, r - base.size(), a -> {
+                FixBS arr = new FixBS(a);
+                List<FixBS> lns = new ArrayList<>(initLns);
+                for (int el = arr.nextSetBit(0); el >= 0; el = arr.nextSetBit(el + 1)) {
+                    FixBS sg = suitable.get(el);
+                    lns.addAll(sp.cosets(sg));
+                }
+                Liner lnr = new Liner(lns.toArray(FixBS[]::new));
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    System.out.println(lnr.graphData().autCount() + " " + freq);
+                    try {
+                        Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "
+                                + Arrays.deepToString(lnr.lines()) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            int val = ai.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val);
+            }
+        });
+    }
+
+    private static void findBases(LinearSpace sp, List<Long> stab, List<FixBS> transversal, List<FixBS> full, Set<FixBS> curr, int from, Consumer<Set<FixBS>> cons) {
+        if (stab.size() == 1) {
+            cons.accept(curr);
+            return;
+        }
+        QuickFind qf = new QuickFind(transversal.size());
+        for (Long st : stab) {
+            for (int i = 0; i < transversal.size(); i++) {
+                FixBS tr = transversal.get(i);
+                FixBS mapped = sp.applyOper(st, tr);
+                qf.union(i, Collections.binarySearch(transversal, mapped));
+            }
+        }
+        List<FixBS> comps = qf.components();
+        for (FixBS comp : comps) {
+            FixBS tr = transversal.get(comp.nextSetBit(0));
+            int trIdx = Collections.binarySearch(full, tr);
+            if (trIdx < from) {
+                continue;
+            }
+            Set<FixBS> nextCurr = new HashSet<>(curr);
+            nextCurr.add(tr);
+            List<Long> nextStab = new ArrayList<>();
+            for (Long op : stab) {
+                Set<FixBS> mapped = nextCurr.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+                if (mapped.equals(nextCurr)) {
+                    nextStab.add(op);
+                }
+            }
+            List<FixBS> nextTransversal = transversal.stream().filter(s -> s.intersection(tr).cardinality() == 1).toList();
+            findBases(sp, nextStab, nextTransversal, full, nextCurr, trIdx, cons);
+        }
+    }
+
+    private static long fromMapping(LinearSpace sp, int[] base) {
+        long result = 0L;
+        for (int i = sp.n() - 1; i >= 0; i--) {
+            result = result * sp.cardinality() + base[i];
+        }
+        return result;
+    }
+
+    private static Set<Long> closure(LinearSpace sp, List<Long> gens) {
+        Set<Long> result = new HashSet<>();
+        result.add(fromMapping(sp, IntStream.range(0, sp.n()).map(i ->
+                sp.fromCrd(IntStream.range(0, sp.n()).map(j -> i == j ? 1 : 0).toArray())).toArray()));
+        boolean added;
+        do {
+            added = false;
+            for (Long el : result.toArray(Long[]::new)) {
+                for (long gen : gens) {
+                    Long xy = sp.mulOper(gen, el);
+                    Long yx = sp.mulOper(el, gen);
+                    added = result.add(xy) || added;
+                    added = result.add(yx) || added;
+                }
+            }
+        } while (added);
+        return result;
     }
 }
