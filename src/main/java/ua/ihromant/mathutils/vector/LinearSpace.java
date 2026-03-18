@@ -94,4 +94,32 @@ public interface LinearSpace {
             subSpaces(next, dim - 1, cons);
         }
     }
+
+    default List<FixBS> cosets(FixBS subSpace) {
+        List<FixBS> result = new ArrayList<>();
+        ex: for (int i = 0; i < cardinality(); i++) {
+            FixBS sh = new FixBS(cardinality());
+            for (int el = subSpace.nextSetBit(0); el >= 0; el = subSpace.nextSetBit(el + 1)) {
+                int res = add(el, i);
+                if (res < i) {
+                    continue ex;
+                }
+                sh.set(res);
+            }
+            result.add(sh);
+        }
+        return result;
+    }
+
+    default int applyOper(long oper, int val) {
+        int result = 0;
+        for (int i = 0; i < n(); i++) {
+            int rest = (int) (oper % cardinality());
+            int crd = val % p();
+            result = add(result, mul(crd, rest));
+            val = val / p();
+            oper = oper / cardinality();
+        }
+        return result;
+    }
 }
