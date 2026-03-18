@@ -122,4 +122,12 @@ public interface LinearSpace {
         }
         return result;
     }
+
+    default FixBS applyOper(long oper, FixBS subSpace) {
+        FixBS result = new FixBS(cardinality());
+        for (int val = subSpace.nextSetBit(0); val >= 0; val = subSpace.nextSetBit(val + 1)) {
+            result.set(applyOper(oper, val));
+        }
+        return result;
+    }
 }
