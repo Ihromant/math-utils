@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.Liner;
@@ -306,8 +307,15 @@ public class AssumptionTest {
     }
 
     @Test
-    public void groupableLiners() {
+    public void groupableLiners() throws IOException {
+        ObjectMapper om = new ObjectMapper();
         Path path = Path.of("/home/ihromant/maths/g-spaces/final/4-64/large.txt");
+        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        List<String> lines = Files.readAllLines(path);
+        lines.parallelStream().forEach(ln -> {
+            Liner lnr = new Liner(om.readValue(ln.substring(ln.indexOf("[[")), int[][].class));
+            unique.add(new FixBS(lnr.graphData().canonical()));
+        });
         LinearSpace sp = LinearSpace.of(2, 6);
         List<Long> gens = new ArrayList<>();
         gens.add(fromMapping(sp, new int[]{4, 8, 16, 32, 1, 2}));
@@ -334,11 +342,19 @@ public class AssumptionTest {
         findBases(sp, baseStab, init, init, fixed, 0, s -> {
             bases.add(s.stream().sorted().toList());
         });
-        System.out.println(bases.size());
-        System.out.println(bases.stream().collect(Collectors.groupingBy(List::size, Collectors.counting())));
-        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        Set<List<FixBS>> unProcessed = ConcurrentHashMap.newKeySet();
+        unProcessed.addAll(bases);
+        Path basesPath = Path.of("/home/ihromant/maths/g-spaces/final/4-64/bases.txt");
+        lines = Files.readAllLines(basesPath);
+        lines.parallelStream().forEach(ln -> {
+            ln = ln.replace('{', '[').replace('}', ']');
+            int[][] arr = om.readValue(ln, int[][].class);
+            List<FixBS> lst = Arrays.stream(arr).map(a -> FixBS.of(sp.cardinality(), a)).toList();
+            unProcessed.remove(lst);
+        });
         AtomicInteger ai = new AtomicInteger();
-        bases.parallelStream().forEach(base -> {
+        System.out.println(unProcessed.size());
+        new ArrayList<>(unProcessed).parallelStream().forEach(base -> {
             List<FixBS> initLns = new ArrayList<>();
             base.forEach(s -> initLns.addAll(sp.cosets(s)));
             FixBS union = base.stream().reduce(FixBS::union).orElseThrow();
@@ -369,6 +385,11 @@ public class AssumptionTest {
             int val = ai.incrementAndGet();
             if (val % 1000 == 0) {
                 System.out.println(val);
+            }
+            try {
+                Files.writeString(basesPath, base + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
         });
     }
