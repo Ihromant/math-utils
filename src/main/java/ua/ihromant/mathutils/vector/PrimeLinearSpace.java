@@ -73,7 +73,7 @@ public class PrimeLinearSpace implements LinearSpace {
 
     @Override
     public int neg(int a) {
-        return mul(a, p - 1);
+        return mul(p - 1, a);
     }
 
     @Override
@@ -96,7 +96,7 @@ public class PrimeLinearSpace implements LinearSpace {
             for (int b = snd.nextSetBit(0); b >= 0; b = snd.nextSetBit(b + 1)) {
                 for (int i = 0; i < p; i++) {
                     for (int j = 0; j < p; j++) {
-                        bs.set(add(mul(a, i), mul(b, j)));
+                        bs.set(add(mul(i, a), mul(j, b)));
                     }
                 }
             }
@@ -134,11 +134,11 @@ public class PrimeLinearSpace implements LinearSpace {
             BitSet nextHull = (BitSet) hull.clone();
             for (int j = hull.nextSetBit(0); j >= 0; j = hull.nextSetBit(j + 1)) {
                 for (int c = 1; c < p; c++) {
-                    nextHull.set(add(j, mul(i, c)));
+                    nextHull.set(add(j, mul(c, i)));
                 }
             }
             for (int c = 1; c < p; c++) {
-                nextHull.set(mul(i, c));
+                nextHull.set(mul(c, i));
             }
             bijections(needed - 1, nextHull, nextBaseMap).forEach(sink);
         });
@@ -149,7 +149,7 @@ public class PrimeLinearSpace implements LinearSpace {
         for (int i = 0; i < arr.length; i++) {
             int[] muls = new int[n];
             for (int j = 0; j < muls.length; j++) {
-                muls[j] = mul(baseMap[j], crd(i, j));
+                muls[j] = mul(crd(i, j), baseMap[j]);
             }
             arr[i] = add(muls);
         }
