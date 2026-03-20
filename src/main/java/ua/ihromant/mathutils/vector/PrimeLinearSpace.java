@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.experimental.Accessors;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
 import java.util.stream.IntStream;
@@ -15,11 +16,28 @@ public class PrimeLinearSpace implements LinearSpace {
     private final int p;
     private final int n;
     private final int[] powList;
+    private final int[][] mulTable;
+    private final int[][] addTable;
 
     public PrimeLinearSpace(int p, int n) {
         this.p = p;
         this.n = n;
         this.powList = IntStream.range(0, n + 1).map(i -> LinearSpace.pow(p, i)).toArray();
+        if (cardinality() < 10000) {
+            this.addTable = new int[cardinality()][cardinality()];
+            this.mulTable = new int[p][cardinality()];
+            for (int i = 0; i < cardinality(); i++) {
+                for (int j = 0; j < cardinality(); j++) {
+                    this.addTable[i][j] = addByDef(i, j);
+                }
+                for (int j = 0; j < p; j++) {
+                    this.mulTable[j][i] = mulByDef(j, i);
+                }
+            }
+        } else {
+            this.addTable = null;
+            this.mulTable = null;
+        }
     }
 
     @Override
@@ -39,6 +57,11 @@ public class PrimeLinearSpace implements LinearSpace {
 
     @Override
     public int add(int... numbers) {
+        return addTable != null ? numbers.length == 2 ? addTable[numbers[0]][numbers[1]]
+                : Arrays.stream(numbers).reduce(0, (i, j) -> addTable[i][j]) : addByDef(numbers);
+    }
+
+    private int addByDef(int... numbers) {
         int res = 0;
         for (int i = 0; i < n; i++) {
             int sum = 0;
@@ -52,6 +75,10 @@ public class PrimeLinearSpace implements LinearSpace {
 
     @Override
     public int mul(int a, int x) {
+        return mulTable != null ? mulTable[a][x] : mulByDef(a, x);
+    }
+
+    private int mulByDef(int a, int x) {
         int res = 0;
         for (int i = 0; i < n; i++) {
             int xc = crd(x, i);
