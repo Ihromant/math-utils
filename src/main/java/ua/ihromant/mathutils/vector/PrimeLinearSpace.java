@@ -82,7 +82,7 @@ public class PrimeLinearSpace implements LinearSpace {
         for (int i = 0; i < powList[arr.length]; i++) {
             int[] mul = new int[arr.length];
             for (int j = 0; j < arr.length; j++) {
-                mul[j] = mul(arr[j], crd(i, j));
+                mul[j] = mul(crd(i, j), arr[j]);
             }
             bs.set(add(mul));
         }
