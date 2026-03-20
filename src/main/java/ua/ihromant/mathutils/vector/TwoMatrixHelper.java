@@ -172,19 +172,40 @@ public class TwoMatrixHelper implements ModuloMatrixHelper {
         return r;
     }
 
-    private int[][] toMatrix(int a) {
-        int[][] result = new int[n][n];
-        for (int i = 0; i < n * n; i++) {
-            result[i / n][i % n] = a % 2;
-            a = a / 2;
+    @Override
+    public int fromVec(int[] vec) {
+        int result = 0;
+        for (int i = 0; i < n(); i++) {
+            result = (result << 1) + vec[i];
         }
         return result;
     }
 
-    private int fromMatrix(int[][] matrix) {
+    @Override
+    public int[] toVec(int x) {
+        int[] result = new int[n()];
+        for (int i = n() - 1; i >= 0; i--) {
+            result[i] = x & 1;
+            x = x >>> 1;
+        }
+        return result;
+    }
+
+    @Override
+    public int[][] toMatrix(int a) {
+        int[][] result = new int[n][n];
+        for (int i = 0; i < n * n; i++) {
+            result[i / n][i % n] = a & 1;
+            a = a >>> 1;
+        }
+        return result;
+    }
+
+    @Override
+    public int fromMatrix(int[][] matrix) {
         int result = 0;
         for (int i = n * n - 1; i >= 0; i--) {
-            result = result * 2 + matrix[i / n][i % n];
+            result = (result << 1) + matrix[i / n][i % n];
         }
         return result;
     }

@@ -123,23 +123,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
         return v;
     }
 
-    private int[][] toMatrix(int a) {
-        int[][] result = new int[n][n];
-        for (int i = 0; i < n * n; i++) {
-            result[i / n][i % n] = a % p;
-            a = a / p;
-        }
-        return result;
-    }
-
-    private int fromMatrix(int[][] matrix) {
-        int result = 0;
-        for (int i = n * n - 1; i >= 0; i--) {
-            result = result * p + matrix[i / n][i % n];
-        }
-        return result;
-    }
-
     private int calcUnity() {
         int[][] result = new int[n][n];
         for (int i = 0; i < n; i++) {

@@ -51,6 +51,27 @@ public interface ModuloMatrixHelper {
         return result;
     }
 
+    default int[][] toMatrix(int a) {
+        int n = n();
+        int p = p();
+        int[][] result = new int[n][n];
+        for (int i = 0; i < n * n; i++) {
+            result[i / n][i % n] = a % p;
+            a = a / p;
+        }
+        return result;
+    }
+
+    default int fromMatrix(int[][] matrix) {
+        int n = n();
+        int p = p();
+        int result = 0;
+        for (int i = n() * n() - 1; i >= 0; i--) {
+            result = result * p + matrix[i / n][i % n];
+        }
+        return result;
+    }
+
     static ModuloMatrixHelper of(int p, int n) {
         if (p == 2) {
             return new TwoMatrixHelper(n);
