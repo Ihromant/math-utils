@@ -394,6 +394,100 @@ public class AssumptionTest {
         });
     }
 
+    @Test
+    public void largeGroupable() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        Path path = Path.of("/home/ihromant/maths/g-spaces/final/9-729/large.txt");
+        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        List<String> lines = Files.readAllLines(path);
+        lines.parallelStream().forEach(ln -> {
+            Liner lnr = new Liner(om.readValue(ln.substring(ln.indexOf("[[")), int[][].class));
+            unique.add(new FixBS(lnr.graphData().canonical()));
+        });
+        LinearSpace sp = LinearSpace.of(3, 6);
+//        List<Long> gens = new ArrayList<>();
+//        gens.add(fromMapping(sp, new int[]{9, 27, 81, 243, 1, 3}));
+//        gens.add(fromMapping(sp, new int[]{1, 3, 81, 243, 9, 27}));
+//        gens.add(fromMapping(sp, new int[]{1, 3, 9, 27, 243, 81}));
+//        gens.add(fromMapping(sp, new int[]{1, 3, 9, 27, 243, sp.add(81, 243)}));
+        List<Long> baseStab = Arrays.stream(Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/9-729/stab.txt")).split(" "))
+                .map(Long::parseLong).toList(); //closure(sp, gens).stream().sorted().toList();
+        System.out.println(baseStab.size());
+        FixBS fst = sp.hull(1, 3);
+        fst.set(0);
+        FixBS snd = sp.hull(9, 27);
+        snd.set(0);
+        FixBS trd = sp.hull(81, 243);
+        trd.set(0);
+        int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
+        Set<FixBS> fixed = Set.of(fst, snd, trd);
+        for (Long op : baseStab) {
+            Set<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+            assertEquals(mapped, fixed);
+        }
+        List<FixBS> subs = sp.subSpaces(2);
+        assertEquals(subs, subs.stream().sorted().toList());
+        List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
+        List<List<FixBS>> bases = new ArrayList<>();
+        Map<Integer, Long> frq = new HashMap<>();
+        findBases(sp, baseStab, init, init, fixed, 0, s -> {
+            System.out.println(s.size());
+            frq.compute(s.size(), (_, v) -> v == null ? 1 : v + 1);
+            //bases.add(s.stream().sorted().toList());
+        });
+        System.out.println(frq);
+        Set<List<FixBS>> unProcessed = ConcurrentHashMap.newKeySet();
+        unProcessed.addAll(bases);
+        Path basesPath = Path.of("/home/ihromant/maths/g-spaces/final/9-729/bases.txt");
+        lines = Files.readAllLines(basesPath);
+        lines.parallelStream().forEach(ln -> {
+            ln = ln.replace('{', '[').replace('}', ']');
+            int[][] arr = om.readValue(ln, int[][].class);
+            List<FixBS> lst = Arrays.stream(arr).map(a -> FixBS.of(sp.cardinality(), a)).toList();
+            unProcessed.remove(lst);
+        });
+        AtomicInteger ai = new AtomicInteger();
+        System.out.println(unProcessed.size());
+        new ArrayList<>(unProcessed).parallelStream().forEach(base -> {
+            List<FixBS> initLns = new ArrayList<>();
+            base.forEach(s -> initLns.addAll(sp.cosets(s)));
+            FixBS union = base.stream().reduce(FixBS::union).orElseThrow();
+            List<FixBS> suitable = subs.stream().filter(s -> s.intersection(union).cardinality() == 1).toList();
+            Graph g = Graph.by(suitable, (a, b) -> a.intersection(b).cardinality() == 1);
+            if (suitable.isEmpty()) {
+                return;
+            }
+            JNauty.instance().maximalCliques(g, r - base.size(), a -> {
+                FixBS arr = new FixBS(a);
+                List<FixBS> lns = new ArrayList<>(initLns);
+                for (int el = arr.nextSetBit(0); el >= 0; el = arr.nextSetBit(el + 1)) {
+                    FixBS sg = suitable.get(el);
+                    lns.addAll(sp.cosets(sg));
+                }
+                Liner lnr = new Liner(lns.toArray(FixBS[]::new));
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    System.out.println(lnr.graphData().autCount() + " " + freq);
+                    try {
+                        Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "
+                                + Arrays.deepToString(lnr.lines()) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            int val = ai.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val);
+            }
+            try {
+                Files.writeString(basesPath, base + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+
     private static void findBases(LinearSpace sp, List<Long> stab, List<FixBS> transversal, List<FixBS> full, Set<FixBS> curr, int from, Consumer<Set<FixBS>> cons) {
         if (stab.size() == 1) {
             cons.accept(curr);
