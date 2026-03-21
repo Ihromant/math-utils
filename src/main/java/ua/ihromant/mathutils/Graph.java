@@ -46,6 +46,19 @@ public class Graph implements NautyGraph {
         return res;
     }
 
+    public static Graph by(int[] arr, IntBiPredicate pr) {
+        int len = arr.length;
+        Graph res = new Graph(len);
+        IntStream.range(0, len).parallel().forEach(i -> {
+            for (int j = 0; j < len; j++) {
+                if (pr.test(arr[i], arr[j])) {
+                    res.neighbors[i].set(j);
+                }
+            }
+        });
+        return res;
+    }
+
     public void connect(int a, int b) {
         neighbors[a].set(b);
         neighbors[b].set(a);
@@ -168,5 +181,10 @@ public class Graph implements NautyGraph {
     @Override
     public long[] neighborsArr(int i) {
         return neighbors[i].words();
+    }
+
+    @FunctionalInterface
+    public interface IntBiPredicate {
+        boolean test(int a, int b);
     }
 }
