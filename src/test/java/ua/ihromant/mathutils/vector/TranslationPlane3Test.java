@@ -52,7 +52,7 @@ public class TranslationPlane3Test {
 
     private static Liner toAffine(ModuloMatrixHelper helper, int[] base) {
         int n = helper.n();
-        int pow = LinearSpace.pow(2, n);
+        int pow = LinearSpace.pow(helper.p(), n);
         LinearSpace sp = LinearSpace.of(helper.p(), 2 * helper.n());
         FixBS hor = FixBS.of(sp.cardinality(), IntStream.range(0, pow).toArray());
         List<FixBS> lns = new ArrayList<>(sp.cosets(hor));
