@@ -6,7 +6,6 @@ import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.PartialLiner;
-import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -28,8 +27,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -294,10 +291,8 @@ public class AssumptionTest {
         JNauty.instance().maximalCliques(g, r - 3, a -> {
             FixBS arr = new FixBS(a);
             List<int[]> lns = new ArrayList<>(initLns);
-            List<FixBS> base = new ArrayList<>();
             for (int el = arr.nextSetBit(0); el >= 0; el = arr.nextSetBit(el + 1)) {
                 SubGroup sg = sgs.get(el);
-                base.add(sg.elems());
                 Arrays.stream(sg.leftCosets()).map(FixBS::toArray).forEach(lns::add);
             }
             Liner lnr = new Liner(v, lns.toArray(int[][]::new));
@@ -332,16 +327,16 @@ public class AssumptionTest {
         FixBS trd = sp.hull(16, 32);
         trd.set(0);
         int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
-        Set<FixBS> fixed = Set.of(fst, snd, trd);
+        List<FixBS> fixed = new ArrayList<>(List.of(fst, snd, trd));
         for (Long op : baseStab) {
-            Set<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+            List<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
             assertEquals(mapped, fixed);
         }
         List<FixBS> subs = sp.subSpaces(2);
         assertEquals(subs, subs.stream().sorted().toList());
         List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
         List<List<FixBS>> bases = new ArrayList<>();
-        findBases(sp, baseStab, init, init, fixed, 0, (s, stab) -> {
+        findBases(sp, baseStab, init, fixed, (s, stab) -> {
             if (stab.size() >= sp.p() && s.size() < r) {
                 return false;
             }
@@ -426,9 +421,9 @@ public class AssumptionTest {
         FixBS trd = sp.hull(81, 243);
         trd.set(0);
         int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
-        Set<FixBS> fixed = Set.of(fst, snd, trd);
+        List<FixBS> fixed = List.of(fst, snd, trd);
         for (Long op : baseStab) {
-            Set<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+            List<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
             assertEquals(mapped, fixed);
         }
         List<FixBS> subs = sp.subSpaces(2);
@@ -436,7 +431,7 @@ public class AssumptionTest {
         List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
         List<List<FixBS>> bases = new ArrayList<>();
         Map<Integer, Long> frq = new HashMap<>();
-        findBases(sp, baseStab, init, init, fixed, 0, (s, stab) -> {
+        findBases(sp, baseStab, init, fixed, (s, stab) -> {
             if (stab.size() >= sp.p() && s.size() < r) {
                 return false;
             }
@@ -498,36 +493,35 @@ public class AssumptionTest {
         });
     }
 
-    private static void findBases(LinearSpace sp, List<Long> stab, List<FixBS> transversal, List<FixBS> full, Set<FixBS> curr, int from, BiPredicate<Set<FixBS>, List<Long>> cons) {
+    private static void findBases(LinearSpace sp, List<Long> stab, List<FixBS> transversal, List<FixBS> curr, BiPredicate<List<FixBS>, List<Long>> cons) {
         if (cons.test(curr, stab)) {
             return;
         }
-        QuickFind qf = new QuickFind(transversal.size());
-        for (Long st : stab) {
-            for (int i = 0; i < transversal.size(); i++) {
-                FixBS tr = transversal.get(i);
+        List<FixBS> minimal = new ArrayList<>();
+        ex: for (FixBS tr : transversal) {
+            for (Long st : stab) {
                 FixBS mapped = sp.applyOper(st, tr);
-                qf.union(i, Collections.binarySearch(transversal, mapped));
+                if (mapped.compareTo(tr) < 0) {
+                    continue ex;
+                }
             }
+            minimal.add(tr);
         }
-        List<FixBS> comps = qf.components();
-        for (FixBS comp : comps) {
-            FixBS tr = transversal.get(comp.nextSetBit(0));
-            int trIdx = Collections.binarySearch(full, tr);
-            if (trIdx < from) {
+        for (FixBS tr : minimal) {
+            if (!curr.isEmpty() && tr.compareTo(curr.getLast()) < 0) {
                 continue;
             }
-            Set<FixBS> nextCurr = new HashSet<>(curr);
-            nextCurr.add(tr);
+            List<FixBS> nextCurr = new ArrayList<>(curr);
+            nextCurr.add(-Collections.binarySearch(curr, tr) - 1, tr);
             List<Long> nextStab = new ArrayList<>();
             for (Long op : stab) {
-                Set<FixBS> mapped = nextCurr.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+                List<FixBS> mapped = nextCurr.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
                 if (mapped.equals(nextCurr)) {
                     nextStab.add(op);
                 }
             }
             List<FixBS> nextTransversal = transversal.stream().filter(s -> s.intersection(tr).cardinality() == 1).toList();
-            findBases(sp, nextStab, nextTransversal, full, nextCurr, trIdx, cons);
+            findBases(sp, nextStab, nextTransversal, nextCurr, cons);
         }
     }
 
@@ -555,15 +549,15 @@ public class AssumptionTest {
         snd.set(0);
         FixBS trd = subs.stream().filter(s -> s.intersection(fst.union(snd)).cardinality() == 1).findFirst().orElseThrow();
         int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
-        Set<FixBS> fixed = Set.of(fst, snd, trd);
+        List<FixBS> fixed = new ArrayList<>(List.of(fst, snd, trd));
         List<Long> applicableStab = baseStab.stream().parallel().filter(op -> {
-            Set<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).collect(Collectors.toSet());
+            List<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
             return mapped.equals(fixed);
         }).sorted(Comparator.naturalOrder()).toList();
         System.out.println(applicableStab.size());
         List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
         List<List<FixBS>> bases = new ArrayList<>();
-        findBases(sp, applicableStab, init, init, fixed, 0, (s, stab) -> {
+        findBases(sp, applicableStab, init, fixed, (s, stab) -> {
             if (stab.size() >= sp.p() && s.size() < r) {
                 return false;
             }
