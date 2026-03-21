@@ -33,7 +33,7 @@ public class TranslationPlane3Test {
         int[] init = helper.v();
         List<int[]> bases = new ArrayList<>();
         findBases(helper, stabilizers, init, new int[0], (s, stab) -> {
-            if (stab.length > helper.p() && s.length < 2) {
+            if (stab.length >= helper.p() && s.length < r) {
                 return false;
             }
             bases.add(s);
