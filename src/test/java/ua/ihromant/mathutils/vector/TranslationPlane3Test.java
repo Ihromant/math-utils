@@ -33,7 +33,7 @@ public class TranslationPlane3Test {
         int[] init = helper.v();
         List<int[]> bases = new ArrayList<>();
         findBases(helper, stabilizers, init, new int[0], (s, stab) -> {
-            if (stab.length > helper.p() && s.length < r) {
+            if (stab.length > helper.p() && s.length < 2) {
                 return false;
             }
             bases.add(s);
@@ -138,32 +138,62 @@ public class TranslationPlane3Test {
                 }
             });
         }
-        for (int i = 0; i < minimals.size(); i++) {
-            int tr = minimals.get(i);
-            if (curr.length > 0 && tr <= curr[curr.length - 1]) {
-                continue;
-            }
-            int[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
-            nextCurr[curr.length] = tr;
-            IntList nextStab = new IntList(stab.length);
-            for (int op : stab) {
-                int[] mapped = new int[nextCurr.length];
-                IntList il = new IntList(mapped, 0);
-                for (int s : nextCurr) {
-                    il.add(apply(helper, op, s));
+        if (minimals.size() < 16384) {
+            for (int i = 0; i < minimals.size(); i++) {
+                int tr = minimals.get(i);
+                if (curr.length > 0 && tr <= curr[curr.length - 1]) {
+                    continue;
                 }
-                Arrays.sort(mapped);
-                if (Arrays.equals(mapped, nextCurr)) {
-                    nextStab.add(op);
+                int[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
+                nextCurr[curr.length] = tr;
+                IntList nextStab = new IntList(stab.length);
+                for (int op : stab) {
+                    int[] mapped = new int[nextCurr.length];
+                    IntList il = new IntList(mapped, 0);
+                    for (int s : nextCurr) {
+                        il.add(apply(helper, op, s));
+                    }
+                    Arrays.sort(mapped);
+                    if (Arrays.equals(mapped, nextCurr)) {
+                        nextStab.add(op);
+                    }
                 }
-            }
-            IntList nextTransversal = new IntList(transversal.length);
-            for (int s : transversal) {
-                if (helper.hasInv(helper.sub(s, tr))) {
-                    nextTransversal.add(s);
+                IntList nextTransversal = new IntList(transversal.length);
+                for (int s : transversal) {
+                    if (helper.hasInv(helper.sub(s, tr))) {
+                        nextTransversal.add(s);
+                    }
                 }
+                findBases(helper, nextStab.toArray(), nextTransversal.toArray(), nextCurr, cons);
             }
-            findBases(helper, nextStab.toArray(), nextTransversal.toArray(), nextCurr, cons);
+        } else {
+            IntStream.range(0, minimals.size()).parallel().forEach(i -> {
+                int tr = minimals.get(i);
+                if (curr.length > 0 && tr <= curr[curr.length - 1]) {
+                    return;
+                }
+                int[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
+                nextCurr[curr.length] = tr;
+                IntList nextStab = new IntList(stab.length);
+                for (int op : stab) {
+                    int[] mapped = new int[nextCurr.length];
+                    IntList il = new IntList(mapped, 0);
+                    for (int s : nextCurr) {
+                        il.add(apply(helper, op, s));
+                    }
+                    Arrays.sort(mapped);
+                    if (Arrays.equals(mapped, nextCurr)) {
+                        nextStab.add(op);
+                    }
+                }
+                IntList nextTransversal = new IntList(transversal.length);
+                for (int s : transversal) {
+                    if (helper.hasInv(helper.sub(s, tr))) {
+                        nextTransversal.add(s);
+                    }
+                }
+                findBases(helper, nextStab.toArray(), nextTransversal.toArray(), nextCurr, cons);
+            });
         }
     }
 }
