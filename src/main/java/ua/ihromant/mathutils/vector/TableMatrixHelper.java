@@ -24,7 +24,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
         this.matCount = LinearSpace.pow(p, n * n);
         this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
-        System.out.println(gl.length);
         this.idxArr = new int[matCount];
         LinearSpace mini = LinearSpace.of(p, n);
         Arrays.fill(idxArr, -1);
@@ -49,7 +48,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
             }
         });
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
-        System.out.println(v.length);
     }
 
     @Override

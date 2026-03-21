@@ -21,9 +21,7 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
         this.mini = LinearSpace.of(p, this.n);
         this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
-        System.out.println(gl.length);
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
-        System.out.println(v.length);
     }
 
     public CommonMatrixHelper(int p, int n, int[] mapGl) {
@@ -35,7 +33,6 @@ public class CommonMatrixHelper implements ModuloMatrixHelper {
         this.mapGl = mapGl;
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
         this.v = Arrays.stream(gl).filter(a -> mapGl[sub(a, unity)] > 0).toArray();
-        System.out.println(v.length);
     }
 
     @Override
