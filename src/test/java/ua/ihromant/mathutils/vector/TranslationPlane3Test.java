@@ -93,7 +93,7 @@ public class TranslationPlane3Test {
         if (helper.p() == 2) {
             int mask = (1 << sh) - 1;
             a = op & mask;
-            act = a >>> sh;
+            act = op >>> sh;
         } else {
             a = op % helper.matCount();
             act = op / helper.matCount();
