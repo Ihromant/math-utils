@@ -336,7 +336,7 @@ public class TranslationPlane2Test {
         }
     }
 
-    private ModuloMatrixHelper readGl(int p, int n) throws IOException {
+    public static ModuloMatrixHelper readGl(int p, int n) throws IOException {
         if (p != 2) {
             return ModuloMatrixHelper.of(p, n);
         }

@@ -5,12 +5,14 @@ import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class TranslationPlane3Test {
@@ -22,10 +24,10 @@ public class TranslationPlane3Test {
     private static final int ZAAA = 5;
 
     @Test
-    public void translationPlanes() {
+    public void translationPlanes() throws IOException {
         int p = 2;
         int n = 4;
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] stabilizers = suitableOperators(helper);
         int r = LinearSpace.pow(p, n) - 2;
         int[] init = helper.v();
@@ -37,7 +39,7 @@ public class TranslationPlane3Test {
             bases.add(s);
             return true;
         });
-        System.out.println(bases.size());
+        System.out.println(bases.size() + " " + bases.stream().collect(Collectors.groupingBy(l -> l.length, Collectors.counting())));
         Set<FixBS> unique = ConcurrentHashMap.newKeySet();
         bases.parallelStream().forEach(arr -> {
             if (arr.length < r) {
@@ -113,14 +115,28 @@ public class TranslationPlane3Test {
             return;
         }
         IntList minimals = new IntList(transversal.length);
-        ex: for (int tr : transversal) {
-            for (int st : stab) {
-                int mapped = apply(helper, st, tr);
-                if (mapped < tr) {
-                    continue ex;
+        if (transversal.length < 16384) {
+            ex:for (int tr : transversal) {
+                for (int st : stab) {
+                    int mapped = apply(helper, st, tr);
+                    if (mapped < tr) {
+                        continue ex;
+                    }
                 }
+                minimals.add(tr);
             }
-            minimals.add(tr);
+        } else {
+            IntStream.of(transversal).parallel().forEach(tr -> {
+                for (int st : stab) {
+                    int mapped = apply(helper, st, tr);
+                    if (mapped < tr) {
+                        return;
+                    }
+                }
+                synchronized (minimals) {
+                    minimals.add(tr);
+                }
+            });
         }
         for (int i = 0; i < minimals.size(); i++) {
             int tr = minimals.get(i);
