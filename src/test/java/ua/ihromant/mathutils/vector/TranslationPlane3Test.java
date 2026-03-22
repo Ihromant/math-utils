@@ -1,6 +1,8 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.jnauty.JNauty;
+import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
@@ -42,13 +44,25 @@ public class TranslationPlane3Test {
         System.out.println(bases.size() + " " + bases.stream().collect(Collectors.groupingBy(l -> l.length, Collectors.counting())));
         Set<FixBS> unique = ConcurrentHashMap.newKeySet();
         bases.parallelStream().forEach(arr -> {
-            if (arr.length < r) {
+            if (arr.length == r) {
+                Liner lnr = toAffine(helper, arr);
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount());
+                }
                 return;
             }
-            Liner lnr = toAffine(helper, arr);
-            if (unique.add(new FixBS(lnr.graphData().canonical()))) {
-                System.out.println(lnr.graphData().autCount());
+            int[] left = Arrays.stream(init).filter(i -> Arrays.stream(arr).allMatch(j -> helper.hasInv(helper.sub(i, j)))).toArray();
+            if (left.length == 0) {
+                return;
             }
+            Graph g = Graph.by(left, (a, b) -> helper.hasInv(helper.sub(a, b)));
+            JNauty.instance().maximalCliques(g, r - arr.length, a -> {
+                FixBS fbs = new FixBS(a);
+                Liner lnr = toAffine(helper, IntStream.concat(Arrays.stream(arr), Arrays.stream(fbs.toArray()).map(i -> left[i])).toArray());
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount());
+                }
+            });
         });
     }
 
