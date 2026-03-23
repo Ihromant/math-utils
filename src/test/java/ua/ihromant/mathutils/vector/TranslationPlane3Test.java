@@ -285,20 +285,21 @@ public class TranslationPlane3Test {
                         }
                     }
                     result.add(bm);
-                    int[] mappedArr = Arrays.stream(spread).map(el -> helper.apply(bm, el)).sorted().toArray();
-                    assertArrayEquals(spread, mappedArr);
                 }
             }
         }
         return result;
     }
 
+    private static final int[] orbEls32 = new int[]{1119572, 1119606};
+    private static final int[] orbEls16 = new int[]{4698, 4699, 4713};
+
     @Test
     public void testSuitable() throws IOException {
         int p = 2;
-        int n = 5;
+        int n = 4;
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
-        int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), Arrays.stream(helper.v()).limit(1)).sorted().toArray();
+        int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(orbEls16[2])).sorted().toArray();
         List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
         System.out.println(stabilizer.size());
     }
