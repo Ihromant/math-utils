@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -302,5 +303,77 @@ public class TranslationPlane3Test {
         int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(orbEls16[2])).sorted().toArray();
         List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
         System.out.println(stabilizer.size());
+    }
+
+    @Test
+    public void translationPlanesAlt() throws IOException {
+        int p = 2;
+        int n = 4;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        int r = LinearSpace.pow(p, n) + 1;
+        int[] init = helper.v();
+        List<int[]> bases = new ArrayList<>();
+        int[] base = new int[]{0, helper.unity(), helper.matCount()};
+        findBasesAlt(helper, init, base, s -> {
+            if (s.length < 4) {
+                return false;
+            }
+            bases.add(s);
+            return true;
+        });
+        System.out.println(bases.size() + " " + bases.stream().collect(Collectors.groupingBy(l -> l.length, Collectors.counting())));
+        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        bases.parallelStream().forEach(barr -> {
+            int[] arr = Arrays.stream(barr).filter(el -> Arrays.binarySearch(base, el) < 0).toArray();
+            if (arr.length == r - 3) {
+                Liner lnr = toAffine(helper, arr);
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount());
+                }
+                return;
+            }
+            int[] left = Arrays.stream(init).filter(i -> Arrays.stream(arr).allMatch(j -> helper.hasInv(helper.sub(i, j)))).toArray();
+            if (left.length == 0) {
+                return;
+            }
+            Graph g = Graph.by(left, (a, b) -> helper.hasInv(helper.sub(a, b)));
+            JNauty.instance().maximalCliques(g, r - arr.length - 3, a -> {
+                FixBS fbs = new FixBS(a);
+                Liner lnr = toAffine(helper, IntStream.concat(Arrays.stream(arr), Arrays.stream(fbs.toArray()).map(i -> left[i])).toArray());
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount());
+                }
+            });
+        });
+    }
+
+    private static void findBasesAlt(ModuloMatrixHelper helper, int[] transversal, int[] curr, Predicate<int[]> cons) {
+        if (cons.test(curr)) {
+            return;
+        }
+        List<BlockMatrix> stabilizers = suitableOperators(helper, curr);
+        IntList minimals = new IntList(transversal.length);
+        ex: for (int tr : transversal) {
+            for (BlockMatrix st : stabilizers) {
+                int mapped = helper.apply(st, tr);
+                if (mapped < tr) {
+                    continue ex;
+                }
+            }
+            minimals.add(tr);
+        }
+        for (int i = 0; i < minimals.size(); i++) {
+            int tr = minimals.get(i);
+            int[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
+            nextCurr[curr.length] = tr;
+            Arrays.sort(nextCurr);
+            IntList nextTransversal = new IntList(transversal.length);
+            for (int s : transversal) {
+                if (helper.hasInv(helper.sub(s, tr))) {
+                    nextTransversal.add(s);
+                }
+            }
+            findBasesAlt(helper, nextTransversal.toArray(), nextCurr, cons);
+        }
     }
 }
