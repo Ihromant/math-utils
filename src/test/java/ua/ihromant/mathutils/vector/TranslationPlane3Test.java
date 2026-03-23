@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.jnauty.JNauty;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
@@ -16,6 +17,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TranslationPlane3Test {
     private static final int AZZA = 0;
@@ -208,6 +211,22 @@ public class TranslationPlane3Test {
                 }
                 findBases(helper, nextStab.toArray(), nextTransversal.toArray(), nextCurr, cons);
             });
+        }
+    }
+
+    @Test
+    public void testPermutation() {
+        int p = 2;
+        int n = 4;
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), Arrays.stream(helper.v()).limit(1)).sorted().toArray();
+        int[][] choices = Combinatorics.choices(arr.length, 3).toArray(int[][]::new);
+        for (int[] choice : choices) {
+            int[] abc = Arrays.stream(choice).map(i -> arr[i]).toArray();
+            BlockMatrix perm = helper.permutation(abc[0], abc[1], abc[2]);
+            assertEquals(abc[0], helper.apply(perm, 0));
+            assertEquals(abc[1], helper.apply(perm, helper.unity()));
+            assertEquals(abc[2], helper.apply(perm, helper.matCount()));
         }
     }
 }

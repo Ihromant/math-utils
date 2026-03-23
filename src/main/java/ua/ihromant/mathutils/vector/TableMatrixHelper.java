@@ -13,7 +13,6 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
     private final int[][] addMatrix;
     private final int[][] subMatrix;
     private final int[][] mulVecMatrix;
-    private final int[] idxArr;
     private final int[] mapGl;
     private final int[] v;
 
@@ -24,20 +23,15 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
         this.matCount = LinearSpace.pow(p, n * n);
         this.mapGl = generateMapGl();
         this.gl = IntStream.range(0, matCount).filter(i -> mapGl[i] > 0).toArray();
-        this.idxArr = new int[matCount];
         LinearSpace mini = LinearSpace.of(p, n);
-        Arrays.fill(idxArr, -1);
-        for (int i = 0; i < gl.length; i++) {
-            idxArr[gl[i]] = i;
-        }
-        this.mulMatrix = new int[gl.length][gl.length];
-        this.addMatrix = new int[gl.length][gl.length];
-        this.subMatrix = new int[gl.length][gl.length];
-        this.mulVecMatrix = new int[gl.length][mini.cardinality()];
-        IntStream.range(0, gl.length).parallel().forEach(i -> {
-            int[][] iMat = toMatrix(gl[i]);
-            for (int j = 0; j < gl.length; j++) {
-                int[][] jMat = toMatrix(gl[j]);
+        this.mulMatrix = new int[matCount][matCount];
+        this.addMatrix = new int[matCount][matCount];
+        this.subMatrix = new int[matCount][matCount];
+        this.mulVecMatrix = new int[matCount][mini.cardinality()];
+        IntStream.range(0, matCount).parallel().forEach(i -> {
+            int[][] iMat = toMatrix(i);
+            for (int j = 0; j < matCount; j++) {
+                int[][] jMat = toMatrix(j);
                 mulMatrix[i][j] = fromMatrix(multiply(iMat, jMat));
                 addMatrix[i][j] = fromMatrix(add(iMat, jMat));
                 subMatrix[i][j] = fromMatrix(subtract(iMat, jMat));
@@ -72,22 +66,22 @@ public class TableMatrixHelper implements ModuloMatrixHelper {
 
     @Override
     public int add(int i, int j) {
-        return addMatrix[idxArr[i]][idxArr[j]];
+        return addMatrix[i][j];
     }
 
     @Override
     public int sub(int i, int j) {
-        return subMatrix[idxArr[i]][idxArr[j]];
+        return subMatrix[i][j];
     }
 
     @Override
     public int mul(int i, int j) {
-        return mulMatrix[idxArr[i]][idxArr[j]];
+        return mulMatrix[i][j];
     }
 
     @Override
     public int mulVec(int a, int vec) {
-        return mulVecMatrix[idxArr[a]][vec];
+        return mulVecMatrix[a][vec];
     }
 
     @Override

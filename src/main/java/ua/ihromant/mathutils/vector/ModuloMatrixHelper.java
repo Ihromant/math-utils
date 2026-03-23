@@ -102,4 +102,39 @@ public interface ModuloMatrixHelper {
         }
         return p == 2 ? new TwoMatrixHelper(n, mapGl) : new CommonMatrixHelper(p, n, mapGl);
     }
+
+    default BlockMatrix mul(BlockMatrix x, BlockMatrix y) {
+        return new BlockMatrix(
+                add(mul(x.a(), y.a()), mul(x.b(), y.c())),
+                add(mul(x.a(), y.b()), mul(x.b(), y.d())),
+                add(mul(x.c(), y.a()), mul(x.d(), y.c())),
+                add(mul(x.c(), y.b()), mul(x.d(), y.d())));
+    }
+
+    default int apply(BlockMatrix bm, int m) {
+        if (m == matCount()) {
+            return bm.b() == 0 ? matCount() : mul(bm.d(), inv(bm.b()));
+        }
+        int den = add(bm.a(), mul(bm.b(), m));
+        if (den == 0) {
+            return matCount();
+        }
+        int nom = add(bm.c(), mul(bm.d(), m));
+        return mul(nom, inv(den));
+    }
+
+    default BlockMatrix permutation(int a, int b, int c) {
+        if (c == matCount()) {
+            int ab = sub(b, a);
+            return new BlockMatrix(unity(), 0, a, ab);
+        }
+        int ac = inv(sub(a, c));
+        if (b == matCount()) {
+            return new BlockMatrix(unity(), 0, a, ac);
+        }
+        int bc = inv(sub(b, c));
+        int ab = sub(a, b);
+        int rt = mul(ac, mul(ab, mul(bc, ac)));
+        return new BlockMatrix(unity(), rt, a, mul(c, rt));
+    }
 }
