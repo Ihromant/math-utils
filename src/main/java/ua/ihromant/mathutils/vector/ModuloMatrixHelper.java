@@ -112,8 +112,11 @@ public interface ModuloMatrixHelper {
     }
 
     default int apply(BlockMatrix bm, int m) {
+        if (m == 0) {
+            return !hasInv(bm.a()) ? matCount() : mul(bm.c(), inv(bm.a()));
+        }
         if (m == matCount()) {
-            return bm.b() == 0 ? matCount() : mul(bm.d(), inv(bm.b()));
+            return !hasInv(bm.b()) ? matCount() : mul(bm.d(), inv(bm.b()));
         }
         int den = add(bm.a(), mul(bm.b(), m));
         if (den == 0) {

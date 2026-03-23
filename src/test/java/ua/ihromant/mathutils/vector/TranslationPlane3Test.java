@@ -18,7 +18,7 @@ import java.util.function.BiPredicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 public class TranslationPlane3Test {
     private static final int AZZA = 0;
@@ -221,12 +221,45 @@ public class TranslationPlane3Test {
         ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
         int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), Arrays.stream(helper.v()).limit(1)).sorted().toArray();
         int[][] choices = Combinatorics.choices(arr.length, 3).toArray(int[][]::new);
+        int[] gls = helper.gl();
+        BlockMatrix[] permutations = new BlockMatrix[]{
+                new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
+                new BlockMatrix(helper.unity(), helper.unity(), helper.unity(), 0), new BlockMatrix(helper.unity(), helper.unity(), 0, helper.unity()),
+                new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
         for (int[] choice : choices) {
             int[] abc = Arrays.stream(choice).map(i -> arr[i]).toArray();
-            BlockMatrix perm = helper.permutation(abc[0], abc[1], abc[2]);
-            assertEquals(abc[0], helper.apply(perm, 0));
-            assertEquals(abc[1], helper.apply(perm, helper.unity()));
-            assertEquals(abc[2], helper.apply(perm, helper.matCount()));
+            BlockMatrix oper = helper.permutation(abc[0], abc[1], abc[2]);
+            for (int gl : gls) {
+                BlockMatrix glBlock = new BlockMatrix(gl, 0, 0, gl);
+                for (BlockMatrix perm : permutations) {
+                    BlockMatrix bm = helper.mul(oper, helper.mul(perm, glBlock));
+                    int[] result = new int[]{helper.apply(bm, 0), helper.apply(bm, helper.unity()), helper.apply(bm, helper.matCount())};
+                    Arrays.sort(result);
+                    assertArrayEquals(abc, result);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void testApplication() {
+        int p = 2;
+        int n = 4;
+        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        int[] gls = helper.gl();
+        BlockMatrix[] permutations = new BlockMatrix[]{
+                new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
+                new BlockMatrix(helper.unity(), helper.unity(), helper.unity(), 0), new BlockMatrix(helper.unity(), helper.unity(), 0, helper.unity()),
+                new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
+        int[] abc = new int[]{0, helper.unity(), helper.matCount()};
+        for (int gl : gls) {
+            BlockMatrix glBlock = new BlockMatrix(gl, 0, 0, gl);
+            for (BlockMatrix perm : permutations) {
+                BlockMatrix bm = helper.mul(perm, glBlock);
+                int[] result = new int[]{helper.apply(bm, abc[0]), helper.apply(bm, abc[1]), helper.apply(bm, abc[2])};
+                Arrays.sort(result);
+                assertArrayEquals(abc, result);
+            }
         }
     }
 }
