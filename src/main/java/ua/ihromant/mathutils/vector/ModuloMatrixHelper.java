@@ -119,14 +119,14 @@ public interface ModuloMatrixHelper {
             return !hasInv(bm.b()) ? matCount() : mul(bm.d(), inv(bm.b()));
         }
         int den = add(bm.a(), mul(bm.b(), m));
-        if (den == 0) {
+        if (!hasInv(den)) {
             return matCount();
         }
         int nom = add(bm.c(), mul(bm.d(), m));
         return mul(nom, inv(den));
     }
 
-    default BlockMatrix permutation(int a, int b, int c) {
+    default BlockMatrix permutator(int a, int b, int c) {
         if (c == matCount()) {
             int ab = sub(b, a);
             return new BlockMatrix(unity(), 0, a, ab);

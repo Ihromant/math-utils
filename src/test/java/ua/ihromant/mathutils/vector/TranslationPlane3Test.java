@@ -133,7 +133,7 @@ public class TranslationPlane3Test {
         }
         IntList minimals = new IntList(transversal.length);
         if (transversal.length < 16384) {
-            ex:for (int tr : transversal) {
+            ex: for (int tr : transversal) {
                 for (int st : stab) {
                     int mapped = apply(helper, st, tr);
                     if (mapped < tr) {
@@ -215,10 +215,10 @@ public class TranslationPlane3Test {
     }
 
     @Test
-    public void testPermutation() {
+    public void testPermutation() throws IOException {
         int p = 2;
-        int n = 4;
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        int n = 5;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), Arrays.stream(helper.v()).limit(1)).sorted().toArray();
         int[][] choices = Combinatorics.choices(arr.length, 3).toArray(int[][]::new);
         int[] gls = helper.gl();
@@ -228,7 +228,7 @@ public class TranslationPlane3Test {
                 new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
         for (int[] choice : choices) {
             int[] abc = Arrays.stream(choice).map(i -> arr[i]).toArray();
-            BlockMatrix oper = helper.permutation(abc[0], abc[1], abc[2]);
+            BlockMatrix oper = helper.permutator(abc[0], abc[1], abc[2]);
             for (int gl : gls) {
                 BlockMatrix glBlock = new BlockMatrix(gl, 0, 0, gl);
                 for (BlockMatrix perm : permutations) {
@@ -242,10 +242,10 @@ public class TranslationPlane3Test {
     }
 
     @Test
-    public void testApplication() {
+    public void testApplication() throws IOException {
         int p = 2;
-        int n = 4;
-        ModuloMatrixHelper helper = ModuloMatrixHelper.of(p, n);
+        int n = 5;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] gls = helper.gl();
         BlockMatrix[] permutations = new BlockMatrix[]{
                 new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
@@ -261,5 +261,45 @@ public class TranslationPlane3Test {
                 assertArrayEquals(abc, result);
             }
         }
+    }
+
+    private static List<BlockMatrix> suitableOperators(ModuloMatrixHelper helper, int[] spread) {
+        BlockMatrix[] permutations = new BlockMatrix[]{
+                new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
+                new BlockMatrix(helper.unity(), helper.unity(), helper.unity(), 0), new BlockMatrix(helper.unity(), helper.unity(), 0, helper.unity()),
+                new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
+        int[][] choices = Combinatorics.choices(spread.length, 3).toArray(int[][]::new);
+        int[] gls = helper.gl();
+        List<BlockMatrix> result = new ArrayList<>();
+        for (int[] choice : choices) {
+            int[] abc = new int[]{spread[choice[0]], spread[choice[1]], spread[choice[2]]};
+            BlockMatrix oper = helper.permutator(abc[0], abc[1], abc[2]);
+            for (int gl : gls) {
+                BlockMatrix glBlock = new BlockMatrix(gl, 0, 0, gl);
+                ex: for (BlockMatrix perm : permutations) {
+                    BlockMatrix bm = helper.mul(oper, helper.mul(perm, glBlock));
+                    for (int el : spread) {
+                        int applied = helper.apply(bm, el);
+                        if (Arrays.binarySearch(spread, applied) < 0) {
+                            continue ex;
+                        }
+                    }
+                    result.add(bm);
+                    int[] mappedArr = Arrays.stream(spread).map(el -> helper.apply(bm, el)).sorted().toArray();
+                    assertArrayEquals(spread, mappedArr);
+                }
+            }
+        }
+        return result;
+    }
+
+    @Test
+    public void testSuitable() throws IOException {
+        int p = 2;
+        int n = 5;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), Arrays.stream(helper.v()).limit(1)).sorted().toArray();
+        List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
+        System.out.println(stabilizer.size());
     }
 }
