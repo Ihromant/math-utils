@@ -113,17 +113,17 @@ public interface ModuloMatrixHelper {
 
     default int apply(BlockMatrix bm, int m) {
         if (m == 0) {
-            return !hasInv(bm.a()) ? matCount() : mul(bm.c(), inv(bm.a()));
+            return !hasInv(bm.a()) ? bm.a() == 0 ? matCount() : -1 : mul(bm.c(), inv(bm.a()));
         }
         if (m == matCount()) {
-            return !hasInv(bm.b()) ? matCount() : mul(bm.d(), inv(bm.b()));
+            return !hasInv(bm.b()) ? bm.b() == 0 ? matCount() : -1 : mul(bm.d(), inv(bm.b()));
         }
         int den = add(bm.a(), mul(bm.b(), m));
         if (!hasInv(den)) {
-            return matCount();
+            return den == 0 ? matCount() : -1;
         }
-        int nom = add(bm.c(), mul(bm.d(), m));
-        return mul(nom, inv(den));
+        int num = add(bm.c(), mul(bm.d(), m));
+        return mul(num, inv(den));
     }
 
     default BlockMatrix permutator(int a, int b, int c) {

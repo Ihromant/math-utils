@@ -298,9 +298,9 @@ public class TranslationPlane3Test {
     @Test
     public void testSuitable() throws IOException {
         int p = 2;
-        int n = 4;
+        int n = 5;
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
-        int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(orbEls16[2])).sorted().toArray();
+        int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(orbEls32[0])).sorted().toArray();
         List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
         System.out.println(stabilizer.size());
     }
@@ -315,7 +315,7 @@ public class TranslationPlane3Test {
         List<int[]> bases = new ArrayList<>();
         int[] base = new int[]{0, helper.unity(), helper.matCount()};
         findBasesAlt(helper, init, base, s -> {
-            if (s.length < 4) {
+            if (s.length < 6) {
                 return false;
             }
             bases.add(s);
