@@ -364,9 +364,10 @@ public class TranslationPlane3Test {
         }
         for (int i = 0; i < minimals.size(); i++) {
             int tr = minimals.get(i);
-            int[] nextCurr = Arrays.copyOf(curr, curr.length + 1);
-            nextCurr[curr.length] = tr;
-            Arrays.sort(nextCurr);
+            int[] nextCurr = append(helper, curr, tr);
+            if (nextCurr == null) {
+                continue;
+            }
             IntList nextTransversal = new IntList(transversal.length);
             for (int s : transversal) {
                 if (helper.hasInv(helper.sub(s, tr))) {
@@ -375,5 +376,27 @@ public class TranslationPlane3Test {
             }
             findBasesAlt(helper, nextTransversal.toArray(), nextCurr, cons);
         }
+    }
+
+    private static int[] append(ModuloMatrixHelper helper, int[] curr, int tr) {
+        int idx = curr.length - 2;
+        while (true) {
+            int c = curr[idx];
+            boolean more = tr > c;
+            if (more) {
+                idx++;
+                break;
+            } else {
+                if (c != helper.unity()) {
+                    return null;
+                }
+            }
+            idx--;
+        }
+        int[] nextCurr = new int[curr.length + 1];
+        System.arraycopy(curr, 0, nextCurr, 0, idx);
+        System.arraycopy(curr, idx, nextCurr, idx + 1, curr.length - idx);
+        nextCurr[idx] = tr;
+        return nextCurr;
     }
 }
