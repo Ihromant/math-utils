@@ -11,7 +11,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -274,11 +274,11 @@ public class TranslationPlane3Test {
                 new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
         int[][] choices = Combinatorics.choices(spread.length, 3).toArray(int[][]::new);
         int[] gls = helper.gl();
-        List<BlockMatrix> result = new ArrayList<>();
+        List<BlockMatrix> result = Collections.synchronizedList(new ArrayList<>());
         for (int[] choice : choices) {
             int[] abc = new int[]{spread[choice[0]], spread[choice[1]], spread[choice[2]]};
             BlockMatrix oper = helper.permutator(abc[0], abc[1], abc[2]);
-            for (int gl : gls) {
+            Arrays.stream(gls).parallel().forEach(gl -> {
                 BlockMatrix glBlock = new BlockMatrix(gl, 0, 0, gl);
                 ex: for (BlockMatrix perm : permutations) {
                     BlockMatrix bm = helper.mul(oper, helper.mul(perm, glBlock));
@@ -290,9 +290,9 @@ public class TranslationPlane3Test {
                     }
                     result.add(bm);
                 }
-            }
+            });
         }
-        return result;
+        return new ArrayList<>(result);
     }
 
     private static final int[] orbEls32 = new int[]{1119572, 1119606};
@@ -433,7 +433,7 @@ public class TranslationPlane3Test {
         int p = 2;
         int n = 5;
         List<OrbitInfo> orbitInfos = new ArrayList<>();
-        List<BlockMatrix> stabilizers = new ArrayList<>();
+        List<BlockMatrix> stabilizers = Collections.synchronizedList(new ArrayList<>());
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] gl = helper.gl();
         BlockMatrix[] permutations = p % 2 != 0 ? new BlockMatrix[]{
@@ -443,21 +443,20 @@ public class TranslationPlane3Test {
                 new BlockMatrix(helper.unity(), helper.unity(), helper.unity(), 0), new BlockMatrix(helper.unity(), helper.unity(), 0, helper.unity()),
                 new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
         for (BlockMatrix perm : permutations) {
-            for (int el : gl) {
+            Arrays.stream(gl).parallel().forEach(el -> {
                 BlockMatrix bm = new BlockMatrix(el, 0, 0, el);
                 stabilizers.add(helper.mul(perm, bm));
-            }
+            });
         }
         int[] v = helper.v();
         int min = v[0];
         while (min >= 0) {
-            Map<Integer, BlockMatrix> ops = new HashMap<>();
-            for (BlockMatrix st : stabilizers) {
-                int applied = helper.apply(st, min);
-                if (!ops.containsKey(applied)) {
-                    ops.put(applied, st);
-                }
-            }
+            int m = min;
+            Map<Integer, BlockMatrix> ops = new ConcurrentHashMap<>();
+            stabilizers.parallelStream().forEach(st -> {
+                int applied = helper.apply(st, m);
+                ops.putIfAbsent(applied, st);
+            });
             int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
             List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
             orbitInfos.add(new OrbitInfo(min, ops, stabilizer));
@@ -466,6 +465,7 @@ public class TranslationPlane3Test {
         System.out.println(orbitInfos.size() + " " + Arrays.toString(orbitInfos.stream().mapToInt(OrbitInfo::minimal).toArray()));
         for (OrbitInfo oi : orbitInfos) {
             int m = oi.minimal();
+            System.out.println(m + " " + oi.ops.size() + " " + oi.stabilizer.size());
             for (Map.Entry<Integer, BlockMatrix> e : oi.ops().entrySet()) {
                 assertEquals(e.getKey(), helper.apply(e.getValue(), m));
             }
