@@ -431,9 +431,8 @@ public class TranslationPlane3Test {
     @Test
     public void testFourStruct() throws IOException {
         int p = 2;
-        int n = 4;
-        List<Map<Integer, BlockMatrix>> preImages = new ArrayList<>();
-        List<Integer> minimals = new ArrayList<>();
+        int n = 5;
+        List<OrbitInfo> orbitInfos = new ArrayList<>();
         List<BlockMatrix> stabilizers = new ArrayList<>();
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] gl = helper.gl();
@@ -452,23 +451,31 @@ public class TranslationPlane3Test {
         int[] v = helper.v();
         int min = v[0];
         while (min >= 0) {
-            minimals.add(min);
-            Map<Integer, BlockMatrix> preIm = new HashMap<>();
+            Map<Integer, BlockMatrix> ops = new HashMap<>();
             for (BlockMatrix st : stabilizers) {
                 int applied = helper.apply(st, min);
-                if (!preIm.containsKey(applied)) {
-                    preIm.put(applied, helper.inverse(st));
+                if (!ops.containsKey(applied)) {
+                    ops.put(applied, helper.inverse(st));
                 }
             }
-            preImages.add(preIm);
-            min = Arrays.stream(v).filter(el -> preImages.stream().noneMatch(m -> m.containsKey(el))).findFirst().orElse(-1);
+            int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
+            List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
+            orbitInfos.add(new OrbitInfo(min, ops, stabilizer));
+            min = Arrays.stream(v).filter(el -> orbitInfos.stream().noneMatch(oi -> oi.ops.containsKey(el))).findFirst().orElse(-1);
         }
-        System.out.println(minimals + " " + preImages.size());
-        for (int i = 0; i < minimals.size(); i++) {
-            int m = minimals.get(i);
-            for (Map.Entry<Integer, BlockMatrix> e : preImages.get(i).entrySet()) {
+        System.out.println(orbitInfos.size() + " " + Arrays.toString(orbitInfos.stream().mapToInt(OrbitInfo::minimal).toArray()));
+        for (OrbitInfo oi : orbitInfos) {
+            int m = oi.minimal();
+            for (Map.Entry<Integer, BlockMatrix> e : oi.ops().entrySet()) {
                 assertEquals(m, helper.apply(e.getValue(), e.getKey()));
             }
+            int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(m)).sorted().toArray();
+            for (BlockMatrix bm : oi.stabilizer()) {
+                assertArrayEquals(arr, IntStream.of(arr).map(i -> helper.apply(bm, i)).sorted().toArray());
+            }
         }
+    }
+
+    private record OrbitInfo(int minimal, Map<Integer, BlockMatrix> ops, List<BlockMatrix> stabilizer) {
     }
 }
