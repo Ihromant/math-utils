@@ -22,8 +22,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class TranslationPlane3Test {
     private static final int AZZA = 0;
@@ -433,11 +432,27 @@ public class TranslationPlane3Test {
     public void testFourStruct() throws IOException {
         int p = 2;
         int n = 5;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
+        System.out.println(helper.v().length + " " + orbitInfos.size() + " " + Arrays.toString(orbitInfos.stream().mapToInt(OrbitInfo::minimal).toArray()));
+        for (OrbitInfo oi : orbitInfos) {
+            int m = oi.minimal();
+            System.out.println(m + " " + oi.ops.size() + " " + oi.stabilizer.size());
+            for (Map.Entry<Integer, BlockMatrix> e : oi.ops().entrySet()) {
+                assertEquals(e.getKey(), helper.apply(e.getValue(), m));
+            }
+            int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(m)).sorted().toArray();
+            for (BlockMatrix bm : oi.stabilizer()) {
+                assertArrayEquals(arr, IntStream.of(arr).map(i -> helper.apply(bm, i)).sorted().toArray());
+            }
+        }
+    }
+
+    private static List<OrbitInfo> getOrbitInfos(ModuloMatrixHelper helper) {
         List<OrbitInfo> orbitInfos = new ArrayList<>();
         List<BlockMatrix> stabilizers = Collections.synchronizedList(new ArrayList<>());
-        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] gl = helper.gl();
-        BlockMatrix[] permutations = p % 2 != 0 ? new BlockMatrix[]{
+        BlockMatrix[] permutations = helper.p() % 2 != 0 ? new BlockMatrix[]{
                 new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0)}
                 : new BlockMatrix[]{
                 new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
@@ -463,20 +478,107 @@ public class TranslationPlane3Test {
             orbitInfos.add(new OrbitInfo(min, new HashMap<>(ops), stabilizer));
             min = Arrays.stream(v).filter(el -> orbitInfos.stream().noneMatch(oi -> oi.ops.containsKey(el))).findFirst().orElse(-1);
         }
-        System.out.println(gl.length + " " + orbitInfos.size() + " " + Arrays.toString(orbitInfos.stream().mapToInt(OrbitInfo::minimal).toArray()));
-        for (OrbitInfo oi : orbitInfos) {
-            int m = oi.minimal();
-            System.out.println(m + " " + oi.ops.size() + " " + oi.stabilizer.size());
-            for (Map.Entry<Integer, BlockMatrix> e : oi.ops().entrySet()) {
-                assertEquals(e.getKey(), helper.apply(e.getValue(), m));
-            }
-            int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(m)).sorted().toArray();
-            for (BlockMatrix bm : oi.stabilizer()) {
-                assertArrayEquals(arr, IntStream.of(arr).map(i -> helper.apply(bm, i)).sorted().toArray());
-            }
-        }
+        return orbitInfos;
     }
 
     private record OrbitInfo(int minimal, Map<Integer, BlockMatrix> ops, List<BlockMatrix> stabilizer) {
+    }
+
+    @Test
+    public void translationPlanesB() throws IOException {
+        int p = 2;
+        int n = 4;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
+        List<int[]> bases = new ArrayList<>();
+        int[] v = helper.v();
+        int[] base = new int[]{0, helper.unity(), helper.matCount()};
+        int r = LinearSpace.pow(p, n) + 1;
+        for (OrbitInfo info : orbitInfos) {
+            int min = info.minimal();
+            int[] quad = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
+            int[] newV = Arrays.stream(v).filter(el -> helper.hasInv(helper.sub(min, el))).toArray();
+            findBasesB(helper, orbitInfos, newV, quad, s -> {
+                if (s.length < 7) {
+                    return false;
+                }
+                bases.add(s);
+                return true;
+            });
+        }
+        System.out.println(bases.size() + " " + bases.stream().collect(Collectors.groupingBy(l -> l.length, Collectors.counting())));
+        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        bases.parallelStream().forEach(barr -> {
+            int[] arr = Arrays.stream(barr).filter(el -> Arrays.binarySearch(base, el) < 0).toArray();
+            if (arr.length == r - 3) {
+                Liner lnr = toAffine(helper, arr);
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount());
+                }
+                return;
+            }
+            int[] left = Arrays.stream(v).filter(i -> Arrays.stream(arr).allMatch(j -> helper.hasInv(helper.sub(i, j)))).toArray();
+            if (left.length == 0) {
+                return;
+            }
+            Graph g = Graph.by(left, (a, b) -> helper.hasInv(helper.sub(a, b)));
+            JNauty.instance().maximalCliques(g, r - arr.length - 3, a -> {
+                FixBS fbs = new FixBS(a);
+                Liner lnr = toAffine(helper, IntStream.concat(Arrays.stream(arr), Arrays.stream(fbs.toArray()).map(i -> left[i])).toArray());
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    System.out.println(lnr.graphData().autCount());
+                }
+            });
+        });
+    }
+
+    private static void findBasesB(ModuloMatrixHelper helper, List<OrbitInfo> infos, int[] transversal, int[] curr, Predicate<int[]> cons) {
+        if (cons.test(curr)) {
+            return;
+        }
+        int[][] choices = Combinatorics.choices(curr.length, 4).toArray(int[][]::new);
+        List<BlockMatrix> stabilizers = new ArrayList<>();
+        for (int[] choice : choices) {
+            int a = curr[choice[0]];
+            int b = curr[choice[1]];
+            int c = curr[choice[2]];
+            int d = curr[choice[3]];
+            BlockMatrix x = helper.permutator(a, b, c);
+            BlockMatrix xi = helper.inverse(x);
+            int xd = helper.apply(xi, d);
+            OrbitInfo info = infos.stream().filter(i -> i.ops().containsKey(xd)).findAny().orElseThrow();
+            BlockMatrix y = info.ops().get(xd);
+            for (BlockMatrix z : info.stabilizer()) {
+                BlockMatrix xyz = helper.mul(helper.mul(x, y), z);
+                if (Arrays.stream(curr).anyMatch(el -> Arrays.binarySearch(curr, helper.apply(xyz, el)) < 0)) {
+                    continue;
+                }
+                stabilizers.add(xyz);
+            }
+        }
+        IntList minimals = new IntList(transversal.length);
+        ex: for (int tr : transversal) {
+            for (BlockMatrix st : stabilizers) {
+                int mapped = helper.apply(st, tr);
+                if (mapped < tr) {
+                    continue ex;
+                }
+            }
+            minimals.add(tr);
+        }
+        for (int i = 0; i < minimals.size(); i++) {
+            int tr = minimals.get(i);
+            int[] nextCurr = append(helper, curr, tr);
+            if (nextCurr == null) {
+                continue;
+            }
+            IntList nextTransversal = new IntList(transversal.length);
+            for (int s : transversal) {
+                if (helper.hasInv(helper.sub(s, tr))) {
+                    nextTransversal.add(s);
+                }
+            }
+            findBasesB(helper, infos, nextTransversal.toArray(), nextCurr, cons);
+        }
     }
 }
