@@ -431,13 +431,15 @@ public class TranslationPlane3Test {
     @Test
     public void testFourStruct() throws IOException {
         int p = 2;
-        int n = 5;
+        int n = 4;
         List<Map<Integer, BlockMatrix>> preImages = new ArrayList<>();
         List<Integer> minimals = new ArrayList<>();
         List<BlockMatrix> stabilizers = new ArrayList<>();
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         int[] gl = helper.gl();
-        BlockMatrix[] permutations = new BlockMatrix[]{
+        BlockMatrix[] permutations = p % 2 != 0 ? new BlockMatrix[]{
+                new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0)}
+                : new BlockMatrix[]{
                 new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
                 new BlockMatrix(helper.unity(), helper.unity(), helper.unity(), 0), new BlockMatrix(helper.unity(), helper.unity(), 0, helper.unity()),
                 new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
