@@ -536,24 +536,26 @@ public class TranslationPlane3Test {
         if (cons.test(curr)) {
             return;
         }
-        int[][] choices = Combinatorics.choices(curr.length, 4).toArray(int[][]::new);
+        int[][] choices = Combinatorics.choices(curr.length, 3).toArray(int[][]::new);
         List<BlockMatrix> stabilizers = new ArrayList<>();
         for (int[] choice : choices) {
             int a = curr[choice[0]];
             int b = curr[choice[1]];
             int c = curr[choice[2]];
-            int d = curr[choice[3]];
             BlockMatrix x = helper.permutator(a, b, c);
             BlockMatrix xi = helper.inverse(x);
-            int xd = helper.apply(xi, d);
-            OrbitInfo info = infos.stream().filter(i -> i.ops().containsKey(xd)).findAny().orElseThrow();
-            BlockMatrix y = info.ops().get(xd);
-            for (BlockMatrix z : info.stabilizer()) {
-                BlockMatrix xyz = helper.mul(helper.mul(x, y), z);
-                if (Arrays.stream(curr).anyMatch(el -> Arrays.binarySearch(curr, helper.apply(xyz, el)) < 0)) {
-                    continue;
+            for (int last = choice[2] + 1; last < curr.length; last++) {
+                int d = curr[last];
+                int xd = helper.apply(xi, d);
+                OrbitInfo info = infos.stream().filter(i -> i.ops().containsKey(xd)).findAny().orElseThrow();
+                BlockMatrix y = info.ops().get(xd);
+                for (BlockMatrix z : info.stabilizer()) {
+                    BlockMatrix xyz = helper.mul(helper.mul(x, y), z);
+                    if (Arrays.stream(curr).anyMatch(el -> Arrays.binarySearch(curr, helper.apply(xyz, el)) < 0)) {
+                        continue;
+                    }
+                    stabilizers.add(xyz);
                 }
-                stabilizers.add(xyz);
             }
         }
         IntList minimals = new IntList(transversal.length);
