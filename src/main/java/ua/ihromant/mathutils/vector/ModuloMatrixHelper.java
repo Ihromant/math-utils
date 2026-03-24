@@ -129,15 +129,16 @@ public interface ModuloMatrixHelper {
     default BlockMatrix permutator(int a, int b, int c) {
         if (c == matCount()) {
             int ab = sub(b, a);
-            return new BlockMatrix(unity(), 0, a, ab);
+            return new BlockMatrix(unity(), 0, 0, ab);
         }
-        int ac = inv(sub(a, c));
         if (b == matCount()) {
-            return new BlockMatrix(unity(), 0, a, ac);
+            return new BlockMatrix(unity(), 0, a, c);
         }
+        int ac = sub(a, c);
+        int aci = inv(ac);
         int bc = inv(sub(b, c));
         int ab = sub(a, b);
-        int rt = mul(ac, mul(ab, mul(bc, ac)));
+        int rt = mul(aci, mul(ab, mul(bc, ac)));
         return new BlockMatrix(unity(), rt, a, mul(c, rt));
     }
 
