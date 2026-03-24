@@ -147,7 +147,31 @@ public interface ModuloMatrixHelper {
         int c = bm.c();
         int d = bm.d();
         if (!hasInv(a)) {
-            throw new IllegalArgumentException();
+            if (!hasInv(d)) {
+                if (!hasInv(b)) {
+                    throw new IllegalArgumentException();
+                }
+                int bi = inv(b);
+                int mb = sub(c, mul(mul(d, bi), a));
+                if (!hasInv(mb)) {
+                    throw new IllegalArgumentException();
+                }
+                int mbi = inv(mb);
+                return new BlockMatrix(mulCff(mul(mul(mbi, d), bi), p() - 1),
+                        mbi,
+                        add(bi, mul(mul(mul(mul(bi, a), mbi), d), bi)),
+                        mulCff(mul(mul(bi, a), mbi), p() - 1));
+            }
+            int di = inv(d);
+            int md = sub(a, mul(mul(b, di), c));
+            if (!hasInv(md)) {
+                throw new IllegalArgumentException();
+            }
+            int mdi = inv(md);
+            return new BlockMatrix(mdi,
+                    mulCff(mul(mul(mdi, b), di), p() - 1),
+                    mulCff(mul(mul(di, c), mdi), p() - 1),
+                    add(di, mul(mul(mul(mul(di, c), mdi), b), di)));
         }
         int ai = inv(a);
         int ma = sub(d, mul(mul(c, ai), b));

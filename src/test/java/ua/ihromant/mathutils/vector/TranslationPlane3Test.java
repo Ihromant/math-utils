@@ -11,7 +11,9 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.BiPredicate;
@@ -422,6 +424,48 @@ public class TranslationPlane3Test {
                     assertEquals(0, mul.c());
                     assertEquals(helper.unity(), mul.d());
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testFourStruct() throws IOException {
+        int p = 2;
+        int n = 5;
+        List<Map<Integer, BlockMatrix>> preImages = new ArrayList<>();
+        List<Integer> minimals = new ArrayList<>();
+        List<BlockMatrix> stabilizers = new ArrayList<>();
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        int[] gl = helper.gl();
+        BlockMatrix[] permutations = new BlockMatrix[]{
+                new BlockMatrix(helper.unity(), 0, 0, helper.unity()), new BlockMatrix(0, helper.unity(), helper.unity(), 0),
+                new BlockMatrix(helper.unity(), helper.unity(), helper.unity(), 0), new BlockMatrix(helper.unity(), helper.unity(), 0, helper.unity()),
+                new BlockMatrix(0, helper.unity(), helper.unity(), helper.unity()), new BlockMatrix(helper.unity(), 0, helper.unity(), helper.unity())};
+        for (BlockMatrix perm : permutations) {
+            for (int el : gl) {
+                BlockMatrix bm = new BlockMatrix(el, 0, 0, el);
+                stabilizers.add(helper.mul(perm, bm));
+            }
+        }
+        int[] v = helper.v();
+        int min = v[0];
+        while (min >= 0) {
+            minimals.add(min);
+            Map<Integer, BlockMatrix> preIm = new HashMap<>();
+            for (BlockMatrix st : stabilizers) {
+                int applied = helper.apply(st, min);
+                if (!preIm.containsKey(applied)) {
+                    preIm.put(applied, helper.inverse(st));
+                }
+            }
+            preImages.add(preIm);
+            min = Arrays.stream(v).filter(el -> preImages.stream().noneMatch(m -> m.containsKey(el))).findFirst().orElse(-1);
+        }
+        System.out.println(minimals + " " + preImages.size());
+        for (int i = 0; i < minimals.size(); i++) {
+            int m = minimals.get(i);
+            for (Map.Entry<Integer, BlockMatrix> e : preImages.get(i).entrySet()) {
+                assertEquals(m, helper.apply(e.getValue(), e.getKey()));
             }
         }
     }
