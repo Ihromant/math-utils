@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class TranslationPlane3Test {
     private static final int AZZA = 0;
@@ -398,5 +399,30 @@ public class TranslationPlane3Test {
         System.arraycopy(curr, idx, nextCurr, idx + 1, curr.length - idx);
         nextCurr[idx] = tr;
         return nextCurr;
+    }
+
+    @Test
+    public void tstInv() throws IOException {
+        int p = 2;
+        int n = 4;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        int[] v = helper.v();
+        for (int i = 0; i < v.length; i++) {
+            int a = v[i];
+            int[] v1 = Arrays.stream(v, i, v.length).filter(b -> helper.hasInv(helper.sub(b, a))).toArray();
+            for (int j = 0; j < v1.length; j++) {
+                int b = v1[j];
+                int[] v2 = Arrays.stream(v1, j, v1.length).filter(c -> helper.hasInv(helper.sub(c, b))).toArray();
+                for (int c : v2) {
+                    BlockMatrix bm = helper.permutator(a, b, c);
+                    BlockMatrix inv = helper.inverse(bm);
+                    BlockMatrix mul = helper.mul(bm, inv);
+                    assertEquals(helper.unity(), mul.a());
+                    assertEquals(0, mul.b());
+                    assertEquals(0, mul.c());
+                    assertEquals(helper.unity(), mul.d());
+                }
+            }
+        }
     }
 }

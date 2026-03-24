@@ -140,4 +140,25 @@ public interface ModuloMatrixHelper {
         int rt = mul(ac, mul(ab, mul(bc, ac)));
         return new BlockMatrix(unity(), rt, a, mul(c, rt));
     }
+
+    default BlockMatrix inverse(BlockMatrix bm) {
+        int a = bm.a();
+        int b = bm.b();
+        int c = bm.c();
+        int d = bm.d();
+        if (!hasInv(a)) {
+            throw new IllegalArgumentException();
+        }
+        int ai = inv(a);
+        int ma = sub(d, mul(mul(c, ai), b));
+        if (!hasInv(ma)) {
+            throw new IllegalArgumentException();
+        }
+        int mai = inv(ma);
+        return new BlockMatrix(
+                add(ai, mul(mul(mul(mul(ai, b), mai), c), ai)),
+                mulCff(mul(mul(ai, b), mai), p() - 1),
+                mulCff(mul(mul(mai, c), ai), p() - 1),
+                mai);
+    }
 }
