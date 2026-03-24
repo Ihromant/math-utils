@@ -455,7 +455,7 @@ public class TranslationPlane3Test {
             for (BlockMatrix st : stabilizers) {
                 int applied = helper.apply(st, min);
                 if (!ops.containsKey(applied)) {
-                    ops.put(applied, helper.inverse(st));
+                    ops.put(applied, st);
                 }
             }
             int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
@@ -467,7 +467,7 @@ public class TranslationPlane3Test {
         for (OrbitInfo oi : orbitInfos) {
             int m = oi.minimal();
             for (Map.Entry<Integer, BlockMatrix> e : oi.ops().entrySet()) {
-                assertEquals(m, helper.apply(e.getValue(), e.getKey()));
+                assertEquals(e.getKey(), helper.apply(e.getValue(), m));
             }
             int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(m)).sorted().toArray();
             for (BlockMatrix bm : oi.stabilizer()) {
