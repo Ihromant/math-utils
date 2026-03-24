@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -459,10 +460,10 @@ public class TranslationPlane3Test {
             });
             int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
             List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
-            orbitInfos.add(new OrbitInfo(min, ops, stabilizer));
+            orbitInfos.add(new OrbitInfo(min, new HashMap<>(ops), stabilizer));
             min = Arrays.stream(v).filter(el -> orbitInfos.stream().noneMatch(oi -> oi.ops.containsKey(el))).findFirst().orElse(-1);
         }
-        System.out.println(orbitInfos.size() + " " + Arrays.toString(orbitInfos.stream().mapToInt(OrbitInfo::minimal).toArray()));
+        System.out.println(gl.length + " " + orbitInfos.size() + " " + Arrays.toString(orbitInfos.stream().mapToInt(OrbitInfo::minimal).toArray()));
         for (OrbitInfo oi : orbitInfos) {
             int m = oi.minimal();
             System.out.println(m + " " + oi.ops.size() + " " + oi.stabilizer.size());
