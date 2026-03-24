@@ -129,7 +129,7 @@ public interface ModuloMatrixHelper {
     default BlockMatrix permutator(int a, int b, int c) {
         if (c == matCount()) {
             int ab = sub(b, a);
-            return new BlockMatrix(unity(), 0, 0, ab);
+            return new BlockMatrix(unity(), 0, a, ab);
         }
         if (b == matCount()) {
             return new BlockMatrix(unity(), 0, a, c);
