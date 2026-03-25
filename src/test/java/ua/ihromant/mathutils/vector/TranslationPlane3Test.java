@@ -481,13 +481,13 @@ public class TranslationPlane3Test {
             });
             int[] arr = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
             List<BlockMatrix> stabilizer = suitableOperators(helper, arr);
-            orbitInfos.add(new OrbitInfo(min, new HashMap<>(ops), stabilizer));
+            orbitInfos.add(new OrbitInfo(min, new HashMap<>(ops), stabilizer, ops.keySet().stream().mapToInt(Integer::intValue).sorted().toArray()));
             min = Arrays.stream(v).filter(el -> orbitInfos.stream().noneMatch(oi -> oi.ops.containsKey(el))).findFirst().orElse(-1);
         }
         return orbitInfos;
     }
 
-    private record OrbitInfo(int minimal, Map<Integer, BlockMatrix> ops, List<BlockMatrix> stabilizer) {
+    private record OrbitInfo(int minimal, Map<Integer, BlockMatrix> ops, List<BlockMatrix> stabilizer, int[] orbit) {
     }
 
     @Test
