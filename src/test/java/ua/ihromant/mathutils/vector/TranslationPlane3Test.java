@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Graph;
@@ -9,6 +10,9 @@ import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -487,7 +491,7 @@ public class TranslationPlane3Test {
     @Test
     public void translationPlanesB() throws IOException {
         int p = 2;
-        int n = 4;
+        int n = 5;
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
         List<int[]> bases = new ArrayList<>();
@@ -581,6 +585,38 @@ public class TranslationPlane3Test {
                 }
             }
             findBasesB(helper, infos, nextTransversal.toArray(), nextCurr, cons);
+        }
+    }
+
+    @Test
+    public void expand() throws IOException {
+        int p = 2;
+        int n = 5;
+        int len = 4;
+        ObjectMapper om = new ObjectMapper();
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
+        int[] v = helper.v();
+        List<String> lines = Files.readAllLines(Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-" + len + ".txt"));
+        Path next = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-" + (len + 1) + ".txt");
+        System.out.println(lines.size());
+        int cnt = 0;
+        for (String ln : lines) {
+            int[] arr = om.readValue(ln, int[].class);
+            int[] newV = Arrays.stream(v).filter(el -> Arrays.stream(arr)
+                    .allMatch(el1 -> el1 == helper.matCount() || helper.hasInv(helper.sub(el, el1)))).toArray();
+            findBasesB(helper, orbitInfos, newV, arr, s -> {
+                if (s.length < len + 1) {
+                    return false;
+                }
+                try {
+                    Files.writeString(next, Arrays.toString(s) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return true;
+            });
+            System.out.println(++cnt);
         }
     }
 }
