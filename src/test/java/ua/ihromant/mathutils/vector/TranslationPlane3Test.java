@@ -624,7 +624,8 @@ public class TranslationPlane3Test {
         int len = 5;
         ObjectMapper om = new ObjectMapper();
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
-        List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
+        Path oi = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-oi.txt");
+        List<OrbitInfo> orbitInfos = om.readValue(Files.readString(oi), new TypeReference<>(){});
         int[] v = helper.v();
         List<String> lines = Files.readAllLines(Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-" + len + ".txt"));
         Path next = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-" + (len + 1) + ".txt");
