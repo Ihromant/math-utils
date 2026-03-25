@@ -11,23 +11,23 @@ public class MulTest {
     public void test() {
         int n = 8;
         for (int i = 0; i < 10000; i++) {
-            long a = ThreadLocalRandom.current().nextLong();
-            long b = ThreadLocalRandom.current().nextLong();
+            long a = ThreadLocalRandom.current().nextLong(1L << (n * n - 2));
+            long b = ThreadLocalRandom.current().nextLong(1L << (n * n - 2));
             assertEquals(mul(a, b, n), mulMagic(a, b, n));
         }
         long time = System.currentTimeMillis();
         long sum = 0;
         for (int i = 0; i < 10_000_000; i++) {
-            long a = ThreadLocalRandom.current().nextLong();
-            long b = ThreadLocalRandom.current().nextLong();
+            long a = ThreadLocalRandom.current().nextLong(1L << (n * n - 2));
+            long b = ThreadLocalRandom.current().nextLong(1L << (n * n - 2));
             sum = sum + mul(a, b, n);
         }
         System.out.println("Binary method " + (System.currentTimeMillis() - time) + " " + sum);
         time = System.currentTimeMillis();
         sum = 0;
         for (int i = 0; i < 10_000_000; i++) {
-            long a = ThreadLocalRandom.current().nextLong();
-            long b = ThreadLocalRandom.current().nextLong();
+            long a = ThreadLocalRandom.current().nextLong(1L << (n * n - 2));
+            long b = ThreadLocalRandom.current().nextLong(1L << (n * n - 2));
             sum = sum + mulMagic(a, b, n);
         }
         System.out.println("Magic method " + (System.currentTimeMillis() - time) + " " + sum);
@@ -80,21 +80,12 @@ public class MulTest {
     }
 
     private static long mulMagic(long a, long b, int n) {
-        long r = 0;
-        for (int i = 0; i < n; ++i) {
-            long x = (b >>> i) & 0x101010101010101L;
-            x = x ^ (x >>> 7);
-            x = x ^ (x >>> 14);
-            x = x ^ (x >>> 28);
-            x = x & 0xFF;
-            x = x * 0x101010101010101L;
-            x = x & a;
-            x = x ^ (x >>> 4);
-            x = x ^ (x >>> 2);
-            x = x ^ (x >>> 1);
-            r = r | ((x & 0x101010101010101L) << i);
-        }
-        return r;
+        return switch (n) {
+            case 6 -> mulMagic6(a, b);
+            case 7 -> mulMagic7(a, b);
+            case 8 -> mulMagic8(a, b);
+            default -> throw new IllegalArgumentException();
+        };
     }
 
     private static long generateConstant(int n) {
@@ -227,6 +218,52 @@ public class MulTest {
             x = x & a;
             x = x ^ (x >>> 4) ^ (x >>> 3) ^ (x >>> 2) ^ (x >>> 1);
             r = r | ((x & 0x108421) << i);
+        }
+        return r;
+    }
+
+    private static long mulMagic6(long a, long b) {
+        long r = 0;
+        for (int i = 0; i < 6; i++) {
+            long x = (b >>> i) & 0x41041041L;
+            x = x ^ (x >>> 5) ^ (x >>> 10) ^ (x >>> 15) ^ (x >>> 20) ^ (x >>> 25);
+            x = x & 0x3FL;
+            x = x * 0x41041041L;
+            x = x & a;
+            x = x ^ (x >>> 5) ^ (x >>> 4) ^ (x >>> 3) ^ (x >>> 2) ^ (x >>> 1);
+            r = r | ((x & 0x41041041L) << i);
+        }
+        return r;
+    }
+
+    private static long mulMagic7(long a, long b) {
+        long r = 0;
+        for (int i = 0; i < 7; i++) {
+            long x = (b >>> i) & 0x40810204081L;
+            x = x ^ (x >>> 6) ^ (x >>> 12) ^ (x >>> 18) ^ (x >>> 24) ^ (x >>> 30) ^ (x >>> 36);
+            x = x & 0x7FL;
+            x = x * 0x40810204081L;
+            x = x & a;
+            x = x ^ (x >>> 6) ^ (x >>> 5) ^ (x >>> 4) ^ (x >>> 3) ^ (x >>> 2) ^ (x >>> 1);
+            r = r | ((x & 0x40810204081L) << i);
+        }
+        return r;
+    }
+
+    private static long mulMagic8(long a, long b) {
+        long r = 0;
+        for (int i = 0; i < 8; ++i) {
+            long x = (b >>> i) & 0x101010101010101L;
+            x = x ^ (x >>> 7);
+            x = x ^ (x >>> 14);
+            x = x ^ (x >>> 28);
+            x = x & 0xFF;
+            x = x * 0x101010101010101L;
+            x = x & a;
+            x = x ^ (x >>> 4);
+            x = x ^ (x >>> 2);
+            x = x ^ (x >>> 1);
+            r = r | ((x & 0x101010101010101L) << i);
         }
         return r;
     }
