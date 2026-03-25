@@ -303,6 +303,34 @@ public class AssumptionTest {
         System.out.println(canons.size());
     }
 
+    private static int subSpace(int a, int b) {
+        if (a == b) {
+            throw new IllegalArgumentException();
+        }
+        int c = a ^ b;
+        if (a < b) {
+            if (b < c) {
+                return a | (b << 6) | (c << 12); // abc
+            } else {
+                if (a < c) {
+                    return a | (c << 6) | (b << 12); // acb
+                } else {
+                    return c | (a << 6) | (b << 12); // cab
+                }
+            }
+        } else {
+            if (a < c) {
+                return b | (a << 6) | (c << 12); // bac
+            } else {
+                if (b < c) {
+                    return b | (c << 6) | (a << 12); // bca
+                } else {
+                    return c | (b << 6) | (a << 12); // cba
+                }
+            }
+        }
+    }
+
     @Test
     public void groupableLiners() throws IOException {
         ObjectMapper om = new ObjectMapper();
@@ -508,7 +536,7 @@ public class AssumptionTest {
             minimal.add(tr);
         }
         for (FixBS tr : minimal) {
-            if (!curr.isEmpty() && tr.compareTo(curr.getLast()) < 0) {
+            if (!curr.isEmpty() && tr.compareTo(curr.get(curr.size() - 2)) < 0) {
                 continue;
             }
             List<FixBS> nextCurr = new ArrayList<>(curr);

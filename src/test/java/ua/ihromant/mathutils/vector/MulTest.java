@@ -222,7 +222,7 @@ public class MulTest {
         return r;
     }
 
-    private static long mulMagic6(long a, long b) {
+    public static long mulMagic6(long a, long b) {
         long r = 0;
         for (int i = 0; i < 6; i++) {
             long x = (b >>> i) & 0x41041041L;

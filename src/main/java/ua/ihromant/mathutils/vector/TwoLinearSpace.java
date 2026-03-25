@@ -20,7 +20,7 @@ public record TwoLinearSpace(int n) implements LinearSpace {
 
     @Override
     public int mul(int a, int x) {
-        return a % 2 == 0 ? 0 : x;
+        return (a & 1) != 0 ? x : 0;
     }
 
     @Override
@@ -63,5 +63,21 @@ public record TwoLinearSpace(int n) implements LinearSpace {
     @Override
     public int crd(int v, int crd) {
         return (v >>> crd) & 1;
+    }
+
+    @Override
+    public int applyOper(long oper, int val) {
+        int n = n();
+        int mask = (1 << n) - 1;
+        int result = 0;
+        for (int i = 0; i < n; i++) {
+            int rest = ((int) oper) & mask;
+            if ((val & 1) != 0) {
+                result = result ^ rest;
+            }
+            val = val >>> 1;
+            oper = oper >>> n;
+        }
+        return result;
     }
 }
