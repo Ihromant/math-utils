@@ -413,6 +413,13 @@ public class AssumptionTest {
         System.out.println(Long.toBinaryString(permutator(base[0], base[1], base[2])));
         int[] filtered = Arrays.stream(arr).filter(i -> Arrays.stream(base).allMatch(j -> orthogonal(i, j))).toArray();
         System.out.println(filtered.length);
+        List<Long> gens = new ArrayList<>();
+        gens.add(fromMapping(sp, new int[]{4, 8, 16, 32, 1, 2}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 16, 32, 4, 8}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, 16}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, sp.add(16, 32)}));
+        long[] baseStab = closure(sp, gens);
+        System.out.println(baseStab.length);
         for (int i = 0; i < arr.length; i++) {
             for (int j = i + 1; j < arr.length; j++) {
                 for (int k = j + 1; k < arr.length; k++) {
@@ -426,6 +433,13 @@ public class AssumptionTest {
                     assertEquals(a, applyToSs(sp, perm, base[0]));
                     assertEquals(b, applyToSs(sp, perm, base[1]));
                     assertEquals(c, applyToSs(sp, perm, base[2]));
+                    for (long p : baseStab) {
+                        long pPerm = sp.mulOper(p, perm);
+                        int[] aa = new int[]{a, b, c};
+                        int[] aaa = new int[]{applyToSs(sp, pPerm, base[0]), applyToSs(sp, pPerm, base[1]), applyToSs(sp, pPerm, base[2])};
+                        Arrays.sort(aaa);
+                        assertArrayEquals(aa, aaa);
+                    }
                 }
             }
         }
