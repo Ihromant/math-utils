@@ -904,4 +904,90 @@ public class AssumptionTest {
         nextCurr[idx] = tr;
         return nextCurr;
     }
+
+    @Test
+    public void process() throws IOException {
+        int p = 2;
+        int n = 6;
+        int len = 8;
+        LinearSpace sp = LinearSpace.of(p, n);
+        int v = sp.cardinality();
+        int k = 4;
+        int r = (v - 1) / (k - 1);
+        ObjectMapper om = new ObjectMapper();
+        Set<Integer> set = new HashSet<>();
+        for (int i = 1; i < sp.cardinality(); i++) {
+            for (int j = i + 1; j < sp.cardinality(); j++) {
+                set.add(hull(i, j));
+            }
+        }
+        int[] hulls = set.stream().mapToInt(Integer::intValue).sorted().toArray();
+        List<String> lns = Files.readAllLines(Path.of("/home/ihromant/maths/g-spaces/final/4-64/begins-" + p + "^" + n + "-" + len + ".txt"));
+        Set<ArrWrap> un = new HashSet<>();
+        lns.forEach(l -> un.add(new ArrWrap(om.readValue(l, int[].class))));
+        Path proc = Path.of("/home/ihromant/maths/g-spaces/final/4-64/begins-" + p + "^" + n + "-" + len + "proc.txt");
+        List<String> processed = Files.readAllLines(proc);
+        processed.forEach(l -> un.remove(new ArrWrap(om.readValue(l, int[].class))));
+        Path path = Path.of("/home/ihromant/maths/g-spaces/final/4-64/large.txt");
+        Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+        List<String> lines = Files.readAllLines(path);
+        lines.parallelStream().forEach(ln -> {
+            Liner lnr = new Liner(om.readValue(ln.substring(ln.indexOf("[[")), int[][].class));
+            unique.add(new FixBS(lnr.graphData().canonical()));
+        });
+        AtomicInteger ai = new AtomicInteger();
+        System.out.println(un.size());
+        un.parallelStream().forEach(aw -> {
+            int[] arr = aw.arr();
+            int[] suitable = Arrays.stream(hulls).filter(i -> Arrays.stream(arr).allMatch(j -> orthogonal(i, j))).toArray();
+            Graph g = Graph.by(suitable, AssumptionTest::orthogonal);
+            JNauty.instance().maximalCliques(g, r - arr.length, a -> {
+                FixBS els = new FixBS(a);
+                List<FixBS> lnz = new ArrayList<>();
+                for (int el = els.nextSetBit(0); el >= 0; el = els.nextSetBit(el + 1)) {
+                    int sg = suitable[el];
+                    FixBS subspace = FixBS.of(v, 0, sg & 63, (sg >>> 6) & 63, (sg >>> 12) & 63);
+                    lnz.addAll(sp.cosets(subspace));
+                }
+                for (int sg : arr) {
+                    FixBS subspace = FixBS.of(v, 0, sg & 63, (sg >>> 6) & 63, (sg >>> 12) & 63);
+                    lnz.addAll(sp.cosets(subspace));
+                }
+                Liner lnr = new Liner(lnz.toArray(FixBS[]::new));
+                if (unique.add(new FixBS(lnr.graphData().canonical()))) {
+                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    System.out.println(lnr.graphData().autCount() + " " + freq);
+                    try {
+                        Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "
+                                + Arrays.deepToString(lnr.lines()) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+            try {
+                Files.writeString(proc, Arrays.toString(arr) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
+        });
+    }
+
+    private record ArrWrap(int[] arr) {
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ArrWrap(int[] arr1))) return false;
+
+            return Arrays.equals(arr, arr1);
+        }
+
+        @Override
+        public int hashCode() {
+            return Arrays.hashCode(arr);
+        }
+    }
 }
