@@ -29,7 +29,7 @@ public class LongList {
         return arr;
     }
 
-    public void add(int v) {
+    public void add(long v) {
         arr[size++] = v;
     }
 

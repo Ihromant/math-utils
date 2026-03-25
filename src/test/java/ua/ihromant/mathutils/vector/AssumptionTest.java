@@ -5,6 +5,7 @@ import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.Liner;
+import ua.ihromant.mathutils.LongList;
 import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
@@ -18,7 +19,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -447,7 +447,7 @@ public class AssumptionTest {
         gens.add(fromMapping(sp, new int[]{1, 2, 16, 32, 4, 8}));
         gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, 16}));
         gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, sp.add(16, 32)}));
-        List<Long> baseStab = closure(sp, gens).stream().sorted().toList();
+        long[] baseStab = closure(sp, gens);
         FixBS fst = sp.hull(1, 2);
         fst.set(0);
         FixBS snd = sp.hull(4, 8);
@@ -456,7 +456,7 @@ public class AssumptionTest {
         trd.set(0);
         int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
         List<FixBS> fixed = new ArrayList<>(List.of(fst, snd, trd));
-        for (Long op : baseStab) {
+        for (long op : baseStab) {
             List<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
             assertEquals(mapped, fixed);
         }
@@ -465,7 +465,7 @@ public class AssumptionTest {
         List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
         List<List<FixBS>> bases = new ArrayList<>();
         findBases(sp, baseStab, init, fixed, (s, stab) -> {
-            if (stab.size() >= sp.p() && s.size() < r) {
+            if (stab.length >= sp.p() && s.size() < r) {
                 return false;
             }
             bases.add(s.stream().sorted().toList());
@@ -539,9 +539,9 @@ public class AssumptionTest {
 //        gens.add(fromMapping(sp, new int[]{1, 3, 81, 243, 9, 27}));
 //        gens.add(fromMapping(sp, new int[]{1, 3, 9, 27, 243, 81}));
 //        gens.add(fromMapping(sp, new int[]{1, 3, 9, 27, 243, sp.add(81, 243)}));
-        List<Long> baseStab = Arrays.stream(Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/9-729/stab.txt")).split(" "))
-                .map(Long::parseLong).toList(); //closure(sp, gens).stream().sorted().toList();
-        System.out.println(baseStab.size());
+        long[] baseStab = Arrays.stream(Files.readString(Path.of("/home/ihromant/maths/g-spaces/final/9-729/stab.txt")).split(" "))
+                .mapToLong(Long::parseLong).toArray(); //closure(sp, gens).stream().sorted().toList();
+        System.out.println(baseStab.length);
         FixBS fst = sp.hull(1, 3);
         fst.set(0);
         FixBS snd = sp.hull(9, 27);
@@ -550,7 +550,7 @@ public class AssumptionTest {
         trd.set(0);
         int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
         List<FixBS> fixed = List.of(fst, snd, trd);
-        for (Long op : baseStab) {
+        for (long op : baseStab) {
             List<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
             assertEquals(mapped, fixed);
         }
@@ -560,7 +560,7 @@ public class AssumptionTest {
         List<List<FixBS>> bases = new ArrayList<>();
         Map<Integer, Long> frq = new HashMap<>();
         findBases(sp, baseStab, init, fixed, (s, stab) -> {
-            if (stab.size() >= sp.p() && s.size() < r) {
+            if (stab.length >= sp.p() && s.size() < r) {
                 return false;
             }
             System.out.println(s.size());
@@ -621,13 +621,13 @@ public class AssumptionTest {
         });
     }
 
-    private static void findBases(LinearSpace sp, List<Long> stab, List<FixBS> transversal, List<FixBS> curr, BiPredicate<List<FixBS>, List<Long>> cons) {
+    private static void findBases(LinearSpace sp, long[] stab, List<FixBS> transversal, List<FixBS> curr, BiPredicate<List<FixBS>, long[]> cons) {
         if (cons.test(curr, stab)) {
             return;
         }
         List<FixBS> minimal = new ArrayList<>();
         ex: for (FixBS tr : transversal) {
-            for (Long st : stab) {
+            for (long st : stab) {
                 FixBS mapped = sp.applyOper(st, tr);
                 if (mapped.compareTo(tr) < 0) {
                     continue ex;
@@ -641,15 +641,15 @@ public class AssumptionTest {
             }
             List<FixBS> nextCurr = new ArrayList<>(curr);
             nextCurr.add(-Collections.binarySearch(curr, tr) - 1, tr);
-            List<Long> nextStab = new ArrayList<>();
-            for (Long op : stab) {
+            LongList nextStab = new LongList(stab.length);
+            for (long op : stab) {
                 List<FixBS> mapped = nextCurr.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
                 if (mapped.equals(nextCurr)) {
                     nextStab.add(op);
                 }
             }
             List<FixBS> nextTransversal = transversal.stream().filter(s -> s.intersection(tr).cardinality() == 1).toList();
-            findBases(sp, nextStab, nextTransversal, nextCurr, cons);
+            findBases(sp, nextStab.toArray(), nextTransversal, nextCurr, cons);
         }
     }
 
@@ -669,7 +669,7 @@ public class AssumptionTest {
         gens.add(fromMapping(sp, new int[]{1, 5, 125, 25}));
         gens.add(fromMapping(sp, new int[]{1, 5, 125, sp.add(25, 125)}));
         gens.add(fromMapping(sp, new int[]{1, 5, sp.sub(25, 125), sp.add(25, 125)}));
-        List<Long> baseStab = closure(sp, gens).stream().sorted().toList();
+        long[] baseStab = closure(sp, gens);
         List<FixBS> subs = sp.subSpaces(2);
         FixBS fst = sp.hull(1, 5);
         fst.set(0);
@@ -678,15 +678,15 @@ public class AssumptionTest {
         FixBS trd = subs.stream().filter(s -> s.intersection(fst.union(snd)).cardinality() == 1).findFirst().orElseThrow();
         int r = (sp.cardinality() - 1) / (fst.cardinality() - 1);
         List<FixBS> fixed = new ArrayList<>(List.of(fst, snd, trd));
-        List<Long> applicableStab = baseStab.stream().parallel().filter(op -> {
+        long[] applicableStab = Arrays.stream(baseStab).parallel().filter(op -> {
             List<FixBS> mapped = fixed.stream().map(s -> sp.applyOper(op, s)).sorted().toList();
             return mapped.equals(fixed);
-        }).sorted(Comparator.naturalOrder()).toList();
-        System.out.println(applicableStab.size());
+        }).sorted().toArray();
+        System.out.println(applicableStab.length);
         List<FixBS> init = subs.stream().filter(s -> s.intersection(fst.union(snd).union(trd)).cardinality() == 1).toList();
         List<List<FixBS>> bases = new ArrayList<>();
         findBases(sp, applicableStab, init, fixed, (s, stab) -> {
-            if (stab.size() >= sp.p() && s.size() < r) {
+            if (stab.length >= sp.p() && s.size() < r) {
                 return false;
             }
             bases.add(s.stream().sorted().toList());
@@ -752,22 +752,22 @@ public class AssumptionTest {
         return result;
     }
 
-    private static Set<Long> closure(LinearSpace sp, List<Long> gens) {
+    private static long[] closure(LinearSpace sp, List<Long> gens) {
         Set<Long> result = new HashSet<>();
         result.add(fromMapping(sp, IntStream.range(0, sp.n()).map(i ->
                 sp.fromCrd(IntStream.range(0, sp.n()).map(j -> i == j ? 1 : 0).toArray())).toArray()));
         boolean added;
         do {
             added = false;
-            for (Long el : result.toArray(Long[]::new)) {
+            for (long el : result.toArray(Long[]::new)) {
                 for (long gen : gens) {
-                    Long xy = sp.mulOper(gen, el);
-                    Long yx = sp.mulOper(el, gen);
+                    long xy = sp.mulOper(gen, el);
+                    long yx = sp.mulOper(el, gen);
                     added = result.add(xy) || added;
                     added = result.add(yx) || added;
                 }
             }
         } while (added);
-        return result;
+        return result.stream().mapToLong(Long::longValue).sorted().toArray();
     }
 }
