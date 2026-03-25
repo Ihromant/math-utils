@@ -5,7 +5,7 @@ import java.util.stream.IntStream;
 
 public class IntList {
     private final int[] arr;
-    private int size = 0;
+    private int size;
 
     public IntList(int size) {
         this.arr = new int[size];
