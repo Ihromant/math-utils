@@ -394,6 +394,10 @@ public class AssumptionTest {
         return true;
     }
 
+    private static int applyToSs(LinearSpace sp, long oper, int ss) {
+        return hull(sp.applyOper(oper, ss & 63), sp.applyOper(oper, (ss >>> 6) & 63));
+    }
+
     @Test
     public void testPermutator() {
         LinearSpace sp = LinearSpace.of(2, 6);
@@ -419,13 +423,9 @@ public class AssumptionTest {
                         continue;
                     }
                     long perm = permutator(a, b, c);
-                    int ax = hull(sp.applyOper(perm, 1), sp.applyOper(perm, 2));
-                    int bx = hull(sp.applyOper(perm, 4), sp.applyOper(perm, 8));
-                    int cx = hull(sp.applyOper(perm, 16), sp.applyOper(perm, 32));
-                    int[] aa = new int[]{a, b, c};
-                    int[] aaa = new int[]{ax, bx, cx};
-                    Arrays.sort(aaa);
-                    assertArrayEquals(aa, aaa);
+                    assertEquals(a, applyToSs(sp, perm, base[0]));
+                    assertEquals(b, applyToSs(sp, perm, base[1]));
+                    assertEquals(c, applyToSs(sp, perm, base[2]));
                 }
             }
         }
