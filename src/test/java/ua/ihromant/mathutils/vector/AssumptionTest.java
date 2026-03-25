@@ -3,7 +3,9 @@ package ua.ihromant.mathutils.vector;
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.JNauty;
+import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Graph;
+import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.LongList;
 import ua.ihromant.mathutils.PartialLiner;
@@ -27,6 +29,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -338,7 +341,7 @@ public class AssumptionTest {
                 | ((c & 31) << 24) | (((c >>> 6) & 63) << 30);
     }
 
-    public boolean orthogonal(int a, int b) {
+    private static boolean orthogonal(int a, int b) {
         long comb = 0;
         for (int el : others(a, b)) {
             long sh = 1L << el;
@@ -360,7 +363,7 @@ public class AssumptionTest {
         return new int[]{a1 ^ b1, a2 ^ b1, a3 ^ b1, a1 ^ b2, a2 ^ b2, a3 ^ b2, a1 ^ b3, a2 ^ b3, a3 ^ b3};
     }
 
-    public boolean orthogonal(int a, int b, int c) {
+    private static boolean orthogonal(int a, int b, int c) {
         if (!orthogonal(a, b) || !orthogonal(b, c) || !orthogonal(a, c)) {
             return false;
         }
@@ -783,5 +786,122 @@ public class AssumptionTest {
             }
         } while (added);
         return result.stream().mapToLong(Long::longValue).sorted().toArray();
+    }
+
+    private static final int[] baseHulls = {hull(1, 2), hull(4, 8), hull(16, 32)};
+
+    @Test
+    public void expand() throws IOException {
+        int p = 2;
+        int n = 6;
+        int len = 7;
+        LinearSpace sp = LinearSpace.of(p, n);
+        ObjectMapper om = new ObjectMapper();
+        List<Long> gens = new ArrayList<>();
+        gens.add(fromMapping(sp, new int[]{4, 8, 16, 32, 1, 2}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 16, 32, 4, 8}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, 16}));
+        gens.add(fromMapping(sp, new int[]{1, 2, 4, 8, 32, sp.add(16, 32)}));
+        long[] baseStab = closure(sp, gens);
+        Set<Integer> set = new HashSet<>();
+        for (int i = 1; i < sp.cardinality(); i++) {
+            for (int j = i + 1; j < sp.cardinality(); j++) {
+                set.add(hull(i, j));
+            }
+        }
+        int[] hulls = set.stream().mapToInt(Integer::intValue).sorted().toArray();
+        int[] filtered = Arrays.stream(hulls).filter(i -> Arrays.stream(baseHulls).allMatch(j -> orthogonal(i, j))).toArray();
+        List<String> lines = Files.readAllLines(Path.of("/home/ihromant/maths/g-spaces/final/4-64/begins-" + p + "^" + n + "-" + len + ".txt"));
+        Path next = Path.of("/home/ihromant/maths/g-spaces/final/4-64/begins-" + p + "^" + n + "-" + (len + 1) + ".txt");
+        System.out.println(lines.size());
+        AtomicInteger cnt = new AtomicInteger();
+        lines.parallelStream().forEach(ln -> {
+            int[] arr = om.readValue(ln, int[].class);
+            int[] newV = Arrays.stream(filtered).filter(el -> Arrays.stream(arr)
+                    .allMatch(el1 -> orthogonal(el, el1))).toArray();
+            findBasesB(sp, baseStab, newV, arr, s -> {
+                if (s.length < len + 1) {
+                    return false;
+                }
+                try {
+                    Files.writeString(next, Arrays.toString(s) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+                return true;
+            });
+            System.out.println(cnt.getAndIncrement());
+        });
+    }
+
+    private static void findBasesB(LinearSpace sp, long[] stab, int[] transversal, int[] curr, Predicate<int[]> cons) {
+        if (cons.test(curr)) {
+            return;
+        }
+        int[][] choices = Combinatorics.choices(curr.length, 3).toArray(int[][]::new);
+        LongList stabilizers = new LongList(stab.length * choices.length);
+        for (int[] choice : choices) {
+            int a = curr[choice[0]];
+            int b = curr[choice[1]];
+            int c = curr[choice[2]];
+            if (!orthogonal(a, b, c)) {
+                continue;
+            }
+            long perm = permutator(a, b, c);
+            for (long p : stab) {
+                long pPerm = sp.mulOper(p, perm);
+                if (Arrays.stream(curr).anyMatch(el -> Arrays.binarySearch(curr, applyToSs(sp, pPerm, el)) < 0)) {
+                    continue;
+                }
+                stabilizers.add(pPerm);
+            }
+        }
+        IntList minimals = new IntList(transversal.length);
+        ex: for (int tr : transversal) {
+            for (int i = 0; i < stabilizers.size(); i++) {
+                long st = stabilizers.get(i);
+                int mapped = applyToSs(sp, st, tr);
+                if (mapped < tr) {
+                    continue ex;
+                }
+            }
+            minimals.add(tr);
+        }
+        for (int i = 0; i < minimals.size(); i++) {
+            int tr = minimals.get(i);
+            int[] nextCurr = append(curr, tr);
+            if (nextCurr == null) {
+                continue;
+            }
+            IntList nextTransversal = new IntList(transversal.length);
+            for (int s : transversal) {
+                if (orthogonal(s, tr)) {
+                    nextTransversal.add(s);
+                }
+            }
+            findBasesB(sp, stab, nextTransversal.toArray(), nextCurr, cons);
+        }
+    }
+
+    private static int[] append(int[] curr, int tr) {
+        int idx = curr.length - 1;
+        while (true) {
+            int c = curr[idx];
+            boolean more = tr > c;
+            if (more) {
+                idx++;
+                break;
+            } else {
+                if (c != baseHulls[2]) {
+                    return null;
+                }
+            }
+            idx--;
+        }
+        int[] nextCurr = new int[curr.length + 1];
+        System.arraycopy(curr, 0, nextCurr, 0, idx);
+        System.arraycopy(curr, idx, nextCurr, idx + 1, curr.length - idx);
+        nextCurr[idx] = tr;
+        return nextCurr;
     }
 }
