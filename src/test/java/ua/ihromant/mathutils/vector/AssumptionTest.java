@@ -303,7 +303,7 @@ public class AssumptionTest {
         System.out.println(canons.size());
     }
 
-    private static int subSpace(int a, int b) {
+    private static int hull(int a, int b) {
         if (a == b) {
             throw new IllegalArgumentException();
         }
@@ -329,6 +329,47 @@ public class AssumptionTest {
                 }
             }
         }
+    }
+
+    private static long permutator(long a, long b, long c) {
+        return (a & 63) | (((a >>> 6) & 63) << 6)
+                | ((b & 31) << 63) | (((b >>> 6) & 63) << 18)
+                | ((c & 31) << 63) | (((c >>> 6) & 63) << 30);
+    }
+
+    public boolean orthogonal(int a, int b) {
+        long comb = 0;
+        int a1 = a & 63;
+        int a2 = (a >>> 6) & 63;
+        int a3 = (a >>> 12) & 63;
+        int b1 = b & 63;
+        int b2 = (b >>> 6) & 63;
+        int b3 = (b >>> 12) & 63;
+        int[] arr = new int[]{a1 ^ b1, a2 ^ b1, a3 ^ b1, a1 ^ b2, a2 ^ b2, a3 ^ b2, a1 ^ b3, a2 ^ b3, a3 ^ b3};
+        for (int el : arr) {
+            long sh = 1L << el;
+            if ((comb & sh) != 0) {
+                return false;
+            }
+            comb = comb | sh;
+        }
+        return true;
+    }
+
+    @Test
+    public void testPermutator() {
+        LinearSpace sp = LinearSpace.of(2, 6);
+        Set<Integer> hulls = new HashSet<>();
+        for (int i = 1; i < sp.cardinality(); i++) {
+            for (int j = i + 1; j < sp.cardinality(); j++) {
+                hulls.add(hull(i, j));
+            }
+        }
+        int[] arr = hulls.stream().mapToInt(Integer::intValue).sorted().toArray();
+        System.out.println(hulls.size());
+        int[] base = new int[]{hull(1, 2), hull(4, 8), hull(16, 32)};
+        int[] filtered = Arrays.stream(arr).filter(i -> Arrays.stream(base).allMatch(j -> orthogonal(i, j))).toArray();
+        System.out.println(filtered.length);
     }
 
     @Test
