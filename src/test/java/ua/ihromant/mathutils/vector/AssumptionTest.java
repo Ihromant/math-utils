@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.stream.IntStream;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class AssumptionTest {
@@ -333,25 +334,62 @@ public class AssumptionTest {
 
     private static long permutator(long a, long b, long c) {
         return (a & 63) | (((a >>> 6) & 63) << 6)
-                | ((b & 31) << 63) | (((b >>> 6) & 63) << 18)
-                | ((c & 31) << 63) | (((c >>> 6) & 63) << 30);
+                | ((b & 31) << 12) | (((b >>> 6) & 63) << 18)
+                | ((c & 31) << 24) | (((c >>> 6) & 63) << 30);
     }
 
     public boolean orthogonal(int a, int b) {
         long comb = 0;
+        for (int el : others(a, b)) {
+            long sh = 1L << el;
+            if ((comb & sh) != 0) {
+                return false;
+            }
+            comb = comb | sh;
+        }
+        return true;
+    }
+
+    private static int[] others(int a, int b) {
         int a1 = a & 63;
         int a2 = (a >>> 6) & 63;
         int a3 = (a >>> 12) & 63;
         int b1 = b & 63;
         int b2 = (b >>> 6) & 63;
         int b3 = (b >>> 12) & 63;
-        int[] arr = new int[]{a1 ^ b1, a2 ^ b1, a3 ^ b1, a1 ^ b2, a2 ^ b2, a3 ^ b2, a1 ^ b3, a2 ^ b3, a3 ^ b3};
-        for (int el : arr) {
-            long sh = 1L << el;
-            if ((comb & sh) != 0) {
+        return new int[]{a1 ^ b1, a2 ^ b1, a3 ^ b1, a1 ^ b2, a2 ^ b2, a3 ^ b2, a1 ^ b3, a2 ^ b3, a3 ^ b3};
+    }
+
+    public boolean orthogonal(int a, int b, int c) {
+        if (!orthogonal(a, b) || !orthogonal(b, c) || !orthogonal(a, c)) {
+            return false;
+        }
+        int[] ab = others(a, b);
+        int c1 = c & 63;
+        int c2 = (c >>> 6) & 63;
+        int c3 = (c >>> 12) & 63;
+        for (int el : ab) {
+            if (c1 == el || c2 == el || c3 == el) {
                 return false;
             }
-            comb = comb | sh;
+        }
+        int b1 = b & 63;
+        int b2 = (b >>> 6) & 63;
+        int b3 = (b >>> 12) & 63;
+        int[] ac = others(a, c);
+        for (int el : ac) {
+            if (b1 == el || b2 == el || b3 == el) {
+                return false;
+            }
+        }
+        int a1 = a & 63;
+        int a2 = (a >>> 6) & 63;
+        int a3 = (a >>> 12) & 63;
+        int[] bc = others(b, c);
+        for (int el : bc) {
+            if (a1 == el || a2 == el || a3 == el) {
+                return false;
+            }
         }
         return true;
     }
@@ -368,8 +406,29 @@ public class AssumptionTest {
         int[] arr = hulls.stream().mapToInt(Integer::intValue).sorted().toArray();
         System.out.println(hulls.size());
         int[] base = new int[]{hull(1, 2), hull(4, 8), hull(16, 32)};
+        System.out.println(Long.toBinaryString(permutator(base[0], base[1], base[2])));
         int[] filtered = Arrays.stream(arr).filter(i -> Arrays.stream(base).allMatch(j -> orthogonal(i, j))).toArray();
         System.out.println(filtered.length);
+        for (int i = 0; i < arr.length; i++) {
+            for (int j = i + 1; j < arr.length; j++) {
+                for (int k = j + 1; k < arr.length; k++) {
+                    int a = arr[i];
+                    int b = arr[j];
+                    int c = arr[k];
+                    if (!orthogonal(a, b, c)) {
+                        continue;
+                    }
+                    long perm = permutator(a, b, c);
+                    int ax = hull(sp.applyOper(perm, 1), sp.applyOper(perm, 2));
+                    int bx = hull(sp.applyOper(perm, 4), sp.applyOper(perm, 8));
+                    int cx = hull(sp.applyOper(perm, 16), sp.applyOper(perm, 32));
+                    int[] aa = new int[]{a, b, c};
+                    int[] aaa = new int[]{ax, bx, cx};
+                    Arrays.sort(aaa);
+                    assertArrayEquals(aa, aaa);
+                }
+            }
+        }
     }
 
     @Test
