@@ -589,6 +589,20 @@ public class TranslationPlane3Test {
     }
 
     @Test
+    public void generateInitial() throws IOException {
+        int p = 2;
+        int n = 4;
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
+        Path base = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-4.txt");
+        for (OrbitInfo info : orbitInfos) {
+            int min = info.minimal();
+            int[] quad = IntStream.concat(IntStream.of(0, helper.unity(), helper.matCount()), IntStream.of(min)).sorted().toArray();
+            Files.writeString(base, Arrays.toString(quad) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        }
+    }
+
+    @Test
     public void expand() throws IOException {
         int p = 2;
         int n = 5;
