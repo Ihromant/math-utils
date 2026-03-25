@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Combinatorics;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -589,11 +591,24 @@ public class TranslationPlane3Test {
     }
 
     @Test
-    public void generateInitial() throws IOException {
+    public void writeOrbitInfoToFile() throws IOException {
         int p = 2;
-        int n = 4;
+        int n = 5;
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
+        ObjectMapper om = new ObjectMapper();
+        Path oi = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-oi.txt");
+        Files.writeString(oi, om.writeValueAsString(orbitInfos));
+    }
+
+    @Test
+    public void generateInitial() throws IOException {
+        int p = 2;
+        int n = 5;
+        ObjectMapper om = new ObjectMapper();
+        ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
+        Path oi = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-oi.txt");
+        List<OrbitInfo> orbitInfos = om.readValue(Files.readString(oi), new TypeReference<>(){});
         Path base = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-4.txt");
         for (OrbitInfo info : orbitInfos) {
             int min = info.minimal();
@@ -606,7 +621,7 @@ public class TranslationPlane3Test {
     public void expand() throws IOException {
         int p = 2;
         int n = 5;
-        int len = 4;
+        int len = 5;
         ObjectMapper om = new ObjectMapper();
         ModuloMatrixHelper helper = TranslationPlane2Test.readGl(p, n);
         List<OrbitInfo> orbitInfos = getOrbitInfos(helper);
@@ -614,8 +629,8 @@ public class TranslationPlane3Test {
         List<String> lines = Files.readAllLines(Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-" + len + ".txt"));
         Path next = Path.of("/home/ihromant/maths/trans/new/begins-" + p + "^" + n + "-" + (len + 1) + ".txt");
         System.out.println(lines.size());
-        int cnt = 0;
-        for (String ln : lines) {
+        AtomicInteger cnt = new AtomicInteger();
+        lines.parallelStream().forEach(ln -> {
             int[] arr = om.readValue(ln, int[].class);
             int[] newV = Arrays.stream(v).filter(el -> Arrays.stream(arr)
                     .allMatch(el1 -> el1 == helper.matCount() || helper.hasInv(helper.sub(el, el1)))).toArray();
@@ -630,7 +645,7 @@ public class TranslationPlane3Test {
                 }
                 return true;
             });
-            System.out.println(++cnt);
-        }
+            System.out.println(cnt.getAndIncrement());
+        });
     }
 }
