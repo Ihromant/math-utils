@@ -941,11 +941,12 @@ public class AssumptionTest {
             int[] arr = aw.arr();
             int last = arr[arr.length - 1] == baseHulls[2] ? arr[arr.length - 2] : arr[arr.length - 1];
             int[] suitable = Arrays.stream(hulls).filter(i -> i > last && Arrays.stream(arr).allMatch(j -> orthogonal(i, j))).toArray();
-            if (suitable.length == 0) {
+            int needed = r - arr.length;
+            if (suitable.length < needed) {
                 return;
             }
             Graph g = Graph.by(suitable, AssumptionTest::orthogonal);
-            JNauty.instance().maximalCliques(g, r - arr.length, a -> {
+            JNauty.instance().maximalCliques(g, needed, a -> {
                 FixBS els = new FixBS(a);
                 List<FixBS> lnz = new ArrayList<>();
                 for (int el = els.nextSetBit(0); el >= 0; el = els.nextSetBit(el + 1)) {
