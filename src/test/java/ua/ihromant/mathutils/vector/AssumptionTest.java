@@ -939,7 +939,8 @@ public class AssumptionTest {
         System.out.println(un.size());
         un.parallelStream().forEach(aw -> {
             int[] arr = aw.arr();
-            int[] suitable = Arrays.stream(hulls).filter(i -> Arrays.stream(arr).allMatch(j -> orthogonal(i, j))).toArray();
+            int last = arr[arr.length - 1] == baseHulls[2] ? arr[arr.length - 2] : arr[arr.length - 1];
+            int[] suitable = Arrays.stream(hulls).filter(i -> i > last && Arrays.stream(arr).allMatch(j -> orthogonal(i, j))).toArray();
             Graph g = Graph.by(suitable, AssumptionTest::orthogonal);
             JNauty.instance().maximalCliques(g, r - arr.length, a -> {
                 FixBS els = new FixBS(a);
