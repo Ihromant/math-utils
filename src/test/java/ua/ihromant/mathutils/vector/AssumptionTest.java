@@ -943,6 +943,11 @@ public class AssumptionTest {
             int[] suitable = Arrays.stream(hulls).filter(i -> i > last && Arrays.stream(arr).allMatch(j -> orthogonal(i, j))).toArray();
             int needed = r - arr.length;
             if (suitable.length < needed) {
+                try {
+                    Files.writeString(proc, Arrays.toString(arr) + "\n", StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
                 return;
             }
             Graph g = Graph.by(suitable, AssumptionTest::orthogonal);
