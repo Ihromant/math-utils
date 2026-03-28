@@ -17,8 +17,6 @@ public class SLiner implements NautyGraph {
     private final short[][] lines;
     private final FixBS[] flags;
     private final short[][] beams;
-    private GraphData gd;
-    private FixBS smallCanon;
 
     public SLiner(short[][] lines) {
         this(Arrays.stream(lines).mapToInt(l -> l[l.length - 1]).max().orElseThrow() + 1, lines);
@@ -150,7 +148,7 @@ public class SLiner implements NautyGraph {
     }
 
     public List<SLiner> paraModificationsAlt() {
-        GraphData gd = graphData();
+        GraphData gd = JNauty.instance().traces(this);
         int b = lineCount();
         int v = pointCount;
         int k = lines[0].length;
@@ -259,25 +257,24 @@ public class SLiner implements NautyGraph {
         }
     }
 
-    private GraphData graphData() {
-        if (gd == null) {
-            gd = JNauty.instance().traces(this);
+    public FixBS smallCanon() {
+        int sz = vCount();
+        int sh = (sz + 63) >>> 6;
+        int take = (pointCount + 63) >>> 6;
+        long[] oldCanon = JNauty.instance().traces(this).canonical();
+        long[] result = new long[lines.length * take];
+        for (int i = 0; i < lines.length; i++) {
+            System.arraycopy(oldCanon, (i + pointCount) * sh, result, i * take, take);
         }
-        return gd;
+        return new FixBS(result);
     }
 
-    public FixBS smallCanon() {
-        if (smallCanon == null) {
-            int sz = vCount();
-            int sh = (sz + 63) >>> 6;
-            int take = (pointCount + 63) >>> 6;
-            long[] oldCanon = graphData().canonical();
-            long[] result = new long[lines.length * take];
-            for (int i = 0; i < lines.length; i++) {
-                System.arraycopy(oldCanon, (i + pointCount) * sh, result, i * take, take);
-            }
-            smallCanon = new FixBS(result);
+    public FixBS canonByLines() {
+        int take = flags[0].words().length;
+        long[] result = new long[lines.length * take];
+        for (int i = 0; i < lines.length; i++) {
+            System.arraycopy(flags[i].words(), 0, result, i * take, take);
         }
-        return smallCanon;
+        return new FixBS(result);
     }
 }

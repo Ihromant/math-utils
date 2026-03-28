@@ -89,7 +89,6 @@ public class GraphTest {
         List<SLiner> basePlanes = readSLiners(28, 4);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
-        basePlanes.parallelStream().forEach(SLiner::smallCanon);
         for (int i = 0; i < basePlanes.size(); i++) {
             SLiner lnr = basePlanes.get(i);
             FixBS canon = lnr.smallCanon();
@@ -135,7 +134,6 @@ public class GraphTest {
         FixBS done = readDone(basePlanes.size(), v, k);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
         List<LinerInfo> stack = new ArrayList<>();
-        basePlanes.parallelStream().forEach(SLiner::smallCanon);
         for (int i = 0; i < basePlanes.size(); i++) {
             SLiner lnr = basePlanes.get(i);
             FixBS canon = lnr.smallCanon();
@@ -299,10 +297,9 @@ public class GraphTest {
             return new SLiner(lines);
         }).toList();
         Map<FixBS, SLinerInfo> syncLiners = new ConcurrentHashMap<>();
-        basePlanes.parallelStream().forEach(SLiner::smallCanon);
         IntStream.range(0, basePlanes.size()).parallel().forEach(i -> {
             SLiner lnr = basePlanes.get(i);
-            FixBS canon = lnr.smallCanon();
+            FixBS canon = lnr.canonByLines();
             SLinerInfo info = new SLinerInfo().setBaseIdx(i).setCanon(canon.words());
             syncLiners.put(canon, info);
         });
@@ -328,7 +325,8 @@ public class GraphTest {
             String l = reached.get(i);
             short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
             SLiner lnr = new SLiner(lines);
-            SLinerInfo info = syncLiners.computeIfAbsent(lnr.smallCanon(), ky -> new SLinerInfo().setCanon(ky.words()));
+            FixBS canon = lnr.canonByLines();
+            SLinerInfo info = syncLiners.computeIfAbsent(canon, ky -> new SLinerInfo().setCanon(ky.words()));
             info.setGraphIdx(i);
             info.setProcessed(i < lns.length);
             compLiners[i] = info;
@@ -349,7 +347,10 @@ public class GraphTest {
             SLiner lnr = SLiner.bySmallCanon(info.getCanon(), v, k);
             List<SLiner> para = lnr.paraModificationsAlt();
             Map<FixBS, SLiner> unique = new ConcurrentHashMap<>();
-            para.stream().parallel().forEach(l -> unique.putIfAbsent(l.smallCanon(), l));
+            para.stream().parallel().forEach(l -> {
+                FixBS canon = l.smallCanon();
+                unique.putIfAbsent(canon, SLiner.bySmallCanon(canon.words(), v, k));
+            });
             for (Map.Entry<FixBS, SLiner> e : unique.entrySet()) {
                 SLinerInfo parInfo = liners.computeIfAbsent(e.getKey(), ky -> new SLinerInfo().setCanon(ky.words()));
                 if (parInfo.getGraphIdx() == null) {
@@ -385,5 +386,25 @@ public class GraphTest {
         });
         reached.close();
         System.out.println(un.size() + " " + ai.get());
+    }
+
+    @Test
+    public void convert() throws IOException {
+        int v = 65;
+        int k = 5;
+        String fName = "stack";
+        ObjectMapper om = new ObjectMapper();
+        List<String> content = Files.readAllLines(Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/" + fName + ".txt"));
+        FixBS[] converted = new FixBS[content.size()];
+        IntStream.range(0, content.size()).parallel().forEach(idx -> {
+            String l = content.get(idx);
+            int[][] lines = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+            converted[idx] = SLiner.byCanon(new Liner(lines).graphData().canonical(), v, k).canonByLines();
+        });
+        Path target = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/" + fName + "Conv.txt");
+        for (int i = 0; i < content.size(); i++) {
+            Files.writeString(target,
+                    i + " " + Arrays.deepToString(SLiner.bySmallCanon(converted[i].words(), v, k).lines()) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        }
     }
 }
