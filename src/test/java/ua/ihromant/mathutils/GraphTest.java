@@ -336,8 +336,8 @@ public class GraphTest {
         Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
         reached.clear();
-        System.gc();
         content = null;
+        System.gc();
         while (!stack.isEmpty() && counter > 0) {
             SLinerInfo info = stack.removeFirst();
             if (info.isProcessed()) {
