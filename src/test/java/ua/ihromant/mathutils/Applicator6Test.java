@@ -524,36 +524,45 @@ public class Applicator6Test {
 
     public static State[] getStabilizedAlt(GSpace sp, FixBS removableDiffs) {
         int k = sp.k();
-        int v = sp.v();
         Group table = sp.group();
         List<SubGroup> sgs = table.subGroups();
-        Map<FixBS, State> states = new HashMap<>();
+        Map<FixBS, State> states = new ConcurrentHashMap<>();
         for (SubGroup sg : sgs) {
             if (sg.order() == 1) {
                 continue;
             }
-            List<FixBS> cosets = cosets(sp, sg, k);
-            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg()).anyMatch(cosets.get(i)::get)).toArray();
+            List<int[]> cosets = cosets(sp, sg, k);
+            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
+                    .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
+            Consumer<List<int[]>> cons = a -> {
+                int[] block = a.stream().flatMapToInt(Arrays::stream).toArray();
+                State st = State.fromBlockWithStab(sp, block, sg.elems());
+                if (st != null) {
+                    states.putIfAbsent(st.diffSet(), st);
+                }
+            };
             for (int i : initial) {
-                List<FixBS> res = new ArrayList<>();
-                FixBS fst = cosets.get(i);
+                List<int[]> res = new ArrayList<>();
+                int[] fst = cosets.get(i);
                 res.add(fst);
-                findStab(cosets, res, i + 1, fst.cardinality(), k, a -> {
-                    FixBS block = new FixBS(v);
-                    for (FixBS f : a) {
-                        block.or(f);
+                if (fst.length >= k) {
+                    if (fst.length == k) {
+                        cons.accept(res);
                     }
-                    State st = State.fromBlockNullable(sp, block);
-                    if (st != null && st.stabilizer().equals(sg.elems())) {
-                        states.putIfAbsent(st.diffSet(), st);
-                    }
+                    continue;
+                }
+                IntStream.range(i + 1, cosets.size()).parallel().forEach(j -> {
+                    List<int[]> rs = new ArrayList<>(res);
+                    int[] snd = cosets.get(j);
+                    rs.add(snd);
+                    findStab(cosets, rs, j + 1, fst.length + snd.length, k, cons);
                 });
             }
         }
         return states.values().toArray(State[]::new);
     }
 
-    private static void findStab(List<FixBS> cosets, List<FixBS> arr, int from, int sz, int k, Consumer<List<FixBS>> cons) {
+    private static void findStab(List<int[]> cosets, List<int[]> arr, int from, int sz, int k, Consumer<List<int[]>> cons) {
         if (sz == k) {
             cons.accept(arr);
             return;
@@ -562,15 +571,15 @@ public class Applicator6Test {
             return;
         }
         for (int i = from; i < cosets.size(); i++) {
-            FixBS cos = cosets.get(i);
+            int[] cos = cosets.get(i);
             arr.addLast(cos);
-            findStab(cosets, arr, i + 1, sz + cos.cardinality(), k, cons);
+            findStab(cosets, arr, i + 1, sz + cos.length, k, cons);
             arr.removeLast();
         }
     }
 
-    private static List<FixBS> cosets(GSpace sp, SubGroup sg, int k) {
-        List<FixBS> result = new ArrayList<>();
+    private static List<int[]> cosets(GSpace sp, SubGroup sg, int k) {
+        List<int[]> result = new ArrayList<>();
         ex: for (int x = 0; x < sp.v(); x++) {
             FixBS coset = new FixBS(sp.v());
             for (int g : sg.arr()) {
@@ -583,7 +592,7 @@ public class Applicator6Test {
                     continue ex;
                 }
             }
-            result.add(coset);
+            result.add(coset.toArray());
         }
         return result;
     }
