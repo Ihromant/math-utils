@@ -5,6 +5,36 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.Arrays;
 
 public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs, int size) {
+    public static State1 fromBlockWithStab(GSpace1 space, int[] block, FixBS neededStab) {
+        int v = space.v();
+        FixBS diffSet = new FixBS(space.diffLength());
+        int[][] diffs = new int[space.diffLength()][0];
+        FixBS bl = new FixBS(space.v());
+        for (int i : block) {
+            for (int j : block) {
+                if (i == j) {
+                    continue;
+                }
+                int ij = i * v + j;
+                int comp = space.diffIdx(ij);
+                int[] oldPairs = diffs[comp];
+                int[] newPairs = Arrays.copyOf(oldPairs, oldPairs.length + 1);
+                newPairs[oldPairs.length] = ij;
+                for (int pair : newPairs) {
+                    int fst = pair / v;
+                    int snd = pair % v;
+                    if (!space.prImage(i, fst).intersection(space.prImage(j, snd)).diff(neededStab).isEmpty()) {
+                        return null;
+                    }
+                }
+                diffs[comp] = newPairs;
+                diffSet.set(comp);
+            }
+            bl.set(i);
+        }
+        return new State1(bl, neededStab, diffSet, diffs, block.length);
+    }
+
     public State1 acceptElem(GSpace1 gSpace, OrbitFilter globalFilter, int val) {
         if (block.get(val)) {
             return null;
