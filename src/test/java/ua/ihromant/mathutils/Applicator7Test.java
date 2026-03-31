@@ -7,6 +7,7 @@ import ua.ihromant.mathutils.g.NSState;
 import ua.ihromant.mathutils.g.State;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
@@ -15,10 +16,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Applicator7Test {
@@ -39,7 +42,7 @@ public class Applicator7Test {
             }
             int v = space.v();
             FixBS evenDiffs = space.evenDiffs();
-            State[] stab = Applicator6Test.getStabilizedAlt(space, null);
+            State[] stab = getStabilized(space);
             System.out.println(stab.length);
             Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
             BiConsumer<State[], NSState[]> fCons = (sts, nst) -> {
@@ -124,7 +127,7 @@ public class Applicator7Test {
             }
             int v = space.v();
             FixBS evenDiffs = space.evenDiffs();
-            State[] stab = Applicator6Test.getStabilizedAlt(space, null);
+            State[] stab = getStabilized(space);
             System.out.println(stab.length);
             Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
             BiConsumer<State[], NSState[]> fCons = (sts, nst) -> {
@@ -259,5 +262,80 @@ public class Applicator7Test {
             searchDesigns(space, new NSState[]{nst}, cons);
         }
         System.out.println(states.size());
+    }
+
+    private static State[] getStabilized(GSpace sp) {
+        int k = sp.k();
+        Group table = sp.group();
+        List<SubGroup> sgs = table.subGroups();
+        Map<FixBS, State> states = new ConcurrentHashMap<>();
+        for (SubGroup sg : sgs) {
+            if (sg.order() == 1) {
+                continue;
+            }
+            List<int[]> cosets = cosets(sp, sg, k);
+            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
+                    .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
+            Consumer<List<int[]>> cons = a -> {
+                int[] block = a.stream().flatMapToInt(Arrays::stream).toArray();
+                State st = State.fromBlockWithStab(sp, block, sg.elems());
+                if (st != null) {
+                    states.putIfAbsent(st.diffSet(), st);
+                }
+            };
+            for (int i : initial) {
+                List<int[]> res = new ArrayList<>();
+                int[] fst = cosets.get(i);
+                res.add(fst);
+                if (fst.length >= k) {
+                    if (fst.length == k) {
+                        cons.accept(res);
+                    }
+                    continue;
+                }
+                IntStream.range(i + 1, cosets.size()).parallel().forEach(j -> {
+                    List<int[]> rs = new ArrayList<>(res);
+                    int[] snd = cosets.get(j);
+                    rs.add(snd);
+                    findStab(cosets, rs, j + 1, fst.length + snd.length, k, cons);
+                });
+            }
+        }
+        return states.values().toArray(State[]::new);
+    }
+
+    private static void findStab(List<int[]> cosets, List<int[]> arr, int from, int sz, int k, Consumer<List<int[]>> cons) {
+        if (sz == k) {
+            cons.accept(arr);
+            return;
+        }
+        if (sz > k) {
+            return;
+        }
+        for (int i = from; i < cosets.size(); i++) {
+            int[] cos = cosets.get(i);
+            arr.addLast(cos);
+            findStab(cosets, arr, i + 1, sz + cos.length, k, cons);
+            arr.removeLast();
+        }
+    }
+
+    private static List<int[]> cosets(GSpace sp, SubGroup sg, int k) {
+        List<int[]> result = new ArrayList<>();
+        ex: for (int x = 0; x < sp.v(); x++) {
+            FixBS coset = new FixBS(sp.v());
+            for (int g : sg.arr()) {
+                int app = sp.apply(g, x);
+                if (app < x) {
+                    continue ex;
+                }
+                coset.set(app);
+                if (coset.cardinality() > k) {
+                    continue ex;
+                }
+            }
+            result.add(coset.toArray());
+        }
+        return result;
     }
 }
