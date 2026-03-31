@@ -252,6 +252,10 @@ public class GSpace1 {
         return statesCache[fst][snd];
     }
 
+    public int[] oBeg() {
+        return oBeg;
+    }
+
     public int oBeg(int oIdx) {
         return oBeg[oIdx];
     }
