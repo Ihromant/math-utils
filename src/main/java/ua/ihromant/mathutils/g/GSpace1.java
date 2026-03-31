@@ -228,6 +228,10 @@ public class GSpace1 {
         return auths[i];
     }
 
+    public int diffLength() {
+        return projections.length;
+    }
+
     public OrbitFilter projection(int i) {
         return projections[i];
     }
