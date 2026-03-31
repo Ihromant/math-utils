@@ -216,6 +216,10 @@ public class GSpace1 {
         return k;
     }
 
+    public Group group() {
+        return group;
+    }
+
     public int gOrd() {
         return group.order();
     }
