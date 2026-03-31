@@ -264,7 +264,7 @@ public class GSpace1 {
         return oBeg.length;
     }
 
-    private int orbIdx(int x) {
+    public int orbIdx(int x) {
         return orbIdx[x];
     }
 
