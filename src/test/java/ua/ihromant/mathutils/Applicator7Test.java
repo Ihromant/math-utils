@@ -2,9 +2,10 @@ package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.jnauty.JNauty;
-import ua.ihromant.mathutils.g.GSpace;
+import ua.ihromant.mathutils.g.GSpace1;
 import ua.ihromant.mathutils.g.NSState;
-import ua.ihromant.mathutils.g.State;
+import ua.ihromant.mathutils.g.OrbitFilter;
+import ua.ihromant.mathutils.g.State1;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -33,34 +34,34 @@ public class Applicator7Test {
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            GSpace space;
+            GSpace1 space;
             try {
-                space = new GSpace(k, group, false, 39, 3, 3, 1);
+                space = new GSpace1(k, group, false, 39, 3, 3, 1);
             } catch (IllegalArgumentException e) {
                 System.out.println("Not empty");
                 continue;
             }
             int v = space.v();
             FixBS evenDiffs = space.evenDiffs();
-            State[] stab = getStabilized(space);
+            State1[] stab = getStabilized(space);
             System.out.println(stab.length);
             Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
-            BiConsumer<State[], NSState[]> fCons = (sts, nst) -> {
+            BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
                 Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                         Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
-                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State::block).toList()
+                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
                         + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
             };
             if (stab.length == 0) {
                 continue;
             }
-            List<List<State>> init = new ArrayList<>();
+            List<List<State1>> init = new ArrayList<>();
             JNauty.instance().cliques(g, 1, v, a -> {
                 FixBS arr = new FixBS(a);
-                List<State> states = new ArrayList<>();
+                List<State1> states = new ArrayList<>();
                 FixBS diffSet = new FixBS(space.diffLength());
                 for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
-                    State st = stab[i];
+                    State1 st = stab[i];
                     states.add(st);
                     diffSet.or(st.diffSet());
                 }
@@ -69,7 +70,7 @@ public class Applicator7Test {
                     return;
                 }
                 if (card == space.diffLength()) {
-                    System.out.println(states.stream().map(State::block).toList());
+                    System.out.println(states.stream().map(State1::block).toList());
                     return;
                 }
                 init.add(states);
@@ -78,28 +79,26 @@ public class Applicator7Test {
             AtomicInteger ai = new AtomicInteger();
             init.parallelStream().forEach(states -> {
                 int dc = space.diffLength();
-                FixBS whiteList = space.emptyFilter().copy();
+                OrbitFilter of = space.emptyOf();
                 FixBS diffSet = new FixBS(space.diffLength());
-                for (State st : states) {
-                    st.updateFilter(whiteList, space);
+                for (State1 st : states) {
+                    st.updateFilter(of, space);
                     diffSet.or(st.diffSet());
                     dc = dc - st.diffSet().cardinality();
                 }
-                whiteList.flip(0, v * v);
                 int nc = dc / k / (k - 1);
                 if (nc == 0) {
-                    fCons.accept(states.toArray(State[]::new), new NSState[0]);
+                    fCons.accept(states.toArray(State1[]::new), new NSState[0]);
                     return;
                 }
-                int pr = whiteList.nextSetBit(0);
-                int fst = pr / v;
-                int snd = pr % v;
-                NSState in = new NSState(new int[]{fst}, diffSet, whiteList).acceptElem(space, snd);
+                int nextOrbit = of.currOrbit(v);
+                int snd = of.filters()[nextOrbit].nextClearBit(0);
+                NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
                 searchDesigns(space, new NSState[]{in}, nst -> {
                     if (nst.length < nc) {
                         return false;
                     }
-                    fCons.accept(states.toArray(State[]::new), nst);
+                    fCons.accept(states.toArray(State1[]::new), nst);
                     return true;
                 });
                 int val = ai.incrementAndGet();
@@ -118,22 +117,22 @@ public class Applicator7Test {
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            GSpace space;
+            GSpace1 space;
             try {
-                space = new GSpace(k, group, false, 3);
+                space = new GSpace1(k, group, false, 3);
             } catch (IllegalArgumentException e) {
                 System.out.println("Not empty");
                 continue;
             }
             int v = space.v();
             FixBS evenDiffs = space.evenDiffs();
-            State[] stab = getStabilized(space);
+            State1[] stab = getStabilized(space);
             System.out.println(stab.length);
             Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
-            BiConsumer<State[], NSState[]> fCons = (sts, nst) -> {
+            BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
                 Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                         Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
-                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State::block).toList()
+                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
                         + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
             };
             if (stab.length == 0) {
@@ -141,14 +140,14 @@ public class Applicator7Test {
             }
             JNauty.instance().cliques(g, 1, space.v(), a -> {
                 FixBS arr = new FixBS(a);
-                List<State> states = new ArrayList<>();
+                List<State1> states = new ArrayList<>();
                 FixBS diffSet = new FixBS(space.diffLength());
-                FixBS whiteList = space.emptyFilter().copy();
+                OrbitFilter of = space.emptyOf();
                 for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
-                    State st = stab[i];
+                    State1 st = stab[i];
                     states.add(st);
                     diffSet.or(st.diffSet());
-                    st.updateFilter(whiteList, space);
+                    st.updateFilter(of, space);
                 }
                 int card = diffSet.cardinality();
                 if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
@@ -156,19 +155,17 @@ public class Applicator7Test {
                 }
                 int nc = (space.diffLength() - card) / k / (k - 1);
                 if (nc == 0) {
-                    fCons.accept(states.toArray(State[]::new), new NSState[0]);
+                    fCons.accept(states.toArray(State1[]::new), new NSState[0]);
                     return;
                 }
-                whiteList.flip(0, v * v);
-                int pr = whiteList.nextSetBit(0);
-                int fst = pr / v;
-                int snd = pr % v;
-                NSState in = new NSState(new int[]{fst}, diffSet, whiteList).acceptElem(space, snd);
+                int nextOrbit = of.currOrbit(v);
+                int snd = of.filters()[nextOrbit].nextClearBit(0);
+                NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
                 searchDesigns(space, new NSState[]{in}, nst -> {
                     if (nst.length < nc) {
                         return false;
                     }
-                    fCons.accept(states.toArray(State[]::new), nst);
+                    fCons.accept(states.toArray(State1[]::new), nst);
                     return true;
                 });
                 System.out.println("Done");
@@ -176,28 +173,27 @@ public class Applicator7Test {
         }
     }
 
-    private static void searchDesigns(GSpace space, NSState[] currDesign, Predicate<NSState[]> cons) {
+    private static void searchDesigns(GSpace1 space, NSState[] currDesign, Predicate<NSState[]> cons) {
         int v = space.v();
         int li = currDesign.length - 1;
         NSState last = currDesign[li];
-        int bl = last.block().length;
+        OrbitFilter of = last.of();
+        int[] block = last.block();
+        int bl = block.length;
         if (bl == space.k()) {
             if (cons.test(currDesign)) {
                 return;
             }
+            int nextOrbit = of.currOrbit(v);
+            int snd = of.filters()[nextOrbit].nextClearBit(0);
+            NSState st = new NSState(new int[]{space.oBeg(nextOrbit)}, last.diffSet(), of).acceptElem(space, snd);
             NSState[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
-            int pair = last.whiteList().nextSetBit(0);
-            int fst = pair / v;
-            int snd = pair % v;
-            NSState st = new NSState(new int[]{fst}, last.diffSet(), last.whiteList()).acceptElem(space, snd);
             nextDesign[currDesign.length] = st;
             searchDesigns(space, nextDesign, cons);
         } else {
-            int prev = last.block()[bl - 1];
-            int from = prev * v + prev + 1;
-            int to = prev * v + v;
-            for (int pair = last.whiteList().nextSetBit(from); pair >= 0 && pair < to; pair = last.whiteList().nextSetBit(pair + 1)) {
-                int el = pair % v;
+            FixBS ftr = of.filters()[space.orbIdx(block[0])];
+            int prev = block[bl - 1];
+            for (int el = ftr.nextClearBit(prev + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
                 NSState nextState = last.acceptElem(space, el);
                 if (nextState != null) {
                     currDesign[li] = nextState;
@@ -211,7 +207,7 @@ public class Applicator7Test {
     public void testTrivial() throws IOException {
         Group group = GroupIndex.group(39, 1);
         int k = 7;
-        GSpace space = new GSpace(k, group, false, 3, 1, 1);
+        GSpace1 space = new GSpace1(k, group, false, 3, 1, 1);
         int v = space.v();
         FixBS evenDiffs = space.evenDiffs();
         if (!evenDiffs.isEmpty()) {
@@ -225,12 +221,10 @@ public class Applicator7Test {
             throw new IllegalStateException();
         }
         int nc = space.diffLength() / k / (k - 1);
-        FixBS whiteList = space.emptyFilter().copy();
-        whiteList.flip(0, v * v);
-        int pr = whiteList.nextSetBit(0);
-        int fst = pr / v;
-        int snd = pr % v;
-        NSState in = new NSState(new int[]{fst}, new FixBS(space.diffLength()), whiteList).acceptElem(space, snd);
+        OrbitFilter of = space.emptyOf();
+        int nextOrbit = of.currOrbit(v);
+        int snd = of.filters()[nextOrbit].nextClearBit(0);
+        NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, new FixBS(space.diffLength()), of).acceptElem(space, snd);
         searchDesigns(space, new NSState[]{in}, nst -> {
             if (nst.length < nc) {
                 return false;
@@ -244,8 +238,7 @@ public class Applicator7Test {
     public void trivialByGraph() throws IOException {
         Group group = GroupIndex.group(39, 1);
         int k = 6;
-        GSpace space = new GSpace(k, group, false, 3, 1, 1);
-        int v = space.v();
+        GSpace1 space = new GSpace1(k, group, false, 3, 1, 1);
         FixBS evenDiffs = space.evenDiffs();
         if (!evenDiffs.isEmpty()) {
             throw new IllegalStateException();
@@ -256,19 +249,18 @@ public class Applicator7Test {
             return true;
         };
         for (int fst : space.oBeg()) {
-            FixBS whiteList = space.emptyFilter().copy();
-            whiteList.flip(0, v * v);
+            OrbitFilter whiteList = space.emptyOf();
             NSState nst = new NSState(new int[]{fst}, new FixBS(space.diffLength()), whiteList);
             searchDesigns(space, new NSState[]{nst}, cons);
         }
         System.out.println(states.size());
     }
 
-    private static State[] getStabilized(GSpace sp) {
+    private static State1[] getStabilized(GSpace1 sp) {
         int k = sp.k();
         Group table = sp.group();
         List<SubGroup> sgs = table.subGroups();
-        Map<FixBS, State> states = new ConcurrentHashMap<>();
+        Map<FixBS, State1> states = new ConcurrentHashMap<>();
         for (SubGroup sg : sgs) {
             if (sg.order() == 1) {
                 continue;
@@ -278,7 +270,7 @@ public class Applicator7Test {
                     .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
             Consumer<List<int[]>> cons = a -> {
                 int[] block = a.stream().flatMapToInt(Arrays::stream).toArray();
-                State st = State.fromBlockWithStab(sp, block, sg.elems());
+                State1 st = State1.fromBlockWithStab(sp, block, sg.elems());
                 if (st != null) {
                     states.putIfAbsent(st.diffSet(), st);
                 }
@@ -301,7 +293,7 @@ public class Applicator7Test {
                 });
             }
         }
-        return states.values().toArray(State[]::new);
+        return states.values().toArray(State1[]::new);
     }
 
     private static void findStab(List<int[]> cosets, List<int[]> arr, int from, int sz, int k, Consumer<List<int[]>> cons) {
@@ -320,7 +312,7 @@ public class Applicator7Test {
         }
     }
 
-    private static List<int[]> cosets(GSpace sp, SubGroup sg, int k) {
+    private static List<int[]> cosets(GSpace1 sp, SubGroup sg, int k) {
         List<int[]> result = new ArrayList<>();
         ex: for (int x = 0; x < sp.v(); x++) {
             FixBS coset = new FixBS(sp.v());
