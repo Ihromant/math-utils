@@ -23,9 +23,9 @@ public class GSpace1 {
     private final int[] oBeg;
     private final int[] orbIdx;
     private final int v;
-    private final OrbitFilter[] projections;
     private final int k;
     private final int[][] cayley;
+    private final OrbitFilter[] projections;
     private final int[] diffMap;
     private final FixBS[][] prImages;
     private final State1[][] statesCache;
@@ -298,6 +298,35 @@ public class GSpace1 {
             }
         }
         return res.stream();
+    }
+
+    public FixBS mapBlock(FixBS block, int g) {
+        FixBS fbs = new FixBS(v);
+        for (int x = block.nextSetBit(0); x >= 0; x = block.nextSetBit(x + 1)) {
+            fbs.set(apply(g, x));
+        }
+        return fbs;
+    }
+
+    public FixBS mapBlock(int[] block, int g) {
+        FixBS fbs = new FixBS(v);
+        for (int x : block) {
+            fbs.set(apply(g, x));
+        }
+        return fbs;
+    }
+
+    public FixBS evenDiffs() {
+        FixBS result = new FixBS(projections.length);
+        for (int fst : oBeg) {
+            for (int snd = fst + 1; snd < v; snd++) {
+                int lft = diffIdx(fst * v + snd);
+                if (lft == diffIdx(snd * v + fst)) {
+                    result.set(lft);
+                }
+            }
+        }
+        return result;
     }
 
     public boolean minimal(FixBS block) {
