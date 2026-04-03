@@ -48,7 +48,7 @@ public class Applicator7Test {
                 FixBS evenDiffs = space.evenDiffs();
                 State1[] stab = getStabilized(space);
                 System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
-                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs);
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
                 BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
                     Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
@@ -136,7 +136,7 @@ public class Applicator7Test {
                 FixBS evenDiffs = space.evenDiffs();
                 State1[] stab = getStabilized(space);
                 System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
-                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs);
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
                 BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
                     Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
