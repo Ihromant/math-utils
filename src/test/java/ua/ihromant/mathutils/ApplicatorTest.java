@@ -823,7 +823,7 @@ public class ApplicatorTest {
         }
     }
 
-    private static List<int[][]> configs(Group group, int[] orbitSizes) {
+    public static List<int[][]> configs(Group group, int[] orbitSizes) {
         List<int[][]> result = new ArrayList<>();
         Map<Integer, List<SubGroup>> subs = group.subsByConjugation();
         int[] curr = new int[orbitSizes.length];

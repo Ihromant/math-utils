@@ -30,82 +30,87 @@ public class Applicator7Test {
     public void generateAll() throws IOException {
         int gs = 39;
         int k = 6;
+        int[] orbits = new int[]{1, 13, 13, 39};
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            GSpace1 space;
-            try {
-                space = new GSpace1(k, group, false, 39, 3, 3, 1);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Not empty");
-                continue;
-            }
-            int v = space.v();
-            FixBS evenDiffs = space.evenDiffs();
-            State1[] stab = getStabilized(space);
-            System.out.println(stab.length);
-            Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
-            BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
-                Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
-                        Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
-                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
-                        + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
-            };
-            if (stab.length == 0) {
-                continue;
-            }
-            List<List<State1>> init = new ArrayList<>();
-            JNauty.instance().cliques(g, 1, v, a -> {
-                FixBS arr = new FixBS(a);
-                List<State1> states = new ArrayList<>();
-                FixBS diffSet = new FixBS(space.diffLength());
-                for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
-                    State1 st = stab[i];
-                    states.add(st);
-                    diffSet.or(st.diffSet());
+            List<int[][]> configs = ApplicatorTest.configs(group, orbits);
+            for (int[][] config : configs) {
+                GSpace1 space;
+                try {
+                    space = new GSpace1(k, group, false, config);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Not empty");
+                    continue;
                 }
-                int card = diffSet.cardinality();
-                if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
-                    return;
+                int v = space.v();
+                FixBS evenDiffs = space.evenDiffs();
+                State1[] stab = getStabilized(space);
+                System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs);
+                Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+                BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
+                    Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
+                            Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
+                    System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
+                            + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
+                };
+                if (stab.length == 0) {
+                    continue;
                 }
-                if (card == space.diffLength()) {
-                    System.out.println(states.stream().map(State1::block).toList());
-                    return;
-                }
-                init.add(states);
-            });
-            System.out.println("Init " + init.size());
-            AtomicInteger ai = new AtomicInteger();
-            init.parallelStream().forEach(states -> {
-                int dc = space.diffLength();
-                OrbitFilter of = space.emptyOf();
-                FixBS diffSet = new FixBS(space.diffLength());
-                for (State1 st : states) {
-                    st.updateFilter(of, space);
-                    diffSet.or(st.diffSet());
-                    dc = dc - st.diffSet().cardinality();
-                }
-                int nc = dc / k / (k - 1);
-                if (nc == 0) {
-                    fCons.accept(states.toArray(State1[]::new), new NSState[0]);
-                    return;
-                }
-                int nextOrbit = of.currOrbit(v);
-                int snd = of.filters()[nextOrbit].nextClearBit(0);
-                NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
-                searchDesigns(space, new NSState[]{in}, nst -> {
-                    if (nst.length < nc) {
-                        return false;
+                List<List<State1>> init = new ArrayList<>();
+                JNauty.instance().cliques(g, 1, v, a -> {
+                    FixBS arr = new FixBS(a);
+                    List<State1> states = new ArrayList<>();
+                    FixBS diffSet = new FixBS(space.diffLength());
+                    for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
+                        State1 st = stab[i];
+                        states.add(st);
+                        diffSet.or(st.diffSet());
                     }
-                    fCons.accept(states.toArray(State1[]::new), nst);
-                    return true;
+                    int card = diffSet.cardinality();
+                    if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
+                        return;
+                    }
+                    if (card == space.diffLength()) {
+                        System.out.println(states.stream().map(State1::block).toList());
+                        return;
+                    }
+                    init.add(states);
                 });
-                int val = ai.incrementAndGet();
-                if (val % 1000 == 0) {
-                    System.out.println(val);
-                }
-            });
+                System.out.println("Init " + init.size());
+                AtomicInteger ai = new AtomicInteger();
+                init.parallelStream().forEach(states -> {
+                    int dc = space.diffLength();
+                    OrbitFilter of = space.emptyOf();
+                    FixBS diffSet = new FixBS(space.diffLength());
+                    for (State1 st : states) {
+                        st.updateFilter(of, space);
+                        diffSet.or(st.diffSet());
+                        dc = dc - st.diffSet().cardinality();
+                    }
+                    int nc = dc / k / (k - 1);
+                    if (nc == 0) {
+                        fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                        return;
+                    }
+                    int nextOrbit = of.currOrbit(v);
+                    int snd = of.filters()[nextOrbit].nextClearBit(0);
+                    NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+                    searchDesigns(space, new NSState[]{in}, nst -> {
+                        if (nst.length < nc) {
+                            return false;
+                        }
+                        fCons.accept(states.toArray(State1[]::new), nst);
+                        return true;
+                    });
+                    int val = ai.incrementAndGet();
+                    if (val % 1000 == 0) {
+                        System.out.println(val);
+                    }
+                });
+            }
         }
     }
 
@@ -113,63 +118,68 @@ public class Applicator7Test {
     public void generateByOne() throws IOException {
         int gs = 147;
         int k = 4;
+        int[] orbits = new int[]{49};
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            GSpace1 space;
-            try {
-                space = new GSpace1(k, group, false, 3);
-            } catch (IllegalArgumentException e) {
-                System.out.println("Not empty");
-                continue;
-            }
-            int v = space.v();
-            FixBS evenDiffs = space.evenDiffs();
-            State1[] stab = getStabilized(space);
-            System.out.println(stab.length);
-            Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
-            BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
-                Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
-                        Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
-                System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
-                        + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
-            };
-            if (stab.length == 0) {
-                continue;
-            }
-            JNauty.instance().cliques(g, 1, space.v(), a -> {
-                FixBS arr = new FixBS(a);
-                List<State1> states = new ArrayList<>();
-                FixBS diffSet = new FixBS(space.diffLength());
-                OrbitFilter of = space.emptyOf();
-                for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
-                    State1 st = stab[i];
-                    states.add(st);
-                    diffSet.or(st.diffSet());
-                    st.updateFilter(of, space);
+            List<int[][]> configs = ApplicatorTest.configs(group, orbits);
+            for (int[][] config : configs) {
+                GSpace1 space;
+                try {
+                    space = new GSpace1(k, group, false, config);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Not empty");
+                    continue;
                 }
-                int card = diffSet.cardinality();
-                if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
-                    return;
+                int v = space.v();
+                FixBS evenDiffs = space.evenDiffs();
+                State1[] stab = getStabilized(space);
+                System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs);
+                Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+                BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
+                    Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
+                            Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
+                    System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
+                            + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
+                };
+                if (stab.length == 0) {
+                    continue;
                 }
-                int nc = (space.diffLength() - card) / k / (k - 1);
-                if (nc == 0) {
-                    fCons.accept(states.toArray(State1[]::new), new NSState[0]);
-                    return;
-                }
-                int nextOrbit = of.currOrbit(v);
-                int snd = of.filters()[nextOrbit].nextClearBit(0);
-                NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
-                searchDesigns(space, new NSState[]{in}, nst -> {
-                    if (nst.length < nc) {
-                        return false;
+                JNauty.instance().cliques(g, 1, space.v(), a -> {
+                    FixBS arr = new FixBS(a);
+                    List<State1> states = new ArrayList<>();
+                    FixBS diffSet = new FixBS(space.diffLength());
+                    OrbitFilter of = space.emptyOf();
+                    for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
+                        State1 st = stab[i];
+                        states.add(st);
+                        diffSet.or(st.diffSet());
+                        st.updateFilter(of, space);
                     }
-                    fCons.accept(states.toArray(State1[]::new), nst);
-                    return true;
+                    int card = diffSet.cardinality();
+                    if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
+                        return;
+                    }
+                    int nc = (space.diffLength() - card) / k / (k - 1);
+                    if (nc == 0) {
+                        fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                        return;
+                    }
+                    int nextOrbit = of.currOrbit(v);
+                    int snd = of.filters()[nextOrbit].nextClearBit(0);
+                    NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+                    searchDesigns(space, new NSState[]{in}, nst -> {
+                        if (nst.length < nc) {
+                            return false;
+                        }
+                        fCons.accept(states.toArray(State1[]::new), nst);
+                        return true;
+                    });
+                    System.out.println("Done");
                 });
-                System.out.println("Done");
-            });
+            }
         }
     }
 
