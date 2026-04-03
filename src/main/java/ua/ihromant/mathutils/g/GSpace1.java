@@ -345,8 +345,10 @@ public class GSpace1 {
         for (int fst : oBeg) {
             for (int snd = fst + 1; snd < v; snd++) {
                 int lft = diffIdx(fst * v + snd);
-                if (lft == diffIdx(snd * v + fst)) {
+                int rgt = diffIdx(snd * v + fst);
+                if (lft == rgt || prImage(fst, fst).intersection(prImage(snd, snd)).cardinality() > 1) {
                     result.set(lft);
+                    result.set(rgt);
                 }
             }
         }
