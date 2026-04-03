@@ -203,6 +203,36 @@ public class Applicator7Test {
         }
     }
 
+    private static void searchDesignsMin(GSpace1 space, NSState[] currDesign, Predicate<NSState[]> cons) {
+        int v = space.v();
+        int li = currDesign.length - 1;
+        NSState last = currDesign[li];
+        OrbitFilter of = last.of();
+        int[] block = last.block();
+        int bl = block.length;
+        if (bl == space.k()) {
+            if (cons.test(currDesign)) {
+                return;
+            }
+            int nextOrbit = of.currOrbit(v);
+            int snd = of.filters()[nextOrbit].nextClearBit(0);
+            NSState st = new NSState(new int[]{space.oBeg(nextOrbit)}, last.diffSet(), of).acceptElem(space, snd);
+            NSState[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
+            nextDesign[currDesign.length] = st;
+            searchDesigns(space, nextDesign, cons);
+        } else {
+            FixBS ftr = of.filters()[space.orbIdx(block[0])];
+            int prev = block[bl - 1];
+            for (int el = ftr.nextClearBit(prev + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
+                NSState nextState = last.acceptElem(space, el);
+                if (nextState != null && space.minimal(FixBS.of(v, nextState.block()))) {
+                    currDesign[li] = nextState;
+                    searchDesignsMin(space, currDesign, cons);
+                }
+            }
+        }
+    }
+
     @Test
     public void testTrivial() throws IOException {
         Group group = GroupIndex.group(39, 1);
@@ -225,7 +255,7 @@ public class Applicator7Test {
         int nextOrbit = of.currOrbit(v);
         int snd = of.filters()[nextOrbit].nextClearBit(0);
         NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, new FixBS(space.diffLength()), of).acceptElem(space, snd);
-        searchDesigns(space, new NSState[]{in}, nst -> {
+        searchDesignsMin(space, new NSState[]{in}, nst -> {
             if (nst.length < nc) {
                 return false;
             }
