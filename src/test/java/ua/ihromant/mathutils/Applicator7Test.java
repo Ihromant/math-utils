@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.g.GSpace1;
 import ua.ihromant.mathutils.g.NSState;
 import ua.ihromant.mathutils.g.OrbitFilter;
 import ua.ihromant.mathutils.g.State1;
+import ua.ihromant.mathutils.group.GapGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -34,7 +35,9 @@ public class Applicator7Test {
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
-            Group group = GroupIndex.group(gs, j);
+            System.out.println("Reading SmallGroup(" + gs + "," + j + ")");
+            GapGroup gg = GroupIndex.gapGroup(gs, j);
+            Group group = gg.group();
             List<int[][]> configs = ApplicatorTest.configs(group, orbits);
             for (int[][] config : configs) {
                 GSpace1 space;
@@ -47,7 +50,7 @@ public class Applicator7Test {
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
                 State1[] stab = getStabilized(space);
-                System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
+                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
                 BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
@@ -122,7 +125,9 @@ public class Applicator7Test {
         int c = GroupIndex.groupCount(gs);
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
-            Group group = GroupIndex.group(gs, j);
+            System.out.println("Reading SmallGroup(" + gs + "," + j + ")");
+            GapGroup gg = GroupIndex.gapGroup(gs, j);
+            Group group = gg.group();
             List<int[][]> configs = ApplicatorTest.configs(group, orbits);
             for (int[][] config : configs) {
                 GSpace1 space;
@@ -135,7 +140,7 @@ public class Applicator7Test {
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
                 State1[] stab = getStabilized(space);
-                System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
+                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
                 BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
@@ -167,6 +172,7 @@ public class Applicator7Test {
                         fCons.accept(states.toArray(State1[]::new), new NSState[0]);
                         return;
                     }
+                    System.out.println("Begin");
                     int nextOrbit = of.currOrbit(v);
                     int snd = of.filters()[nextOrbit].nextClearBit(0);
                     NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
