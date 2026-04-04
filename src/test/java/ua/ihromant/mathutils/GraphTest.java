@@ -304,8 +304,7 @@ public class GraphTest {
             syncLiners.put(canon, info);
         });
         Path grPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
-        content = Files.readString(grPath);
-        String[] lns = content.lines().toArray(String[]::new);
+        List<String> lns = Files.readAllLines(grPath);
         SparseGraph graph = new SparseGraph();
         for (String ln : lns) {
             int ix = ln.indexOf(" (");
@@ -328,14 +327,15 @@ public class GraphTest {
             FixBS canon = lnr.canonByLines();
             SLinerInfo info = syncLiners.computeIfAbsent(canon, ky -> new SLinerInfo().setCanon(ky.words()));
             info.setGraphIdx(i);
-            info.setProcessed(i < lns.length);
+            info.setProcessed(i < lns.size());
             compLiners[i] = info;
         });
-        List<SLinerInfo> stack = Arrays.stream(compLiners, lns.length, compLiners.length).collect(Collectors.toList());
-        int processedCnt = lns.length;
+        List<SLinerInfo> stack = Arrays.stream(compLiners, lns.size(), compLiners.length).collect(Collectors.toList());
+        int processedCnt = lns.size();
         Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
         reached.clear();
+        lns.clear();
         content = null;
         System.gc();
         while (!stack.isEmpty() && counter > 0) {
