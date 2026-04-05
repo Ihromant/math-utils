@@ -78,7 +78,7 @@ public class Applicator7Test {
                         return;
                     }
                     if (card == space.diffLength()) {
-                        System.out.println(states.stream().map(State1::block).toList());
+                        fCons.accept(states.toArray(State1[]::new), new NSState[0]);
                         return;
                     }
                     init.add(states);
