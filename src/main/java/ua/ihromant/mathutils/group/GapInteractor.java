@@ -84,13 +84,13 @@ public class GapInteractor {
 
     public List<List<List<Integer>>> gapCycles(int order, int index) throws IOException {
         process.outputWriter().write("IsPackageLoaded(\"LOOPS\");\n");
-        process.outputWriter().write("GeneratorsOfGroup(Image(IsomorphismPermGroup(SmallGroup(" + order + "," + index + "))));\n");
+        process.outputWriter().write("Print(PrintString(GeneratorsOfGroup(Image(IsomorphismPermGroup(SmallGroup(" + order + "," + index + "))))));\n");
         process.outputWriter().write("quit;\n");
         process.outputWriter().flush();
         String line = process.inputReader().lines().dropWhile(l -> !l.contains("false")).skip(1).map(l -> {
             int idx = l.lastIndexOf(ANSI_RED);
             String ln = idx < 0 ? l : l.substring(idx + ANSI_RED.length());
-            return ln.replace(" ", "");
+            return ln.replace(" ", "").replace("\\", "");
         }).collect(Collectors.joining());
         process.destroyForcibly();
         List<List<List<Integer>>> cycles = new ArrayList<>();
