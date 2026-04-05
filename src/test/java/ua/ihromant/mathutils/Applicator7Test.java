@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
@@ -355,6 +356,75 @@ public class Applicator7Test {
             arr.addLast(cos);
             findStab(cosets, arr, i + 1, sz + cos.length, k, cons);
             arr.removeLast();
+        }
+    }
+
+    private static State1[] getStabilizedAlt(GSpace1 sp) {
+        int k = sp.k();
+        int v = sp.v();
+        Group table = sp.group();
+        List<SubGroup> sgs = table.subGroups();
+        Map<FixBS, State1> states = new ConcurrentHashMap<>();
+        for (SubGroup sg : sgs) {
+            if (sg.order() == 1) {
+                continue;
+            }
+            List<int[]> cosets = cosets(sp, sg, k);
+            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
+                    .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
+            Consumer<State1> cons = st -> states.putIfAbsent(st.diffSet(), st);
+            for (int i : initial) {
+                int[] fst = cosets.get(i);
+                if (fst.length > k) {
+                    continue;
+                }
+                State1 st = new State1(new FixBS(v), sg.elems(), new FixBS(sp.diffLength()), new int[sp.diffLength()][0], 0);
+                for (int el : fst) {
+                    st = Objects.requireNonNull(st.acceptElemWithStab(sp, el));
+                }
+                if (st.size() == k) {
+                    cons.accept(State1.fromBlockWithStab(sp, fst, sg.elems()));
+                    continue;
+                }
+                State1 state = st;
+                IntStream.range(i + 1, cosets.size()).parallel().forEach(j -> {
+                    int[] snd = cosets.get(j);
+                    if (state.size() + snd.length > k) {
+                        return;
+                    }
+                    State1 nextSt = state;
+                    for (int el : snd) {
+                        nextSt = nextSt.acceptElemWithStab(sp, el);
+                        if (nextSt == null) {
+                            return;
+                        }
+                    }
+                    findStabAlt(cosets, sp, nextSt, j + 1, cons);
+                });
+            }
+        }
+        return states.values().toArray(State1[]::new);
+    }
+
+    private static void findStabAlt(List<int[]> cosets, GSpace1 sp, State1 state, int from, Consumer<State1> cons) {
+        int k = sp.k();
+        if (state.size() == k) {
+            cons.accept(state);
+            return;
+        }
+        ex: for (int i = from; i < cosets.size(); i++) {
+            int[] cos = cosets.get(i);
+            if (state.size() + cos.length > k) {
+                continue;
+            }
+            State1 nextSt = state;
+            for (int el : cos) {
+                nextSt = nextSt.acceptElemWithStab(sp, el);
+                if (nextSt == null) {
+                    continue ex;
+                }
+            }
+            findStabAlt(cosets, sp, nextSt, i + 1, cons);
         }
     }
 
