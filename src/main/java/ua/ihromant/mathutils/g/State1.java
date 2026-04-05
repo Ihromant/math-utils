@@ -114,6 +114,45 @@ public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs
         return new State1(newBlock, newStabilizer, newDiffSet, newDiffs, sz);
     }
 
+    public State1 acceptElemWithStab(GSpace1 space, int x) {
+        FixBS newBlock = block.copy();
+        newBlock.set(x);
+        FixBS newDiffSet = diffSet.copy();
+        int[][] newDiffs = diffs.clone();
+        int v = space.v();
+        for (int b = block.nextSetBit(0); b >= 0; b = block.nextSetBit(b + 1)) {
+            int bx = b * v + x;
+            int compBx = space.diffIdx(bx);
+            int[] oldBx = newDiffs[compBx];
+            int[] newBx = Arrays.copyOf(oldBx, oldBx.length + 1);
+            newBx[oldBx.length] = bx;
+            for (int pair : newBx) {
+                int fst = pair / v;
+                int snd = pair % v;
+                if (!space.prImage(b, fst).intersection(space.prImage(x, snd)).diff(stabilizer).isEmpty()) {
+                    return null;
+                }
+            }
+            newDiffs[compBx] = newBx;
+            newDiffSet.set(compBx);
+            int xb = x * v + b;
+            int compXb = space.diffIdx(xb);
+            int[] oldXb = newDiffs[compXb];
+            int[] newXb = Arrays.copyOf(oldXb, oldXb.length + 1);
+            newXb[oldXb.length] = xb;
+            for (int pair : newXb) {
+                int fst = pair / v;
+                int snd = pair % v;
+                if (!space.prImage(x, fst).intersection(space.prImage(b, snd)).diff(stabilizer).isEmpty()) {
+                    return null;
+                }
+            }
+            newDiffs[compXb] = newXb;
+            newDiffSet.set(compXb);
+        }
+        return new State1(newBlock, stabilizer, newDiffSet, newDiffs, size + 1);
+    }
+
     public void updateFilter(OrbitFilter filter, GSpace1 space) {
         for (int i = diffSet.nextSetBit(0); i >= 0; i = diffSet.nextSetBit(i + 1)) {
             filter.or(space.projection(i));
