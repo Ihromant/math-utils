@@ -442,7 +442,15 @@ public class Applicator7Test {
                     continue ex;
                 }
             }
-            result.add(coset.toArray());
+            State1 st = new State1(new FixBS(sp.v()), sg.elems(), new FixBS(sp.diffLength()), new int[sp.diffLength()][0], 0);
+            int[] arr = coset.toArray();
+            for (int el : arr) {
+                st = st.acceptElemWithStab(sp, el);
+                if (st == null) {
+                    continue ex;
+                }
+            }
+            result.add(arr);
         }
         return result;
     }
