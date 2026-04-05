@@ -54,15 +54,15 @@ public class Applicator7Test {
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+                if (stab.length == 0) {
+                    continue;
+                }
                 BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
                     Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                             Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
                     System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
                             + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
                 };
-                if (stab.length == 0) {
-                    continue;
-                }
                 List<List<State1>> init = new ArrayList<>();
                 JNauty.instance().cliques(g, 1, v, a -> {
                     FixBS arr = new FixBS(a);
