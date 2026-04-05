@@ -50,7 +50,7 @@ public class Applicator7Test {
                 }
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
-                State1[] stab = getStabilized(space);
+                State1[] stab = getStabilizedAlt(space);
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
@@ -140,7 +140,7 @@ public class Applicator7Test {
                 }
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
-                State1[] stab = getStabilized(space);
+                State1[] stab = getStabilizedAlt(space);
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
