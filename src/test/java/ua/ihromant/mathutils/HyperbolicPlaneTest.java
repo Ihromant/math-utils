@@ -57,7 +57,7 @@ public class HyperbolicPlaneTest {
                         {0, 26, 52, 78, 104, 130}
                 }
         };
-        Map<Map<Integer, Integer>, Liner> lnrz = new HashMap<>();
+        Map<Map<Integer, Long>, Liner> lnrz = new HashMap<>();
         for (int[][] diffSet : diffSets) {
             IntStream.range(0, 1 << (diffSet.length - (v % k == 0 ? 2 : 1))).forEach(comb -> {
                 int[][] ds = IntStream.range(0, diffSet.length)
@@ -80,7 +80,7 @@ public class HyperbolicPlaneTest {
                         {0, 72, 95, 97, 116, 119}
                 }
         };
-        Map<Map<Integer, Integer>, Liner> lnrz1 = new HashMap<>();
+        Map<Map<Integer, Long>, Liner> lnrz1 = new HashMap<>();
         for (int[][] diffSet : diffSets1) {
             IntStream.range(0, 1 << (diffSet.length - (v1 % k == 0 ? 2 : 1))).forEach(comb -> {
                 int[][] ds = IntStream.range(0, diffSet.length)

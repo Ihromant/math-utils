@@ -969,7 +969,7 @@ public class BibdFinder6CyclicTest {
         int k = 4;
         Group g = GroupIndex.group(21, 1);
         Liner lnr = generateLiner(g, fixed, k, base);
-        Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+        Map<Integer, Long> freq = lnr.hyperbolicFreq();
         System.out.println(freq);
         PermutationGroup perm = lnr.automorphisms();
         String fp = freq.toString().replace(" ", "");
@@ -988,7 +988,7 @@ public class BibdFinder6CyclicTest {
         int k = 4;
         Group g = GroupIndex.group(21, 1);
         Liner lnr = generateLiner(g, fixed, k, base);
-        Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+        Map<Integer, Long> freq = lnr.hyperbolicFreq();
         System.out.println(freq);
         String fp = freq.toString().replace(" ", "");
         String str = Files.readString(Path.of("/home/ihromant/maths/g-spaces", "auths" + k + "-" + g.name() + "-fix" + fixed + "-" + fp + ".txt"));

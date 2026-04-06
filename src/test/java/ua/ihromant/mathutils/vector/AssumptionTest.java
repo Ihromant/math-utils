@@ -518,7 +518,7 @@ public class AssumptionTest {
                 }
                 Liner lnr = new Liner(lns.toArray(FixBS[]::new));
                 if (unique.add(new FixBS(lnr.graphData().canonical()))) {
-                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    Map<Integer, Long> freq = lnr.hyperbolicFreq();
                     System.out.println(lnr.graphData().autCount() + " " + freq);
                     try {
                         Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "
@@ -616,7 +616,7 @@ public class AssumptionTest {
                 }
                 Liner lnr = new Liner(lns.toArray(FixBS[]::new));
                 if (unique.add(new FixBS(lnr.graphData().canonical()))) {
-                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    Map<Integer, Long> freq = lnr.hyperbolicFreq();
                     System.out.println(lnr.graphData().autCount() + " " + freq);
                     try {
                         Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "
@@ -739,7 +739,7 @@ public class AssumptionTest {
                 }
                 Liner lnr = new Liner(lns.toArray(FixBS[]::new));
                 if (unique.add(new FixBS(lnr.graphData().canonical()))) {
-                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    Map<Integer, Long> freq = lnr.hyperbolicFreq();
                     System.out.println(lnr.graphData().autCount() + " " + freq);
                     try {
                         Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "
@@ -965,7 +965,7 @@ public class AssumptionTest {
                 }
                 Liner lnr = new Liner(lnz.toArray(FixBS[]::new));
                 if (unique.add(new FixBS(lnr.graphData().canonical()))) {
-                    Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+                    Map<Integer, Long> freq = lnr.hyperbolicFreq();
                     System.out.println(lnr.graphData().autCount() + " " + freq);
                     try {
                         Files.writeString(path, lnr.graphData().autCount() + " " + freq + " "

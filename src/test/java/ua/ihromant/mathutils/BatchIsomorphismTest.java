@@ -113,7 +113,7 @@ public class BatchIsomorphismTest {
 
     @Test
     public void checkIsomorphicDesigns() {
-        Map<Map<Integer, Integer>, List<DesignData>> grouped = new HashMap<>();
+        Map<Map<Integer, Long>, List<DesignData>> grouped = new HashMap<>();
         ObjectMapper om = new ObjectMapper();
         Group ccl = new CyclicGroup(126);
         Arrays.stream(CYCLIC.split("\n")).forEach(str -> {
@@ -152,7 +152,7 @@ public class BatchIsomorphismTest {
                                 .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
                         Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> BibdFinder5CyclicTest.blocks(bl, v, group)).toArray(int[][]::new));
                         if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
-                            Map<Integer, Integer> freq = l.hyperbolicFreq();
+                            Map<Integer, Long> freq = l.hyperbolicFreq();
                             grouped.computeIfAbsent(freq, _ -> new ArrayList<>()).add(new DesignData(i, base));
                         }
                     }
@@ -187,7 +187,7 @@ public class BatchIsomorphismTest {
         int k = 6;
         int v = sdp.order() + 1;
         Group table = sdp.asTable();
-        Map<Map<Integer, Integer>, List<DesignData>> grouped = new HashMap<>();
+        Map<Map<Integer, Long>, List<DesignData>> grouped = new HashMap<>();
         File f = new File("/home/ihromant/maths/g-spaces/old_initial", k + "-" + sdp.name() + "-fix" + fixed + ".txt");
         try (FileInputStream fis = new FileInputStream(f);
              InputStreamReader isr = new InputStreamReader(fis);
@@ -200,15 +200,15 @@ public class BatchIsomorphismTest {
                             .mapToInt(Integer::parseInt).toArray()).toArray(int[][]::new);
                     Liner l = new Liner(v, Arrays.stream(base).flatMap(bl -> BibdFinder5CyclicTest.blocks(bl, v, table)).toArray(int[][]::new));
                     if (liners.putIfAbsent(Arrays.stream(base).map(a -> FixBS.of(v, a)).toList(), l) == null) {
-                        Map<Integer, Integer> freq = l.hyperbolicFreq();
+                        Map<Integer, Long> freq = l.hyperbolicFreq();
                         grouped.computeIfAbsent(freq, _ -> new ArrayList<>()).add(new DesignData(0, base));
                     }
                 }
             });
         }
-        Map<Map<Integer, Integer>, List<DesignData>> filtered = grouped.entrySet().stream().filter(e -> e.getValue().size() > 1)
+        Map<Map<Integer, Long>, List<DesignData>> filtered = grouped.entrySet().stream().filter(e -> e.getValue().size() > 1)
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        List<Map<Integer, Integer>> idxes = new ArrayList<>(filtered.keySet());
+        List<Map<Integer, Long>> idxes = new ArrayList<>(filtered.keySet());
         System.out.println(idxes);
         List<DesignData> data = filtered.entrySet().stream()
                 .flatMap(e -> e.getValue().stream().map(dd -> new DesignData(idxes.indexOf(e.getKey()), dd.base()))).toList();

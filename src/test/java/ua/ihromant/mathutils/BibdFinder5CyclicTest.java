@@ -536,9 +536,9 @@ public class BibdFinder5CyclicTest {
         SemiDirectProduct left = new SemiDirectProduct(new CyclicGroup(7), new CyclicGroup(3));
         GroupProduct group = new GroupProduct(left, left);
         int v = group.order();
-        Map<Map<Integer, Integer>, int[][]> ordered = new TreeMap<>((a, b) -> {
-            int[] fst = IntStream.range(0, 6).map(i -> a.getOrDefault(i, 0)).toArray();
-            int[] snd = IntStream.range(0, 6).map(i -> b.getOrDefault(i, 0)).toArray();
+        Map<Map<Integer, Long>, int[][]> ordered = new TreeMap<>((a, b) -> {
+            int[] fst = IntStream.range(0, 6).map(i -> a.getOrDefault(i, 0L).intValue()).toArray();
+            int[] snd = IntStream.range(0, 6).map(i -> b.getOrDefault(i, 0L).intValue()).toArray();
             return Combinatorics.compareArr(fst, snd);
         });
         Arrays.stream(bases).forEach(base -> {
@@ -582,9 +582,9 @@ public class BibdFinder5CyclicTest {
         CyclicProduct left = new CyclicProduct(5, 5, 3);
         SemiDirectProduct group = new SemiDirectProduct(left, new CyclicGroup(3));
         int v = group.order() + 1;
-        Map<Map<Integer, Integer>, int[][]> ordered = new TreeMap<>((a, b) -> {
-            int[] fst = IntStream.range(0, 6).map(i -> a.getOrDefault(i, 0)).toArray();
-            int[] snd = IntStream.range(0, 6).map(i -> b.getOrDefault(i, 0)).toArray();
+        Map<Map<Integer, Long>, int[][]> ordered = new TreeMap<>((a, b) -> {
+            int[] fst = IntStream.range(0, 6).map(i -> a.getOrDefault(i, 0L).intValue()).toArray();
+            int[] snd = IntStream.range(0, 6).map(i -> b.getOrDefault(i, 0L).intValue()).toArray();
             return Combinatorics.compareArr(fst, snd);
         });
         Arrays.stream(bases).forEach(base -> {

@@ -300,11 +300,11 @@ public class InversivePlane implements NautyGraph {
         return new Liner(pointCount - 1, result.toArray(int[][]::new));
     }
 
-    public Map<Map<Integer, Integer>, Integer> fingerprint() {
-        Map<Map<Integer, Integer>, Integer> result = new HashMap<>();
+    public Map<Map<Integer, Long>, Integer> fingerprint() {
+        Map<Map<Integer, Long>, Integer> result = new HashMap<>();
         for (int pt = 0; pt < pointCount; pt++) {
             Liner lnr = derived(pt);
-            Map<Integer, Integer> freq = lnr.hyperbolicFreq();
+            Map<Integer, Long> freq = lnr.hyperbolicFreq();
             result.compute(freq, (k, v) -> v == null ? 1 : v + 1);
         }
         return result;

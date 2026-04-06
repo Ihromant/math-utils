@@ -380,9 +380,9 @@ public class Liner implements NautyGraph {
         return result;
     }
 
-    public Map<Integer, Integer> hyperbolicFreq() {
+    public Map<Integer, Long> hyperbolicFreq() {
         int maxLength = Arrays.stream(lines).mapToInt(l -> l.length).reduce(0, Math::max);
-        AtomicInteger[] res = IntStream.range(0, maxLength).mapToObj(_ -> new AtomicInteger()).toArray(AtomicInteger[]::new);
+        AtomicLong[] res = IntStream.range(0, maxLength).mapToObj(_ -> new AtomicLong()).toArray(AtomicLong[]::new);
         IntStream.range(0, pointCount).parallel().forEach(o -> {
             for (int x = 0; x < pointCount; x++) {
                 if (o == x) {

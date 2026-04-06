@@ -1316,10 +1316,10 @@ public class BatchLinerTest {
             String s = l.substring(l.indexOf("[{")).replace('{', '[').replace('}', ']');
             int[][] base = om.readValue(s, int[][].class);
             Liner lnr = new Liner(space.v(), Arrays.stream(base).flatMap(bl -> space.blocks(FixBS.of(space.v(), bl))).toArray(int[][]::new));
-            Map<Integer, Integer> freq = lnr.hyperbolicFreq();
             GraphData gd = lnr.graphData();
             Liner existing = lnrs.putIfAbsent(new FixBS(gd.canonical()), lnr);
             if (existing == null) {
+                Map<Integer, Long> freq = lnr.hyperbolicFreq();
                 try {
                     String name;
                     if (gd.autCount() != g.order()) {
@@ -1403,7 +1403,7 @@ public class BatchLinerTest {
         Map<Long, Long> quantities = new HashMap<>();
         for (Pr pr : lnrs.values()) {
             quantities.compute(pr.gd.autCount(), (_, ct) -> ct == null ? 1 : ct + 1);
-            Map<Integer, Integer> freq = pr.lnr.hyperbolicFreq();
+            Map<Integer, Long> freq = pr.lnr.hyperbolicFreq();
             if (freq.size() < k - 2) {
                 System.out.println(freq);
             }
