@@ -318,23 +318,25 @@ public class GraphTest {
             }
         }
         Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
-        List<String> reached = Files.readAllLines(stPath);
-        SLinerInfo[] compLiners = new SLinerInfo[reached.size()];
-        IntStream.range(0, reached.size()).parallel().forEach(i -> {
-            String l = reached.get(i);
+        Stream<String> reached = Files.lines(stPath);
+        List<SLinerInfo> stack = new ArrayList<>();
+        AtomicInteger ai = new AtomicInteger();
+        reached.forEach(l -> {
+            int i = ai.getAndIncrement();
             short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
             SLiner lnr = new SLiner(lines);
             FixBS canon = lnr.canonByLines();
             SLinerInfo info = syncLiners.computeIfAbsent(canon, ky -> new SLinerInfo().setCanon(ky.words()));
             info.setGraphIdx(i);
             info.setProcessed(i < lns.size());
-            compLiners[i] = info;
+            if (i >= lns.size()) {
+                stack.add(info);
+            }
         });
-        List<SLinerInfo> stack = Arrays.stream(compLiners, lns.size(), compLiners.length).collect(Collectors.toList());
         int processedCnt = lns.size();
         Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
-        reached.clear();
+        reached.close();
         lns.clear();
         content = null;
         System.gc();
