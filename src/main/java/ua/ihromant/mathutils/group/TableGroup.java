@@ -19,6 +19,7 @@ public class TableGroup implements Group {
     @Setter
     private int[][] cachedAuth;
     private Map<Integer, List<SubGroup>> cachedSubGroups;
+    private Map<Integer, List<SubGroup>> cachedConjSubGroups;
 
     public TableGroup(int[][] operationTable) {
         this(null, operationTable);
@@ -112,5 +113,13 @@ public class TableGroup implements Group {
             cachedSubGroups = Group.super.groupedSubGroups();
         }
         return cachedSubGroups;
+    }
+
+    @Override
+    public Map<Integer, List<SubGroup>> subsByConjugation() {
+        if (cachedConjSubGroups == null) {
+            cachedConjSubGroups = Group.super.subsByConjugation();
+        }
+        return cachedConjSubGroups;
     }
 }
