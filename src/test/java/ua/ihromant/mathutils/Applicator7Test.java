@@ -6,9 +6,11 @@ import ua.ihromant.mathutils.g.GSpace1;
 import ua.ihromant.mathutils.g.NSState;
 import ua.ihromant.mathutils.g.OrbitFilter;
 import ua.ihromant.mathutils.g.State1;
+import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.GapGroup;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
+import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -397,5 +399,74 @@ public class Applicator7Test {
             result.add(arr);
         }
         return result;
+    }
+
+    @Test
+    public void generateByTwo() throws IOException {
+        int k = 4;
+        int clSize = 0;
+        Group group = new SemiDirectProduct(new CyclicGroup(73), new CyclicGroup(3));
+        GSpace1 space = new GSpace1(k, group, false, 3);
+        FixBS evenDiffs = space.evenDiffs();
+        State1[] stab = getStabilized(space);
+        Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+        if (stab.length == 0 || clSize == 0) {
+            generateTwo(space, List.of(), evenDiffs);
+            return;
+        }
+        JNauty.instance().cliques(g, clSize, clSize, a -> {
+            FixBS arr = new FixBS(a);
+            List<State1> states = new ArrayList<>();
+            for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
+                states.add(stab[i]);
+            }
+            generateTwo(space, states, evenDiffs);
+        });
+    }
+
+    private static void generateTwo(GSpace1 space, List<State1> states, FixBS evenDiffs) {
+        int k = space.k();
+        int v = space.v();
+        FixBS diffSet = new FixBS(space.diffLength());
+        OrbitFilter of = space.emptyOf();
+        for (State1 st : states) {
+            diffSet.or(st.diffSet());
+            st.updateFilter(of, space);
+        }
+        int card = diffSet.cardinality();
+        if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
+            return;
+        }
+        int nc = (space.diffLength() - card) / k / (k - 1);
+        if (nc != 2) {
+            throw new IllegalStateException();
+        }
+        System.out.println("Begin " + states.stream().map(State1::block).toList());
+        int oBeg = space.oBeg(of.currOrbit(v));
+        NSState in = new NSState(new int[]{oBeg}, diffSet, of);
+        FixBS allowed = diffSet.copy();
+        allowed.flip(0, space.diffLength());
+        FixBS ftr = of.filters()[space.orbIdx(oBeg)].copy();
+        ftr.flip(0, v);
+        ftr.clear(0, oBeg + 1);
+        int[] possible = ftr.toArray();
+        Map<FixBS, int[]> blocks = new ConcurrentHashMap<>();
+        IntStream.of(possible).parallel().forEach(snd -> {
+            NSState[] init = new NSState[]{Objects.requireNonNull(in.acceptElem(space, snd))};
+            searchDesigns(space, init, nst -> {
+                NSState st = nst[0];
+                blocks.putIfAbsent(st.diffSet(), st.block());
+                FixBS candidate = allowed.diff(st.diffSet());
+                int[] existing = blocks.get(candidate);
+                if (existing != null) {
+                    Liner l = new Liner(space.v(), Stream.concat(states.stream().flatMap(s -> space.blocks(s.block())),
+                            Stream.of(st, new NSState(existing, null, null)).flatMap(s -> space.blocks(s.block()))).toArray(int[][]::new));
+                    System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + states.stream().map(State1::block).toList()
+                            + " " + Arrays.deepToString(Stream.of(st, new NSState(existing, null, null)).map(NSState::block).toArray(int[][]::new)));
+                }
+                return true;
+            });
+        });
+        System.out.println("Done");
     }
 }
