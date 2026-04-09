@@ -50,7 +50,7 @@ public class Applicator7Test {
                 }
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
-                State1[] stab = getStabilizedAlt(space);
+                State1[] stab = getStabilized(space);
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 if (stab.length == 0) {
@@ -140,7 +140,7 @@ public class Applicator7Test {
                 }
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
-                State1[] stab = getStabilizedAlt(space);
+                State1[] stab = getStabilized(space);
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
@@ -305,62 +305,6 @@ public class Applicator7Test {
 
     private static State1[] getStabilized(GSpace1 sp) {
         int k = sp.k();
-        Group table = sp.group();
-        List<SubGroup> sgs = table.subGroups();
-        Map<FixBS, State1> states = new ConcurrentHashMap<>();
-        for (SubGroup sg : sgs) {
-            if (sg.order() == 1) {
-                continue;
-            }
-            List<int[]> cosets = cosets(sp, sg, k);
-            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
-                    .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
-            Consumer<List<int[]>> cons = a -> {
-                int[] block = a.stream().flatMapToInt(Arrays::stream).toArray();
-                State1 st = State1.fromBlockWithStab(sp, block, sg.elems());
-                if (st != null) {
-                    states.putIfAbsent(st.diffSet(), st);
-                }
-            };
-            for (int i : initial) {
-                List<int[]> res = new ArrayList<>();
-                int[] fst = cosets.get(i);
-                res.add(fst);
-                if (fst.length >= k) {
-                    if (fst.length == k) {
-                        cons.accept(res);
-                    }
-                    continue;
-                }
-                IntStream.range(i + 1, cosets.size()).parallel().forEach(j -> {
-                    List<int[]> rs = new ArrayList<>(res);
-                    int[] snd = cosets.get(j);
-                    rs.add(snd);
-                    findStab(cosets, rs, j + 1, fst.length + snd.length, k, cons);
-                });
-            }
-        }
-        return states.values().toArray(State1[]::new);
-    }
-
-    private static void findStab(List<int[]> cosets, List<int[]> arr, int from, int sz, int k, Consumer<List<int[]>> cons) {
-        if (sz == k) {
-            cons.accept(arr);
-            return;
-        }
-        if (sz > k) {
-            return;
-        }
-        for (int i = from; i < cosets.size(); i++) {
-            int[] cos = cosets.get(i);
-            arr.addLast(cos);
-            findStab(cosets, arr, i + 1, sz + cos.length, k, cons);
-            arr.removeLast();
-        }
-    }
-
-    private static State1[] getStabilizedAlt(GSpace1 sp) {
-        int k = sp.k();
         int v = sp.v();
         Group table = sp.group();
         List<SubGroup> sgs = table.subGroups();
@@ -399,14 +343,14 @@ public class Applicator7Test {
                             return;
                         }
                     }
-                    findStabAlt(cosets, sp, nextSt, j + 1, cons);
+                    findStab(cosets, sp, nextSt, j + 1, cons);
                 });
             }
         }
         return states.values().toArray(State1[]::new);
     }
 
-    private static void findStabAlt(List<int[]> cosets, GSpace1 sp, State1 state, int from, Consumer<State1> cons) {
+    private static void findStab(List<int[]> cosets, GSpace1 sp, State1 state, int from, Consumer<State1> cons) {
         int k = sp.k();
         if (state.size() == k) {
             cons.accept(state);
@@ -424,7 +368,7 @@ public class Applicator7Test {
                     continue ex;
                 }
             }
-            findStabAlt(cosets, sp, nextSt, i + 1, cons);
+            findStab(cosets, sp, nextSt, i + 1, cons);
         }
     }
 
