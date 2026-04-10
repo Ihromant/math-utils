@@ -101,10 +101,20 @@ public class InversivesFinderTest {
 
     @Test
     public void printAdmissible() {
-        int t = 3;
+        int t = 2;
         int k = 7;
         System.out.println(t + " " + k);
-        System.out.println(IntStream.range(0, 400).filter(v -> Combinatorics.admissible(t, v, k)).mapToObj(String::valueOf).collect(Collectors.joining(" ")));
+        int kk = k * k - k;
+        for (int v = kk + 1; v < 2000; v++) {
+            if (!Combinatorics.admissible(t, v, k)) {
+                continue;
+            }
+            int a = v / kk;
+            int b = v % kk;
+            System.out.println(v + " " + a + "*" + kk + "+" + b + " " + Arrays.toString(Combinatorics.factorize(v)));
+            System.out.println((v - 1) + " " + a + "*" + kk + "+" + b + " " + Arrays.toString(Combinatorics.factorize(v - 1)));
+            System.out.println((v - k) + " " + a + "*" + kk + "+" + b + " " + Arrays.toString(Combinatorics.factorize(v - k)));
+        }
     }
 
     private static DumpConfig readLast(String prefix, int v, int k, Supplier<DumpConfig> fallback) {
