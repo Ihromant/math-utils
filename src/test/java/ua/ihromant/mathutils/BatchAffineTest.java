@@ -1654,6 +1654,22 @@ public class BatchAffineTest {
         //System.out.println(GroupIndex.identify(gr));
     }
 
+    public static Map<FixBS, String> knownAffine16() {
+        Map<FixBS, String> result = new ConcurrentHashMap<>();
+        affine16.entrySet().parallelStream().forEach(e -> {
+            try {
+                Liner proj = readProj(16, e.getKey() + ".txt");
+                Arrays.stream(e.getValue()).parallel().forEach(dl -> {
+                    Liner aff = new AffinePlane(proj, dl).toLiner();
+                    result.put(new FixBS(aff.graphData().canonical()), e.getKey() + "-" + dl);
+                });
+            } catch (IOException ex) {
+                throw new RuntimeException(ex);
+            }
+        });
+        return result;
+    }
+
     private int from(int[] abc, int pc) {
         return abc[0] * pc * pc + abc[1] * pc + abc[2];
     }
