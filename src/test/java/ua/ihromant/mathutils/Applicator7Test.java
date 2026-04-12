@@ -219,11 +219,8 @@ public class Applicator7Test {
                 State1[] stab = Arrays.stream(getStabilized(space)).parallel().map(bl -> bl.minimizeBlock(space)).toArray(State1[]::new);
                 Arrays.parallelSort(stab, Comparator.comparing(State1::block));
                 int[] idxes = IntStream.range(0, stab.length).filter(i -> space.minimal(stab[i].block())).toArray();
-                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: " + Arrays.deepToString(config)
+                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: " + Arrays.deepToString(config) + " auths: " + space.authLength()
                         + " minimals: " + idxes.length + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
-                if (stab.length == 0) {
-                    continue;
-                }
                 BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
                     Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                             Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
