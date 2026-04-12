@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -149,30 +150,31 @@ public class GSpace1 {
     }
 
     private int[][] genAuthsNew() {
-        Set<int[]> sortedAuths = new TreeSet<>(Combinatorics::compareArr);
+        List<int[]> auths = Collections.synchronizedList(new ArrayList<>());
         int[][] grAuths = group.auth();
-        int[][] baseMappings = generateBaseMappings();
-        for (int[] auth : grAuths) {
-            ex: for (int[] baseMapping : baseMappings) {
-                int[] mapping = baseMapping.clone();
-                for (int g = 0; g < group.order(); g++) {
-                    for (int t : oBeg) {
-                        int from = apply(g, t);
-                        int to = apply(auth[g], baseMapping[t]);
-                        int prev = mapping[from];
-                        if (prev < 0) {
-                            mapping[from] = to;
-                        } else {
-                            if (prev != to) {
-                                continue ex;
-                            }
+        FixBS availableOrbits = new FixBS(cosets.length);
+        availableOrbits.set(0, cosets.length);
+        int[] base = new int[v];
+        Arrays.fill(base, -1);
+        recur(base, 0, availableOrbits, bm -> Arrays.stream(grAuths).forEach(auth -> {
+            int[] mapping = bm.clone();
+            for (int g = 0; g < group.order(); g++) {
+                for (int t : oBeg) {
+                    int from = apply(g, t);
+                    int to = apply(auth[g], bm[t]);
+                    int prev = mapping[from];
+                    if (prev < 0) {
+                        mapping[from] = to;
+                    } else {
+                        if (prev != to) {
+                            return;
                         }
                     }
                 }
-                sortedAuths.add(mapping);
             }
-        }
-        return sortedAuths.toArray(int[][]::new);
+            auths.add(mapping);
+        }));
+        return auths.toArray(int[][]::new);
     }
 
     private int[][] generateBaseMappings() {
@@ -200,10 +202,19 @@ public class GSpace1 {
             }
             FixBS nextAvailable = availableOrbits.copy();
             nextAvailable.clear(orb);
-            for (int i = 0; i < oLen; i++) {
-                int[] nextCurr = curr.clone();
-                nextCurr[start] = oBeg[orb] + i;
-                recur(nextCurr, orbit + 1, nextAvailable, cons);
+            int beg = oBeg[orb];
+            if (orbit < 3) {
+                IntStream.range(0, oLen).parallel().forEach(i -> {
+                    int[] nextCurr = curr.clone();
+                    nextCurr[start] = beg + i;
+                    recur(nextCurr, orbit + 1, nextAvailable, cons);
+                });
+            } else {
+                for (int i = 0; i < oLen; i++) {
+                    int[] nextCurr = curr.clone();
+                    nextCurr[start] = beg + i;
+                    recur(nextCurr, orbit + 1, nextAvailable, cons);
+                }
             }
         }
     }
