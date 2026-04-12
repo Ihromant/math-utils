@@ -17,6 +17,8 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -187,6 +189,108 @@ public class Applicator7Test {
                         return true;
                     });
                     System.out.println("Done");
+                });
+            }
+        }
+    }
+
+    @Test
+    public void generateWithAuth() throws IOException {
+        int gs = 39;
+        int k = 6;
+        int[] orbits = new int[]{1, 13, 13, 39};
+        int c = GroupIndex.groupCount(gs);
+        System.out.println(c);
+        for (int j = 1; j <= c; j++) {
+            System.out.println("Reading SmallGroup(" + gs + "," + j + ")");
+            GapGroup gg = GroupIndex.gapGroup(gs, j);
+            Group group = gg.group();
+            List<int[][]> configs = ApplicatorTest.configs(group, orbits);
+            for (int[][] config : configs) {
+                GSpace1 space;
+                try {
+                    space = new GSpace1(k, group, true, config);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Not empty");
+                    continue;
+                }
+                int v = space.v();
+                FixBS evenDiffs = space.evenDiffs();
+                State1[] stab = Arrays.stream(getStabilized(space)).parallel().map(bl -> bl.minimizeBlock(space)).toArray(State1[]::new);
+                Arrays.parallelSort(stab, Comparator.comparing(State1::block));
+                int[] idxes = IntStream.range(0, stab.length).filter(i -> space.minimal(stab[i].block())).toArray();
+                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: " + Arrays.deepToString(config)
+                        + " minimals: " + idxes.length + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
+                if (stab.length == 0) {
+                    continue;
+                }
+                BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
+                    Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
+                            Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
+                    System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
+                            + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
+                };
+                List<List<State1>> init = Collections.synchronizedList(new ArrayList<>());
+                Arrays.stream(idxes).parallel().forEach(idx -> {
+                    State1 fstBlock = stab[idx];
+                    List<State1> initList = List.of(fstBlock);
+                    if ((space.diffLength() - fstBlock.diffSet().cardinality()) % (k * k - k) == 0 && evenDiffs.diff(fstBlock.diffSet()).isEmpty()) {
+                        init.add(initList);
+                    }
+                    State1[] filteredStab = Arrays.stream(stab, idx, stab.length).filter(st -> !st.diffSet().intersects(fstBlock.diffSet())).toArray(State1[]::new);
+                    System.out.println("For block with idx " + idx + " filtered size " + filteredStab.length);
+                    Graph g = Graph.by(filteredStab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+                    JNauty.instance().cliques(g, 1, v, a -> {
+                        FixBS arr = new FixBS(a);
+                        List<State1> states = new ArrayList<>(initList);
+                        FixBS diffSet = fstBlock.diffSet().copy();
+                        for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
+                            State1 st = filteredStab[i];
+                            states.add(st);
+                            diffSet.or(st.diffSet());
+                        }
+                        int card = diffSet.cardinality();
+                        if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
+                            return;
+                        }
+                        if (card == space.diffLength()) {
+                            fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                            return;
+                        }
+                        init.add(states);
+                    });
+                    System.out.println("Block with idx " + idx + " done");
+                });
+                System.out.println("Init " + init.size());
+                AtomicInteger ai = new AtomicInteger();
+                init.parallelStream().forEach(states -> {
+                    int dc = space.diffLength();
+                    OrbitFilter of = space.emptyOf();
+                    FixBS diffSet = new FixBS(space.diffLength());
+                    for (State1 st : states) {
+                        st.updateFilter(of, space);
+                        diffSet.or(st.diffSet());
+                        dc = dc - st.diffSet().cardinality();
+                    }
+                    int nc = dc / k / (k - 1);
+                    if (nc == 0) {
+                        fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                        return;
+                    }
+                    int nextOrbit = of.currOrbit(v);
+                    int snd = of.filters()[nextOrbit].nextClearBit(0);
+                    NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+                    searchDesigns(space, new NSState[]{in}, nst -> {
+                        if (nst.length < nc) {
+                            return false;
+                        }
+                        fCons.accept(states.toArray(State1[]::new), nst);
+                        return true;
+                    });
+                    int val = ai.incrementAndGet();
+                    if (val % 1000 == 0) {
+                        System.out.println(val);
+                    }
                 });
             }
         }

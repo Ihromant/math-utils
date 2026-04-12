@@ -159,7 +159,7 @@ public record State1(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diffs
         }
     }
 
-    public State1 minimizeBlock(GSpace space) {
+    public State1 minimizeBlock(GSpace1 space) {
         FixBS min = block;
         for (int g = 0; g < space.gOrd(); g++) {
             FixBS mapped = space.mapBlock(block, g);
