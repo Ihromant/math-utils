@@ -16,7 +16,7 @@ import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
 
-public class IncFinderTestAlt {
+public class IncFinderAltTest {
     private static class IncState implements NautyGraph {
         private final long[] lines;
         private final int v;
