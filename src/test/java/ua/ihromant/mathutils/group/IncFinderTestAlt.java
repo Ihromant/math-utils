@@ -4,16 +4,16 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.jnauty.NautyGraph;
-import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class IncFinderTestAlt {
@@ -100,7 +100,7 @@ public class IncFinderTestAlt {
             List<int[]> result = new ArrayList<>();
             int fst = 0;
             long ms = msk;
-            for (int i = 0; i < k; i++) {
+            for (int i = 0; i < v; i++) {
                 ms = msk;
                 for (int j = 0; j < lc; j++) {
                     long ln = lines[j];
@@ -158,16 +158,16 @@ public class IncFinderTestAlt {
 
     @Test
     public void generateInitial() {
-        int v = 28;
-        int k = 4;
+        int v = 15;
+        int k = 3;
         IncState st = new IncState(v, k);
         int r = (v - 1) / (k - 1);
+        int b = v * (v - 1) / k / (k - 1);
         IntStream.range(0, r).forEach(l -> {
             int[] line = IntStream.concat(IntStream.of(0), IntStream.range(0, k - 1).map(j -> l * (k - 1) + j + 1)).toArray();
             st.addLine(line);
         });
         st.addLine(IntStream.range(0, k).map(i -> i * (k - 1) + 1).toArray());
-        System.out.println(JNauty.instance().traces(st).autCount());
         Set<FixBS> unique = new HashSet<>();
         List<IncState> incs = new ArrayList<>();
         recur(st, unique, inc -> {
@@ -177,7 +177,18 @@ public class IncFinderTestAlt {
             incs.add(inc.copy());
             return true;
         });
-        System.out.println(incs.stream().map(i -> new FixBS(JNauty.instance().traces(i).canonical())).collect(Collectors.toSet()).size());
+        System.out.println(incs.size());
+        Set<FixBS> nextUnique = ConcurrentHashMap.newKeySet();
+        incs.parallelStream().forEach(baseInc -> {
+            recur(baseInc, nextUnique, inc -> {
+                if (inc.lc < b) {
+                    return false;
+                }
+                GraphData gd = JNauty.instance().traces(inc);
+                System.out.println(gd.autCount() + " " + Arrays.deepToString(inc.toLines()));
+                return true;
+            });
+        });
     }
 
     private static void recur(IncState inc, Set<FixBS> unique, Predicate<IncState> pred) {
@@ -188,11 +199,9 @@ public class IncFinderTestAlt {
         for (int[] ln : lns) {
             inc.addLine(ln);
             GraphData data = JNauty.instance().traces(inc);
-            if (data.autCount() > 1 && !unique.add(new FixBS(inc.canon(data.canonical())))) {
-                inc.removeLine();
-                continue;
+            if (unique.add(new FixBS(inc.canon(data.canonical())))) {
+                recur(inc, unique, pred);
             }
-            recur(inc, unique, pred);
             inc.removeLine();
         }
     }
