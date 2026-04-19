@@ -171,7 +171,7 @@ public class IncFinderAltTest {
                         }
                         for (int ol = 0; ol < lc; ol++) {
                             long oLine = lines[ol];
-                            if ((ol & (1L << p)) == 0) {
+                            if ((oLine & (1L << p)) == 0) {
                                 continue;
                             }
                             for (int po1 = nextSetBit(oLine, 0); po1 >= 0; po1 = nextSetBit(oLine, po1 + 1)) {
@@ -185,10 +185,10 @@ public class IncFinderAltTest {
                                     if ((ln & (1L << po1)) == 0) {
                                         continue;
                                     }
-                                    if ((ln & (1L << pl1)) == 0) {
+                                    if (po1 != pl1 && (ln & (1L << pl1)) != 0) {
                                         l1 = l;
                                     }
-                                    if ((ln & (1L << pl2)) == 0) {
+                                    if (po1 != pl2 && (ln & (1L << pl2)) != 0) {
                                         l2 = l;
                                     }
                                 }
@@ -206,10 +206,10 @@ public class IncFinderAltTest {
                                         if ((ln & (1L << po2)) == 0) {
                                             continue;
                                         }
-                                        if ((ln & (1L << pl2)) == 0) {
+                                        if (po2 != pl2 && (ln & (1L << pl2)) != 0) {
                                             l4 = l;
                                         }
-                                        if ((ln & (1L << pl1)) == 0) {
+                                        if (po2 != pl1 && (ln & (1L << pl1)) != 0) {
                                             l3 = l;
                                         }
                                     }
