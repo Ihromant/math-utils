@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.IntStream;
@@ -154,12 +155,85 @@ public class IncFinderAltTest {
             }
             return inc;
         }
+
+        public boolean checkAP(int[] line) {
+            int ll = line.length;
+            for (int p : line) {
+                for (int a = 0; a < ll; a++) {
+                    int pl1 = line[a];
+                    if (pl1 == p) {
+                        continue;
+                    }
+                    for (int b = a + 1; b < ll; b++) {
+                        int pl2 = line[b];
+                        if (pl2 == p) {
+                            continue;
+                        }
+                        for (int ol = 0; ol < lc; ol++) {
+                            long oLine = lines[ol];
+                            if ((ol & (1L << p)) == 0) {
+                                continue;
+                            }
+                            for (int po1 = nextSetBit(oLine, 0); po1 >= 0; po1 = nextSetBit(oLine, po1 + 1)) {
+                                if (po1 == p) {
+                                    continue;
+                                }
+                                int l1 = -1;
+                                int l2 = -1;
+                                for (int l = 0; l < lc; l++) {
+                                    long ln = lines[l];
+                                    if ((ln & (1L << po1)) == 0) {
+                                        continue;
+                                    }
+                                    if ((ln & (1L << pl1)) == 0) {
+                                        l1 = l;
+                                    }
+                                    if ((ln & (1L << pl2)) == 0) {
+                                        l2 = l;
+                                    }
+                                }
+                                if (l1 < 0 && l2 < 0) {
+                                    continue;
+                                }
+                                for (int po2 = nextSetBit(oLine, po1 + 1); po2 >= 0; po2 = nextSetBit(oLine, po2 + 1)) {
+                                    if (po2 == p) {
+                                        continue;
+                                    }
+                                    int l3 = -1;
+                                    int l4 = -1;
+                                    for (int l = 0; l < lc; l++) {
+                                        long ln = lines[l];
+                                        if ((ln & (1L << po2)) == 0) {
+                                            continue;
+                                        }
+                                        if ((ln & (1L << pl2)) == 0) {
+                                            l4 = l;
+                                        }
+                                        if ((ln & (1L << pl1)) == 0) {
+                                            l3 = l;
+                                        }
+                                    }
+                                    if (l1 >= 0 && l4 >= 0 && (lines[l1] & lines[l4]) != 0 ) {
+                                        return false;
+                                    }
+                                    if (l2 >= 0 && l3 >= 0 && (lines[l2] & lines[l3]) != 0) {
+                                        return false;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            return true;
+        }
     }
 
     @Test
     public void generateInitial() {
         int v = 15;
         int k = 3;
+        BiPredicate<IncState, int[]> checker = (_, _) -> true;
         IncState st = new IncState(v, k);
         int r = (v - 1) / (k - 1);
         int b = v * (v - 1) / k / (k - 1);
@@ -170,7 +244,7 @@ public class IncFinderAltTest {
         st.addLine(IntStream.range(0, k).map(i -> i * (k - 1) + 1).toArray());
         Set<FixBS> unique = new HashSet<>();
         List<IncState> incs = new ArrayList<>();
-        recur(st, unique, inc -> {
+        recur(st, unique, checker, inc -> {
             if (inc.lc < 2 * r - 1) {
                 return false;
             }
@@ -180,7 +254,7 @@ public class IncFinderAltTest {
         System.out.println(incs.size());
         Set<FixBS> nextUnique = ConcurrentHashMap.newKeySet();
         incs.parallelStream().forEach(baseInc -> {
-            recur(baseInc, nextUnique, inc -> {
+            recur(baseInc, nextUnique, checker, inc -> {
                 if (inc.lc < b) {
                     return false;
                 }
@@ -191,16 +265,19 @@ public class IncFinderAltTest {
         });
     }
 
-    private static void recur(IncState inc, Set<FixBS> unique, Predicate<IncState> pred) {
+    private static void recur(IncState inc, Set<FixBS> unique, BiPredicate<IncState, int[]> checker, Predicate<IncState> pred) {
         if (pred.test(inc)) {
             return;
         }
         List<int[]> lns = inc.possible();
         for (int[] ln : lns) {
+            if (!checker.test(inc, ln)) {
+                continue;
+            }
             inc.addLine(ln);
             GraphData data = JNauty.instance().traces(inc);
             if (unique.add(new FixBS(inc.canon(data.canonical())))) {
-                recur(inc, unique, pred);
+                recur(inc, unique, checker, pred);
             }
             inc.removeLine();
         }
