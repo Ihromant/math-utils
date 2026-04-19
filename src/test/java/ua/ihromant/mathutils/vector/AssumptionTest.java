@@ -2,16 +2,21 @@ package ua.ihromant.mathutils.vector;
 
 import org.junit.jupiter.api.Test;
 import tools.jackson.databind.ObjectMapper;
+import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.Combinatorics;
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Graph;
 import ua.ihromant.mathutils.IntList;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.LongList;
 import ua.ihromant.mathutils.PartialLiner;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.GeneralLinear;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SubGroup;
+import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
@@ -30,6 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -999,5 +1005,75 @@ public class AssumptionTest {
         public int hashCode() {
             return Arrays.hashCode(arr);
         }
+    }
+
+    @Test
+    public void findNotNormalElementary() throws IOException {
+        GeneralLinear gl = new GeneralLinear(3, new GaloisField(4));
+        System.out.println(IntStream.range(0, gl.order()).boxed().collect(Collectors.groupingBy(gl::order, Collectors.counting())));
+        SubGroup closure = new SubGroup(gl, FixBS.of(gl.order(), 0));
+        while (closure.order() < 64) {
+            for (int el = 1; el < gl.order(); el++) {
+                if (el == gl.order() - 1) {
+                    System.out.println(el);
+                }
+                int ord = gl.order(el);
+                int ee = el;
+                if ((ord & (ord - 1)) != 0 || closure.elems().get(el)
+                        || Arrays.stream(closure.arr()).anyMatch(e -> {
+                    int ord1 = gl.order(gl.op(ee, e));
+                    int ord2 = gl.order(gl.op(e, ee));
+                    return (ord1 & (ord1 - 1)) != 0 || (ord2 & (ord2 - 1)) != 0;
+                })) {
+                    continue;
+                }
+                FixBS els = closure.elems().copy();
+                els.set(el);
+                closure = gl.closure(els);
+                if (closure.order() == 64) {
+                    break;
+                }
+            }
+        }
+        System.out.println(closure.elems());
+        List<int[]> gens = new ArrayList<>();
+        for (int mat : closure.arr()) {
+            int[] arr = new int[64];
+            for (int vec = 0; vec < 64; vec++) {
+                arr[vec] = gl.mulVec(mat, vec);
+            }
+            gens.add(arr);
+        }
+        gens.add(IntStream.range(0, 64).map(AssumptionTest::flip).toArray());
+        IntStream.range(0, 64).forEach(i -> gens.add(IntStream.range(0, 64).map(j -> i ^ j).toArray()));
+        GraphData gd = new GraphData(gens.toArray(int[][]::new), new int[64], 0, null, null);
+        int[][] aut = gd.automorphisms();
+        System.out.println(aut.length);
+        PermutationGroup pg = new PermutationGroup(aut);
+        TableGroup tg = pg.asTable();
+        Map<Integer, List<SubGroup>> conj = tg.subsByConjugation();
+        List<SubGroup> subs = conj.get(64);
+        List<SubGroup> ord64 = new ArrayList<>();
+        for (SubGroup sg : subs) {
+            if (IntStream.range(1, sg.order()).allMatch(i -> sg.order(i) == 2)) {
+                FixBS zeroMap = new FixBS(64);
+                for (int el : sg.arr()) {
+                    zeroMap.set(pg.permutation(el)[0]);
+                }
+                if (zeroMap.cardinality() == 64) {
+                    ord64.add(sg);
+                }
+            }
+        }
+        if (ord64.size() > 1) {
+            System.out.println(ord64.size() + " for " + tg.order());
+            for (SubGroup sg : ord64) {
+                System.out.println(sg.isNormal());
+            }
+        }
+    }
+
+    private static int flip(int a) {
+        return (a & 21) << 1 | (a & 42) >>> 1;
     }
 }
