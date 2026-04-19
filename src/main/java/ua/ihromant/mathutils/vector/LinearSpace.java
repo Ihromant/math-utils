@@ -52,9 +52,9 @@ public interface LinearSpace {
             return a;
         }
         if ((b & 1) == 0) {
-            return pow(a * a, b / 2);
+            return pow(a * a, b >>> 1);
         } else {
-            return a * pow(a * a, b / 2);
+            return a * pow(a * a, b >>> 1);
         }
     }
 

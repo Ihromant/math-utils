@@ -11,6 +11,7 @@ import java.util.stream.IntStream;
 public class GeneralLinear implements Group {
     private final int dim;
     private final GaloisField fd;
+    private final int[] powList;
     private final int matCount;
     private final int[] mapGl;
     private final int[] gl;
@@ -18,6 +19,7 @@ public class GeneralLinear implements Group {
     public GeneralLinear(int dim, GaloisField fd) {
         this.dim = dim;
         this.fd = fd;
+        this.powList = IntStream.range(0, dim + 1).map(i -> LinearSpace.pow(fd.cardinality(), i)).toArray();
         this.matCount = LinearSpace.pow(fd.cardinality(), dim * dim);
         int one = unity();
         this.mapGl = generateMapGl();
@@ -62,6 +64,42 @@ public class GeneralLinear implements Group {
             result = result * fd.cardinality() + matrix[i / dim][i % dim];
         }
         return result;
+    }
+
+    private int[] multiply(int[][] first, int[] arr) {
+        int[] result = new int[first.length];
+        for (int i = 0; i < first.length; i++) {
+            int sum = 0;
+            for (int j = 0; j < first.length; j++) {
+                sum = fd.add(sum, fd.mul(first[i][j], arr[j]));
+            }
+            result[i] = sum;
+        }
+        return result;
+    }
+
+    private int crd(int v, int crd) {
+        return (v / powList[crd]) % fd.cardinality();
+    }
+
+    private int[] toCrd(int a) {
+        return IntStream.range(0, dim).map(i -> crd(a, i)).toArray();
+    }
+
+    private int fromCrd(int[] crd) {
+        int result = 0;
+        for (int i = crd.length - 1; i >= 0; i--) {
+            result = result * fd.cardinality() + crd[i];
+        }
+        return result;
+    }
+
+    public int mulVec(int elem, int vec) {
+        return fromCrd(multiply(toMatrix(gl[elem]), toCrd(vec)));
+    }
+
+    public int matrix(int elem) {
+        return gl[elem];
     }
 
     private int[] generateMapGl() {
