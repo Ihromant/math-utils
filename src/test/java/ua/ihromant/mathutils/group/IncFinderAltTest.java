@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -265,6 +266,58 @@ public class IncFinderAltTest {
         });
     }
 
+    @Test
+    public void generateAP() {
+        int v = 15;
+        int k = 3;
+        BiPredicate<IncState, int[]> checker = IncState::checkAP;
+        IncState st = new IncState(v, k);
+        int r = (v - 1) / (k - 1);
+        int b = v * (v - 1) / k / (k - 1);
+        IntStream.range(0, r).forEach(l -> {
+            int[] line = IntStream.concat(IntStream.of(0), IntStream.range(0, k - 1).map(j -> l * (k - 1) + j + 1)).toArray();
+            st.addLine(line);
+        });
+        st.addLine(IntStream.range(0, k).map(i -> i * (k - 1) + 1).toArray());
+        Set<FixBS> unique = new HashSet<>();
+        List<IncState> incs = new ArrayList<>();
+        recur(st, unique, checker, inc -> {
+            if (inc.lc < 2 * r - 1) {
+                return false;
+            }
+            incs.add(inc.copy());
+            return true;
+        });
+        System.out.println(incs.size());
+        Set<FixBS> nextUnique = ConcurrentHashMap.newKeySet();
+        List<IncState> nextStage = Collections.synchronizedList(new ArrayList<>());
+        incs.parallelStream().forEach(baseInc -> {
+            recur(baseInc, nextUnique, checker, inc -> {
+                if (inc.lc < k * (r - 1) + 1) {
+                    return false;
+                }
+                nextStage.add(inc.copy());
+                return true;
+            });
+        });
+        System.out.println(nextStage.size());
+        Set<FixBS> finalUnique = ConcurrentHashMap.newKeySet();
+        nextStage.parallelStream().forEach(baseInc -> {
+            recur(baseInc, null, checker, inc -> {
+                if (inc.lc < b) {
+                    return false;
+                }
+                GraphData gd = JNauty.instance().traces(inc);
+                FixBS canon = new FixBS(inc.canon(gd.canonical()));
+                if (finalUnique.add(canon)) {
+                    System.out.println(gd.autCount() + " " + Arrays.deepToString(inc.toLines()));
+                }
+                return true;
+            });
+            System.out.println("Done");
+        });
+    }
+
     private static void recur(IncState inc, Set<FixBS> unique, BiPredicate<IncState, int[]> checker, Predicate<IncState> pred) {
         if (pred.test(inc)) {
             return;
@@ -276,7 +329,7 @@ public class IncFinderAltTest {
             }
             inc.addLine(ln);
             GraphData data = JNauty.instance().traces(inc);
-            if (unique.add(new FixBS(inc.canon(data.canonical())))) {
+            if (unique == null || unique.add(new FixBS(inc.canon(data.canonical())))) {
                 recur(inc, unique, checker, pred);
             }
             inc.removeLine();
