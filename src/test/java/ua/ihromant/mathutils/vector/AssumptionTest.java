@@ -1076,4 +1076,41 @@ public class AssumptionTest {
     private static int flip(int a) {
         return (a & 21) << 1 | (a & 42) >>> 1;
     }
+
+    @Test
+    public void testExistingGroupable() throws IOException {
+        ObjectMapper om = new ObjectMapper();
+        List<String> lns = Files.readAllLines(Path.of("/home/ihromant/maths/g-spaces/final/4-64/large.txt"));
+        lns.stream().parallel().forEach(l -> {
+            Liner lnr = new Liner(om.readValue(l.substring(l.indexOf("[[")), int[][].class));
+            if (lnr.graphData().autCount() == 64 || lnr.graphData().autCount() > 20_000_000) {
+                return;
+            }
+            PermutationGroup pg = new PermutationGroup(lnr.graphData().automorphisms());
+            if (pg.order() > 10000) {
+                System.out.println(pg.order());
+            }
+            TableGroup tg = pg.asTable();
+            Map<Integer, List<SubGroup>> conj = tg.subsByConjugation();
+            List<SubGroup> subs = conj.get(64);
+            List<SubGroup> ord64 = new ArrayList<>();
+            for (SubGroup sg : subs) {
+                if (IntStream.range(1, sg.order()).allMatch(i -> sg.order(i) == 2)) {
+                    FixBS zeroMap = new FixBS(64);
+                    for (int el : sg.arr()) {
+                        zeroMap.set(pg.permutation(el)[0]);
+                    }
+                    if (zeroMap.cardinality() == 64) {
+                        ord64.add(sg);
+                    }
+                }
+            }
+            if (ord64.size() > 1) {
+                System.out.println(ord64.size() + " for " + tg.order());
+                for (SubGroup sg : ord64) {
+                    System.out.println(sg.isNormal());
+                }
+            }
+        });
+    }
 }
