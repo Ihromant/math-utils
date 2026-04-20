@@ -3,6 +3,7 @@ package ua.ihromant.mathutils.group;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -15,28 +16,46 @@ public interface Group extends Loop {
     default List<SubGroup> subGroups() {
         List<SubGroup> result = new ArrayList<>();
         int order = order();
-        FixBS all = new FixBS(order);
-        all.set(0, order);
         FixBS init = new FixBS(order);
         init.set(0);
         result.add(new SubGroup(this, init));
-        find(init, 0, order, result::add);
+        find(init, new int[0], result::add);
         return result;
     }
 
-    private void find(FixBS currGroup, int prev, int order, Consumer<SubGroup> cons) {
-        ex: for (int gen = currGroup.nextClearBit(prev + 1); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
+    private void find(FixBS currGroup, int[] gens, Consumer<SubGroup> cons) {
+        int l = gens.length;
+        int last = l == 0 ? 0 : gens[l - 1];
+        ex: for (int gen = currGroup.nextClearBit(last); gen >= 0 && gen < order(); gen = currGroup.nextClearBit(gen + 1)) {
+            int[] nextGens = Arrays.copyOf(gens, l + 1);
+            nextGens[l] = gen;
             FixBS nextGroup = currGroup.copy();
-            FixBS additional = cycle(gen);
-            additional.andNot(currGroup);
+            boolean added;
             do {
-                if (additional.nextSetBit(0) < gen) {
-                    continue ex;
+                added = false;
+                for (int a : nextGroup.toArray()) {
+                    for (int b : nextGens) {
+                        int ab = op(a, b);
+                        if (!currGroup.get(ab) && ab < gen) {
+                            continue ex;
+                        }
+                        if (!nextGroup.get(ab)) {
+                            added = true;
+                            nextGroup.set(ab);
+                        }
+                        int ba = op(b, a);
+                        if (!currGroup.get(ba) && ba < gen) {
+                            continue ex;
+                        }
+                        if (!nextGroup.get(ba)) {
+                            added = true;
+                            nextGroup.set(ba);
+                        }
+                    }
                 }
-                nextGroup.or(additional);
-            } while (!(additional = additional(nextGroup, additional, order)).isEmpty());
+            } while (added);
             cons.accept(new SubGroup(this, nextGroup));
-            find(nextGroup, gen, order, cons);
+            find(nextGroup, nextGens, cons);
         }
     }
 
@@ -61,7 +80,7 @@ public interface Group extends Loop {
             }
             result.computeIfAbsent(cycle.cardinality(), _ -> Collections.synchronizedList(new ArrayList<>()))
                     .add(new SubGroup(this, cycle));
-            find(cycle, i, order, sg -> {
+            find(cycle, new int[]{i}, sg -> {
                 FixBS elems = sg.elems();
                 for (int[] arr : auths) {
                     FixBS oElems = new FixBS(order);
@@ -100,7 +119,7 @@ public interface Group extends Loop {
             }
             result.computeIfAbsent(cycle.cardinality(), _ -> Collections.synchronizedList(new ArrayList<>()))
                     .add(new SubGroup(this, cycle));
-            find(cycle, i, order, sg -> {
+            find(cycle, new int[]{i}, sg -> {
                 FixBS elems = sg.elems();
                 for (int conj = 0; conj < order(); conj++) {
                     int inv = inv(conj);
@@ -120,28 +139,31 @@ public interface Group extends Loop {
     }
 
     default SubGroup closure(FixBS from) {
-        FixBS result = new FixBS(order());
-        FixBS additional = from.copy();
+        FixBS result = from.copy();
+        int[] arr = from.toArray();
+        boolean added;
         do {
-            result.or(additional);
-        } while (!(additional = additional(result, additional, order())).isEmpty());
+            added = false;
+            for (int a : result.toArray()) {
+                for (int b : arr) {
+                    int ab = op(a, b);
+                    if (!result.get(ab)) {
+                        added = true;
+                        result.set(ab);
+                    }
+                    int ba = op(b, a);
+                    if (!result.get(ba)) {
+                        added = true;
+                        result.set(ba);
+                    }
+                }
+            }
+        } while (added);
         return new SubGroup(this, result);
     }
 
     default boolean isSimple() {
         List<SubGroup> subGroups = subGroups();
         return subGroups.stream().allMatch(sg -> sg.order() == 1 || sg.order() == order() || !sg.isNormal());
-    }
-
-    private FixBS additional(FixBS currGroup, FixBS addition, int order) {
-        FixBS result = new FixBS(order);
-        for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
-            for (int y = addition.nextSetBit(0); y >= 0; y = addition.nextSetBit(y + 1)) {
-                result.set(op(x, y));
-                result.set(op(y, x));
-            }
-        }
-        result.andNot(currGroup);
-        return result;
     }
 }

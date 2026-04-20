@@ -58,7 +58,11 @@ public class PermutationGroup implements Group {
         return result;
     }
 
-    private static int[] comb(int[] pa, int[] pb) {
+    public boolean contains(int[] perm) {
+        return lookup.containsKey(new Wrap(perm));
+    }
+
+    public static int[] comb(int[] pa, int[] pb) {
         int[] result = new int[pa.length];
         for (int i = 0; i < pa.length; i++) {
             result[i] = pa[pb[i]];
