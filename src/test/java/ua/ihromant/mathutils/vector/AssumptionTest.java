@@ -1009,8 +1009,14 @@ public class AssumptionTest {
 
     @Test
     public void findNotNormalElementary() throws IOException {
+//        Liner proj = new Liner(new GaloisField(4).generateSpace());
+//        Liner aff = proj.subPlane(IntStream.range(0, 64).toArray());
+//        int[][] linerPermutations = aff.graphData().automorphisms();
+//        int[][] zeroFixed = Arrays.stream(linerPermutations).filter(arr -> arr[0] == 0).toArray(int[][]::new);
+//        PermutationGroup zeroFixedPerm = new PermutationGroup(zeroFixed);
+        int[][] translations = IntStream.range(0, 64).mapToObj(i -> IntStream.range(0, 64).map(j -> i ^ j).toArray()).toArray(int[][]::new);
+//        PermutationGroup linerAuth = new PermutationGroup(linerPermutations);
         GeneralLinear gl = new GeneralLinear(3, new GaloisField(4));
-        System.out.println(IntStream.range(0, gl.order()).boxed().collect(Collectors.groupingBy(gl::order, Collectors.counting())));
         SubGroup closure = new SubGroup(gl, FixBS.of(gl.order(), 0));
         while (closure.order() < 64) {
             for (int el = 1; el < gl.order(); el++) {
@@ -1045,7 +1051,10 @@ public class AssumptionTest {
             gens.add(arr);
         }
         gens.add(IntStream.range(0, 64).map(AssumptionTest::flip).toArray());
-        IntStream.range(0, 64).forEach(i -> gens.add(IntStream.range(0, 64).map(j -> i ^ j).toArray()));
+//        GraphData gdx = new GraphData(gens.toArray(int[][]::new), new int[64], 0, null, null);
+//        PermutationGroup sylow128 = new PermutationGroup(gdx.automorphisms());
+//        FixBS normalizer = normalizer(zeroFixedPerm, sylow128);
+        gens.addAll(Arrays.asList(translations));
         GraphData gd = new GraphData(gens.toArray(int[][]::new), new int[64], 0, null, null);
         int[][] aut = gd.automorphisms();
         System.out.println(aut.length);
@@ -1075,6 +1084,23 @@ public class AssumptionTest {
 
     private static int flip(int a) {
         return (a & 21) << 1 | (a & 42) >>> 1;
+    }
+
+    private FixBS normalizer(PermutationGroup large, PermutationGroup small) {
+        FixBS result = new FixBS(large.order());
+        ex: for (int g = 0; g < large.order(); g++) {
+            int[] permLarge = large.permutation(g);
+            int[] invPermLarge = large.permutation(large.inv(g));
+            for (int h = 0; h < small.order(); h++) {
+                int[] permSmall = small.permutation(h);
+                int[] combined = PermutationGroup.comb(permLarge, PermutationGroup.comb(permSmall, invPermLarge));
+                if (!small.contains(combined)) {
+                    continue ex;
+                }
+            }
+            result.set(g);
+        }
+        return result;
     }
 
     @Test
