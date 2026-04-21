@@ -1,6 +1,5 @@
 package ua.ihromant.mathutils.g;
 
-import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.QuickFind;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -13,7 +12,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -43,7 +41,6 @@ public class GSpace1 {
 
     private static SubGroup[] sgs(Group gr, int[][] comps) {
         Map<Integer, List<SubGroup>> subGroups = gr.subsByConjugation();
-        //System.out.println(subGroups.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
         return Arrays.stream(comps).map(pr -> subGroups.get(pr[0]).get(pr[1])).toArray(SubGroup[]::new);
     }
 
@@ -175,16 +172,6 @@ public class GSpace1 {
             auths.add(mapping);
         }));
         return auths.toArray(int[][]::new);
-    }
-
-    private int[][] generateBaseMappings() {
-        List<int[]> result = new ArrayList<>();
-        FixBS availableOrbits = new FixBS(cosets.length);
-        availableOrbits.set(0, cosets.length);
-        int[] base = new int[v];
-        Arrays.fill(base, -1);
-        recur(base, 0, availableOrbits, result::add);
-        return result.toArray(int[][]::new);
     }
 
     private void recur(int[] curr, int orbit, FixBS availableOrbits, Consumer<int[]> cons) {
