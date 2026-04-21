@@ -463,6 +463,42 @@ public class Applicator7Test {
     }
 
     @Test
+    public void testAlmostTrivial() throws IOException {
+        Group group = new SemiDirectProduct(new CyclicGroup(287), new CyclicGroup(5));
+        int k = 8;
+        GSpace1 space = new GSpace1(k, group, true, 5, 1435);
+        int v = space.v();
+        State1 stabilized = State1.fromBlock(space, FixBS.of(v, IntStream.concat(IntStream.range(0, 7).map(i -> i * 41), IntStream.of(v - 1)).toArray()));
+        FixBS evenDiffs = space.evenDiffs().diff(stabilized.diffSet());
+        if (!evenDiffs.isEmpty()) {
+            throw new IllegalStateException();
+        }
+        Consumer<NSState[]> fCons = nst -> {
+            Liner l = new Liner(space.v(), Stream.concat(space.blocks(stabilized.block()),
+                    Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
+            System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
+        };
+        if ((space.diffLength() - stabilized.diffSet().cardinality()) % (k * k - k) != 0) {
+            throw new IllegalStateException();
+        }
+        int nc = (space.diffLength() - stabilized.diffSet().cardinality()) / k / (k - 1);
+        OrbitFilter of = space.emptyOf();
+        stabilized.updateFilter(of, space);
+        int nextOrbit = of.currOrbit(v);
+        int snd = of.filters()[nextOrbit].nextClearBit(0);
+        FixBS diffSet = new FixBS(space.diffLength());
+        diffSet.or(stabilized.diffSet());
+        NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+        searchDesignsMin(space, new NSState[]{in}, nst -> {
+            if (nst.length < nc) {
+                return false;
+            }
+            fCons.accept(nst);
+            return true;
+        });
+    }
+
+    @Test
     public void trivialByGraph() throws IOException {
         Group group = GroupIndex.group(39, 1);
         int k = 6;
