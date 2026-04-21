@@ -28,7 +28,6 @@ public class GSpace1 {
     private final OrbitFilter[] projections;
     private final int[] diffMap;
     private final FixBS[][] prImages;
-    private final State1[][] statesCache;
 
     private final int[][] auths;
 
@@ -140,15 +139,6 @@ public class GSpace1 {
             diffMap[i * v + i] = -1;
         }
 
-        this.statesCache = new State1[v][v];
-        OrbitFilter empty = emptyOf();
-        for (int f = 0; f < v; f++) {
-            for (int s = f + 1; s < v; s++) {
-                statesCache[f][s] = new State1(FixBS.of(v, f), FixBS.of(gOrd, 0), new FixBS(sz), new int[sz][], 1)
-                        .acceptElem(this, empty, s);
-            }
-        }
-
         if (genAuths) {
             this.auths = genAuthsNew();
         } else {
@@ -256,8 +246,9 @@ public class GSpace1 {
         return prImages[to][from];
     }
 
-    public State1 forInitial(int fst, int snd) {
-        return statesCache[fst][snd];
+    public State1 forInitial(int f, int s) {
+        return new State1(FixBS.of(v, f), FixBS.of(group.order(), 0), new FixBS(projections.length), new int[projections.length][], 1)
+                .acceptElem(this, emptyOf(), s);
     }
 
     public int[] oBeg() {
