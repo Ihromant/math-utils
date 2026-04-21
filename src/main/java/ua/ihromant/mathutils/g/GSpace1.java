@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -93,7 +94,9 @@ public class GSpace1 {
         }
         QuickFind qf = new QuickFind(v * v);
         this.prImages = new FixBS[v][v];
+        Map<FixBS, FixBS> dedup = new HashMap<>();
         for (int x1 = 0; x1 < v; x1++) {
+            FixBS[] cache = new FixBS[v];
             for (int g = 0; g < gOrd; g++) {
                 int gx1 = cayley[g][x1];
                 for (int x2 = 0; x2 < v; x2++) {
@@ -102,10 +105,17 @@ public class GSpace1 {
                     int gPair = gx1 * v + gx2;
                     qf.union(pair, gPair);
                 }
-                if (prImages[gx1][x1] == null) {
-                    prImages[gx1][x1] = new FixBS(gOrd);
+                if (cache[gx1] == null) {
+                    cache[gx1] = new FixBS(gOrd);
                 }
-                prImages[gx1][x1].set(g);
+                cache[gx1].set(g);
+            }
+            for (int gx1 = 0; gx1 < v; gx1++) {
+                FixBS prIm = cache[gx1];
+                if (prIm != null) {
+                    dedup.putIfAbsent(prIm, prIm);
+                    prImages[gx1][x1] = dedup.get(prIm);
+                }
             }
         }
         FixBS diagonal = FixBS.of(v * v, IntStream.range(0, v).map(i -> i * v + i).toArray());
