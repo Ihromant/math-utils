@@ -304,20 +304,20 @@ public class GraphTest {
             syncLiners.put(canon, info);
         });
         Path grPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
-        List<String> lns = Files.readAllLines(grPath);
+        //List<String> lns = Files.readAllLines(grPath);
         SparseGraph graph = new SparseGraph();
-        for (String ln : lns) {
-            int ix = ln.indexOf(" (");
-            if (ix < 0) {
-                ix = ln.indexOf(':');
-            }
-            int from = Integer.parseInt(ln.substring(0, ix));
-            int[] to = om.readValue(ln.substring(ln.indexOf(':') + 1), int[].class);
-            for (int t : to) {
-                graph.connect(from, t);
-            }
-        }
-        int cnt = lns.size();
+//        for (String ln : lns) {
+//            int ix = ln.indexOf(" (");
+//            if (ix < 0) {
+//                ix = ln.indexOf(':');
+//            }
+//            int from = Integer.parseInt(ln.substring(0, ix));
+//            int[] to = om.readValue(ln.substring(ln.indexOf(':') + 1), int[].class);
+//            for (int t : to) {
+//                graph.connect(from, t);
+//            }
+//        }
+        int cnt = lineCount(grPath); // lns.size();
         int processedCnt = cnt;
         Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
         Stream<String> reached = Files.lines(stPath);
@@ -338,7 +338,7 @@ public class GraphTest {
         Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
         reached.close();
-        lns.clear();
+        //lns.clear();
         content = null;
         System.gc();
         while (!stack.isEmpty() && counter > 0) {
@@ -371,6 +371,13 @@ public class GraphTest {
             System.out.println(++processedCnt + " " + stack.size() + " " + graph.size() + " " + --counter);
         }
         System.out.println(content);
+    }
+
+    private int lineCount(Path path) throws IOException {
+        Stream<String> lines = Files.lines(path);
+        int result = lines.mapToInt(_ -> 1).sum();
+        lines.close();
+        return result;
     }
 
     @Test
