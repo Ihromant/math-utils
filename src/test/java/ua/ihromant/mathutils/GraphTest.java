@@ -317,6 +317,8 @@ public class GraphTest {
                 graph.connect(from, t);
             }
         }
+        int cnt = lns.size();
+        int processedCnt = cnt;
         Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
         Stream<String> reached = Files.lines(stPath);
         List<SLinerInfo> stack = new ArrayList<>();
@@ -328,12 +330,11 @@ public class GraphTest {
             FixBS canon = lnr.canonByLines();
             SLinerInfo info = syncLiners.computeIfAbsent(canon, ky -> new SLinerInfo().setCanon(ky.words()));
             info.setGraphIdx(i);
-            info.setProcessed(i < lns.size());
-            if (i >= lns.size()) {
+            info.setProcessed(i < cnt);
+            if (i >= cnt) {
                 stack.add(info);
             }
         });
-        int processedCnt = lns.size();
         Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
         reached.close();
