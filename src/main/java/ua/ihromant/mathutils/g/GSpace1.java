@@ -34,26 +34,26 @@ public class GSpace1 {
     private final int[][] auths;
 
     public GSpace1(int k, Group group, boolean genAuths, int[][] comps) {
-        this(k, group.asTable(), genAuths, sgs(group, comps));
+        this(k, group, genAuths, sgs(group, comps));
     }
 
     public GSpace1(int k, Group group, boolean genAuths, int... comps) {
-        this(k, group.asTable(), genAuths, sgs(group, comps));
+        this(k, group, genAuths, sgs(group, comps));
     }
 
     private static SubGroup[] sgs(Group gr, int[][] comps) {
-        Map<Integer, List<SubGroup>> subGroups = gr.asTable().subsByConjugation();
+        Map<Integer, List<SubGroup>> subGroups = gr.subsByConjugation();
         //System.out.println(subGroups.entrySet().stream().collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().size())));
         return Arrays.stream(comps).map(pr -> subGroups.get(pr[0]).get(pr[1])).toArray(SubGroup[]::new);
     }
 
     private static SubGroup[] sgs(Group gr, int... comps) {
-        List<SubGroup> subGroups = gr.asTable().subGroups();
+        List<SubGroup> subGroups = gr.subGroups();
         return Arrays.stream(comps).mapToObj(sz -> subGroups.stream().filter(sg -> sg.order() == sz).findAny().orElseThrow()).toArray(SubGroup[]::new);
     }
 
-    public GSpace1(int k, Group table, boolean genAuths, SubGroup... subs) {
-        this.group = table;
+    public GSpace1(int k, Group group, boolean genAuths, SubGroup... subs) {
+        this.group = group;
         this.k = k;
         this.cosets = new GCosets[subs.length];
         this.oBeg = new int[subs.length];
@@ -73,14 +73,14 @@ public class GSpace1 {
                 orbIdx[beg + j] = i;
             }
         }
-        int gOrd = table.order();
+        int gOrd = group.order();
         FixBS inter = new FixBS(gOrd);
         inter.set(0, gOrd);
         for (SubGroup sub : subs) {
             for (int x = 0; x < gOrd; x++) {
                 FixBS conj = new FixBS(gOrd);
                 for (int h : sub.arr()) {
-                    conj.set(table.op(table.inv(x), table.op(h, x)));
+                    conj.set(group.op(group.inv(x), group.op(h, x)));
                 }
                 inter.and(conj);
             }
