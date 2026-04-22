@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -304,10 +303,6 @@ public class Liner implements NautyGraph {
             }
         }
         return true;
-    }
-
-    public String lineToString(int line) {
-        return Arrays.toString(lines[line]);
     }
 
     public FixBS hull(int... points) {
