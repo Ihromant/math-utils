@@ -824,20 +824,23 @@ public class ApplicatorTest {
     }
 
     public static List<int[][]> configs(Group group, int[] orbitSizes) {
+        return configs(group.order(), group.subsByConjugation(), orbitSizes);
+    }
+
+    public static List<int[][]> configs(int gOrd, Map<Integer, List<SubGroup>> groupedSubs, int[] orbitSizes) {
         List<int[][]> result = new ArrayList<>();
-        Map<Integer, List<SubGroup>> subs = group.subsByConjugation();
         int[] curr = new int[orbitSizes.length];
         int[] cap = new int[orbitSizes.length];
         int[] sgSizes = new int[orbitSizes.length];
         for (int i = 0; i < orbitSizes.length; i++) {
-            if (group.order() % orbitSizes[i] != 0) {
-                throw new IllegalArgumentException(group.order() + " " + Arrays.toString(orbitSizes));
+            if (gOrd % orbitSizes[i] != 0) {
+                throw new IllegalArgumentException(gOrd + " " + Arrays.toString(orbitSizes));
             }
-            sgSizes[i] = group.order() / orbitSizes[i];
-            if (!subs.containsKey(sgSizes[i])) {
+            sgSizes[i] = gOrd / orbitSizes[i];
+            if (!groupedSubs.containsKey(sgSizes[i])) {
                 return result;
             }
-            cap[i] = subs.get(sgSizes[i]).size();
+            cap[i] = groupedSubs.get(sgSizes[i]).size();
         }
         while (curr != null) {
             int[] c = curr;
