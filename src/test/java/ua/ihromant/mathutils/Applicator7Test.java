@@ -523,11 +523,12 @@ public class Applicator7Test {
     private static State1[] getStabilized(GSpace1 sp) {
         int k = sp.k();
         int v = sp.v();
+        int b = v * (v - 1) / k / (k - 1);
         Group table = sp.group();
         List<SubGroup> sgs = table.subGroups();
         Map<FixBS, State1> states = new ConcurrentHashMap<>();
         for (SubGroup sg : sgs) {
-            if (sg.order() == 1) {
+            if (sg.order() == 1 || table.order() / sg.order() > b) {
                 continue;
             }
             List<int[]> cosets = cosets(sp, sg, k);
