@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.mathutils.auto.AutoAlgo;
 import ua.ihromant.mathutils.auto.TernaryAutomorphisms;
 import ua.ihromant.mathutils.group.GroupIndex;
@@ -1654,18 +1655,18 @@ public class BatchAffineTest {
         //System.out.println(GroupIndex.identify(gr));
     }
 
-    public static Map<FixBS, String> knownAffine16() {
+    public static Map<FixBS, String> knownAffine(int k) {
+        ObjectMapper om = new ObjectMapper();
         Map<FixBS, String> result = new ConcurrentHashMap<>();
-        affine16.entrySet().parallelStream().forEach(e -> {
+        Arrays.stream(Objects.requireNonNull(new File("/home/ihromant/maths/g-spaces/final/" + k + "-" + (k * k)).listFiles())).parallel().forEach(f -> {
+            String name = f.getName();
+            SLiner sl;
             try {
-                Liner proj = readProj(16, e.getKey() + ".txt");
-                Arrays.stream(e.getValue()).parallel().forEach(dl -> {
-                    Liner aff = new AffinePlane(proj, dl).toLiner();
-                    result.put(new FixBS(aff.graphData().canonical()), e.getKey() + "-" + dl);
-                });
-            } catch (IOException ex) {
-                throw new RuntimeException(ex);
+                sl = new SLiner(om.readValue(Files.readString(Path.of(f.getPath())), short[][].class));
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
+            result.put(sl.canonByLines(), name.substring(0, name.indexOf('.')));
         });
         return result;
     }
@@ -1807,4 +1808,32 @@ public class BatchAffineTest {
                     45362, 45364, 1332, 45368, 45369, 45370, 45373, 1341, 829, 45378, 45379, 45380, 45383, 329, 45387, 332,
                     45390, 45391, 45393, 1361, 45399, 45409, 45927, 46440, 45928, 45931, 2432, 2433, 45444, 45445, 45446, 2439,
                     45449, 1460, 1464, 1466, 1472, 1475, 46576}).sorted().toArray());
+
+    @Test
+    public void generateCanonicalAff() throws IOException {
+        int k = 16;
+        Arrays.stream(Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())).parallel().forEach(f -> {
+            String name = f.getName();
+            Liner proj;
+            try {
+                proj = readProj(k, name);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            int[] orbits = proj.graphData().orbits();
+            Map<Integer, List<Integer>> grouped = IntStream.range(k * k + k + 1, orbits.length).boxed()
+                    .collect(Collectors.groupingBy(i -> orbits[i]));
+            System.out.println(name + " " + grouped);
+            for (Map.Entry<Integer, List<Integer>> e : grouped.entrySet()) {
+                int ln = e.getValue().getFirst() - (k * k + k + 1);
+                Liner aff = new AffinePlane(proj, ln).toLiner();
+                Path p = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + (k * k) + "/" + name.substring(0, name.indexOf('.')) + "-" + ln + ".txt");
+                try {
+                    Files.writeString(p, Arrays.deepToString(SLiner.byCanon(aff.graphData().canonical(), k * k, k).lines()));
+                } catch (IOException ex) {
+                    throw new RuntimeException(ex);
+                }
+            }
+        });
+    }
 }
