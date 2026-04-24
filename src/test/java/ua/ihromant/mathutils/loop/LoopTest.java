@@ -86,10 +86,10 @@ public class LoopTest {
 
     @Test
     public void testChein() throws IOException {
-        for (int gs = 1; gs < 31; gs++) {
+        for (int gs = 2; gs < 31; gs++) {
             int gc = GroupIndex.groupCount(gs);
             for (int k = 1; k <= gc; k++) {
-                Group g = GroupIndex.group(gs, k);
+                Group g = GroupIndex.gapGroup(gs, k).group();
                 CheinExtension ce = new CheinExtension(g);
                 List<FixBS> sl = ce.subLoops();
                 System.out.println(sl.size());
