@@ -145,6 +145,14 @@ public interface Loop {
     }
 
     default int[][] auth() {
+        int[] gens = gens();
+        List<int[]> result = find(gens);
+        int[][] res = result.toArray(int[][]::new);
+        Arrays.parallelSort(res, Combinatorics::compareArr);
+        return res;
+    }
+
+    private List<int[]> find(int[] gens) {
         int order = order();
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
         for (int i = 0; i < order; i++) {
@@ -155,15 +163,6 @@ public interface Loop {
         for (Map.Entry<Integer, FixBS> e : byOrders.entrySet()) {
             bOrd[e.getKey()] = e.getValue().toArray();
         }
-        int[] gens = gens();
-        List<int[]> result = find(gens, bOrd);
-        int[][] res = result.toArray(int[][]::new);
-        Arrays.parallelSort(res, Combinatorics::compareArr);
-        return res;
-    }
-
-    private List<int[]> find(int[] gens, int[][] bOrd) {
-        int order = order();
         List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int ord = order(gens[0]);
         Arrays.stream(bOrd[ord]).parallel().forEach(v -> {
