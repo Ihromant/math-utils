@@ -6,6 +6,7 @@ import ua.ihromant.mathutils.util.FixBS;
 import ua.ihromant.mathutils.vector.LinearSpace;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
@@ -95,41 +96,47 @@ public class SpecialLinearLoop implements Loop {
     public List<FixBS> subLoops() {
         List<FixBS> result = new ArrayList<>();
         int order = order();
-        FixBS all = new FixBS(order);
-        all.set(0, order);
         FixBS init = new FixBS(order);
         init.set(0);
         result.add(init);
-        find(init, 0, order, result::add);
+        find(init, new int[0], result::add);
         return result;
     }
 
-    private void find(FixBS currGroup, int prev, int order, Consumer<FixBS> cons) {
-        ex: for (int gen = currGroup.nextClearBit(prev + 1); gen >= 0 && gen < order; gen = currGroup.nextClearBit(gen + 1)) {
-            FixBS nextGroup = currGroup.copy();
-            FixBS additional = cycle(gen);
-            additional.andNot(currGroup);
+    private void find(FixBS currLoop, int[] gens, Consumer<FixBS> cons) {
+        int l = gens.length;
+        int last = l == 0 ? 0 : gens[l - 1];
+        ex: for (int gen = currLoop.nextClearBit(last); gen >= 0 && gen < order(); gen = currLoop.nextClearBit(gen + 1)) {
+            int[] nextGens = Arrays.copyOf(gens, l + 1);
+            nextGens[l] = gen;
+            FixBS nextLoop = currLoop.copy();
+            boolean added;
             do {
-                if (additional.nextSetBit(0) < gen) {
-                    continue ex;
+                added = false;
+                for (int a : nextLoop.toArray()) {
+                    for (int b : nextGens) {
+                        int ab = op(a, b);
+                        if (!currLoop.get(ab) && ab < gen) {
+                            continue ex;
+                        }
+                        if (!nextLoop.get(ab)) {
+                            added = true;
+                            nextLoop.set(ab);
+                        }
+                        int ba = op(b, a);
+                        if (!currLoop.get(ba) && ba < gen) {
+                            continue ex;
+                        }
+                        if (!nextLoop.get(ba)) {
+                            added = true;
+                            nextLoop.set(ba);
+                        }
+                    }
                 }
-                nextGroup.or(additional);
-            } while (!(additional = additional(nextGroup, additional, order)).isEmpty());
-            cons.accept(nextGroup);
-            find(nextGroup, gen, order, cons);
+            } while (added);
+            cons.accept(nextLoop);
+            find(nextLoop, nextGens, cons);
         }
-    }
-
-    private FixBS additional(FixBS currGroup, FixBS addition, int order) {
-        FixBS result = new FixBS(order);
-        for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
-            for (int y = addition.nextSetBit(0); y >= 0; y = addition.nextSetBit(y + 1)) {
-                result.set(op(x, y));
-                result.set(op(y, x));
-            }
-        }
-        result.andNot(currGroup);
-        return result;
     }
 
 //    public FactorGroup psl() {
