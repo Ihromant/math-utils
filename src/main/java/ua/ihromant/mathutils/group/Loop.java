@@ -144,10 +144,6 @@ public interface Loop {
     }
 
     default int[][] auth() {
-        return auth(2);
-    }
-
-    default int[][] auth(int genCap) {
         List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int order = order();
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
@@ -159,14 +155,7 @@ public interface Loop {
         for (Map.Entry<Integer, FixBS> e : byOrders.entrySet()) {
             bOrd[e.getKey()] = e.getValue().toArray();
         }
-        AtomicReference<int[]> ar = new AtomicReference<>();
-        ar.set(IntStream.range(0, order()).toArray());
-        IntStream.range(1, order).parallel().forEach(i -> {
-            IntList list = new IntList(order);
-            list.add(i);
-            gens(genCap, list, cycle(i), ar);
-        });
-        int[] gens = ar.get();
+        int[] gens = gens();
         int ord = order(gens[0]);
         Arrays.stream(bOrd[ord]).parallel().forEach(v -> {
             PartialMap pm = new PartialMap(FixBS.of(order, 0), new int[order]);
@@ -181,6 +170,67 @@ public interface Loop {
         int[][] res = result.toArray(int[][]::new);
         Arrays.parallelSort(res, Combinatorics::compareArr);
         return res;
+    }
+
+    private int[] gensAlt() {
+        AtomicReference<int[]> ar = new AtomicReference<>();
+        ar.set(IntStream.range(0, order()).toArray());
+        IntStream.range(1, order()).parallel().forEach(gen -> {
+            IntList list = new IntList(order());
+            list.add(gen);
+            FixBS cycle = cycle(gen);
+            if (cycle.nextSetBit(1) < gen) {
+                return;
+            }
+            gens(new int[]{gen}, cycle(gen), ar);
+        });
+        return ar.get();
+    }
+
+    private int[] gens() {
+        AtomicReference<int[]> ar = new AtomicReference<>();
+        ar.set(IntStream.range(0, order()).toArray());
+        IntStream.range(1, order()).parallel().forEach(i -> {
+            IntList list = new IntList(order());
+            list.add(i);
+            gens(2, list, cycle(i), ar);
+        });
+        return ar.get();
+    }
+
+    private void gens(int cap, IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
+        int ord = order();
+        int sz = genList.size();
+        if (currGroup.isFull(ord)) {
+            currGens.updateAndGet(old -> old.length > sz ? genList.toArray() : old);
+        }
+        for (int gen = currGroup.nextClearBit(genList.get(sz - 1)); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
+            int len = currGens.get().length;
+            if (cap >= len || sz + 1 >= len) {
+                return;
+            }
+            IntList nextGenList = genList.copy();
+            nextGenList.add(gen);
+            FixBS nextGroup = currGroup.copy();
+            FixBS additional = cycle(gen);
+            additional.andNot(currGroup);
+            do {
+                nextGroup.or(additional);
+            } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
+            gens(cap, nextGenList, nextGroup, currGens);
+        }
+    }
+
+    private FixBS additional(FixBS currGroup, FixBS addition, int order) {
+        FixBS result = new FixBS(order);
+        for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
+            for (int y = addition.nextSetBit(0); y >= 0; y = addition.nextSetBit(y + 1)) {
+                result.set(op(x, y));
+                result.set(op(y, x));
+            }
+        }
+        result.andNot(currGroup);
+        return result;
     }
 
     private PartialMap additional(PartialMap currMap, PartialMap addition, int order) {
@@ -240,39 +290,46 @@ public interface Loop {
         }
     }
 
-    private void gens(int cap, IntList genList, FixBS currGroup, AtomicReference<int[]> currGens) {
+    private void gens(int[] gens, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
-        int sz = genList.size();
+        int sz = gens.length;
         if (currGroup.isFull(ord)) {
-            currGens.updateAndGet(old -> old.length > sz ? genList.toArray() : old);
+            currGens.updateAndGet(old -> old.length > sz ? gens : old);
         }
-        for (int gen = currGroup.nextClearBit(genList.get(sz - 1)); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
+        ex: for (int gen = currGroup.nextClearBit(gens[sz - 1]); gen >= 0 && gen < ord; gen = currGroup.nextClearBit(gen + 1)) {
             int len = currGens.get().length;
-            if (cap >= len || sz + 1 >= len) {
+            if (sz + 1 >= len) {
                 return;
             }
-            IntList nextGenList = genList.copy();
-            nextGenList.add(gen);
+            int[] nextGens = Arrays.copyOf(gens, sz + 1);
+            nextGens[sz] = gen;
             FixBS nextGroup = currGroup.copy();
-            FixBS additional = cycle(gen);
-            additional.andNot(currGroup);
+            boolean added;
             do {
-                nextGroup.or(additional);
-            } while (!(additional = additional(nextGroup, additional, ord)).isEmpty());
-            gens(cap, nextGenList, nextGroup, currGens);
+                added = false;
+                for (int a : nextGroup.toArray()) {
+                    for (int b : nextGens) {
+                        int ab = op(a, b);
+                        if (!currGroup.get(ab) && ab < gen) {
+                            continue ex;
+                        }
+                        if (!nextGroup.get(ab)) {
+                            added = true;
+                            nextGroup.set(ab);
+                        }
+                        int ba = op(b, a);
+                        if (!currGroup.get(ba) && ba < gen) {
+                            continue ex;
+                        }
+                        if (!nextGroup.get(ba)) {
+                            added = true;
+                            nextGroup.set(ba);
+                        }
+                    }
+                }
+            } while (added);
+            gens(nextGens, nextGroup, currGens);
         }
-    }
-
-    private FixBS additional(FixBS currGroup, FixBS addition, int order) {
-        FixBS result = new FixBS(order);
-        for (int x = currGroup.nextSetBit(0); x >= 0; x = currGroup.nextSetBit(x + 1)) {
-            for (int y = addition.nextSetBit(0); y >= 0; y = addition.nextSetBit(y + 1)) {
-                result.set(op(x, y));
-                result.set(op(y, x));
-            }
-        }
-        result.andNot(currGroup);
-        return result;
     }
 
     record PartialMap(FixBS keys, int[] map) {
