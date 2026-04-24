@@ -5,9 +5,9 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 public class PermutationGroup implements Group {
@@ -38,24 +38,21 @@ public class PermutationGroup implements Group {
     }
 
     public static PermutationGroup byGenerators(int[][] base) {
-        SortedSet<int[]> result = new TreeSet<>(Combinatorics::compareArr);
-        result.addAll(Arrays.asList(base));
-        SortedSet<int[]> additional = new TreeSet<>(result);
+        Set<Wrap> result = new HashSet<>();
+        result.add(new Wrap(IntStream.range(0, base[0].length).toArray()));
+        boolean added;
         do {
-            result.addAll(additional);
-        } while (!(additional = additional(result, additional)).isEmpty());
-        return new PermutationGroup(result.toArray(int[][]::new));
-    }
-
-    private static SortedSet<int[]> additional(SortedSet<int[]> currGroup, SortedSet<int[]> addition) {
-        SortedSet<int[]> result = new TreeSet<>(Combinatorics::compareArr);
-        for (int[] x : currGroup) {
-            for (int[] y : addition) {
-                result.add(comb(x, y));
+            added = false;
+            for (Wrap el : result.toArray(Wrap[]::new)) {
+                for (int[] gen : base) {
+                    Wrap xy = new Wrap(comb(gen, el.arr));
+                    Wrap yx = new Wrap(comb(el.arr, gen));
+                    added = result.add(xy) || added;
+                    added = result.add(yx) || added;
+                }
             }
-        }
-        result.removeAll(currGroup);
-        return result;
+        } while (added);
+        return new PermutationGroup(result.stream().map(Wrap::arr).toArray(int[][]::new));
     }
 
     public boolean contains(int[] perm) {
