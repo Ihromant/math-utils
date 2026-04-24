@@ -178,6 +178,31 @@ public interface Loop {
         return result;
     }
 
+    private List<int[]> findAlt(int[] gens) {
+        int order = order();
+        TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
+        for (int i = 0; i < order; i++) {
+            int ord = order(i);
+            byOrders.computeIfAbsent(ord, _ -> new FixBS(order)).set(i);
+        }
+        int[][] bOrd = new int[byOrders.lastKey() + 1][0];
+        for (Map.Entry<Integer, FixBS> e : byOrders.entrySet()) {
+            bOrd[e.getKey()] = e.getValue().toArray();
+        }
+        List<int[]> result = Collections.synchronizedList(new ArrayList<>());
+        int ord = order(gens[0]);
+        Arrays.stream(bOrd[ord]).parallel().forEach(v -> {
+            PartMap pm = new PartMap(FixBS.of(order, 0), FixBS.of(order, 0), new int[order]);
+            for (int i = 1; i < ord; i++) {
+                int key = mul(gens[0], i);
+                int val = mul(v, i);
+                pm.set(key, val);
+            }
+            findAlt(gens, pm, 1, bOrd, result::add);
+        });
+        return result;
+    }
+
     private int[] gensAlt() {
         AtomicReference<int[]> ar = new AtomicReference<>();
         ar.set(IntStream.range(0, order()).toArray());
