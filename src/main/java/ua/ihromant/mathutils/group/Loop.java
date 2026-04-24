@@ -146,7 +146,7 @@ public interface Loop {
 
     default int[][] auth() {
         int[] gens = gens();
-        List<int[]> result = find(gens);
+        List<int[]> result = findAlt(gens);
         int[][] res = result.toArray(int[][]::new);
         Arrays.parallelSort(res, Combinatorics::compareArr);
         return res;
