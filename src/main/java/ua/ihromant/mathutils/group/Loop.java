@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.stream.IntStream;
 
 public interface Loop {
@@ -144,7 +145,6 @@ public interface Loop {
     }
 
     default int[][] auth() {
-        List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int order = order();
         TreeMap<Integer, FixBS> byOrders = new TreeMap<>();
         for (int i = 0; i < order; i++) {
@@ -156,6 +156,15 @@ public interface Loop {
             bOrd[e.getKey()] = e.getValue().toArray();
         }
         int[] gens = gens();
+        List<int[]> result = find(gens, bOrd);
+        int[][] res = result.toArray(int[][]::new);
+        Arrays.parallelSort(res, Combinatorics::compareArr);
+        return res;
+    }
+
+    private List<int[]> find(int[] gens, int[][] bOrd) {
+        int order = order();
+        List<int[]> result = Collections.synchronizedList(new ArrayList<>());
         int ord = order(gens[0]);
         Arrays.stream(bOrd[ord]).parallel().forEach(v -> {
             PartialMap pm = new PartialMap(FixBS.of(order, 0), new int[order]);
@@ -167,9 +176,7 @@ public interface Loop {
             }
             find(gens, result, pm, 1, bOrd, order);
         });
-        int[][] res = result.toArray(int[][]::new);
-        Arrays.parallelSort(res, Combinatorics::compareArr);
-        return res;
+        return result;
     }
 
     private int[] gensAlt() {
@@ -290,6 +297,46 @@ public interface Loop {
         }
     }
 
+    private void findAlt(int[] gens, PartMap currMap, int idx, int[][] byOrders, Consumer<int[]> cons) {
+        if (gens.length == idx) {
+            cons.accept(currMap.map());
+            return;
+        }
+        int gen = gens[idx];
+        int ord = order(gen);
+        ex: for (int suitVal : byOrders[ord]) {
+            if (currMap.vals.get(suitVal)) {
+                continue;
+            }
+            PartMap nextMap = currMap.copy();
+            nextMap.set(gen, suitVal);
+            boolean added;
+            do {
+                added = false;
+                for (int a : nextMap.keys.toArray()) {
+                    for (int i = 0; i <= idx; i++) {
+                        int b = gens[i];
+                        int ab = op(a, b);
+                        int mapAB = op(nextMap.map[a], nextMap.map[b]);
+                        Boolean res = nextMap.set(ab, mapAB);
+                        if (res == null) {
+                            continue ex;
+                        }
+                        added = added || res;
+                        int ba = op(b, a);
+                        int mapBA = op(nextMap.map[b], nextMap.map[a]);
+                        res = nextMap.set(ba, mapBA);
+                        if (res == null) {
+                            continue ex;
+                        }
+                        added = added || res;
+                    }
+                }
+            } while (added);
+            findAlt(gens, nextMap, idx + 1, byOrders, cons);
+        }
+    }
+
     private void gens(int[] gens, FixBS currGroup, AtomicReference<int[]> currGens) {
         int ord = order();
         int sz = gens.length;
@@ -335,6 +382,26 @@ public interface Loop {
     record PartialMap(FixBS keys, int[] map) {
         public PartialMap copy() {
             return new PartialMap(keys.copy(), map.clone());
+        }
+    }
+
+    record PartMap(FixBS keys, FixBS vals, int[] map) {
+        public PartMap copy() {
+            return new PartMap(keys.copy(), vals.copy(), map.clone());
+        }
+
+        public Boolean set(int key, int val) {
+            if (keys.get(key)) {
+                return map[key] == val ? Boolean.FALSE : null;
+            } else {
+                if (vals.get(val)) {
+                    return null;
+                }
+                keys.set(key);
+                vals.set(val);
+                map[key] = val;
+                return Boolean.TRUE;
+            }
         }
     }
 }
