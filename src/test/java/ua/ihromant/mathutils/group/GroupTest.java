@@ -304,4 +304,14 @@ public class GroupTest {
         assertEquals(20, fst.leftCosets().length);
         assertEquals(20, fst.rightCosets().length);
     }
+
+    @Test
+    public void testConfigs() {
+        Group g = new SemiDirectProduct(new CyclicProduct(13), new CyclicGroup(3));
+        List<SubGroup[]> configs = g.gSpaceConfigs(1, 13, 13, 39);
+        System.out.println(configs.size());
+        Group g1 = new SemiDirectProduct(new CyclicProduct(19), new CyclicGroup(3));
+        List<SubGroup[]> configs1 = g1.gSpaceConfigs(57, 19);
+        System.out.println(configs1.size());
+    }
 }

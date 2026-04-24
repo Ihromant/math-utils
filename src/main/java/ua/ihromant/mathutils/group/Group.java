@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public interface Group extends Loop {
@@ -165,5 +166,50 @@ public interface Group extends Loop {
     default boolean isSimple() {
         List<SubGroup> subGroups = subGroups();
         return subGroups.stream().allMatch(sg -> sg.order() == 1 || sg.order() == order() || !sg.isNormal());
+    }
+
+    default List<SubGroup[]> gSpaceConfigs(int... orbits) {
+        List<SubGroup[]> result = new ArrayList<>();
+        Map<Integer, List<SubGroup>> grouped = subGroups().stream().collect(Collectors.groupingBy(Group::order));
+        grouped.values().forEach(sgs -> sgs.sort(Comparator.comparing(SubGroup::elems)));
+        int[] sizes = Arrays.stream(orbits).map(i -> order() / i).toArray();
+        List<int[]> auths = Arrays.asList(auth());
+        gSpaceConfigs(grouped, sizes, auths, new SubGroup[sizes.length], 0, result::add);
+        return result;
+    }
+
+    private void gSpaceConfigs(Map<Integer, List<SubGroup>> grouped, int[] sizes, List<int[]> auths, SubGroup[] subs, int idx, Consumer<SubGroup[]> cons) {
+        if (idx == subs.length) {
+            cons.accept(subs.clone());
+            return;
+        }
+        List<SubGroup> ofSize = grouped.get(sizes[idx]);
+        boolean prevSame = idx > 0 && sizes[idx - 1] == sizes[idx];
+        if (ofSize.size() == 1) {
+            subs[idx] = ofSize.getFirst();
+            gSpaceConfigs(grouped, sizes, auths, subs, idx + 1, cons);
+        } else {
+            ex: for (SubGroup sub : ofSize) {
+                if (prevSame && sub.elems().compareTo(subs[idx - 1].elems()) < 0) {
+                    continue;
+                }
+                List<int[]> fixingAuths = new ArrayList<>();
+                for (int[] aut : auths) {
+                    FixBS next = new FixBS(order());
+                    for (int el : sub.arr()) {
+                        next.set(aut[el]);
+                    }
+                    int comp = next.compareTo(sub.elems());
+                    if (comp < 0) {
+                        continue ex;
+                    }
+                    if (comp == 0) {
+                        fixingAuths.add(aut);
+                    }
+                }
+                subs[idx] = sub;
+                gSpaceConfigs(grouped, sizes, fixingAuths, subs, idx + 1, cons);
+            }
+        }
     }
 }
