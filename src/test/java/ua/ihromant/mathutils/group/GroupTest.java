@@ -314,4 +314,19 @@ public class GroupTest {
         List<SubGroup[]> configs1 = g1.gSpaceConfigs(57, 19);
         System.out.println(configs1.size());
     }
+
+    @Test
+    public void semiDirectByAuthIsWrong() throws IOException {
+        Group g = new CyclicGroup(91);
+        System.out.println("By auth");
+        for (int i = 0; i < 1; i++) {
+            Group sp = new SemiDirectProduct(g, new CyclicGroup(3), i, true);
+            System.out.println(i + " " + GroupIndex.identify(sp) + " " + GroupIndex.groupId(sp));
+        }
+        System.out.println("By conj");
+        for (int i = 0; i < 8; i++) {
+            Group sp = new SemiDirectProduct(g, new CyclicGroup(3), i, false);
+            System.out.println(i + " " + GroupIndex.identify(sp) + " " + GroupIndex.groupId(sp));
+        }
+    }
 }
