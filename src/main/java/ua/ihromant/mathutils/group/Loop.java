@@ -97,8 +97,8 @@ public interface Loop {
         return new TableGroup(name(), table);
     }
 
-    default int conjugate(int fst, int snd) {
-        return op(op(snd, fst), inv(snd));
+    default int conjugate(int el, int by) {
+        return op(op(by, el), inv(by));
     }
 
     default List<FixBS> conjugationClasses() {
