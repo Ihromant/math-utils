@@ -610,14 +610,15 @@ public class Applicator7Test {
         Group table = sp.group();
         List<SubGroup> sgs = table.subGroups();
         Map<FixBS, State1> states = new ConcurrentHashMap<>();
-        for (SubGroup sg : sgs) {
+        sgs.parallelStream().forEach(sg -> {
             if (sg.order() == 1 || table.order() / sg.order() > b) {
-                continue;
+                return;
             }
             List<int[]> cosets = cosets(sp, sg, k);
             int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
                     .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
             Consumer<State1> cons = st -> states.putIfAbsent(st.diffSet(), st);
+            FixBS[] comp = comp(cosets, sp, sg);
             for (int i : initial) {
                 int[] fst = cosets.get(i);
                 if (fst.length > k) {
@@ -631,33 +632,45 @@ public class Applicator7Test {
                     cons.accept(State1.fromBlockWithStab(sp, fst, sg.elems()));
                     continue;
                 }
-                State1 state = st;
-                IntStream.range(i + 1, cosets.size()).parallel().forEach(j -> {
-                    int[] snd = cosets.get(j);
-                    if (state.size() + snd.length > k) {
-                        return;
-                    }
-                    State1 nextSt = state;
-                    for (int el : snd) {
-                        nextSt = nextSt.acceptElemWithStab(sp, el);
-                        if (nextSt == null) {
-                            return;
-                        }
-                    }
-                    findStab(cosets, sp, nextSt, j + 1, cons);
-                });
+                findStab(cosets, comp, sp, st, comp[i], cons);
             }
-        }
+        });
         return states.values().toArray(State1[]::new);
     }
 
-    private static void findStab(List<int[]> cosets, GSpace1 sp, State1 state, int from, Consumer<State1> cons) {
+    private static FixBS[] comp(List<int[]> cosets, GSpace1 sp, SubGroup sg) {
+        return IntStream.range(0, cosets.size()).parallel().mapToObj(i -> {
+            int[] fst = cosets.get(i);
+            FixBS row = new FixBS(cosets.size());
+            State1 st = new State1(new FixBS(sp.v()), sg.elems(), new FixBS(sp.diffLength()), new int[sp.diffLength()][0], 0);
+            for (int el : fst) {
+                st = Objects.requireNonNull(st.acceptElemWithStab(sp, el));
+            }
+            ex: for (int j = i + 1; j < cosets.size(); j++) {
+                int[] snd = cosets.get(j);
+                if (fst.length + snd.length > sp.k()) {
+                    continue;
+                }
+                State1 nextSt = st;
+                for (int el : snd) {
+                    nextSt = nextSt.acceptElemWithStab(sp, el);
+                    if (nextSt == null) {
+                        continue ex;
+                    }
+                }
+                row.set(j);
+            }
+            return row;
+        }).toArray(FixBS[]::new);
+    }
+
+    private static void findStab(List<int[]> cosets, FixBS[] comp, GSpace1 sp, State1 state, FixBS curr, Consumer<State1> cons) {
         int k = sp.k();
         if (state.size() == k) {
             cons.accept(state);
             return;
         }
-        ex: for (int i = from; i < cosets.size(); i++) {
+        ex: for (int i = curr.nextSetBit(0); i >= 0; i = curr.nextSetBit(i + 1)) {
             int[] cos = cosets.get(i);
             if (state.size() + cos.length > k) {
                 continue;
@@ -669,7 +682,7 @@ public class Applicator7Test {
                     continue ex;
                 }
             }
-            findStab(cosets, sp, nextSt, i + 1, cons);
+            findStab(cosets, comp, sp, nextSt, curr.intersection(comp[i]), cons);
         }
     }
 
