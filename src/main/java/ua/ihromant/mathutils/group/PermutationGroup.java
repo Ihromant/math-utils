@@ -132,7 +132,7 @@ public class PermutationGroup implements Group {
         return PermutationGroup.byGenerators(new int[][]{cycle, snd});
     }
 
-    private record Wrap(int[] arr) {
+    public record Wrap(int[] arr) {
         @Override
         public boolean equals(Object o) {
             if (!(o instanceof Wrap(int[] arr1))) return false;

@@ -1142,4 +1142,39 @@ public class AssumptionTest {
             }
         });
     }
+
+    @Test
+    public void checkConjugated() {
+        GeneralLinear gl = new GeneralLinear(3, new GaloisField(4));
+        int[][] glPerm = new int[gl.order()][64];
+        IntStream.range(0, gl.order()).parallel().forEach(i -> {
+            for (int vec = 0; vec < 64; vec++) {
+                glPerm[i][vec] = gl.mulVec(i, vec);
+            }
+        });
+        int[][] flipPerm = new int[][]{IntStream.range(0, 64).toArray(), IntStream.range(0, 64).map(AssumptionTest::flip).toArray()};
+        int[][] transPerm = IntStream.range(0, 64).mapToObj(i -> IntStream.range(0, 64).map(j -> i ^ j).toArray()).toArray(int[][]::new);
+        int[][] comb = new int[glPerm.length * flipPerm.length * transPerm.length][];
+        IntStream.range(0, glPerm.length).forEach(glIdx -> {
+            for (int flIdx = 0; flIdx < flipPerm.length; flIdx++) {
+                for (int trIdx = 0; trIdx < transPerm.length; trIdx++) {
+                    comb[glIdx * flipPerm.length * transPerm.length + flIdx * transPerm.length + trIdx] =
+                            PermutationGroup.comb(PermutationGroup.comb(glPerm[glIdx], flipPerm[flIdx]), transPerm[trIdx]);
+                }
+            }
+        });
+        System.out.println(comb.length);
+        ObjectMapper om = new ObjectMapper();
+        PermutationGroup pg1 = new PermutationGroup(om.readValue(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/gr1.txt"), int[][].class));
+        PermutationGroup pg2 = new PermutationGroup(om.readValue(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/gr2.txt"), int[][].class));
+        List<PermutationGroup.Wrap> g1List = IntStream.range(0, pg1.order()).mapToObj(i -> new PermutationGroup.Wrap(pg1.permutation(i))).toList();
+        Set<PermutationGroup.Wrap> g2Set = new HashSet<>(IntStream.range(0, pg2.order()).mapToObj(i -> new PermutationGroup.Wrap(pg2.permutation(i))).toList());
+        System.out.println("Conjugated " + Arrays.stream(comb).anyMatch(perm -> {
+            int[] inv = new int[perm.length];
+            for (int i = 0; i < perm.length; i++) {
+                inv[perm[i]] = i;
+            }
+            return g1List.stream().allMatch(w -> g2Set.contains(new PermutationGroup.Wrap(PermutationGroup.comb(PermutationGroup.comb(inv, w.arr()), perm))));
+        }));
+    }
 }
