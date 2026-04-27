@@ -1076,8 +1076,11 @@ public class AssumptionTest {
         }
         if (ord64.size() > 1) {
             System.out.println(ord64.size() + " for " + tg.order());
+            int cnt = 0;
             for (SubGroup sg : ord64) {
                 System.out.println(sg.isNormal());
+                Path p = Path.of("/home/ihromant/workspace/math-utils/src/test/resources/gr" + (cnt++) + ".txt");
+                Files.writeString(p, Arrays.deepToString(Arrays.stream(sg.arr()).mapToObj(pg::permutation).toArray(int[][]::new)));
             }
         }
     }
