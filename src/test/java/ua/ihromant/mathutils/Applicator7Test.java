@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -603,39 +604,59 @@ public class Applicator7Test {
         System.out.println(states.size());
     }
 
-    private static State1[] getStabilized(GSpace1 sp) {
+    private static State1[] getStabilized(GSpace1 sp, int... blockHint) {
         int k = sp.k();
         int v = sp.v();
         int b = v * (v - 1) / k / (k - 1);
         Group table = sp.group();
         List<SubGroup> sgs = table.subGroups();
+        AtomicBoolean ab = new AtomicBoolean();
+        for (int ord : blockHint) {
+            for (SubGroup sg : sgs) {
+                if (sg.order() != table.order() / ord) {
+                    continue;
+                }
+                subStabilized(sp, sg, _ -> ab.set(true));
+                if (ab.get()) {
+                    break;
+                }
+            }
+            if (!ab.get()) {
+                return new State1[0];
+            }
+            ab.set(false);
+        }
         Map<FixBS, State1> states = new ConcurrentHashMap<>();
+        Consumer<State1> cons = st -> states.putIfAbsent(st.block(), st);
         sgs.parallelStream().forEach(sg -> {
             if (sg.order() == 1 || table.order() / sg.order() > b) {
                 return;
             }
-            List<int[]> cosets = cosets(sp, sg, k);
-            int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
-                    .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
-            Consumer<State1> cons = st -> states.putIfAbsent(st.diffSet(), st);
-            FixBS[] comp = comp(cosets, sp, sg);
-            for (int i : initial) {
-                int[] fst = cosets.get(i);
-                if (fst.length > k) {
-                    continue;
-                }
-                State1 st = new State1(new FixBS(v), sg.elems(), new FixBS(sp.diffLength()), new int[sp.diffLength()][0], 0);
-                for (int el : fst) {
-                    st = Objects.requireNonNull(st.acceptElemWithStab(sp, el));
-                }
-                if (st.size() == k) {
-                    cons.accept(State1.fromBlockWithStab(sp, fst, sg.elems()));
-                    continue;
-                }
-                findStab(cosets, comp, sp, st, comp[i], cons);
-            }
+            subStabilized(sp, sg, cons);
         });
         return states.values().toArray(State1[]::new);
+    }
+
+    private static void subStabilized(GSpace1 sp, SubGroup sg, Consumer<State1> cons) {
+        List<int[]> cosets = cosets(sp, sg, sp.k());
+        int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(sp.oBeg())
+                .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
+        FixBS[] comp = comp(cosets, sp, sg);
+        for (int i : initial) {
+            int[] fst = cosets.get(i);
+            if (fst.length > sp.k()) {
+                continue;
+            }
+            State1 st = new State1(new FixBS(sp.v()), sg.elems(), new FixBS(sp.diffLength()), new int[sp.diffLength()][0], 0);
+            for (int el : fst) {
+                st = Objects.requireNonNull(st.acceptElemWithStab(sp, el));
+            }
+            if (st.size() == sp.k()) {
+                cons.accept(State1.fromBlockWithStab(sp, fst, sg.elems()));
+                continue;
+            }
+            findStab(cosets, comp, sp, st, comp[i], cons);
+        }
     }
 
     private static FixBS[] comp(List<int[]> cosets, GSpace1 sp, SubGroup sg) {
