@@ -15,14 +15,14 @@ public class GroupIndex {
     }
 
     public static String identify(Group g) throws IOException {
-        if (g.order() > 1500) {
+        if (g.order() > 2000) {
             return "Large order " + g.order();
         }
         return new GapInteractor().identifyGroup(g);
     }
 
     public static int groupId(Group g) throws IOException {
-        if (g.order() > 1500) {
+        if (g.order() > 2000) {
             return -1;
         }
         return new GapInteractor().groupId(g);
