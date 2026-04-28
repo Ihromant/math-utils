@@ -20,6 +20,42 @@ public record StateTr(FixBS block, FixBS stabilizer, FixBS diffSet, int[][] diff
         return result;
     }
 
+    public static StateTr fromBlockWithStab(GSpaceTr space, int[] block, FixBS neededStab) {
+        int v = space.v();
+        FixBS diffSet = new FixBS(space.diffLength());
+        int[][] diffs = new int[space.diffLength()][0];
+        FixBS bl = new FixBS(space.v());
+        for (int i : block) {
+            for (int j : block) {
+                if (i == j) {
+                    continue;
+                }
+                for (int k : block) {
+                    if (i == k || j == k) {
+                        continue;
+                    }
+                    int ijk = space.to(i, j, k);
+                    int comp = space.diffIdx(ijk);
+                    int[] oldTriples = diffs[comp];
+                    int[] newTriples = Arrays.copyOf(oldTriples, oldTriples.length + 1);
+                    newTriples[oldTriples.length] = ijk;
+                    for (int tr : newTriples) {
+                        int fst = tr / v / v;
+                        int snd = tr / v % v;
+                        int trd = tr % v;
+                        if (!space.preImage(i, fst).intersection(space.preImage(j, snd)).intersection(space.preImage(k, trd)).diff(neededStab).isEmpty()) {
+                            return null;
+                        }
+                    }
+                    diffs[comp] = newTriples;
+                    diffSet.set(comp);
+                }
+            }
+            bl.set(i);
+        }
+        return new StateTr(bl, neededStab, diffSet, diffs, block.length);
+    }
+
     public StateTr acceptElem(GSpaceTr gSpace, FixBS globalFilter, int val) {
         int v = gSpace.v();
         int k = gSpace.k();
