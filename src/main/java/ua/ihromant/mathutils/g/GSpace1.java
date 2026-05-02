@@ -28,6 +28,7 @@ public class GSpace1 {
     private final OrbitFilter[] projections;
     private final int[] diffMap;
     private final FixBS[][] prImages;
+    private final FixBS[][] sameDist;
 
     private final int[][] auths;
 
@@ -139,6 +140,31 @@ public class GSpace1 {
             diffMap[i * v + i] = -1;
         }
 
+        dedup.clear();
+        this.sameDist = new FixBS[v][v];
+        for (int i = 0; i < v; i++) {
+            for (int j = i + 1; j < v; j++) {
+                FixBS set = new FixBS(v);
+                for (int p = 0; p < v; p++) {
+                    if (p == i || p == j) {
+                        set.set(p);
+                        continue;
+                    }
+                    int pi = diffIdx(p * v + i);
+                    int ip = diffIdx(i * v + p);
+                    int pj = diffIdx(p * v + j);
+                    int jp = diffIdx(j * v + p);
+                    if (pi == pj || pi == jp || ip == pj || ip == jp) {
+                        set.set(p);
+                    }
+                }
+                dedup.putIfAbsent(set, set);
+                FixBS st = dedup.get(set);
+                sameDist[i][j] = dedup.get(st);
+                sameDist[j][i] = dedup.get(st);
+            }
+        }
+
         if (genAuths) {
             this.auths = genAuthsNew();
         } else {
@@ -244,6 +270,10 @@ public class GSpace1 {
 
     public FixBS prImage(int from, int to) {
         return prImages[to][from];
+    }
+
+    public FixBS sameDist(int i, int j) {
+        return sameDist[i][j];
     }
 
     public State1 forInitial(int f, int s) {
