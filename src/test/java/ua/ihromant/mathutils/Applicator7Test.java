@@ -4,7 +4,6 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.g.GSpace1;
 import ua.ihromant.mathutils.g.NSState;
-import ua.ihromant.mathutils.g.NSStateNew;
 import ua.ihromant.mathutils.g.OrbitFilter;
 import ua.ihromant.mathutils.g.State1;
 import ua.ihromant.mathutils.group.CyclicGroup;
@@ -482,34 +481,6 @@ public class Applicator7Test {
                     currDesign[li] = nextState;
                     searchDesigns(space, currDesign, cons);
                 }
-            }
-        }
-    }
-
-    private static void searchDesignsAlt(GSpace1 space, NSStateNew[] currDesign, Predicate<NSStateNew[]> cons) {
-        int v = space.v();
-        int li = currDesign.length - 1;
-        NSStateNew last = currDesign[li];
-        OrbitFilter of = last.of();
-        int[] block = last.block();
-        int bl = block.length;
-        if (bl == space.k()) {
-            if (cons.test(currDesign)) {
-                return;
-            }
-            int nextOrbit = of.currOrbit(v);
-            FixBS ftr = of.filters()[nextOrbit];
-            int snd = of.filters()[nextOrbit].nextClearBit(0);
-            NSStateNew st = new NSStateNew(new int[]{space.oBeg(nextOrbit)}, of, ftr).acceptElem(space, snd);
-            NSStateNew[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
-            nextDesign[currDesign.length] = st;
-            searchDesignsAlt(space, nextDesign, cons);
-        } else {
-            FixBS ftr = last.blackList();
-            int prev = block[bl - 1];
-            for (int el = ftr.nextClearBit(prev + 1); el >= 0 && el < v; el = ftr.nextClearBit(el + 1)) {
-                currDesign[li] = last.acceptElem(space, el);
-                searchDesignsAlt(space, currDesign, cons);
             }
         }
     }
