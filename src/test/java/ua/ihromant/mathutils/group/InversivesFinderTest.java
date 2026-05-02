@@ -19,8 +19,6 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class InversivesFinderTest {
     @Test
@@ -105,7 +103,7 @@ public class InversivesFinderTest {
         int k = 7;
         System.out.println(t + " " + k);
         int kk = k * k - k;
-        for (int v = kk + 1; v < 2000; v++) {
+        for (int v = kk + 1; v < 4000; v++) {
             if (!Combinatorics.admissible(t, v, k)) {
                 continue;
             }
