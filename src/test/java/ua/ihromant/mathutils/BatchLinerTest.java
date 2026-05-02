@@ -16,6 +16,7 @@ import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SpecialLinear;
 import ua.ihromant.mathutils.group.SubGroup;
+import ua.ihromant.mathutils.group.TableGroup;
 import ua.ihromant.mathutils.plane.AffinePlane;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -1124,7 +1125,7 @@ public class BatchLinerTest {
             }
         }
         List<FixBS> components = pts.components();
-        System.out.println("Liner " + i + " auths " + gr.order() + " " + GroupIndex.groupId(gr) + " " + GroupIndex.identify(gr) + " orbits " + components.size() + " " + components);
+        System.out.println("Liner " + i + " auths " + gr.order() + " " + GroupIndex.groupId(gr) + " " + GroupIndex.identify(gr) + " orbits " + components.size() + " " + Arrays.toString(components.stream().mapToInt(FixBS::cardinality).toArray()));
     }
 
     private static final String lns = """
@@ -1409,5 +1410,32 @@ public class BatchLinerTest {
             }
         }
         System.out.println(quantities);
+    }
+
+    @Test
+    public void testOrbitsAffine() throws IOException {
+        Liner proj = BatchAffineTest.readProj(16, "djowk.txt");
+        Liner lnr = new AffinePlane(proj, 0).toLiner();
+        PermutationGroup pg = new PermutationGroup(lnr.graphData().automorphisms());
+        System.out.println(pg.order());
+        TableGroup g = pg.asTable();
+        Map<Integer, List<SubGroup>> subs = g.subsByConjugation();
+        for (Map.Entry<Integer, List<SubGroup>> e : subs.entrySet()) {
+            int ord = e.getKey();
+            if (ord < 336) {
+                continue;
+            }
+            for (SubGroup sub : e.getValue()) {
+                orbits(lnr, new SubGroup(pg, sub.elems()), 0);
+                QuickFind qf = new QuickFind(lnr.lines().length);
+                for (int el : sub.arr()) {
+                    int[] perm = pg.permutation(el);
+                    for (int i = lnr.pointCount(); i < perm.length; i++) {
+                        qf.union(i - lnr.pointCount(), perm[i] - lnr.pointCount());
+                    }
+                }
+                System.out.println(qf.components().stream().map(FixBS::cardinality).toList());
+            }
+        }
     }
 }
