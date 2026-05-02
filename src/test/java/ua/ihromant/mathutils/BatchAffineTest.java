@@ -21,6 +21,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -1660,6 +1661,9 @@ public class BatchAffineTest {
         Map<FixBS, String> result = new ConcurrentHashMap<>();
         Arrays.stream(Objects.requireNonNull(new File("/home/ihromant/maths/g-spaces/final/" + k + "-" + (k * k)).listFiles())).parallel().forEach(f -> {
             String name = f.getName();
+            if (f.getName().equals("zproc.txt")) {
+                return;
+            }
             SLiner sl;
             try {
                 sl = new SLiner(om.readValue(Files.readString(Path.of(f.getPath())), short[][].class));
@@ -1812,8 +1816,13 @@ public class BatchAffineTest {
     @Test
     public void generateCanonicalAff() throws IOException {
         int k = 16;
+        Path procPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + (k * k) + "/zproc.txt");
+        Set<String> proc = new HashSet<>(Files.readAllLines(procPath));
         Arrays.stream(Objects.requireNonNull(new File("/home/ihromant/workspace/math-utils/src/test/resources/proj" + k).listFiles())).parallel().forEach(f -> {
             String name = f.getName();
+            if (proc.contains(name)) {
+                return;
+            }
             Liner proj;
             try {
                 proj = readProj(k, name);
@@ -1824,8 +1833,8 @@ public class BatchAffineTest {
             Map<Integer, List<Integer>> grouped = IntStream.range(k * k + k + 1, orbits.length).boxed()
                     .collect(Collectors.groupingBy(i -> orbits[i]));
             System.out.println(name + " " + grouped);
-            for (Map.Entry<Integer, List<Integer>> e : grouped.entrySet()) {
-                int ln = e.getValue().getFirst() - (k * k + k + 1);
+            new ArrayList<>(grouped.values()).parallelStream().forEach(val -> {
+                int ln = val.getFirst() - (k * k + k + 1);
                 Liner aff = new AffinePlane(proj, ln).toLiner();
                 Path p = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + (k * k) + "/" + name.substring(0, name.indexOf('.')) + "-" + ln + ".txt");
                 try {
@@ -1833,7 +1842,13 @@ public class BatchAffineTest {
                 } catch (IOException ex) {
                     throw new RuntimeException(ex);
                 }
+            });
+            try {
+                Files.writeString(procPath, name + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
+            System.out.println("Finished " + name);
         });
     }
 }
