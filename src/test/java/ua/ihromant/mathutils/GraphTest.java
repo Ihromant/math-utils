@@ -335,6 +335,7 @@ public class GraphTest {
                 stack.add(info);
             }
         });
+        graph.connect(ai.get() - 1, ai.get() - 1);
         Map<FixBS, SLinerInfo> liners = new HashMap<>(syncLiners);
         syncLiners.clear();
         reached.close();
