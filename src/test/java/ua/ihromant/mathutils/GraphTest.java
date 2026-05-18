@@ -385,18 +385,51 @@ public class GraphTest {
     public void integrityCheck() throws IOException {
         int k = 5;
         int v = 65;
+        int b = v * (v - 1) / k / (k - 1);
         ObjectMapper om = new ObjectMapper();
         Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
         Stream<String> reached = Files.lines(stPath);
         Set<FixBS> un = ConcurrentHashMap.newKeySet();
+        List<SLinerInfo> stack = new ArrayList<>();
+        reached.forEach(l -> {
+            short[][] lines = om.readValue(l.substring(l.indexOf("[[")), short[][].class);
+            SLiner lnr = new SLiner(lines);
+            FixBS canon = lnr.canonByLines();
+            SLinerInfo info = new SLinerInfo().setCanon(canon.words());
+            stack.add(info);
+        });
+        System.out.println("Begin");
         AtomicInteger ai = new AtomicInteger();
-        reached.parallel().forEach(l -> {
-            int[][] lns = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
-            un.add(new FixBS(new Liner(lns).graphData().canonical()));
-            ai.incrementAndGet();
+        Map<Long, Integer> aut = new ConcurrentHashMap<>();
+        IntStream.range(0, stack.size()).parallel().forEach(idx -> {
+            long[] canon = stack.get(idx).getCanon();
+            SLiner byLines = SLiner.bySmallCanon(canon, v, k);
+            int[][] lines = new int[b][k];
+            for (int i = 0; i < b; i++) {
+                for (int j = 0; j < k; j++) {
+                    lines[i][j] = byLines.line(i)[j];
+                }
+            }
+            Liner lnr = new Liner(lines);
+            SLiner byCanon = SLiner.byCanon(lnr.graphData().canonical(), v, k);
+            un.add(byCanon.canonByLines());
+            assertEquals(byLines.smallCanon(), byCanon.smallCanon());
+            Map<Integer, Long> map = lnr.hyperbolicFreq();
+            if (map.size() < 3) {
+                System.out.println(idx + " " + map);
+            }
+            long autCnt = lnr.graphData().autCount();
+            if (autCnt > 2) {
+                System.out.println(idx + " " + autCnt);
+            }
+            aut.compute(autCnt, (_, vl) -> vl == null ? 1 : vl + 1);
+            int val = ai.incrementAndGet();
+            if (val % 10000 == 0) {
+                System.out.println(val);
+            }
         });
         reached.close();
-        System.out.println(un.size() + " " + ai.get());
+        System.out.println(un.size() + " " + ai.get() + " " + aut);
     }
 
     @Test
