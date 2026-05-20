@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -430,6 +431,50 @@ public class GraphTest {
         });
         reached.close();
         System.out.println(un.size() + " " + ai.get() + " " + aut);
+    }
+
+    @Test
+    public void checkGraph() throws IOException {
+        int v = 65;
+        int k = 5;
+        ObjectMapper om = new ObjectMapper();
+        Path grPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
+        Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
+        List<String> graphLines = Files.readAllLines(grPath);
+        Map<FixBS, Integer> idxes = new HashMap<>();
+        List<FixBS> canons = new ArrayList<>();
+        AtomicInteger ai = new AtomicInteger();
+        Stream<String> lns = Files.lines(stPath);
+        lns.forEach(ln -> {
+            short[][] arr = om.readValue(ln.substring(ln.indexOf("[[")), short[][].class);
+            SLiner sl = new SLiner(arr);
+            FixBS canon = sl.canonByLines();
+            canons.add(canon);
+            idxes.putIfAbsent(canon, ai.getAndIncrement());
+        });
+        lns.close();
+        int tried = 10000;
+        System.out.println("Begin");
+        Set<Integer> incorrect = ConcurrentHashMap.newKeySet();
+        IntStream.range(0, tried).parallel().forEach(_ -> {
+            int idx = ThreadLocalRandom.current().nextInt(canons.size());
+            SLiner lnr = SLiner.bySmallCanon(canons.get(idx).words(), v, k);
+            List<SLiner> para = lnr.paraModificationsAlt();
+            Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+            para.stream().parallel().forEach(l -> {
+                FixBS canon = l.smallCanon();
+                unique.add(canon);
+            });
+            int[] arr = unique.stream().mapToInt(idxes::get).filter(i -> i != idx).sorted().toArray();
+            String fl = graphLines.get(idx);
+            int[] inFile = om.readValue(fl.substring(fl.indexOf('[')), int[].class);
+            if (!Arrays.equals(arr, inFile)) {
+                System.out.println(idx + " " + Arrays.toString(arr) + " " + Arrays.toString(inFile));
+                incorrect.add(idx);
+            }
+        });
+        int[] wholeArr = incorrect.stream().mapToInt(Integer::intValue).sorted().toArray();
+        System.out.println(wholeArr[0] + " " + wholeArr[wholeArr.length - 1]);
     }
 
     @Test
