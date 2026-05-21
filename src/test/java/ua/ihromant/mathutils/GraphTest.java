@@ -478,6 +478,50 @@ public class GraphTest {
     }
 
     @Test
+    public void storeGraphPart() throws IOException {
+        int v = 65;
+        int k = 5;
+        ObjectMapper om = new ObjectMapper();
+        Path stPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/stack.txt");
+        Map<FixBS, Integer> idxes = new HashMap<>();
+        List<FixBS> canons = new ArrayList<>();
+        AtomicInteger ai = new AtomicInteger();
+        Stream<String> lns = Files.lines(stPath);
+        lns.forEach(ln -> {
+            short[][] arr = om.readValue(ln.substring(ln.indexOf("[[")), short[][].class);
+            SLiner sl = new SLiner(arr);
+            FixBS canon = sl.canonByLines();
+            canons.add(canon);
+            idxes.putIfAbsent(canon, ai.getAndIncrement());
+        });
+        lns.close();
+        int from = 8200000;
+        int cnt = 200000;
+        Path partPath = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/gfix.txt");
+        ai.set(0);
+        IntStream.range(from, from + cnt).parallel().forEach(idx -> {
+            SLiner lnr = SLiner.bySmallCanon(canons.get(idx).words(), v, k);
+            List<SLiner> para = lnr.paraModificationsAlt();
+            Set<FixBS> unique = ConcurrentHashMap.newKeySet();
+            para.stream().parallel().forEach(l -> {
+                FixBS canon = l.smallCanon();
+                unique.add(canon);
+            });
+            int[] arr = unique.stream().mapToInt(idxes::get).filter(i -> i != idx).sorted().toArray();
+            try {
+                Files.writeString(partPath, idx + ": " + Arrays.toString(arr)
+                                + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+            int val = ai.incrementAndGet();
+            if (val % 100 == 0) {
+                System.out.println(val);
+            }
+        });
+    }
+
+    @Test
     public void convert() throws IOException {
         int v = 65;
         int k = 5;
