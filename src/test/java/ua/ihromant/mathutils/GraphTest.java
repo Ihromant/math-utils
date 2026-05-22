@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -519,6 +520,27 @@ public class GraphTest {
                 System.out.println(val);
             }
         });
+    }
+
+    @Test
+    public void merge() throws IOException {
+        int v = 65;
+        int k = 5;
+        Path from = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph.txt");
+        Path with = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/gfix.txt");
+        Path to = Path.of("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph/large/graph1.txt");
+        List<String> lns = Files.readAllLines(from);
+        List<String> withLns = Files.readAllLines(with);
+        Map<Integer, String> map = withLns.stream().collect(Collectors.toMap(l -> Integer.parseInt(l.substring(0, l.indexOf(':'))), Function.identity()));
+        for (int i = 0; i < lns.size(); i++) {
+            if (map.containsKey(i)) {
+                Files.writeString(to, map.get(i)
+                        + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } else {
+                Files.writeString(to, lns.get(i)
+                        + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            }
+        }
     }
 
     @Test
