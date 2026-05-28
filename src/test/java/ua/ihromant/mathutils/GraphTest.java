@@ -130,8 +130,8 @@ public class GraphTest {
 
     @Test
     public void buildByComponent() throws IOException {
-        int v = 28;
-        int k = 4;
+        int v = 65;
+        int k = 5;
         List<SLiner> basePlanes = readSLiners(v, k);
         FixBS done = readDone(basePlanes.size(), v, k);
         Map<FixBS, LinerInfo> liners = new HashMap<>();
@@ -190,10 +190,10 @@ public class GraphTest {
         FixBS result = new FixBS(sz);
         for (File f : Objects.requireNonNull(new File("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph").listFiles())) {
             if (f.getName().contains("single")) {
-                Files.readString(f.toPath()).lines().forEach(l -> result.set(Integer.parseInt(l.substring(0, l.indexOf(' ')))));
+                Files.readAllLines(f.toPath()).forEach(l -> result.set(Integer.parseInt(l.substring(0, l.indexOf(' ')))));
             }
             if (f.getName().contains("graph")) {
-                Files.readString(f.toPath()).lines().filter(l -> l.indexOf('(') >= 0)
+                Files.readAllLines(f.toPath()).stream().filter(l -> l.indexOf('(') >= 0)
                         .forEach(l -> result.set(Integer.parseInt(l.substring(l.indexOf('(') + 1, l.indexOf(')')))));
             }
         }
