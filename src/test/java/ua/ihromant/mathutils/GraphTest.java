@@ -475,7 +475,11 @@ public class GraphTest {
             }
         });
         int[] wholeArr = incorrect.stream().mapToInt(Integer::intValue).sorted().toArray();
-        System.out.println(wholeArr[0] + " " + wholeArr[wholeArr.length - 1]);
+        if (wholeArr.length == 0) {
+            System.out.println("Correct");
+        } else {
+            System.out.println(wholeArr[0] + " " + wholeArr[wholeArr.length - 1]);
+        }
     }
 
     @Test
