@@ -575,7 +575,7 @@ public class GraphTest {
         Map<Long, Integer> freq = new ConcurrentHashMap<>();
         Map<Long, Integer> thrMap = new ConcurrentHashMap<>();
         for (File f : Objects.requireNonNull(new File("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph").listFiles())) {
-            if (f.getName().contains("graph")) {
+            if (f.getName().contains("graph") || f.getName().contains("base")) {
                 continue;
             }
             boolean three = f.getName().equals("3liners.txt");
