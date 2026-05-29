@@ -566,4 +566,32 @@ public class GraphTest {
                     i + " " + Arrays.deepToString(SLiner.bySmallCanon(converted[i].words(), v, k).lines()) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
         }
     }
+
+    @Test
+    public void inspectGraph() throws IOException {
+        int v = 65;
+        int k = 5;
+        ObjectMapper om = new ObjectMapper();
+        Map<Long, Integer> freq = new ConcurrentHashMap<>();
+        Map<Long, Integer> thrMap = new ConcurrentHashMap<>();
+        for (File f : Objects.requireNonNull(new File("/home/ihromant/maths/g-spaces/final/" + k + "-" + v + "/graph").listFiles())) {
+            if (f.getName().contains("graph")) {
+                continue;
+            }
+            boolean three = f.getName().equals("3liners.txt");
+            Stream<String> str = Files.lines(f.toPath());
+            str.parallel().forEach(l -> {
+                int[][] lns = om.readValue(l.substring(l.indexOf("[[")), int[][].class);
+                Liner lnr = new Liner(lns);
+                long cnt = lnr.graphData().autCount();
+                freq.compute(cnt, (_, val) -> val == null ? 1 : val + 1);
+                if (three) {
+                    thrMap.compute(cnt, (_, val) -> val == null ? 1 : val + 1);
+                }
+            });
+            str.close();
+        }
+        System.out.println(freq);
+        System.out.println(thrMap);
+    }
 }
