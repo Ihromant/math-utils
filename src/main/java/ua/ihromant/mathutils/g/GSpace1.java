@@ -467,4 +467,29 @@ public class GSpace1 {
             return true;
         });
     }
+
+    public boolean parMinimal(FixBS[] blocks) {
+        return Arrays.stream(auths).parallel().allMatch(auth -> {
+            FixBS[] altBlocks = new FixBS[blocks.length];
+            for (int i = 0; i < blocks.length; i++) {
+                FixBS block = blocks[i];
+                FixBS alt = new FixBS(v);
+                for (int el = block.nextSetBit(0); el >= 0; el = block.nextSetBit(el + 1)) {
+                    alt.set(auth[el]);
+                }
+                altBlocks[i] = alt;
+            }
+            Arrays.sort(altBlocks);
+            for (int i = 0; i < blocks.length; i++) {
+                int cmp = altBlocks[i].compareTo(blocks[i]);
+                if (cmp < 0) {
+                    return false;
+                }
+                if (cmp > 0) {
+                    return true;
+                }
+            }
+            return true;
+        });
+    }
 }

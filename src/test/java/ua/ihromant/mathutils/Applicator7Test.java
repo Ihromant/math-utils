@@ -15,6 +15,9 @@ import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -29,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -121,6 +125,85 @@ public class Applicator7Test {
                 });
             }
         }
+    }
+
+    @Test
+    public void generateInitial() throws IOException {
+        int k = 5;
+        int[] orbits = new int[]{13, 13, 39};
+        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        int[] config = Arrays.stream(orbits).map(i -> group.order() / i).toArray();
+        GSpace1 space = new GSpace1(k, group, true, config);
+        int v = space.v();
+        FixBS evenDiffs = space.evenDiffs();
+        State1[] stab = getStabilized(space);
+        System.out.println(GroupIndex.identify(group) + " " + v + " " + k + " configs: "
+                + Arrays.toString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
+        if (stab.length == 0) {
+            return;
+        }
+        Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+        Path p = Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(config).mapToObj(Integer::toString).collect(Collectors.joining(",")) + ".txt");
+        BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
+            try {
+                Files.writeString(p, Arrays.deepToString(Stream.concat(Arrays.stream(sts).map(State1::block),
+                        Arrays.stream(nst).map(st -> FixBS.of(v, st.block()))).sorted().toArray(FixBS[]::new)) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        };
+        List<List<State1>> init = new ArrayList<>();
+        JNauty.instance().cliques(g, 1, v, a -> {
+            FixBS arr = new FixBS(a);
+            List<State1> states = new ArrayList<>();
+            FixBS diffSet = new FixBS(space.diffLength());
+            for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
+                State1 st = stab[i];
+                states.add(st);
+                diffSet.or(st.diffSet());
+            }
+            int card = diffSet.cardinality();
+            if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
+                return;
+            }
+            if (card == space.diffLength()) {
+                fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                return;
+            }
+            init.add(states);
+        });
+        System.out.println("Init " + init.size());
+        AtomicInteger ai = new AtomicInteger();
+        init.parallelStream().forEach(states -> {
+            int dc = space.diffLength();
+            OrbitFilter of = space.emptyOf();
+            FixBS diffSet = new FixBS(space.diffLength());
+            for (State1 st : states) {
+                st.updateFilter(of, space);
+                diffSet.or(st.diffSet());
+                dc = dc - st.diffSet().cardinality();
+            }
+            int nc = dc / k / (k - 1);
+            if (nc == 0) {
+                fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                return;
+            }
+            int nextOrbit = of.currOrbit(v);
+            int snd = of.filters()[nextOrbit].nextClearBit(0);
+            NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+            searchDesigns(space, new NSState[]{in}, nst -> {
+                FixBS[] arr = Stream.concat(states.stream().map(State1::block), Arrays.stream(nst).map(st -> FixBS.of(v, st.block()))).sorted().toArray(FixBS[]::new);
+                if (space.parMinimal(arr)) {
+                    fCons.accept(states.toArray(State1[]::new), nst);
+                }
+                return true;
+            });
+            int val = ai.incrementAndGet();
+            if (val % 1000 == 0) {
+                System.out.println(val);
+            }
+        });
     }
 
     @Test
