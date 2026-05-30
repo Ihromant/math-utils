@@ -184,11 +184,6 @@ public class Applicator7Test {
                 diffSet.or(st.diffSet());
                 dc = dc - st.diffSet().cardinality();
             }
-            int nc = dc / k / (k - 1);
-            if (nc == 0) {
-                fCons.accept(states.toArray(State1[]::new), new NSState[0]);
-                return;
-            }
             int nextOrbit = of.currOrbit(v);
             int snd = of.filters()[nextOrbit].nextClearBit(0);
             NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
