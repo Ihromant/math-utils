@@ -144,11 +144,11 @@ public class Applicator7Test {
         }
         Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
         Path p = Path.of("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
-                + Arrays.stream(config).mapToObj(Integer::toString).collect(Collectors.joining(",")) + ".txt");
+                + Arrays.stream(config).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
         BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
             try {
-                Files.writeString(p, Arrays.deepToString(Stream.concat(Arrays.stream(sts).map(State1::block),
-                        Arrays.stream(nst).map(st -> FixBS.of(v, st.block()))).sorted().toArray(FixBS[]::new)) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+                Files.writeString(p, Stream.concat(Arrays.stream(sts).map(State1::block),
+                        Arrays.stream(nst).map(st -> FixBS.of(v, st.block()))).sorted().map(FixBS::toString).collect(Collectors.joining(" ")) + System.lineSeparator(), StandardOpenOption.CREATE, StandardOpenOption.APPEND);
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
