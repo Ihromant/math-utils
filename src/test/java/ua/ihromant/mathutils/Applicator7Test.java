@@ -14,7 +14,14 @@ import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -26,10 +33,12 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
+import java.util.function.BiPredicate;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -199,6 +208,91 @@ public class Applicator7Test {
                 System.out.println(val);
             }
         });
+    }
+
+    @Test
+    public void byInitial() throws IOException {
+        int k = 5;
+        Group group = new SemiDirectProduct(new CyclicGroup(13), new CyclicGroup(3));
+        int[] orbits = new int[]{13, 13, 39};
+        int[] config = Arrays.stream(orbits).map(i -> group.order() / i).toArray();
+        GSpace1 space = new GSpace1(k, group, false, config);
+        File f = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(config).mapToObj(Integer::toString).collect(Collectors.joining(",")) + ".txt");
+        File beg = new File("/home/ihromant/maths/g-spaces/initial", k + "-" + group.name() + "-"
+                + Arrays.stream(config).mapToObj(Integer::toString).collect(Collectors.joining(",")) + "-beg.txt");
+        try (FileOutputStream fos = new FileOutputStream(f, true);
+             BufferedOutputStream bos = new BufferedOutputStream(fos);
+             PrintStream ps = new PrintStream(bos);
+             FileInputStream allFis = new FileInputStream(beg);
+             InputStreamReader allIsr = new InputStreamReader(allFis);
+             BufferedReader allBr = new BufferedReader(allIsr);
+             FileInputStream fis = new FileInputStream(f);
+             InputStreamReader isr = new InputStreamReader(fis);
+             BufferedReader br = new BufferedReader(isr)) {
+            int v = space.v();
+            Set<List<FixBS>> set = allBr.lines().map(l -> ApplicatorTest.readPartial(l, v)).collect(Collectors.toSet());
+            List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
+            br.lines().forEach(l -> {
+                if (l.contains("[{")) {
+                    String[] split = l.substring(2, l.length() - 2).split("}, \\{");
+                    List<FixBS> base = Arrays.stream(split).map(bl -> FixBS.of(v, Arrays.stream(bl.split(", "))
+                            .mapToInt(Integer::parseInt).toArray())).toList();
+                    Liner lnr = new Liner(v, base.stream().flatMap(space::blocks).toArray(int[][]::new));
+                    liners.add(lnr);
+                    System.out.println(lnr.hyperbolicFreq() + " " + l);
+                } else {
+                    set.remove(ApplicatorTest.readPartial(l, v));
+                }
+            });
+            List<List<FixBS>> tuples = new ArrayList<>(set);
+            System.out.println(GroupIndex.identify(group) + " Tuples size: " + tuples.size());
+            AtomicInteger cnt = new AtomicInteger();
+            BiConsumer<State1[], NSState[]> fCons = (arr, nst) -> {
+                ps.println(Stream.concat(Arrays.stream(arr).map(State1::block), Arrays.stream(nst).map(el -> FixBS.of(v, el.block()))).toList());
+                ps.flush();
+                Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(arr).map(State1::block),
+                                Arrays.stream(nst).map(el -> FixBS.of(v, el.block()))).flatMap(space::blocks).toArray(int[][]::new));
+                liners.add(l);
+                System.out.println(l.hyperbolicFreq() + " " + Stream.concat(Arrays.stream(arr).map(State1::block), Arrays.stream(nst).map(el -> FixBS.of(v, el.block()))).toList());
+            };
+            tuples.stream().parallel().forEach(lst -> {
+                State1[] states = new State1[lst.size()];
+                for (int i = 0; i < lst.size(); i++) {
+                    states[i] = State1.fromBlock(space, lst.get(i));
+                }
+                int dc = space.diffLength();
+                OrbitFilter of = space.emptyOf();
+                FixBS diffSet = new FixBS(space.diffLength());
+                for (State1 st : states) {
+                    st.updateFilter(of, space);
+                    diffSet.or(st.diffSet());
+                    dc = dc - st.diffSet().cardinality();
+                }
+                int nc = dc / k / (k - 1);
+                if (nc == 0) {
+                    fCons.accept(states, new NSState[0]);
+                    return;
+                }
+                int nextOrbit = of.currOrbit(v);
+                int snd = of.filters()[nextOrbit].nextClearBit(0);
+                NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+                searchDesigns(space, new NSState[]{in}, nst -> {
+                    if (nst.length < nc) {
+                        return false;
+                    }
+                    fCons.accept(states, nst);
+                    return true;
+                });
+                int vl = cnt.incrementAndGet();
+                if (vl % 100 == 0) {
+                    System.out.println(vl);
+                }
+                ps.println(lst.stream().map(FixBS::toString).collect(Collectors.joining(" ")));
+                ps.flush();
+            });
+            System.out.println("Results " + liners.size());
+        }
     }
 
     @Test
