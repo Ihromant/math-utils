@@ -695,7 +695,7 @@ public class ApplicatorTest {
         }
     }
 
-    private static List<FixBS> readPartial(String line, int v) {
+    public static List<FixBS> readPartial(String line, int v) {
         String[] sp = line.substring(1, line.length() - 1).split("} \\{");
         return Arrays.stream(sp).map(p -> FixBS.of(v, Arrays.stream(p.split(", ")).mapToInt(Integer::parseInt).toArray())).collect(Collectors.toList());
     }
