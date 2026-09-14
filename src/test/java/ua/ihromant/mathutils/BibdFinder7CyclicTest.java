@@ -1,160 +1,288 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
-import ua.ihromant.mathutils.group.CyclicGroup;
-import ua.ihromant.mathutils.group.CyclicProduct;
 import ua.ihromant.mathutils.group.Group;
-import ua.ihromant.mathutils.group.SemiDirectProduct;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.BiPredicate;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class BibdFinder7CyclicTest {
-    @Test
-    public void testShifts() {
-        Group g = new SemiDirectProduct(new CyclicProduct(11), new CyclicGroup(5));
-        Map<Integer, List<SubGroup>> sgs = g.groupedSubGroups();
-        SubGroup sg = sgs.get(5).getFirst();
-        System.out.println(sg.elems());
-        int gOrd = g.order();
-        for (int b = 0; b < gOrd; b++) {
-            FixBS left = new FixBS(gOrd);
-            FixBS right = new FixBS(gOrd);
-            for (int h = sg.elems().nextSetBit(0); h >= 0; h = sg.elems().nextSetBit(h + 1)) {
-                left.set(g.op(b, h));
-                right.set(g.op(h, b));
-            }
-            System.out.println(b + " " + left + " " + right);
+    private static List<Des> generateShortDes(Group table, FixBS orderTwo, int k, int fixed) {
+        int ord = table.order();
+        if (fixed == 0) {
+            return List.of(Des.empty(ord, 1));
         }
-    }
-
-    @Test
-    public void tst() throws IOException {
-        int v = 13;
-        int k = 3;
-        int mul = 3;
-        CyclicGroup h = new CyclicGroup(mul);
-        Group x = new CyclicGroup(v);
-        SemiDirectProduct g = new SemiDirectProduct(x, h);
-        generate(h, g, v, k);
-        //generate(new CyclicGroup(1), new CyclicGroup(19), v, k);
-    }
-
-    private static int projection(Group h, Group g, int el) {
-        return el / h.order();
-    }
-
-    private static void generate(CyclicGroup h, Group g, int v, int k) throws IOException {
-        FixBS hInG = new FixBS(g.order());
-        hInG.set(0, h.order());
-        System.out.println(g.name() + " " + v + " " + k);
-        FixBS filterX = new FixBS(projection(h, g, g.order()));
-        State[] design = new State[0];
-        List<State> states = new ArrayList<>();
-        BiPredicate<State[], Integer> cons = (arr, from) -> {
-            State st = arr[0];
-            st.filterInG.clear(0);
-            states.add(st);
-            return true;
-        };
-        FixBS zeroX = FixBS.of(v, 0);
-        FixBS zeroG = FixBS.of(g.order(), 0);
-        int val = 1;
-        State state = Objects.requireNonNull(new State(zeroX, hInG, zeroG, new FixBS(v), zeroG, 1).acceptElem(h, g, filterX, val, v, k));
-        searchDesigns(h, g, filterX, design, state, v, k, val, cons);
-        System.out.println("Initial size " + states.size());
-        List<Liner> liners = Collections.synchronizedList(new ArrayList<>());
-        AtomicInteger ai = new AtomicInteger();
-        BiPredicate<State[], Integer> fCons = (arr, from) -> {
-            if (from < v) {
+        StabState[] shorts = getShorts(k, fixed, table);
+        if (shorts.length < fixed) {
+            return List.of();
+        }
+        Arrays.sort(shorts, Comparator.comparing(StabState::block));
+        System.out.println("Shorts size " + shorts.length);
+        FixBS[] intersecting = intersecting(shorts);
+        List<Des> result = new ArrayList<>();
+        boolean odd = k % 2 == 1 && ord % 2 == 0;
+        Predicate<Des> pr = des -> {
+            if (des.curr.length < fixed) {
                 return false;
             }
-            int[][] base = Arrays.stream(arr).map(st -> st.blockInX.toArray()).toArray(int[][]::new);
-            //int[][] ars = Arrays.stream(base).flatMap(bl -> blocks(bl, v, x)).toArray(int[][]::new);
-            //Liner l = new Liner(v, ars);
-            //liners.add(l);
-            System.out.println(/*l.autCountOld() + " " + l.hyperbolicFreq() + " " + */Arrays.deepToString(base));
+            if (des.curr.length + shorts.length - des.idx - 1 < fixed) {
+                return true;
+            }
+            if (odd && !orderTwo.diff(des.filter).isEmpty()) {
+                return true;
+            }
+            synchronized (result) {
+                result.add(des);
+            }
             return true;
         };
-        states.stream()/*.parallel()*/.forEach(st -> {
-            State[] des = new State[]{st};
-            int from = st.filterInG.nextClearBit(1);
-            State init = new State(zeroX, hInG, zeroG, new FixBS(v), zeroG, 1).acceptElem(h, g, filterX, from, v, k);
-            if (init == null) {
-                return;
+        find(shorts, intersecting, Des.empty(ord, shorts.length), pr);
+        return result;
+    }
+
+    private static FixBS[] intersecting(StabState[] states) {
+        FixBS[] intersecting = new FixBS[states.length];
+        IntStream.range(0, states.length).parallel().forEach(i -> {
+            FixBS comp = new FixBS(states.length);
+            FixBS ftr = states[i].filter;
+            for (int j = 0; j < states.length; j++) {
+                if (ftr.intersects(states[j].filter)) {
+                    comp.set(j);
+                }
             }
-            searchDesigns(h, g, st.filterInG, des, init, v, k, from, fCons);
-            int cnt = ai.incrementAndGet();
-            if (cnt % 100 == 0) {
-                System.out.println(cnt);
+            intersecting[i] = comp;
+        });
+        return intersecting;
+    }
+
+    private static boolean isEven(int k, int ord) {
+        return k % 2 == 0 && ord % 2 == 0;
+    }
+
+    @Test
+    public void toConsole() throws IOException {
+        int fixed = 0;
+        int k = 3;
+        int ord = 39;
+        int sz = GroupIndex.groupCount(ord);
+        System.out.println(sz);
+        for (int i = 1; i <= sz; i++) {
+            Group group = GroupIndex.group(ord, i);
+            generate(group, fixed, k);
+        }
+    }
+
+    private static FixBS orderTwo(Group g) {
+        FixBS orderTwo = new FixBS(g.order());
+        for (int i = 0; i < g.order(); i++) {
+            if (g.order(i) == 2) {
+                orderTwo.set(i);
+            }
+        }
+        return orderTwo;
+    }
+
+    private static void generate(Group group, int fixed, int k) throws IOException {
+        Group table = group.asTable();
+        int ord = table.order();
+        FixBS orderTwo = orderTwo(table);
+        List<Des> shortDes = generateShortDes(table, orderTwo, k, fixed);
+        if (shortDes.isEmpty()) {
+            return;
+        }
+        StabState[] stabilized = getStabilizedAlt(k, table);
+        Arrays.sort(stabilized, Comparator.comparing(StabState::block));
+        int[][] auths = table.auth();
+        System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
+        boolean even = isEven(k, ord);
+        List<StabState[]> initial = new ArrayList<>();
+        int[] trivial = IntStream.range(0, group.order()).toArray();
+        for (Des sh : shortDes) {
+            FixBS shortFilter = new FixBS(ord);
+            for (StabState st : sh.curr) {
+                shortFilter.or(st.filter);
+            }
+            int leftFilter = ord - 1 - shortFilter.cardinality();
+            StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
+            FixBS[] intersecting = intersecting(suitable);
+            Predicate<Des> pr = des -> {
+                if ((leftFilter - des.filter.cardinality()) % (k * (k - 1)) != 0) {
+                    return false;
+                }
+                if (even && !orderTwo.diff(des.filter).isEmpty()) {
+                    return false;
+                }
+                StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
+                synchronized (initial) {
+                    initial.add(states);
+                }
+                return false;
+            };
+            find(suitable, intersecting, Des.empty(ord, suitable.length), pr);
+        }
+        if (initial.isEmpty()) {
+            return;
+        }
+        System.out.println("Initial size " + initial.size() + " " + GroupIndex.identify(group) + " " + (ord + fixed) + " " + k + " auths: " + auths.length);
+        AtomicInteger ai = new AtomicInteger();
+        initial.stream().parallel().forEach(lst -> {
+            FixBS ftr = Arrays.stream(lst).map(StabState::filter).reduce(new FixBS(ord), FixBS::union);
+            int bn = (ord - 1 - ftr.cardinality()) / k / (k - 1);
+            FixBS whiteList = ftr.copy();
+            whiteList.flip(1, ord);
+            Predicate<int[][]> fCons = des -> {
+                if (lst.length == 0 && des.length == 1 && Arrays.stream(auths)
+                        .anyMatch(auth -> bigger(new FixBS[]{FixBS.of(group.order(), des[0])}, auth, table))) {
+                    return true;
+                }
+                if (des.length < bn) {
+                    return false;
+                }
+                FixBS[] base = Stream.concat(Arrays.stream(lst).map(StabState::block),
+                        Arrays.stream(des).map(a -> FixBS.of(group.order(), a))).map(a -> minimalTuple(a, trivial, group)).toArray(FixBS[]::new);
+                Arrays.sort(base);
+                if (Arrays.stream(auths).anyMatch(auth -> bigger(base, auth, table))) {
+                    return true;
+                }
+                Liner lnr = generateLiner(table, fixed, k, base);
+                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(lst).map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
+                return true;
+            };
+            if (bn == 0) {
+                fCons.test(new int[0][]);
+            } else {
+                int next = ftr.nextClearBit(1);
+                DiffState diffState = new DiffState(new int[k], 1, ftr, whiteList).acceptElem(table, next);
+                searchUniqueDesigns(table, k, new int[0][], diffState, fCons);
+            }
+            int inc = ai.incrementAndGet();
+            if (inc % 10000 == 0) {
+                System.out.println(inc);
             }
         });
-        System.out.println("Results: " + liners.size());
     }
 
-    private static void searchDesigns(CyclicGroup h, Group g, FixBS filter, State[] currDesign, State state, int v, int k, int prev, BiPredicate<State[], Integer> cons) {
-        if (state.size() == k) {
-            State[] nextDesign = Arrays.copyOf(currDesign, currDesign.length + 1);
-            nextDesign[currDesign.length] = state;
-            FixBS nextFilter = filter.copy();
-            for (int bDiff = state.filterInG.nextSetBit(h.order()); bDiff >= 0; bDiff = state.filterInG.nextSetBit(bDiff + 1)) {
-                nextFilter.set(projection(h, g, bDiff));
+    private static StabState[] getShorts(int k, int fixed, Group table) {
+        if (fixed == 0) {
+            return new StabState[0];
+        }
+        return table.subGroups().stream().filter(sg -> sg.order() == k - 1)
+                .map(sg -> StabState.fromBlock(table, k, sg.elems())).toArray(StabState[]::new);
+    }
+
+    private static Liner generateLiner(Group table, int fixed, int k, FixBS[] base) {
+        List<int[]> lines = new ArrayList<>();
+        int ord = table.order();
+        int fixedCounter = ord;
+        int v = ord + fixed;
+        for (FixBS arr : base) {
+            Set<FixBS> set = new HashSet<>(ord);
+            List<int[]> res = new ArrayList<>();
+            boolean sh = arr.cardinality() == k - 1;
+            for (int i = 0; i < ord; i++) {
+                FixBS fbs = new FixBS(v);
+                for (int el = arr.nextSetBit(0); el >= 0; el = arr.nextSetBit(el + 1)) {
+                    if (el >= ord) {
+                        sh = true;
+                        continue;
+                    }
+                    fbs.set(table.op(i, el));
+                }
+                if (sh) {
+                    fbs.set(fixedCounter);
+                }
+                if (set.add(fbs)) {
+                    res.add(fbs.toArray());
+                }
             }
-            int val = nextFilter.nextClearBit(1);
-            if (cons.test(nextDesign, val)) {
-                return;
+            lines.addAll(res);
+            if (sh) {
+                fixedCounter++;
             }
-            FixBS zeroX = FixBS.of(v, 0);
-            FixBS zeroG = FixBS.of(g.order(), 0);
-            FixBS hInG = new FixBS(g.order());
-            hInG.set(0, h.order());
-            State nextState = Objects.requireNonNull(new State(zeroX, hInG, zeroG, zeroX, zeroG, 1).acceptElem(h, g, filter, val, v, k));
-            searchDesigns(h, g, nextFilter, nextDesign, nextState, v, k, val, cons);
+        }
+        if (fixed == k) {
+            lines.add(IntStream.range(ord, v).toArray());
+        }
+        return new Liner(v, lines.toArray(int[][]::new));
+    }
+
+    private record Des(StabState[] curr, FixBS filter, FixBS available, int idx) {
+        private Des accept(StabState state, FixBS intersecting, int idx) {
+            int cl = curr.length;
+            StabState[] nextCurr = Arrays.copyOf(curr, cl + 1);
+            nextCurr[cl] = state;
+            return new Des(nextCurr, filter.union(state.filter), available.diff(intersecting), idx);
+        }
+
+        private static Des empty(int ord, int statesSize) {
+            FixBS available = new FixBS(statesSize);
+            available.set(0, statesSize);
+            return new Des(new StabState[0], new FixBS(ord), available, -1);
+        }
+    }
+
+    private static void find(StabState[] states, FixBS[] intersecting, Des des, Predicate<Des> pr) {
+        if (pr.test(des)) {
+            return;
+        }
+        FixBS available = des.available;
+        if (des.curr.length < 2) {
+            IntList base = new IntList(available.cardinality());
+            for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
+                base.add(i);
+            }
+            Arrays.stream(base.toArray()).parallel().forEach(i ->
+                    find(states, intersecting, des.accept(states[i], intersecting[i], i), pr));
         } else {
-            for (int el = filter.nextClearBit(prev + 1); el >= 0 && el < v; el = filter.nextClearBit(el + 1)) {
-                if (state.blockInX.get(el)) {
-                    continue;
-                }
-                State nextState = state.acceptElem(h, g, filter, el, v, k);
-                if (nextState != null) {
-                    searchDesigns(h, g, filter, currDesign, nextState, v, k, el, cons);
-                }
+            for (int i = available.nextSetBit(des.idx + 1); i >= 0; i = available.nextSetBit(i + 1)) {
+                find(states, intersecting, des.accept(states[i], intersecting[i], i), pr);
             }
         }
     }
 
-    public static Stream<int[]> blocks(int[] block, int v, Group gr) {
+    private static FixBS minimalTuple(FixBS tuple, int[] auth, Group gr) {
         int ord = gr.order();
-        Set<FixBS> set = new HashSet<>(ord);
-        List<int[]> res = new ArrayList<>();
-        for (int i = 0; i < ord; i++) {
-            FixBS fbs = new FixBS(v);
-            for (int el : block) {
-                fbs.set(el == ord ? ord : gr.op(i, el));
+        FixBS base = new FixBS(ord);
+        for (int val = tuple.nextSetBit(0); val >= 0; val = tuple.nextSetBit(val + 1)) {
+            base.set(auth[val]);
+        }
+        FixBS min = base;
+        for (int val = base.nextSetBit(1); val >= 0 && val < ord; val = base.nextSetBit(val + 1)) {
+            FixBS cnd = new FixBS(ord);
+            int inv = gr.inv(val);
+            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
+                cnd.set(gr.op(inv, oVal));
             }
-            if (set.add(fbs)) {
-                res.add(fbs.toArray());
+            if (cnd.compareTo(min) < 0) {
+                min = cnd;
             }
         }
-        return res.stream();
+        return min;
     }
 
-    private static boolean bigger(int[][] fst, int[][] snd) {
-        int cmp = 0;
+    private static boolean bigger(FixBS[] fst, int[] auth, Group table) {
+        FixBS[] transformed = new FixBS[fst.length];
         for (int i = 0; i < fst.length; i++) {
-            cmp = Combinatorics.compareArr(snd[i], fst[i]);
+            transformed[i] = minimalTuple(fst[i], auth, table);
+        }
+        Arrays.sort(transformed);
+        int cmp = 0;
+        for (int i = 0; i < transformed.length; i++) {
+            cmp = transformed[i].compareTo(fst[i]);
             if (cmp != 0) {
                 break;
             }
@@ -162,116 +290,177 @@ public class BibdFinder7CyclicTest {
         return cmp < 0;
     }
 
-    private static int[] minimalTuple(int[] tuple, int[] auth, Group gr) {
-        int v = gr.order() + 1;
-        FixBS base = new FixBS(v);
-        for (int val : tuple) {
-            base.set(auth[val]);
-        }
-        FixBS min = base;
-        for (int val = base.nextSetBit(0); val >= 0 && val < gr.order(); val = base.nextSetBit(val + 1)) {
-            FixBS cnd = new FixBS(v);
-            int inv = gr.inv(val);
-            for (int oVal = base.nextSetBit(0); oVal >= 0; oVal = base.nextSetBit(oVal + 1)) {
-                cnd.set(oVal == gr.order() ? oVal : gr.op(inv, oVal));
+    private static void searchUniqueDesigns(Group group, int k, int[][] design, DiffState state, Predicate<int[][]> sink) {
+        if (state.idx() == k) {
+            int[][] nextDesign = Arrays.copyOf(design, design.length + 1);
+            nextDesign[design.length] = state.block;
+            if (sink.test(nextDesign)) {
+                return;
             }
-            if (cnd.compareTo(min) < 0) {
-                min = cnd;
+            FixBS nextWhitelist = state.filter.copy();
+            nextWhitelist.flip(1, group.order());
+            DiffState nextState = new DiffState(new int[k], 1, state.filter, nextWhitelist).acceptElem(group, state.filter.nextClearBit(1));
+            searchUniqueDesigns(group, k, nextDesign, nextState, sink);
+        } else {
+            FixBS whiteList = state.whiteList;
+            for (int el = whiteList.nextSetBit(state.last() + 1); el >= 0; el = whiteList.nextSetBit(el + 1)) {
+                DiffState nextState = state.acceptElem(group, el);
+                searchUniqueDesigns(group, k, design, nextState, sink);
             }
         }
-        return min.toArray();
     }
 
-    private record State(FixBS blockInX, FixBS blockInG, FixBS stabilizer, FixBS filterInG, FixBS selfDiff, int size) {
-        private State acceptElem(CyclicGroup h, Group g, FixBS filterX, int val, int v, int k) {
-            FixBS newBlock = blockInX.copy();
-            FixBS newBlockInG = blockInG.copy();
-            FixBS queue = new FixBS(v);
-            int hOrd = h.order();
+    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int size) {
+        public static StabState fromBlock(Group g, int k, FixBS block) {
+            FixBS empty = new FixBS(g.order());
+            FixBS zero = FixBS.of(g.order(), 0);
+            StabState result = new StabState(zero, zero, empty, zero, 1);
+            for (int el = block.nextSetBit(1); el >= 0; el = block.nextSetBit(el + 1)) {
+                if (result.block().get(el)) {
+                    continue;
+                }
+                result = Objects.requireNonNull(result.acceptSimple(g, el, k));
+            }
+            return result;
+        }
+
+        private StabState acceptSimple(Group group, int val, int k) {
+            FixBS newBlock = block.copy();
+            FixBS queue = new FixBS(group.order());
             queue.set(val);
             int sz = size;
             FixBS newSelfDiff = selfDiff.copy();
             FixBS newStabilizer = stabilizer.copy();
-            FixBS newFilter = filterInG.copy();
-//            if (val == group.order()) {
-//                newFilter.set(val);
-//                newBlock.set(val);
-//                return new State(newBlock, newStabilizer, newFilter, newSelfDiff, sz + 1);
-//            }
+            FixBS newFilter = filter.copy();
             while (!queue.isEmpty()) {
                 if (++sz > k) {
                     return null;
                 }
                 int x = queue.nextSetBit(0);
-                int xTimesE = x * h.order();
-                FixBS xInG = new FixBS(g.order());
-                int xInGInv = g.inv(xTimesE);
-                xInG.set(xTimesE, xTimesE + h.order());
                 if (x < val) {
                     return null;
                 }
-                FixBS stabExt = new FixBS(g.order());
-                FixBS selfDiffExt = new FixBS(g.order());
-
+                FixBS stabExt = new FixBS(group.order());
+                FixBS selfDiffExt = new FixBS(group.order());
                 for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
-                    int bTimesE = b * h.order();
-                    int bInGInv = g.inv(bTimesE);
-                    FixBS xBInvInG = new FixBS(g.order()); // xHb^-1
-                    for (int hEl = 0; hEl < hOrd; hEl++) {
-                        xBInvInG.set(g.op(g.op(xTimesE, hEl), bInGInv));
+                    int bInv = group.inv(b);
+                    int xInv = group.inv(x);
+                    int xb = group.op(x, bInv);
+                    selfDiffExt.set(xb);
+                    if (newSelfDiff.get(xb) || newBlock.get(group.op(xb, x))) {
+                        stabExt.set(xb);
                     }
-                    selfDiffExt.or(xBInvInG);
-                    if (newSelfDiff.intersects(xBInvInG)) {
-                        stabExt.or(xBInvInG);
+                    int bx = group.op(b, xInv);
+                    if (newSelfDiff.get(bx)) {
+                        stabExt.set(bx);
                     }
-                    for (int xHBInv = xBInvInG.nextSetBit(0); xHBInv >= 0; xHBInv = xBInvInG.nextSetBit(xHBInv + 1)) {
-                        if (blockInG.get(g.op(xHBInv, xTimesE))) {
-                            for (int b1 = newBlock.nextSetBit(0); b1 >= 0; b1 = newBlock.nextSetBit(b1 + 1)) {
-                                for (int h1 = 0; h1 < hOrd; h1++) {
-                                    stabExt.set(g.op(xTimesE + h1, g.inv(b1 * h.order())));
-                                }
-                            }
-                        }
-                    }
-                    FixBS bxInvInG = new FixBS(g.order()); // bHx^-1
-                    for (int hEl = 0; hEl < hOrd; hEl++) {
-                        bxInvInG.set(g.op(g.op(bTimesE, hEl), xInGInv));
-                    }
-                    selfDiffExt.or(bxInvInG);
-                    if (newSelfDiff.intersects(bxInvInG)) {
-                        stabExt.or(bxInvInG);
-                    }
-                    for (int hEl = 0; hEl < hOrd; hEl++) {
-                        int nEl = g.op(g.op(hEl, g.inv(bTimesE)), xTimesE);
-                        if (filterX.get(projection(h, g, nEl))) {
-                            return null;
-                        }
-                        newFilter.set(nEl);
-                    }
-                    for (int hEl = 0; hEl < hOrd; hEl++) {
-                        int nEl = g.op(g.op(hEl, g.inv(xTimesE)), bTimesE);
-                        if (filterX.get(projection(h, g, nEl))) {
-                            return null;
-                        }
-                        newFilter.set(nEl);
-                    }
+                    selfDiffExt.set(bx);
+                    int diff = group.op(bInv, x);
+                    newFilter.set(diff);
+                    int outDiff = group.op(xInv, b);
+                    newFilter.set(outDiff);
                 }
                 newBlock.set(x);
-                newBlockInG.or(xInG);
                 stabExt.andNot(newStabilizer);
                 for (int st = newStabilizer.nextSetBit(1); st >= 0; st = newStabilizer.nextSetBit(st + 1)) {
-                    queue.set(projection(h, g, g.op(st, xTimesE)));
+                    queue.set(group.op(st, x));
                 }
                 for (int st = stabExt.nextSetBit(1); st >= 0; st = stabExt.nextSetBit(st + 1)) {
                     for (int b = newBlock.nextSetBit(0); b >= 0; b = newBlock.nextSetBit(b + 1)) {
-                        queue.set(projection(h, g, g.op(st, b * h.order())));
+                        queue.set(group.op(st, b));
                     }
                 }
                 newStabilizer.or(stabExt);
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
-            return new State(newBlock, newBlockInG, newStabilizer, newFilter, newSelfDiff, sz);
+            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
+        }
+    }
+
+    private record DiffState(int[] block, int idx, FixBS filter, FixBS whiteList) {
+        private DiffState acceptElem(Group group, int el) {
+            int[] nextBlock = block.clone();
+            nextBlock[idx] = el;
+            int nextIdx = idx + 1;
+            boolean tupleFinished = nextIdx == block.length;
+            FixBS newFilter = filter.copy();
+            FixBS newWhiteList = whiteList.copy();
+            int invEl = group.inv(el);
+            for (int i = 0; i < idx; i++) {
+                int val = block[i];
+                int diff = group.op(group.inv(val), el);
+                int outDiff = group.op(invEl, val);
+                newFilter.set(diff);
+                newFilter.set(outDiff);
+                if (tupleFinished) {
+                    continue;
+                }
+                for (int rt : group.squareRoots(diff)) {
+                    newWhiteList.clear(group.op(val, rt));
+                }
+                for (int rt : group.squareRoots(outDiff)) {
+                    newWhiteList.clear(group.op(el, rt));
+                }
+                for (int j = 0; j <= idx; j++) {
+                    int nv = nextBlock[j];
+                    newWhiteList.clear(group.op(nv, diff));
+                    newWhiteList.clear(group.op(nv, outDiff));
+                }
+            }
+            if (!tupleFinished) {
+                for (int diff = newFilter.nextSetBit(0); diff >= 0; diff = newFilter.nextSetBit(diff + 1)) {
+                    newWhiteList.clear(group.op(el, diff));
+                }
+            }
+            return new DiffState(nextBlock, nextIdx, newFilter, newWhiteList);
+        }
+
+        public int last() {
+            return block[idx - 1];
+        }
+    }
+
+    private static StabState[] getStabilizedAlt(int k, Group table) {
+        List<SubGroup> sgs = table.subGroups();
+        int ord = table.order();
+        int[] suitable = IntStream.rangeClosed(2, k).filter(i -> k % i == 0 && ord % i == 0).toArray();
+        List<StabState> states = new ArrayList<>();
+        for (int sOrd : suitable) {
+            List<SubGroup> subs = sgs.stream().filter(sg -> sg.order() == sOrd).toList();
+            for (SubGroup sg : subs) {
+                FixBS[] cosets = sg.rightCosets();
+                FixBS[] arr = new FixBS[k / sOrd];
+                arr[0] = cosets[0];
+                findStab(cosets, arr, 1, 1, a -> {
+                    FixBS block = new FixBS(ord);
+                    for (FixBS f : a) {
+                        block.or(f);
+                    }
+                    FixBS filter = new FixBS(ord);
+                    for (int i = block.nextSetBit(0); i >= 0; i = block.nextSetBit(i + 1)) {
+                        for (int j = block.nextSetBit(i + 1); j >= 0; j = block.nextSetBit(j + 1)) {
+                            filter.set(table.op(table.inv(i), j));
+                            filter.set(table.op(table.inv(j), i));
+                        }
+                    }
+                    if (filter.cardinality() == k * (k - 1) / sOrd) {
+                        states.add(StabState.fromBlock(table, k, block));
+                    }
+                });
+            }
+        }
+        return states.toArray(StabState[]::new);
+    }
+
+    private static void findStab(FixBS[] cosets, FixBS[] arr, int from, int idx, Consumer<FixBS[]> cons) {
+        if (idx == arr.length) {
+            cons.accept(arr);
+            return;
+        }
+        for (int i = from; i < cosets.length; i++) {
+            arr[idx] = cosets[i];
+            findStab(cosets, arr, i + 1, idx + 1, cons);
         }
     }
 }
