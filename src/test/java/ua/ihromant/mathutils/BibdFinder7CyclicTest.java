@@ -145,7 +145,7 @@ public class BibdFinder7CyclicTest {
             FixBS whiteList = ftr.copy();
             whiteList.flip(1, ord);
             Predicate<int[][]> fCons = des -> {
-                if (lst.length == 0 && des.length == 1 && Arrays.stream(auths)
+                if ((lst.length == 0 || lst.length == 1 && initial.size() == 1) && des.length == 1 && Arrays.stream(auths)
                         .anyMatch(auth -> bigger(new FixBS[]{FixBS.of(group.order(), des[0])}, auth, table))) {
                     return true;
                 }
