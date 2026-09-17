@@ -82,7 +82,10 @@ public class BibdFinder7CyclicTest {
         System.out.println(sz);
         for (int i = 1; i <= sz; i++) {
             Group group = GroupIndex.group(ord, i);
-            generate(group, fixed, k);
+            generate(group, fixed, k, base -> {
+                Liner lnr = generateLiner(group, fixed, k, base);
+                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(base));
+            });
         }
     }
 
@@ -96,7 +99,7 @@ public class BibdFinder7CyclicTest {
         return orderTwo;
     }
 
-    private static void generate(Group group, int fixed, int k) throws IOException {
+    private static void generate(Group group, int fixed, int k, Consumer<FixBS[]> cons) throws IOException {
         Group table = group.asTable();
         int ord = table.order();
         FixBS orderTwo = orderTwo(table);
@@ -158,8 +161,7 @@ public class BibdFinder7CyclicTest {
                 if (Arrays.stream(auths).anyMatch(auth -> bigger(base, auth, table))) {
                     return true;
                 }
-                Liner lnr = generateLiner(table, fixed, k, base);
-                System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(Arrays.stream(lst).map(StabState::block).toArray()) + " " + Arrays.deepToString(des));
+                cons.accept(base);
                 return true;
             };
             if (bn == 0) {
