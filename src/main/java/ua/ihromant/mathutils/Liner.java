@@ -1078,4 +1078,17 @@ public class Liner implements NautyGraph {
         }
         return gd;
     }
+
+    public FixBS smallCanon() {
+        GraphData gd = graphData();
+        int sz = vCount();
+        int sh = (sz + 63) >>> 6;
+        int take = (pointCount + 63) >>> 6;
+        long[] oldCanon = gd.canonical();
+        long[] result = new long[lines.length * take];
+        for (int i = 0; i < lines.length; i++) {
+            System.arraycopy(oldCanon, (i + pointCount) * sh, result, i * take, take);
+        }
+        return new FixBS(result);
+    }
 }
