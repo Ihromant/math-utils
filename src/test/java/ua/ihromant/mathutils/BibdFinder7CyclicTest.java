@@ -96,7 +96,7 @@ public class BibdFinder7CyclicTest {
             });
         }
     }
-    
+
     @Test
     public void toFile() throws IOException {
         int fixed = 0;
@@ -154,7 +154,6 @@ public class BibdFinder7CyclicTest {
                 }
             });
         }
-        Files.writeString(new File(basic, group.name() + "Cayley.txt").toPath(), group.name());
     }
 
     private static FixBS orderTwo(Group g) {
