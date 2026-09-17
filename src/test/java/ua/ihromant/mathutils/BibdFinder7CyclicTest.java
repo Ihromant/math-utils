@@ -6,17 +6,25 @@ import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SubGroup;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
@@ -87,6 +95,66 @@ public class BibdFinder7CyclicTest {
                 System.out.println(lnr.hyperbolicFreq() + " " + Arrays.toString(base));
             });
         }
+    }
+    
+    @Test
+    public void toFile() throws IOException {
+        int fixed = 0;
+        int k = 3;
+        int ord = 49;
+        int sz = GroupIndex.groupCount(ord);
+        File folder = new File("/home/ihromant/maths/diffSets/grouped/");
+        File basic = new File(folder, k + "-" + ord);
+        basic.mkdir();
+        System.out.println(sz);
+        File lnrs = new File(basic, "liners.txt");
+        Map<FixBS, Integer> idxes = new ConcurrentHashMap<>();
+        AtomicInteger counter = new AtomicInteger();
+        try (BufferedWriter lOut = new BufferedWriter(new FileWriter(lnrs))) {
+            for (int i = 1; i <= sz; i++) {
+                Group group = GroupIndex.group(ord, i);
+                writeCayley(basic, group);
+                File diffs = new File(basic, group.name() + "Diffs.txt");
+                try (BufferedWriter dOut = new BufferedWriter(new FileWriter(diffs))) {
+                    generate(group, fixed, k, base -> {
+                        Liner lnr = generateLiner(group, fixed, k, base);
+                        FixBS canon = lnr.smallCanon();
+                        AtomicBoolean added = new AtomicBoolean();
+                        int idx = idxes.computeIfAbsent(canon, _ -> {
+                            added.set(true);
+                            return counter.getAndIncrement();
+                        });
+                        if (added.get()) {
+                            try {
+                                lOut.write(idx + " " + lnr.graphData().autCount()  + " " + Arrays.deepToString(lnr.lines()) + "\n");
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        try {
+                            dOut.write(idx + " " + Arrays.toString(base) + "\n");
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private static void writeCayley(File basic, Group group) throws IOException {
+        File diffs = new File(basic, group.name() + "Cayley.txt");
+        try (BufferedWriter cOut = new BufferedWriter(new FileWriter(diffs))) {
+            IntStream.range(0, group.order()).forEach(i -> {
+                try {
+                    cOut.write(IntStream.range(0, group.order()).mapToObj(j -> String.valueOf(group.op(i, j)))
+                            .collect(Collectors.joining(" ", "", "\n")));
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            });
+        }
+        Files.writeString(new File(basic, group.name() + "Cayley.txt").toPath(), group.name());
     }
 
     private static FixBS orderTwo(Group g) {
