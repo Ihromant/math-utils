@@ -11,9 +11,9 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -175,7 +175,7 @@ public class BibdFinder7CyclicTest {
         Arrays.sort(stabilized, Comparator.comparing(StabState::block));
         int[][] auths = table.auth();
         System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
-        List<StabState[]> initial = new ArrayList<>();
+        List<StabState[]> initial = Collections.synchronizedList(new ArrayList<>());
         int[] trivial = IntStream.range(0, group.order()).toArray();
         for (Des sh : shortDes) {
             FixBS shortFilter = new FixBS(ord);
@@ -190,20 +190,32 @@ public class BibdFinder7CyclicTest {
             if (suitable.length == 0) {
                 return;
             }
-            Graph g = Graph.by(suitable, (a, b) -> !a.filter.intersects(b.filter));
-            JNauty.instance().cliques(g, 1, ord, a -> {
-                FixBS idx = new FixBS(a);
-                FixBS ftr = sh.filter.copy();
-                List<StabState> states = new ArrayList<>(Arrays.asList(sh.curr));
-                for (int i = idx.nextSetBit(0); i >= 0; i = idx.nextSetBit(i + 1)) {
-                    StabState st = suitable[i];
-                    states.add(st);
-                    ftr.or(st.filter);
+            IntStream.range(0, suitable.length).parallel().forEach(idx -> {
+                StabState fst = suitable[idx];
+                FixBS fstFtr = shortFilter.union(fst.filter);
+                int fstCrd = fstFtr.cardinality();
+                List<StabState> fstStates = new ArrayList<>(Arrays.asList(sh.curr));
+                fstStates.add(fst);
+                if ((ord - 1 - fstCrd) % (k * (k - 1)) == 0 && orderTwo.diff(fstFtr).isEmpty()) {
+                    initial.add(fstStates.toArray(StabState[]::new));
                 }
-                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0 || !orderTwo.diff(ftr).isEmpty()) {
-                    return;
-                }
-                initial.add(states.toArray(StabState[]::new));
+                StabState[] suitableOne = IntStream.range(idx + 1, suitable.length).filter(j -> !fst.filter.intersects(suitable[j].filter))
+                        .mapToObj(j -> suitable[j]).toArray(StabState[]::new);
+                Graph g = Graph.by(suitableOne, (a, b) -> !a.filter.intersects(b.filter));
+                JNauty.instance().cliques(g, 1, ord, a -> {
+                    FixBS idxes = new FixBS(a);
+                    FixBS ftr = fstFtr.copy();
+                    List<StabState> states = new ArrayList<>(fstStates);
+                    for (int i = idxes.nextSetBit(0); i >= 0; i = idxes.nextSetBit(i + 1)) {
+                        StabState st = suitableOne[i];
+                        states.add(st);
+                        ftr.or(st.filter);
+                    }
+                    if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0 || !orderTwo.diff(ftr).isEmpty()) {
+                        return;
+                    }
+                    initial.add(states.toArray(StabState[]::new));
+                });
             });
         }
         if (initial.isEmpty()) {
