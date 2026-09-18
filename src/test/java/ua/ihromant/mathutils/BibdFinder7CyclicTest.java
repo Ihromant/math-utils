@@ -78,10 +78,6 @@ public class BibdFinder7CyclicTest {
         return intersecting;
     }
 
-    private static boolean isEven(int k, int ord) {
-        return k % 2 == 0 && ord % 2 == 0;
-    }
-
     @Test
     public void toConsole() throws IOException {
         int fixed = 0;
@@ -179,7 +175,6 @@ public class BibdFinder7CyclicTest {
         Arrays.sort(stabilized, Comparator.comparing(StabState::block));
         int[][] auths = table.auth();
         System.out.println("Stabilized size " + stabilized.length + " shorts size " + shortDes.size() + " auths " + auths.length);
-        boolean even = isEven(k, ord);
         List<StabState[]> initial = new ArrayList<>();
         int[] trivial = IntStream.range(0, group.order()).toArray();
         for (Des sh : shortDes) {
@@ -188,7 +183,7 @@ public class BibdFinder7CyclicTest {
                 shortFilter.or(st.filter);
             }
             int leftFilter = ord - 1 - shortFilter.cardinality();
-            if (leftFilter % (k * (k - 1)) == 0 && (!even || orderTwo.diff(shortFilter).isEmpty())) {
+            if (leftFilter % (k * (k - 1)) == 0 && orderTwo.diff(shortFilter).isEmpty()) {
                 initial.add(sh.curr());
             }
             StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(sh.filter)).toArray(StabState[]::new);
@@ -205,7 +200,7 @@ public class BibdFinder7CyclicTest {
                     states.add(st);
                     ftr.or(st.filter);
                 }
-                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0 || even && !orderTwo.diff(ftr).isEmpty()) {
+                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0 || !orderTwo.diff(ftr).isEmpty()) {
                     return;
                 }
                 initial.add(states.toArray(StabState[]::new));
