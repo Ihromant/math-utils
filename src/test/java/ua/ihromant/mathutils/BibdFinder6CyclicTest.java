@@ -1052,14 +1052,7 @@ public class BibdFinder6CyclicTest {
             if (suitable.length == 0) {
                 return;
             }
-            Graph g = new Graph(suitable.length);
-            for (int i = 0; i < suitable.length; i++) {
-                for (int j = i + 1; j < suitable.length; j++) {
-                    if (!suitable[i].filter.intersects(suitable[j].filter)) {
-                        g.connect(i, j);
-                    }
-                }
-            }
+            Graph g = Graph.by(suitable, (a, b) -> !a.filter.intersects(b.filter));
             JNauty.instance().cliques(g, 1, ord, a -> {
                 FixBS idx = new FixBS(a);
                 FixBS ftr = sh.filter.copy();

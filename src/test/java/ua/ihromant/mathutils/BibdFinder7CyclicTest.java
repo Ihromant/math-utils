@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils;
 
 import org.junit.jupiter.api.Test;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SubGroup;
@@ -101,7 +102,7 @@ public class BibdFinder7CyclicTest {
     public void toFile() throws IOException {
         int fixed = 0;
         int k = 3;
-        int ord = 49;
+        int ord = 39;
         int sz = GroupIndex.groupCount(ord);
         File folder = new File("/home/ihromant/maths/diffSets/grouped/");
         File basic = new File(folder, k + "-" + ord);
@@ -187,22 +188,31 @@ public class BibdFinder7CyclicTest {
                 shortFilter.or(st.filter);
             }
             int leftFilter = ord - 1 - shortFilter.cardinality();
-            StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(shortFilter)).toArray(StabState[]::new);
-            FixBS[] intersecting = intersecting(suitable);
-            Predicate<Des> pr = des -> {
-                if ((leftFilter - des.filter.cardinality()) % (k * (k - 1)) != 0) {
-                    return false;
+            if (leftFilter % (k * (k - 1)) == 0) {
+                initial.add(sh.curr());
+            }
+            StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(sh.filter)).toArray(StabState[]::new);
+            if (suitable.length == 0) {
+                return;
+            }
+            Graph g = Graph.by(suitable, (a, b) -> !a.filter.intersects(b.filter));
+            JNauty.instance().cliques(g, 1, ord, a -> {
+                FixBS idx = new FixBS(a);
+                FixBS ftr = sh.filter.copy();
+                List<StabState> states = new ArrayList<>(Arrays.asList(sh.curr));
+                for (int i = idx.nextSetBit(0); i >= 0; i = idx.nextSetBit(i + 1)) {
+                    StabState st = suitable[i];
+                    states.add(st);
+                    ftr.or(st.filter);
                 }
-                if (even && !orderTwo.diff(des.filter).isEmpty()) {
-                    return false;
+                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0) {
+                    return;
                 }
-                StabState[] states = Stream.concat(Arrays.stream(sh.curr), Arrays.stream(des.curr)).toArray(StabState[]::new);
-                synchronized (initial) {
-                    initial.add(states);
+                if (even && !orderTwo.diff(ftr).isEmpty()) {
+                    return;
                 }
-                return false;
-            };
-            find(suitable, intersecting, Des.empty(ord, suitable.length), pr);
+                initial.add(states.toArray(StabState[]::new));
+            });
         }
         if (initial.isEmpty()) {
             return;
