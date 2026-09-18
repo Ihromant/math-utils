@@ -188,7 +188,7 @@ public class BibdFinder7CyclicTest {
                 shortFilter.or(st.filter);
             }
             int leftFilter = ord - 1 - shortFilter.cardinality();
-            if (leftFilter % (k * (k - 1)) == 0) {
+            if (leftFilter % (k * (k - 1)) == 0 && (!even || orderTwo.diff(shortFilter).isEmpty())) {
                 initial.add(sh.curr());
             }
             StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(sh.filter)).toArray(StabState[]::new);
@@ -205,10 +205,7 @@ public class BibdFinder7CyclicTest {
                     states.add(st);
                     ftr.or(st.filter);
                 }
-                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0) {
-                    return;
-                }
-                if (even && !orderTwo.diff(ftr).isEmpty()) {
+                if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0 || even && !orderTwo.diff(ftr).isEmpty()) {
                     return;
                 }
                 initial.add(states.toArray(StabState[]::new));
