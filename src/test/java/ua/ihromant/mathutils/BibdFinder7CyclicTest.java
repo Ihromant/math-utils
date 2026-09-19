@@ -393,11 +393,11 @@ public class BibdFinder7CyclicTest {
         }
     }
 
-    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int size) {
+    private record StabState(FixBS block, FixBS stabilizer, FixBS filter, FixBS selfDiff, int fCard) {
         public static StabState fromBlock(Group g, int k, FixBS block) {
             FixBS empty = new FixBS(g.order());
             FixBS zero = FixBS.of(g.order(), 0);
-            StabState result = new StabState(zero, zero, empty, zero, 1);
+            StabState result = new StabState(zero, zero, empty, zero, 0);
             for (int el = block.nextSetBit(1); el >= 0; el = block.nextSetBit(el + 1)) {
                 if (result.block().get(el)) {
                     continue;
@@ -411,7 +411,7 @@ public class BibdFinder7CyclicTest {
             FixBS newBlock = block.copy();
             FixBS queue = new FixBS(group.order());
             queue.set(val);
-            int sz = size;
+            int sz = block.cardinality();
             FixBS newSelfDiff = selfDiff.copy();
             FixBS newStabilizer = stabilizer.copy();
             FixBS newFilter = filter.copy();
@@ -457,7 +457,7 @@ public class BibdFinder7CyclicTest {
                 newSelfDiff.or(selfDiffExt);
                 queue.andNot(newBlock);
             }
-            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, sz);
+            return new StabState(newBlock, newStabilizer, newFilter, newSelfDiff, newFilter.cardinality());
         }
     }
 
