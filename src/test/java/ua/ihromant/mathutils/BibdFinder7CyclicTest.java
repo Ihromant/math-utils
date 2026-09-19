@@ -178,25 +178,27 @@ public class BibdFinder7CyclicTest {
         List<StabState[]> initial = Collections.synchronizedList(new ArrayList<>());
         int[] trivial = IntStream.range(0, group.order()).toArray();
         for (Des sh : shortDes) {
-            FixBS shortFilter = new FixBS(ord);
+            FixBS afterShort = orderTwo.copy();
+            int shortCard = 0;
             for (StabState st : sh.curr) {
-                shortFilter.or(st.filter);
+                afterShort.andNot(st.filter);
+                shortCard += st.fCard;
             }
-            int leftFilter = ord - 1 - shortFilter.cardinality();
-            if (leftFilter % (k * (k - 1)) == 0 && orderTwo.diff(shortFilter).isEmpty()) {
+            if ((ord - 1 - shortCard) % (k * (k - 1)) == 0 && afterShort.isEmpty()) {
                 initial.add(sh.curr());
             }
             StabState[] suitable = Arrays.stream(stabilized).filter(st -> !st.filter.intersects(sh.filter)).toArray(StabState[]::new);
             if (suitable.length == 0) {
                 return;
             }
+            int sc = shortCard;
             IntStream.range(0, suitable.length).parallel().forEach(idx -> {
                 StabState fst = suitable[idx];
-                FixBS fstFtr = shortFilter.union(fst.filter);
-                int fstCrd = fstFtr.cardinality();
+                FixBS fstOrd2 = afterShort.diff(fst.filter);
+                int fstCrd = sc + fst.fCard;
                 List<StabState> fstStates = new ArrayList<>(Arrays.asList(sh.curr));
                 fstStates.add(fst);
-                if ((ord - 1 - fstCrd) % (k * (k - 1)) == 0 && orderTwo.diff(fstFtr).isEmpty()) {
+                if ((ord - 1 - fstCrd) % (k * (k - 1)) == 0 && fstOrd2.isEmpty()) {
                     initial.add(fstStates.toArray(StabState[]::new));
                 }
                 StabState[] suitableOne = IntStream.range(idx + 1, suitable.length).filter(j -> !fst.filter.intersects(suitable[j].filter))
@@ -204,17 +206,18 @@ public class BibdFinder7CyclicTest {
                 Graph g = Graph.by(suitableOne, (a, b) -> !a.filter.intersects(b.filter));
                 JNauty.instance().cliques(g, 1, ord, a -> {
                     FixBS idxes = new FixBS(a);
-                    FixBS ftr = fstFtr.copy();
+                    FixBS rem = fstOrd2.copy();
+                    int card = fstCrd;
                     List<StabState> states = new ArrayList<>(fstStates);
                     for (int i = idxes.nextSetBit(0); i >= 0; i = idxes.nextSetBit(i + 1)) {
                         StabState st = suitableOne[i];
                         states.add(st);
-                        ftr.or(st.filter);
+                        card += st.fCard;
+                        rem.andNot(st.filter);
                     }
-                    if ((ord - 1 - ftr.cardinality()) % (k * (k - 1)) != 0 || !orderTwo.diff(ftr).isEmpty()) {
-                        return;
+                    if ((ord - 1 - card) % (k * (k - 1)) == 0 && rem.isEmpty()) {
+                        initial.add(states.toArray(StabState[]::new));
                     }
-                    initial.add(states.toArray(StabState[]::new));
                 });
             });
         }
