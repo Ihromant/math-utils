@@ -1233,6 +1233,29 @@ public class HyperbolicPlaneTest {
         }
     }
 
+    @Test
+    public void testResolvable() {
+        GaloisField fd = new GaloisField(41);
+        int l = 7;
+        int[] mul = IntStream.concat(IntStream.of(1), IntStream.range(2, fd.cardinality()).filter(i -> fd.mulOrder(i) == 5)).toArray();
+        CyclicProduct cp = new CyclicProduct(l, fd.cardinality());
+        int[][] prs = new int[][]{{0, 9}, {0, 32}, {1, 3}, {1, 38}, {2, 1}, {2, 40}, {4, 14}, {4, 27}};
+        int[][] base = Stream.concat(IntStream.of(mul).mapToObj(t ->
+                        Stream.of(prs).mapToInt(pr -> cp.fromArr(pr[0], fd.mul(pr[1], t))).toArray()),
+                Stream.of(IntStream.concat(IntStream.range(0, l).map(i -> cp.fromArr(i, 0)), IntStream.of(cp.order())).toArray())).toArray(int[][]::new);
+        Liner lnr = Liner.byDiffFamily(cp, base);
+        System.out.println(lnr.hyperbolicFreq());
+        GaloisField fd1 = new GaloisField(89);
+        int[] mul1 = IntStream.concat(IntStream.of(1), IntStream.range(2, fd1.cardinality()).filter(i -> fd1.mulOrder(i) == 11)).toArray();
+        CyclicProduct cp1 = new CyclicProduct(l, fd1.cardinality());
+        int[][] prs1 = new int[][]{{0, 1}, {0, 20}, {1, 14}, {1, 58}, {2, 18}, {2, 61}, {4, 26}, {4, 73}};
+        int[][] base1 = Stream.concat(IntStream.of(mul1).mapToObj(t ->
+                        Stream.of(prs1).mapToInt(pr -> cp1.fromArr(pr[0], fd1.mul(pr[1], t))).toArray()),
+                Stream.of(IntStream.concat(IntStream.range(0, l).map(i -> cp1.fromArr(i, 0)), IntStream.of(cp1.order())).toArray())).toArray(int[][]::new);
+        Liner lnr1 = Liner.byDiffFamily(cp1, base1);
+        System.out.println(lnr1.hyperbolicFreq());
+    }
+
     private Set<FixBS> leftShifts(int[] line, Group g) {
         Set<FixBS> result = new HashSet<>();
         for (int i = 0; i < g.order(); i++) {
