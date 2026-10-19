@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.g.OrbitFilter;
 import ua.ihromant.mathutils.g.State1;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.GapGroup;
+import ua.ihromant.mathutils.group.GapInteractor;
 import ua.ihromant.mathutils.group.Group;
 import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
@@ -30,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -56,6 +58,95 @@ public class Applicator7Test {
         for (int j = 1; j <= c; j++) {
             System.out.println("Reading SmallGroup(" + gs + "," + j + ")");
             GapGroup gg = GroupIndex.gapGroup(gs, j);
+            Group group = gg.group();
+            List<int[][]> configs = ApplicatorTest.configs(group, orbits);
+            for (int[][] config : configs) {
+                GSpace1 space;
+                try {
+                    space = new GSpace1(k, group, false, config);
+                } catch (IllegalArgumentException e) {
+                    System.out.println("Not empty");
+                    continue;
+                }
+                int v = space.v();
+                FixBS evenDiffs = space.evenDiffs();
+                State1[] stab = getStabilized(space);
+                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
+                if (stab.length == 0) {
+                    continue;
+                }
+                Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
+                BiConsumer<State1[], NSState[]> fCons = (sts, nst) -> {
+                    Liner l = new Liner(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
+                            Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
+                    System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.stream(sts).map(State1::block).toList()
+                            + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
+                };
+                List<List<State1>> init = new ArrayList<>();
+                JNauty.instance().cliques(g, 1, v, a -> {
+                    FixBS arr = new FixBS(a);
+                    List<State1> states = new ArrayList<>();
+                    FixBS diffSet = new FixBS(space.diffLength());
+                    for (int i = arr.nextSetBit(0); i >= 0; i = arr.nextSetBit(i + 1)) {
+                        State1 st = stab[i];
+                        states.add(st);
+                        diffSet.or(st.diffSet());
+                    }
+                    int card = diffSet.cardinality();
+                    if ((space.diffLength() - card) % (k * k - k) != 0 || !evenDiffs.diff(diffSet).isEmpty()) {
+                        return;
+                    }
+                    if (card == space.diffLength()) {
+                        fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                        return;
+                    }
+                    init.add(states);
+                });
+                System.out.println("Init " + init.size());
+                AtomicInteger ai = new AtomicInteger();
+                init.parallelStream().forEach(states -> {
+                    int dc = space.diffLength();
+                    OrbitFilter of = space.emptyOf();
+                    FixBS diffSet = new FixBS(space.diffLength());
+                    for (State1 st : states) {
+                        st.updateFilter(of, space);
+                        diffSet.or(st.diffSet());
+                        dc = dc - st.diffSet().cardinality();
+                    }
+                    int nc = dc / k / (k - 1);
+                    if (nc == 0) {
+                        fCons.accept(states.toArray(State1[]::new), new NSState[0]);
+                        return;
+                    }
+                    int nextOrbit = of.currOrbit(v);
+                    int snd = of.filters()[nextOrbit].nextClearBit(0);
+                    NSState in = new NSState(new int[]{space.oBeg(nextOrbit)}, diffSet, of).acceptElem(space, snd);
+                    searchDesigns(space, new NSState[]{in}, nst -> {
+                        if (nst.length < nc) {
+                            return false;
+                        }
+                        fCons.accept(states.toArray(State1[]::new), nst);
+                        return true;
+                    });
+                    int val = ai.incrementAndGet();
+                    if (val % 1000 == 0) {
+                        System.out.println(val);
+                    }
+                });
+            }
+        }
+    }
+
+    @Test
+    public void generateByList() throws IOException {
+        int gs = 2646;
+        int k = 6;
+        int[] orbits = new int[]{441};
+        int ctr = 0;
+        for (GroupIter it = new GroupIter(gs); it.hasNext(); ) {
+            GapGroup gg = it.next();
+            System.out.println("Reading SmallGroup(" + gs + "," + ++ctr + ")");
             Group group = gg.group();
             List<int[][]> configs = ApplicatorTest.configs(group, orbits);
             for (int[][] config : configs) {
@@ -973,5 +1064,39 @@ public class Applicator7Test {
             });
         });
         System.out.println("Done");
+    }
+
+    private static class GroupIter implements Iterator<GapGroup> {
+        private final String str;
+        private int left;
+        private int right;
+        private GroupIter(int sz) {
+            try {
+                this.str = Files.readString(Path.of("/home/ihromant/workspace/math-utils/src/test/resources/groups_" + sz + ".txt"));
+                recalc();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        private void recalc() {
+            this.left = str.indexOf('[', right);
+            this.right = left < 0 ? -1 : str.indexOf(']', left);
+        }
+
+        @Override
+        public boolean hasNext() {
+            return left >= 0;
+        }
+
+        @Override
+        public GapGroup next() {
+            String part = str.substring(left, right + 1).replace(" ", "")
+                    .replace("\\", "").replace("\n", "");
+            List<List<List<Integer>>> cycles = GapInteractor.parseCycles(part);
+            int[][] gens = GroupIndex.toGens(cycles);
+            recalc();
+            return new GapGroup(GroupIndex.permGroup(gens).asTable(), cycles);
+        }
     }
 }

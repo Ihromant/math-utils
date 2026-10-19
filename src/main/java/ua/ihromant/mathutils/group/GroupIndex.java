@@ -42,7 +42,7 @@ public class GroupIndex {
         return new GapInteractor().identifyByCycles(gg.cycles());
     }
 
-    private static int[][] toGens(List<List<List<Integer>>> cycles) {
+    public static int[][] toGens(List<List<List<Integer>>> cycles) {
         int max = cycles.stream().flatMap(List::stream).flatMap(List::stream)
                 .mapToInt(Integer::intValue).max().orElseThrow();
         List<int[]> perms = new ArrayList<>();
@@ -59,7 +59,7 @@ public class GroupIndex {
         return perms.toArray(int[][]::new);
     }
 
-    private static PermutationGroup permGroup(int[][] gens) {
+    public static PermutationGroup permGroup(int[][] gens) {
         Set<ArrWrap> result = new HashSet<>();
         result.add(new ArrWrap(IntStream.range(0, gens[0].length).toArray()));
         boolean added;

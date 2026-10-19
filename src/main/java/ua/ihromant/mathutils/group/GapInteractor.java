@@ -93,6 +93,10 @@ public class GapInteractor {
             return ln.replace(" ", "").replace("\\", "");
         }).collect(Collectors.joining());
         process.destroyForcibly();
+        return parseCycles(line);
+    }
+
+    public static List<List<List<Integer>>> parseCycles(String line) {
         List<List<List<Integer>>> cycles = new ArrayList<>();
         cycles.add(new ArrayList<>());
         cycles.getLast().add(new ArrayList<>());
