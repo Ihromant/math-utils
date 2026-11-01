@@ -13,9 +13,11 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
@@ -29,8 +31,10 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiPredicate;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Gatherers;
 import java.util.stream.IntStream;
@@ -262,6 +266,112 @@ public class BibdFinder5CyclicTest {
             int k = 5;
             generate(group, v, k);
         }
+    }
+
+    @Test
+    public void groupedToFiles() throws IOException {
+        int fixed = 0;
+        int k = 4;
+        int ord = 64;
+        int sz = GroupIndex.groupCount(ord);
+        File folder = new File("/home/ihromant/maths/diffSets/grouped/");
+        File basic = new File(folder, k + "-" + ord);
+        basic.mkdir();
+        System.out.println(sz);
+        File lnrs = new File(basic, "liners.txt");
+        Map<FixBS, Integer> idxes = new ConcurrentHashMap<>();
+        AtomicInteger counter = new AtomicInteger();
+        try (BufferedWriter lOut = new BufferedWriter(new FileWriter(lnrs))) {
+            for (int i = 1; i <= sz; i++) {
+                Group group = GroupIndex.group(ord, i);
+                BibdFinder7CyclicTest.writeCayley(basic, group);
+                File diffs = new File(basic, group.name() + "Diffs.txt");
+                try (BufferedWriter dOut = new BufferedWriter(new FileWriter(diffs))) {
+                    generateAlt(group, fixed, k, states -> {
+                        FixBS[] base = Arrays.stream(states).map(st -> st.block).toArray(FixBS[]::new);
+                        Liner lnr = BibdFinder7CyclicTest.generateLiner(group, fixed, k, base);
+                        FixBS canon = lnr.smallCanon();
+                        AtomicBoolean added = new AtomicBoolean();
+                        int idx = idxes.computeIfAbsent(canon, _ -> {
+                            added.set(true);
+                            return counter.getAndIncrement();
+                        });
+                        if (added.get()) {
+                            try {
+                                lOut.write(idx + " " + lnr.graphData().autCount()  + " " + Arrays.deepToString(lnr.lines()) + "\n");
+                            } catch (IOException e) {
+                                throw new RuntimeException(e);
+                            }
+                        }
+                        try {
+                            dOut.write(idx + " " + Arrays.toString(base) + "\n");
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
+                }
+            }
+        }
+    }
+
+    private static void generateAlt(Group group, int fixed, int k, Consumer<State[]> consumer) throws IOException {
+        int v = group.order() + fixed;
+        int[][] auths = auth(group);
+        System.out.println(group.name() + " " + new GapInteractor().identifyGroup(group) + " " + v + " " + k + " auths: " + auths.length);
+        Group table = group.asTable();
+        FixBS filter = new FixBS(v);
+        State[] design = new State[0];
+        List<State[]> states = new ArrayList<>();
+        BiPredicate<State[], Integer> cons = (arr, blockNeeded) -> {
+            boolean exit = arr.length >= 2;
+            int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    return true;
+                }
+            }
+            if (exit) {
+                states.add(arr);
+            }
+            return exit;
+        };
+        int blocksNeeded = v * (v - 1) / k / (k - 1);
+        FixBS zero = FixBS.of(v, 0);
+        int val = 1;
+        State state = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, val, v, k));
+        searchDesigns(table, filter, design, state, v, k, val, blocksNeeded, cons);
+        System.out.println("Initial size " + states.size());
+        AtomicInteger ai = new AtomicInteger();
+        BiPredicate<State[], Integer> fCons = (arr, blockNeeded) -> {
+            FixBS ftr = FixBS.of(v, 0);
+            for (State st : arr) {
+                ftr.or(st.filter);
+            }
+            if (!ftr.isFull(v)) {
+                return false;
+            }
+            int[][] base = Arrays.stream(arr).map(st -> st.block.toArray()).toArray(int[][]::new);
+            for (int[] auth : auths) {
+                if (bigger(base, Arrays.stream(base).map(bl -> minimalTuple(bl, auth, table)).sorted(Combinatorics::compareArr).toArray(int[][]::new))) {
+                    return true;
+                }
+            }
+            consumer.accept(arr);
+            return true;
+        };
+        states.stream().parallel().forEach(st -> {
+            FixBS ftr = FixBS.of(v, 0);
+            for (State s : st) {
+                ftr.or(s.filter);
+            }
+            int from = ftr.nextClearBit(1);
+            State init = Objects.requireNonNull(new State(zero, zero, zero, zero, 1).acceptElem(group, filter, from, v, k));
+            searchDesigns(table, ftr, st, init, v, k, from, 0, fCons);
+            int cnt = ai.incrementAndGet();
+            if (cnt % 100 == 0) {
+                System.out.println(cnt);
+            }
+        });
     }
 
     private static void generate(Group group, int v, int k) throws IOException {
