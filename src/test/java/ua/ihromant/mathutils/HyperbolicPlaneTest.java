@@ -1018,6 +1018,12 @@ public class HyperbolicPlaneTest {
         System.out.println(hallResidue.cardSubPlanesFreq());
     }
 
+    @Test
+    public void hall8Test() {
+        //Liner hall8 = Hall8Point.toPlane();
+        Hall8Point.cardSubSpaces();
+    }
+
     private static BitSet of(int... values) {
         BitSet bs = new BitSet();
         IntStream.of(values).forEach(bs::set);
