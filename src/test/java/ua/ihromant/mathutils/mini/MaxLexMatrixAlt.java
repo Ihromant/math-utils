@@ -105,7 +105,8 @@ public class MaxLexMatrixAlt {
             if (!done.isEmpty() && sameOrbitAsDone(r, done, rows, depth)) continue;
             done.add(r);
 
-            int[] o2 = new int[n], ce2 = new int[n];
+            int[] o2 = new int[n];
+            int[] ce2 = new int[n];
             refine(r, order, cellEnd, o2, ce2);
             rows[depth] = r; used[r] = true;
             int jump = dfs(depth + 1, rows, used, o2, ce2, eq);
@@ -138,9 +139,16 @@ public class MaxLexMatrixAlt {
         int[] out = new int[n];
         int p = 0;
         while (p < n) {
-            int e = cellEnd[p], k = 0;
-            for (int q = p; q < e; q++) if (a.inc(r, order[q])) k++;
-            for (int q = p; q < p + k; q++) out[q] = 1;
+            int e = cellEnd[p];
+            int k = 0;
+            for (int q = p; q < e; q++) {
+                if (a.inc(r, order[q])) {
+                    k++;
+                }
+            }
+            for (int q = p; q < p + k; q++) {
+                out[q] = 1;
+            }
             p = e;
         }
         return out;
