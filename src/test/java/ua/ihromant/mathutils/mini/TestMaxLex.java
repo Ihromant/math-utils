@@ -1,18 +1,18 @@
 package ua.ihromant.mathutils.mini;
 
+import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
 
-public class TestMaxLex {
-    static Random rnd = new Random(12345);
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-    // ---- brute force: all row perms x all col perms ----
-    static String brute(boolean[][] a) {
+public class TestMaxLex {
+    private static String brute(boolean[][] a) {
         int m = a.length;
         int n = a[0].length;
         List<int[]> rps = Combinatorics.permutations(IntStream.range(0, m).toArray()).toList();
@@ -29,26 +29,41 @@ public class TestMaxLex {
         return best;
     }
 
-    static boolean[][] random(int m, int n, double d) {
+    private static boolean[][] random(int m, int n, double d) {
         boolean[][] a = new boolean[m][n];
-        for (int i = 0; i < m; i++) for (int j = 0; j < n; j++) a[i][j] = rnd.nextDouble() < d;
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                a[i][j] = ThreadLocalRandom.current().nextDouble() < d;
+            }
+        }
         return a;
     }
-    static boolean[][] shuffle(boolean[][] a) {
+
+    private static boolean[][] shuffle(boolean[][] a) {
         int m = a.length, n = a[0].length;
         int[] rp = randPerm(m), cp = randPerm(n);
         boolean[][] b = new boolean[m][n];
-        for (int i = 0; i < m; i++) for (int j = 0; j < n; j++) b[i][j] = a[rp[i]][cp[j]];
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                b[i][j] = a[rp[i]][cp[j]];
+            }
+        }
         return b;
     }
-    static int[] randPerm(int k) {
+
+    private static int[] randPerm(int k) {
         int[] p = new int[k]; for (int i = 0; i < k; i++) p[i] = i;
-        for (int i = k - 1; i > 0; i--) { int j = rnd.nextInt(i + 1); int t = p[i]; p[i] = p[j]; p[j] = t; }
+        for (int i = k - 1; i > 0; i--) {
+            int j = ThreadLocalRandom.current().nextInt(i + 1);
+            int t = p[i];
+            p[i] = p[j];
+            p[j] = t;
+        }
         return p;
     }
 
     // projective plane PG(2,q), q prime: q^2+q+1 points/lines
-    static boolean[][] projectivePlane(int q) {
+    private static boolean[][] projectivePlane(int q) {
         List<int[]> pts = new ArrayList<>();
         for (int x = 0; x < q; x++) for (int y = 0; y < q; y++) pts.add(new int[]{x, y, 1});
         for (int x = 0; x < q; x++) pts.add(new int[]{x, 1, 0});
@@ -61,59 +76,66 @@ public class TestMaxLex {
         }
         return a;
     }
-    static boolean[][] identity(int k) {
-        boolean[][] a = new boolean[k][k]; for (int i = 0; i < k; i++) a[i][i] = true; return a;
+
+    private static boolean[][] identity(int k) {
+        boolean[][] a = new boolean[k][k];
+        for (int i = 0; i < k; i++) {
+            a[i][i] = true;
+        }
+        return a;
     }
 
-    static void check(boolean cond, String msg) {
-        if (!cond) { System.out.println("FAIL: " + msg); System.exit(1); }
-    }
-
-    public static void main(String[] args) {
-        long t0 = System.currentTimeMillis();
-
-        // 1) Fano example from the question
+    @Test
+    public void testFano() {
         boolean[][] fano = MaxLexMatrix.parse("1101000", "0110100", "0011010", "0001101",
                 "1000110", "0100011", "1010001");
         MaxLexMatrix.Result fr = new MaxLexMatrix(fano).solve();
-        check(fr.value.equals("1110000100110010000110101010010010100110010010110"), "Fano value");
-        check(MaxLexMatrix.apply(fano, fr.rowPerm, fr.colPerm).equals(fr.value), "Fano certificate");
-        System.out.println("[1] Fano: OK  " + fr.value);
+        assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
+        assertEquals(MaxLexMatrix.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
+    }
 
-        // 2) brute force cross-check on random small matrices (sizes up to 6x6)
+    @Test
+    public void testBrute() {
         int bf = 0;
         long bfEnd = System.currentTimeMillis() + 4 * 6_000; // ~24 seconds
         while (System.currentTimeMillis() < bfEnd) {
-            int m = 1 + rnd.nextInt(6), n = 1 + rnd.nextInt(6);
-            if (m == 6 && n == 6 && rnd.nextInt(10) != 0) continue; // 6x6 brute is slow-ish
-            double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[rnd.nextInt(5)];
+            int m = 1 + ThreadLocalRandom.current().nextInt(6);
+            int n = 1 + ThreadLocalRandom.current().nextInt(6);
+            if (m == 6 && n == 6 && ThreadLocalRandom.current().nextInt(10) != 0) {
+                continue;
+            }
+            double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[ThreadLocalRandom.current().nextInt(5)];
             boolean[][] a = random(m, n, d);
             MaxLexMatrix.Result r = new MaxLexMatrix(a).solve();
             String b = brute(a);
-            check(r.value.equals(b), "brute mismatch " + Arrays.deepToString(a) + "\n got " + r.value + "\n exp " + b);
-            check(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm).equals(r.value), "certificate");
+            assertEquals(r.value, b, "brute mismatch " + Arrays.deepToString(a) + "\n got " + r.value + "\n exp " + b);
+            assertEquals(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm), r.value, "certificate");
             bf++;
         }
-        System.out.println("[2] brute-force agreement on " + bf + " random matrices (<=6x6): OK");
+        System.out.println("brute-force agreement on " + bf + " random matrices (<=6x6): OK");
+    }
 
-        // 3) invariance: shuffled copies of larger matrices give the same canonical value
+    @Test
+    public void testShuffle() {
         int inv = 0;
         for (int it = 0; it < 300; it++) {
-            int m = 5 + rnd.nextInt(40), n = 5 + rnd.nextInt(40);
-            boolean[][] a = random(m, n, 0.1 + 0.8 * rnd.nextDouble());
+            int m = 5 + ThreadLocalRandom.current().nextInt(40);
+            int n = 5 + ThreadLocalRandom.current().nextInt(40);
+            boolean[][] a = random(m, n, 0.1 + 0.8 * ThreadLocalRandom.current().nextDouble());
             String v = new MaxLexMatrix(a).solve().value;
             for (int k = 0; k < 5; k++) {
                 boolean[][] b = shuffle(a);
                 MaxLexMatrix.Result r = new MaxLexMatrix(b).solve();
-                check(r.value.equals(v), "invariance");
-                check(MaxLexMatrix.apply(b, r.rowPerm, r.colPerm).equals(r.value), "certificate");
+                assertEquals(r.value, v, "invariance");
+                assertEquals(MaxLexMatrix.apply(b, r.rowPerm, r.colPerm), r.value, "certificate");
                 inv++;
             }
         }
-        System.out.println("[3] permutation invariance on " + inv + " shuffled matrices (5..44 x 5..44): OK");
+        System.out.println("permutation invariance on " + inv + " shuffled matrices (5..44 x 5..44): OK");
+    }
 
-        // 4) timing on structured / symmetric and large random inputs
-        System.out.println("[4] timing:");
+    @Test
+    public void testCases() {
         Object[][] cases = {
                 {"PG(2,2) Fano 7x7", projectivePlane(2)},
                 {"PG(2,3) 13x13", projectivePlane(3)},
@@ -132,13 +154,9 @@ public class TestMaxLex {
             long s = System.nanoTime();
             MaxLexMatrix.Result r = new MaxLexMatrix(a).solve();
             double ms = (System.nanoTime() - s) / 1e6;
-            check(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm).equals(r.value), "certificate " + c[0]);
+            assertEquals(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm), r.value, "certificate " + c[0]);
             System.out.printf("    %-22s %10.1f ms   nodes=%d auts=%d%n", c[0], ms, r.nodes, r.automorphisms);
         }
-        // PG(2,3) value printed for reference
-        System.out.println("    PG(2,3) canonical: " + new MaxLexMatrix(projectivePlane(3)).solve().value);
-
-        System.out.printf("ALL TESTS PASSED in %.1f s%n", (System.currentTimeMillis() - t0) / 1000.0);
     }
 }
 
