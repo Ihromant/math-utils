@@ -1,36 +1,32 @@
 package ua.ihromant.mathutils.mini;
 
+import ua.ihromant.mathutils.Combinatorics;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.IntStream;
 
 public class TestMaxLex {
     static Random rnd = new Random(12345);
 
     // ---- brute force: all row perms x all col perms ----
     static String brute(boolean[][] a) {
-        int m = a.length, n = a[0].length;
-        List<int[]> rps = perms(m), cps = perms(n);
+        int m = a.length;
+        int n = a[0].length;
+        List<int[]> rps = Combinatorics.permutations(IntStream.range(0, m).toArray()).toList();
+        List<int[]> cps = Combinatorics.permutations(IntStream.range(0, n).toArray()).toList();
         String best = null;
-        for (int[] rp : rps) for (int[] cp : cps) {
-            String s = MaxLexMatrix.apply(a, rp, cp);
-            if (best == null || s.compareTo(best) > 0) best = s;
+        for (int[] rp : rps) {
+            for (int[] cp : cps) {
+                String s = MaxLexMatrix.apply(a, rp, cp);
+                if (best == null || s.compareTo(best) > 0) {
+                    best = s;
+                }
+            }
         }
         return best;
-    }
-    static List<int[]> perms(int k) {
-        List<int[]> out = new ArrayList<>();
-        int[] p = new int[k]; for (int i = 0; i < k; i++) p[i] = i;
-        permRec(p, 0, out); return out;
-    }
-    static void permRec(int[] p, int i, List<int[]> out) {
-        if (i == p.length) { out.add(p.clone()); return; }
-        for (int j = i; j < p.length; j++) {
-            int t = p[i]; p[i] = p[j]; p[j] = t;
-            permRec(p, i + 1, out);
-            t = p[i]; p[i] = p[j]; p[j] = t;
-        }
     }
 
     static boolean[][] random(int m, int n, double d) {
@@ -86,7 +82,7 @@ public class TestMaxLex {
 
         // 2) brute force cross-check on random small matrices (sizes up to 6x6)
         int bf = 0;
-        long bfEnd = System.currentTimeMillis() + 4 * 60_000; // ~4 minutes
+        long bfEnd = System.currentTimeMillis() + 4 * 6_000; // ~24 seconds
         while (System.currentTimeMillis() < bfEnd) {
             int m = 1 + rnd.nextInt(6), n = 1 + rnd.nextInt(6);
             if (m == 6 && n == 6 && rnd.nextInt(10) != 0) continue; // 6x6 brute is slow-ish

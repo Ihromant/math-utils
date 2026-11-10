@@ -139,7 +139,7 @@ public class BibdFinder7CyclicTest {
         }
     }
 
-    private static void writeCayley(File basic, Group group) throws IOException {
+    public static void writeCayley(File basic, Group group) throws IOException {
         File diffs = new File(basic, group.name() + "Cayley.txt");
         try (BufferedWriter cOut = new BufferedWriter(new FileWriter(diffs))) {
             IntStream.range(0, group.order()).forEach(i -> {
@@ -270,7 +270,7 @@ public class BibdFinder7CyclicTest {
                 .map(sg -> StabState.fromBlock(table, k, sg.elems())).toArray(StabState[]::new);
     }
 
-    private static Liner generateLiner(Group table, int fixed, int k, FixBS[] base) {
+    public static Liner generateLiner(Group table, int fixed, int k, FixBS[] base) {
         List<int[]> lines = new ArrayList<>();
         int ord = table.order();
         int fixedCounter = ord;
