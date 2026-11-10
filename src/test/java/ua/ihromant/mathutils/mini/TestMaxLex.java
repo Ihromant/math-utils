@@ -54,7 +54,7 @@ public class TestMaxLex {
     }
 
     private static int[] randPerm(int k) {
-        int[] p = new int[k]; for (int i = 0; i < k; i++) p[i] = i;
+        int[] p = IntStream.range(0, k).toArray();
         for (int i = k - 1; i > 0; i--) {
             int j = ThreadLocalRandom.current().nextInt(i + 1);
             int t = p[i];
@@ -66,8 +66,14 @@ public class TestMaxLex {
 
     private static boolean[][] projectivePlane(int q) {
         List<int[]> pts = new ArrayList<>();
-        for (int x = 0; x < q; x++) for (int y = 0; y < q; y++) pts.add(new int[]{x, y, 1});
-        for (int x = 0; x < q; x++) pts.add(new int[]{x, 1, 0});
+        for (int x = 0; x < q; x++) {
+            for (int y = 0; y < q; y++) {
+                pts.add(new int[]{x, y, 1});
+            }
+        }
+        for (int x = 0; x < q; x++) {
+            pts.add(new int[]{x, 1, 0});
+        }
         pts.add(new int[]{1, 0, 0});
         int N = pts.size();
         boolean[][] a = new boolean[N][N];
