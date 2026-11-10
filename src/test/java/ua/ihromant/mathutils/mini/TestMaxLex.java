@@ -77,9 +77,12 @@ public class TestMaxLex {
         pts.add(new int[]{1, 0, 0});
         int N = pts.size();
         boolean[][] a = new boolean[N][N];
-        for (int i = 0; i < N; i++) for (int j = 0; j < N; j++) {
-            int[] l = pts.get(i), p = pts.get(j);
-            a[i][j] = ((l[0] * p[0] + l[1] * p[1] + l[2] * p[2]) % q) == 0;
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < N; j++) {
+                int[] l = pts.get(i);
+                int[] p = pts.get(j);
+                a[i][j] = ((l[0] * p[0] + l[1] * p[1] + l[2] * p[2]) % q) == 0;
+            }
         }
         return a;
     }
