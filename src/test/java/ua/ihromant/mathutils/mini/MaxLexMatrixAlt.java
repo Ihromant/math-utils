@@ -1,5 +1,8 @@
 package ua.ihromant.mathutils.mini;
 
+import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.util.FixBS;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -19,7 +22,7 @@ public class MaxLexMatrixAlt {
     }
 
     private final int m, n;
-    private final boolean[][] a;
+    private final Inc a;
 
     // best leaf so far
     private int[] bestRows, bestCols;
@@ -28,8 +31,8 @@ public class MaxLexMatrixAlt {
     private long nodes;
     private static final int MAX_AUTS = 5000;
 
-    public MaxLexMatrixAlt(boolean[][] a) {
-        this.a = a; this.m = a.length; this.n = m == 0 ? 0 : a[0].length;
+    public MaxLexMatrixAlt(Inc a) {
+        this.a = a; this.m = a.lines().length; this.n = a.v();
     }
 
     public MaxLexMatrix.Result solve() {
@@ -40,7 +43,7 @@ public class MaxLexMatrixAlt {
         Map<String, Integer> firstCopy = new HashMap<>();
         for (int r = 0; r < m; r++) {
             StringBuilder sb = new StringBuilder();
-            for (int c = 0; c < n; c++) sb.append(a[r][c] ? '1' : '0');
+            for (int c = 0; c < n; c++) sb.append(a.inc(r, c) ? '1' : '0');
             Integer f = firstCopy.putIfAbsent(sb.toString(), r);
             if (f != null) {
                 int[] g = identityPerm(m); g[f] = r; g[r] = f; auts.add(g);
@@ -136,7 +139,7 @@ public class MaxLexMatrixAlt {
         int p = 0;
         while (p < n) {
             int e = cellEnd[p], k = 0;
-            for (int q = p; q < e; q++) if (a[r][order[q]]) k++;
+            for (int q = p; q < e; q++) if (a.inc(r, order[q])) k++;
             for (int q = p; q < p + k; q++) out[q] = 1;
             p = e;
         }
@@ -147,9 +150,9 @@ public class MaxLexMatrixAlt {
         int p = 0;
         while (p < n) {
             int e = cellEnd[p], w = p;
-            for (int q = p; q < e; q++) if (a[r][order[q]]) o2[w++] = order[q];
+            for (int q = p; q < e; q++) if (a.inc(r, order[q])) o2[w++] = order[q];
             int split = w;
-            for (int q = p; q < e; q++) if (!a[r][order[q]]) o2[w++] = order[q];
+            for (int q = p; q < e; q++) if (!a.inc(r, order[q])) o2[w++] = order[q];
             for (int q = p; q < split; q++) ce2[q] = split;
             for (int q = split; q < e; q++) ce2[q] = e;
             p = e;
@@ -165,28 +168,21 @@ public class MaxLexMatrixAlt {
     private static int find(int[] p, int x) { while (p[x] != x) { p[x] = p[p[x]]; x = p[x]; } return x; }
     private static void union(int[] p, int x, int y) { x = find(p, x); y = find(p, y); if (x != y) p[x] = y; }
 
-    public static String apply(boolean[][] a, int[] rp, int[] cp) {
+    public static String apply(Inc a, int[] rp, int[] cp) {
         StringBuilder sb = new StringBuilder();
-        for (int r : rp) for (int c : cp) sb.append(a[r][c] ? '1' : '0');
+        for (int r : rp) for (int c : cp) sb.append(a.inc(r, c) ? '1' : '0');
         return sb.toString();
     }
 
-    public static boolean[][] parse(String... rows) {
-        boolean[][] a = new boolean[rows.length][];
+    public static Inc parse(String... rows) {
+        FixBS[] a = new FixBS[rows.length];
         for (int i = 0; i < rows.length; i++) {
             String s = rows[i].replaceAll("\\s", "");
-            a[i] = new boolean[s.length()];
-            for (int j = 0; j < s.length(); j++) a[i][j] = s.charAt(j) == '1';
+            a[i] = new FixBS(s.length());
+            for (int j = 0; j < s.length(); j++) {
+                a[i].set(j, s.charAt(j) == '1');
+            }
         }
-        return a;
-    }
-
-    public static void main(String[] args) {
-        boolean[][] fano = parse(
-                "1101000", "0110100", "0011010", "0001101",
-                "1000110", "0100011", "1010001");
-        MaxLexMatrix.Result r = new MaxLexMatrix(fano).solve();
-        System.out.println(r.value);
-        System.out.println("row order " + Arrays.toString(r.rowPerm) + "  column order " + Arrays.toString(r.colPerm));
+        return new Inc(a, rows[0].length(), 0);
     }
 }

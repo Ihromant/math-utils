@@ -2,6 +2,7 @@ package ua.ihromant.mathutils.mini;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
+import ua.ihromant.mathutils.Inc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,11 +30,40 @@ public class TestMaxLex {
         return best;
     }
 
+    private static String brute(Inc a) {
+        int m = a.b();
+        int n = a.v();
+        List<int[]> rps = Combinatorics.permutations(IntStream.range(0, m).toArray()).toList();
+        List<int[]> cps = Combinatorics.permutations(IntStream.range(0, n).toArray()).toList();
+        String best = null;
+        for (int[] rp : rps) {
+            for (int[] cp : cps) {
+                String s = MaxLexMatrixAlt.apply(a, rp, cp);
+                if (best == null || s.compareTo(best) > 0) {
+                    best = s;
+                }
+            }
+        }
+        return best;
+    }
+
     private static boolean[][] random(int m, int n, double d) {
         boolean[][] a = new boolean[m][n];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 a[i][j] = ThreadLocalRandom.current().nextDouble() < d;
+            }
+        }
+        return a;
+    }
+
+    private static Inc randomInc(int m, int n, double d) {
+        Inc a = Inc.empty(m, 0, n);
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (ThreadLocalRandom.current().nextDouble() < d) {
+                    a.set(i, j);
+                }
             }
         }
         return a;
@@ -48,6 +78,22 @@ public class TestMaxLex {
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 b[i][j] = a[rp[i]][cp[j]];
+            }
+        }
+        return b;
+    }
+
+    private static Inc shuffle(Inc a) {
+        int m = a.v();
+        int n = a.b();
+        int[] rp = randPerm(m);
+        int[] cp = randPerm(n);
+        Inc b = Inc.empty(a.v(), a.k(), a.b());
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                if (a.inc(rp[i], cp[j])) {
+                    b.set(i, j);
+                }
             }
         }
         return b;
