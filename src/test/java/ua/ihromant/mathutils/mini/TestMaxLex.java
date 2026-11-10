@@ -40,8 +40,10 @@ public class TestMaxLex {
     }
 
     private static boolean[][] shuffle(boolean[][] a) {
-        int m = a.length, n = a[0].length;
-        int[] rp = randPerm(m), cp = randPerm(n);
+        int m = a.length;
+        int n = a[0].length;
+        int[] rp = randPerm(m);
+        int[] cp = randPerm(n);
         boolean[][] b = new boolean[m][n];
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
@@ -62,7 +64,6 @@ public class TestMaxLex {
         return p;
     }
 
-    // projective plane PG(2,q), q prime: q^2+q+1 points/lines
     private static boolean[][] projectivePlane(int q) {
         List<int[]> pts = new ArrayList<>();
         for (int x = 0; x < q; x++) for (int y = 0; y < q; y++) pts.add(new int[]{x, y, 1});
