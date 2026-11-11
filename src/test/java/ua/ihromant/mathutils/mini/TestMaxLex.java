@@ -149,6 +149,7 @@ public class TestMaxLex {
         SearchResult fr = new MaxLexMatrix(fano).solve();
         assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
         assertEquals(MaxLexMatrix.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
+        System.out.printf("nodes=%d auts=%d%n", fr.nodes, fr.automorphisms);
     }
 
     @Test
@@ -158,6 +159,7 @@ public class TestMaxLex {
         SearchResult fr = new MaxLexMatrixAlt(fano).solve();
         assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
         assertEquals(MaxLexMatrixAlt.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
+        System.out.printf("nodes=%d auts=%d%n", fr.nodes, fr.automorphisms);
     }
 
     @Test
