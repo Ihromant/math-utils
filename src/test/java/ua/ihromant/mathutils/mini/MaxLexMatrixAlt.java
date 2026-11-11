@@ -10,17 +10,6 @@ import java.util.List;
 import java.util.Map;
 
 public class MaxLexMatrixAlt {
-    public static final class Result {
-        public final int[] rowPerm;   // rowPerm[i] = original row placed at position i
-        public final int[] colPerm;   // colPerm[j] = original column placed at position j
-        public final String value;    // the maximal matrix, row-major
-        public final long nodes;      // search-tree nodes visited
-        public final int automorphisms;
-        Result(int[] r, int[] c, String v, long nodes, int auts) {
-            rowPerm = r; colPerm = c; value = v; this.nodes = nodes; automorphisms = auts;
-        }
-    }
-
     private final int m, n;
     private final Inc a;
 
@@ -35,7 +24,7 @@ public class MaxLexMatrixAlt {
         this.a = a; this.m = a.lines().length; this.n = a.v();
     }
 
-    public MaxLexMatrix.Result solve() {
+    public SearchResult solve() {
         bestRows = null; auts.clear(); nodes = 0;
         bestMatrixRows = new int[m][];
 
@@ -57,7 +46,7 @@ public class MaxLexMatrixAlt {
 
         StringBuilder sb = new StringBuilder();
         for (int[] row : bestMatrixRows) for (int b : row) sb.append(b);
-        return new MaxLexMatrix.Result(bestRows.clone(), bestCols.clone(), sb.toString(), nodes, auts.size());
+        return new SearchResult(bestRows.clone(), bestCols.clone(), sb.toString(), nodes, auts.size());
     }
 
     /**

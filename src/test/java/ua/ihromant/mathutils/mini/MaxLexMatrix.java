@@ -30,18 +30,6 @@ import java.util.Map;
  * identity matrices) are tamed by the automorphism pruning.
  */
 public class MaxLexMatrix {
-
-    public static final class Result {
-        public final int[] rowPerm;   // rowPerm[i] = original row placed at position i
-        public final int[] colPerm;   // colPerm[j] = original column placed at position j
-        public final String value;    // the maximal matrix, row-major
-        public final long nodes;      // search-tree nodes visited
-        public final int automorphisms;
-        Result(int[] r, int[] c, String v, long nodes, int auts) {
-            rowPerm = r; colPerm = c; value = v; this.nodes = nodes; automorphisms = auts;
-        }
-    }
-
     private final int m, n;
     private final boolean[][] a;
 
@@ -56,7 +44,7 @@ public class MaxLexMatrix {
         this.a = a; this.m = a.length; this.n = m == 0 ? 0 : a[0].length;
     }
 
-    public Result solve() {
+    public SearchResult solve() {
         bestRows = null; auts.clear(); nodes = 0;
         bestMatrixRows = new int[m][];
 
@@ -78,7 +66,7 @@ public class MaxLexMatrix {
 
         StringBuilder sb = new StringBuilder();
         for (int[] row : bestMatrixRows) for (int b : row) sb.append(b);
-        return new Result(bestRows.clone(), bestCols.clone(), sb.toString(), nodes, auts.size());
+        return new SearchResult(bestRows.clone(), bestCols.clone(), sb.toString(), nodes, auts.size());
     }
 
     /**
@@ -209,7 +197,7 @@ public class MaxLexMatrix {
         boolean[][] fano = parse(
                 "1101000", "0110100", "0011010", "0001101",
                 "1000110", "0100011", "1010001");
-        Result r = new MaxLexMatrix(fano).solve();
+        SearchResult r = new MaxLexMatrix(fano).solve();
         System.out.println(r.value);
         System.out.println("row order " + Arrays.toString(r.rowPerm) + "  column order " + Arrays.toString(r.colPerm));
     }

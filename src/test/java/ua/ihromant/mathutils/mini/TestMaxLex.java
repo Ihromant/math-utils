@@ -58,7 +58,7 @@ public class TestMaxLex {
     }
 
     private static Inc randomInc(int m, int n, double d) {
-        Inc a = Inc.empty(m, 0, n);
+        Inc a = Inc.empty(n, 0, m);
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
                 if (ThreadLocalRandom.current().nextDouble() < d) {
@@ -145,7 +145,7 @@ public class TestMaxLex {
     public void testFano() {
         boolean[][] fano = MaxLexMatrix.parse("1101000", "0110100", "0011010", "0001101",
                 "1000110", "0100011", "1010001");
-        MaxLexMatrix.Result fr = new MaxLexMatrix(fano).solve();
+        SearchResult fr = new MaxLexMatrix(fano).solve();
         assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
         assertEquals(MaxLexMatrix.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
     }
@@ -162,10 +162,31 @@ public class TestMaxLex {
             }
             double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[ThreadLocalRandom.current().nextInt(5)];
             boolean[][] a = random(m, n, d);
-            MaxLexMatrix.Result r = new MaxLexMatrix(a).solve();
+            SearchResult r = new MaxLexMatrix(a).solve();
             String b = brute(a);
             assertEquals(r.value, b, "brute mismatch " + Arrays.deepToString(a) + "\n got " + r.value + "\n exp " + b);
             assertEquals(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm), r.value, "certificate");
+            bf++;
+        }
+        System.out.println("brute-force agreement on " + bf + " random matrices (<=6x6): OK");
+    }
+
+    @Test
+    public void testBruteAlt() {
+        int bf = 0;
+        long bfEnd = System.currentTimeMillis() + 4 * 6_000; // ~24 seconds
+        while (System.currentTimeMillis() < bfEnd) {
+            int m = 1 + ThreadLocalRandom.current().nextInt(6);
+            int n = 1 + ThreadLocalRandom.current().nextInt(6);
+            if (m == 6 && n == 6 && ThreadLocalRandom.current().nextInt(10) != 0) {
+                continue;
+            }
+            double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[ThreadLocalRandom.current().nextInt(5)];
+            Inc a = randomInc(m, n, d);
+            SearchResult r = new MaxLexMatrixAlt(a).solve();
+            String b = brute(a);
+            assertEquals(r.value, b, "brute mismatch " + Arrays.toString(a.lines()) + "\n got " + r.value + "\n exp " + b);
+            assertEquals(MaxLexMatrixAlt.apply(a, r.rowPerm, r.colPerm), r.value, "certificate");
             bf++;
         }
         System.out.println("brute-force agreement on " + bf + " random matrices (<=6x6): OK");
@@ -181,7 +202,7 @@ public class TestMaxLex {
             String v = new MaxLexMatrix(a).solve().value;
             for (int k = 0; k < 5; k++) {
                 boolean[][] b = shuffle(a);
-                MaxLexMatrix.Result r = new MaxLexMatrix(b).solve();
+                SearchResult r = new MaxLexMatrix(b).solve();
                 assertEquals(r.value, v, "invariance");
                 assertEquals(MaxLexMatrix.apply(b, r.rowPerm, r.colPerm), r.value, "certificate");
                 inv++;
@@ -208,7 +229,7 @@ public class TestMaxLex {
         for (Object[] c : cases) {
             boolean[][] a = shuffle((boolean[][]) c[1]);
             long s = System.nanoTime();
-            MaxLexMatrix.Result r = new MaxLexMatrix(a).solve();
+            SearchResult r = new MaxLexMatrix(a).solve();
             double ms = (System.nanoTime() - s) / 1e6;
             assertEquals(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm), r.value, "certificate " + c[0]);
             System.out.printf("    %-22s %10.1f ms   nodes=%d auts=%d%n", c[0], ms, r.nodes, r.automorphisms);
