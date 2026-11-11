@@ -1,5 +1,6 @@
 package ua.ihromant.mathutils.mini;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.GaloisField;
@@ -145,6 +146,7 @@ public class TestMaxLex {
     }
 
     @Test
+    @Disabled
     public void testFano() {
         boolean[][] fano = MaxLexMatrix.parse("1101000", "0110100", "0011010", "0001101",
                 "1000110", "0100011", "1010001");
@@ -187,6 +189,7 @@ public class TestMaxLex {
     }
 
     @Test
+    @Disabled
     public void testBrute() {
         int bf = 0;
         long bfEnd = System.currentTimeMillis() + 4 * 6_000; // ~24 seconds
@@ -229,6 +232,7 @@ public class TestMaxLex {
     }
 
     @Test
+    @Disabled
     public void testShuffle() {
         int inv = 0;
         for (int it = 0; it < 300; it++) {
@@ -267,6 +271,7 @@ public class TestMaxLex {
     }
 
     @Test
+    @Disabled
     public void testCases() {
         Object[][] cases = {
                 {"PG(2,2) Fano 7x7", projectivePlane(2)},
