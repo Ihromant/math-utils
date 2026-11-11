@@ -3,6 +3,7 @@ package ua.ihromant.mathutils.mini;
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,8 +92,8 @@ public class TestMaxLex {
         Inc b = Inc.empty(a.v(), a.k(), a.b());
         for (int i = 0; i < m; i++) {
             for (int j = 0; j < n; j++) {
-                if (a.inc(rp[i], cp[j])) {
-                    b.set(i, j);
+                if (a.inc(cp[j], rp[i])) {
+                    b.set(j, i);
                 }
             }
         }
@@ -148,6 +149,15 @@ public class TestMaxLex {
         SearchResult fr = new MaxLexMatrix(fano).solve();
         assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
         assertEquals(MaxLexMatrix.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
+    }
+
+    @Test
+    public void testFanoAlt() {
+        Inc fano = MaxLexMatrixAlt.parse("1101000", "0110100", "0011010", "0001101",
+                "1000110", "0100011", "1010001");
+        SearchResult fr = new MaxLexMatrixAlt(fano).solve();
+        assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
+        assertEquals(MaxLexMatrixAlt.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
     }
 
     @Test
@@ -212,6 +222,25 @@ public class TestMaxLex {
     }
 
     @Test
+    public void testShuffleAlt() {
+        int inv = 0;
+        for (int it = 0; it < 300; it++) {
+            int m = 5 + ThreadLocalRandom.current().nextInt(40);
+            int n = 5 + ThreadLocalRandom.current().nextInt(40);
+            Inc a = randomInc(m, n, 0.1 + 0.8 * ThreadLocalRandom.current().nextDouble());
+            String v = new MaxLexMatrixAlt(a).solve().value;
+            for (int k = 0; k < 5; k++) {
+                Inc b = shuffle(a);
+                SearchResult r = new MaxLexMatrixAlt(b).solve();
+                assertEquals(r.value, v, "invariance");
+                assertEquals(MaxLexMatrixAlt.apply(b, r.rowPerm, r.colPerm), r.value, "certificate");
+                inv++;
+            }
+        }
+        System.out.println("permutation invariance on " + inv + " shuffled matrices (5..44 x 5..44): OK");
+    }
+
+    @Test
     public void testCases() {
         Object[][] cases = {
                 {"PG(2,2) Fano 7x7", projectivePlane(2)},
@@ -232,6 +261,45 @@ public class TestMaxLex {
             SearchResult r = new MaxLexMatrix(a).solve();
             double ms = (System.nanoTime() - s) / 1e6;
             assertEquals(MaxLexMatrix.apply(a, r.rowPerm, r.colPerm), r.value, "certificate " + c[0]);
+            System.out.printf("    %-22s %10.1f ms   nodes=%d auts=%d%n", c[0], ms, r.nodes, r.automorphisms);
+        }
+    }
+
+    private static Inc toInc(boolean[][] a) {
+        int b = a.length;
+        int v = a[0].length;
+        Inc res = new Inc(IntStream.range(0, b).mapToObj(_ -> new FixBS(v)).toArray(FixBS[]::new), v, 0);
+        for (int i = 0; i < b; i++) {
+            for (int j = 0; j < v; j++) {
+                if (a[i][j]) {
+                    res.set(i, j);
+                }
+            }
+        }
+        return res;
+    }
+
+    @Test
+    public void testCasesAlt() {
+        Object[][] cases = {
+                {"PG(2,2) Fano 7x7", toInc(projectivePlane(2))},
+                {"PG(2,3) 13x13", toInc(projectivePlane(3))},
+                {"PG(2,5) 31x31", toInc(projectivePlane(5))},
+                {"PG(2,7) 57x57", toInc(projectivePlane(7))},
+                {"identity 12x12", toInc(identity(12))},
+                {"identity 18x18", toInc(identity(18))},
+                {"identity 100x100", toInc(identity(100))},
+                {"all-ones 40x40", toInc(random(40, 40, 1.0))},
+                {"random 50x50 p=.5", toInc(random(50, 50, 0.5))},
+                {"random 200x200 p=.5", toInc(random(200, 200, 0.5))},
+                {"random 100x300 p=.2", toInc(random(100, 300, 0.2))},
+        };
+        for (Object[] c : cases) {
+            Inc a = shuffle((Inc) c[1]);
+            long s = System.nanoTime();
+            SearchResult r = new MaxLexMatrixAlt(a).solve();
+            double ms = (System.nanoTime() - s) / 1e6;
+            assertEquals(MaxLexMatrixAlt.apply(a, r.rowPerm, r.colPerm), r.value, "certificate " + c[0]);
             System.out.printf("    %-22s %10.1f ms   nodes=%d auts=%d%n", c[0], ms, r.nodes, r.automorphisms);
         }
     }
