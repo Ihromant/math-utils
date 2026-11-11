@@ -122,16 +122,26 @@ public class MaxLexMatrixAlt {
     private boolean sameOrbitAsDone(int r, List<Integer> done, int[] rows, int depth) {
         int[] parent = identityPerm(m);
         boolean any = false;
-        for (int[] g : auts) {
-            boolean fixes = true;
-            for (int i = 0; i < depth && fixes; i++) if (g[rows[i]] != rows[i]) fixes = false;
-            if (!fixes) continue;
+        ex: for (int[] g : auts) {
+            for (int i = 0; i < depth; i++) {
+                if (g[rows[i]] != rows[i]) {
+                    continue ex;
+                }
+            }
             any = true;
-            for (int x = 0; x < m; x++) union(parent, x, g[x]);
+            for (int x = 0; x < m; x++) {
+                union(parent, x, g[x]);
+            }
         }
-        if (!any) return false;
+        if (!any) {
+            return false;
+        }
         int root = find(parent, r);
-        for (int d : done) if (find(parent, d) == root) return true;
+        for (int d : done) {
+            if (find(parent, d) == root) {
+                return true;
+            }
+        }
         return false;
     }
 
