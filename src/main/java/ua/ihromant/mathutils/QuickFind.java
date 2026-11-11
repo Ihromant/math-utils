@@ -16,6 +16,11 @@ public class QuickFind {
         this.sz = IntStream.range(0, size).map(_ -> 1).toArray();
     }
 
+    public QuickFind(int[] nodes, int[] sz) {
+        this.nodes = nodes.clone();
+        this.sz = sz.clone();
+    }
+
     public int size() {
         return nodes.length;
     }
