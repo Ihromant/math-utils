@@ -2,7 +2,9 @@ package ua.ihromant.mathutils.mini;
 
 import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
+import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
@@ -150,6 +152,16 @@ public class TestMaxLex {
         assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
         assertEquals(MaxLexMatrix.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
         System.out.printf("nodes=%d auts=%d%n", fr.nodes, fr.automorphisms);
+        Liner aff = new Liner(new GaloisField(3).generatePlane()).subPlane(IntStream.range(0, 9).toArray());
+        boolean[][] a = new boolean[aff.lineCount()][aff.pointCount()];
+        for (int i = 0; i < aff.lineCount(); i++) {
+            for (int j = 0; j < aff.pointCount(); j++) {
+                a[i][j] = aff.flag(i, j);
+            }
+        }
+        SearchResult fr1 = new MaxLexMatrix(a).solve();
+        assertEquals("111000000100110000100001100100000011010101000010010010010000101001100001001010100001001010000100110000011001", fr1.value, "Fano value");
+        System.out.printf("nodes=%d auts=%d%n", fr1.nodes, fr1.automorphisms);
     }
 
     @Test
@@ -160,6 +172,18 @@ public class TestMaxLex {
         assertEquals("1110000100110010000110101010010010100110010010110", fr.value, "Fano value");
         assertEquals(MaxLexMatrixAlt.apply(fano, fr.rowPerm, fr.colPerm), fr.value, "Fano certificate");
         System.out.printf("nodes=%d auts=%d%n", fr.nodes, fr.automorphisms);
+        Liner aff = new Liner(new GaloisField(3).generatePlane()).subPlane(IntStream.range(0, 9).toArray());
+        Inc a = Inc.empty(aff.pointCount(), 3, aff.lineCount());
+        for (int i = 0; i < aff.lineCount(); i++) {
+            for (int j = 0; j < aff.pointCount(); j++) {
+                if (aff.flag(i, j)) {
+                    a.set(i, j);
+                }
+            }
+        }
+        SearchResult fr1 = new MaxLexMatrixAlt(a).solve();
+        assertEquals("111000000100110000100001100100000011010101000010010010010000101001100001001010100001001010000100110000011001", fr1.value, "Fano value");
+        System.out.printf("nodes=%d auts=%d%n", fr1.nodes, fr1.automorphisms);
     }
 
     @Test
