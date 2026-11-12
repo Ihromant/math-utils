@@ -24,6 +24,114 @@ public class MaxLexMatrixAlt {
         this.a = a; this.m = a.lines().length; this.n = a.v();
     }
 
+    public boolean isMaxLex() {
+        auts.clear();
+        nodes = 0;
+        bestRows = identityPerm(m);
+        bestCols = identityPerm(n);
+        bestMatrixRows = new int[m][n];
+
+        int[] order = identityPerm(n);
+        int[] cellEnd = new int[n];
+        Arrays.fill(cellEnd, n);
+
+        // 1. Fast O(m * n) check & initialization:
+        // Verify that under identity row/column order, columns are already maximally refined
+        // (1s precede 0s in every equivalence cell) and rows are non-increasing.
+        for (int r = 0; r < m; r++) {
+            for (int c = 0; c < n; c++) {
+                bestMatrixRows[r][c] = a.inc(r, c) ? 1 : 0;
+            }
+            // If sorting columns within current cells produces a larger row, a column swap alone beats 'a'
+            int[] maxForRow = rowString(r, order, cellEnd);
+            if (compare(maxForRow, bestMatrixRows[r]) > 0) {
+                return false;
+            }
+            // Quick adjacent row check: in a lex-max matrix, row r cannot be strictly smaller than row r+1
+            if (r > 0 && compare(bestMatrixRows[r - 1], bestMatrixRows[r]) < 0) {
+                return false;
+            }
+            int[] o2 = new int[n];
+            int[] ce2 = new int[n];
+            refine(r, order, cellEnd, o2, ce2);
+            order = o2;
+            cellEnd = ce2;
+        }
+
+        // 2. Seed identical row transpositions as automorphisms
+        Map<String, Integer> firstCopy = new HashMap<>();
+        for (int r = 0; r < m; r++) {
+            StringBuilder sb = new StringBuilder(n);
+            for (int c = 0; c < n; c++) sb.append(a.inc(r, c) ? '1' : '0');
+            Integer f = firstCopy.putIfAbsent(sb.toString(), r);
+            if (f != null) {
+                int[] g = identityPerm(m);
+                g[f] = r;
+                g[r] = f;
+                auts.add(g);
+            }
+        }
+
+        // 3. Run bounded DFS (returns -1 immediately if a strictly larger row prefix is found)
+        order = identityPerm(n);
+        Arrays.fill(cellEnd, n);
+        return dfsCheck(0, new int[m], new boolean[m], order, cellEnd) != -1;
+    }
+
+    /**
+     * @return -1 if a strictly larger matrix exists, depth to backjump to, or Integer.MAX_VALUE
+     */
+    private int dfsCheck(int depth, int[] rows, boolean[] used, int[] order, int[] cellEnd) {
+        nodes++;
+        if (depth == m) {
+            // Reached a leaf equal to bestMatrixRows -> record automorphism bestRows[i] (which is i) -> rows[i]
+            int split = 0;
+            while (split < m && rows[split] == bestRows[split]) split++;
+            if (split == m) {
+                return Integer.MAX_VALUE; // The identity path itself
+            }
+            if (auts.size() < MAX_AUTS) {
+                auts.add(rows.clone()); // Since bestRows[i] == i, g[bestRows[i]] = rows[i] is just rows.clone()
+            }
+            return split; // Backjump to the split point
+        }
+
+        // Find candidate rows and the maximal next row under current column partition
+        int[] best = null;
+        List<Integer> cands = new ArrayList<>();
+        for (int r = 0; r < m; r++) {
+            if (used[r]) continue;
+            int[] row = rowString(r, order, cellEnd);
+            int c = best == null ? 1 : compare(row, best);
+            if (c > 0) {
+                best = row;
+                cands.clear();
+            }
+            if (c >= 0) cands.add(r);
+        }
+
+        // Compare against the original matrix's row at this depth
+        int c = compare(best, bestMatrixRows[depth]);
+        if (c > 0) return -1;                // Strictly larger row found! Exit immediately
+        if (c < 0) return Integer.MAX_VALUE; // This branch is strictly smaller; prune
+
+        List<Integer> done = new ArrayList<>();
+        for (int r : cands) {
+            if (!done.isEmpty() && sameOrbitAsDone(r, done, rows, depth)) continue;
+            done.add(r);
+
+            int[] o2 = new int[n];
+            int[] ce2 = new int[n];
+            refine(r, order, cellEnd, o2, ce2);
+            rows[depth] = r;
+            used[r] = true;
+            int jump = dfsCheck(depth + 1, rows, used, o2, ce2);
+            used[r] = false;
+            if (jump < depth) return jump; // Propagates -1 (early exit) or split backjump
+        }
+        return Integer.MAX_VALUE;
+    }
+
     public SearchResult solve() {
         bestRows = null; auts.clear(); nodes = 0;
         bestMatrixRows = new int[m][];

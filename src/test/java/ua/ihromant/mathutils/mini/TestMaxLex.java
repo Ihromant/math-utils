@@ -328,5 +328,31 @@ public class TestMaxLex {
             System.out.printf("    %-22s %10.1f ms   nodes=%d auts=%d%n", c[0], ms, r.nodes, r.automorphisms);
         }
     }
+
+    @Test
+    public void testMaximal() {
+        Inc fanoMax = MaxLexMatrixAlt.parse("1110000", "1001100", "1000011", "0101010",
+                "0100101", "0011001", "0010110");
+        String max = "1110000100110010000110101010010010100110010010110";
+        int[][] perms = Combinatorics.permutations(IntStream.range(0, 7).toArray()).toArray(int[][]::new);
+        for (int[] rp : perms) {
+            for (int[] cp : perms) {
+                String permuted = MaxLexMatrixAlt.apply(fanoMax, rp, cp);
+                Inc toTest = MaxLexMatrixAlt.parse(splitIntoChunks(permuted, 7));
+                assertEquals(permuted.equals(max), new MaxLexMatrixAlt(toTest).isMaxLex());
+            }
+        }
+    }
+
+    private static String[] splitIntoChunks(String s, int chunkSize) {
+        int numOfChunks = (s.length() + chunkSize - 1) / chunkSize;
+        String[] chunks = new String[numOfChunks];
+        for (int i = 0; i < numOfChunks; i++) {
+            int start = i * chunkSize;
+            int end = Math.min(s.length(), start + chunkSize);
+            chunks[i] = s.substring(start, end);
+        }
+        return chunks;
+    }
 }
 
