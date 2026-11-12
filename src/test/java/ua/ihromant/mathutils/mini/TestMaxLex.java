@@ -10,6 +10,7 @@ import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.IntStream;
@@ -192,20 +193,22 @@ public class TestMaxLex {
 
     @Test
     public void testBrute() {
-        int testCount = 30_000;
-        List<TestCase> cases = new ArrayList<>();
-        while (cases.size() < testCount) {
-            int m = 1 + ThreadLocalRandom.current().nextInt(6);
-            int n = 1 + ThreadLocalRandom.current().nextInt(6);
-            if (m == 6 && n == 6 && ThreadLocalRandom.current().nextInt(10) != 0) {
-                continue;
+        int testCount = 300_000;
+        List<TestCase> cases = Collections.synchronizedList(new ArrayList<>());
+        IntStream.range(0, Runtime.getRuntime().availableProcessors()).parallel().forEach(_ -> {
+            while (cases.size() < testCount) {
+                int m = 1 + ThreadLocalRandom.current().nextInt(6);
+                int n = 1 + ThreadLocalRandom.current().nextInt(6);
+                if (m == 6 && n == 6 && ThreadLocalRandom.current().nextInt(10) != 0) {
+                    continue;
+                }
+                double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[ThreadLocalRandom.current().nextInt(5)];
+                boolean[][] a = random(m, n, d);
+                String b = brute(a);
+                cases.add(new TestCase(a, toInc(a), b));
             }
-            double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[ThreadLocalRandom.current().nextInt(5)];
-            boolean[][] a = random(m, n, d);
-            String b = brute(a);
-            cases.add(new TestCase(a, toInc(a), b));
-        }
-        System.out.println("Running " + testCount + " random testcases");
+        });
+        System.out.println("Running " + cases.size() + " random testcases");
         long time = System.currentTimeMillis();
         for (TestCase c : cases) {
             SearchResult r = new MaxLexMatrix(c.ba).solve();
