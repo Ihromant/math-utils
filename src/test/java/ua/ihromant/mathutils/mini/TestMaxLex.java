@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import ua.ihromant.mathutils.Combinatorics;
 import ua.ihromant.mathutils.GaloisField;
 import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.LInc;
 import ua.ihromant.mathutils.Liner;
 import ua.ihromant.mathutils.util.FixBS;
 
@@ -348,6 +349,41 @@ public class TestMaxLex {
             chunks[i] = s.substring(start, end);
         }
         return chunks;
+    }
+
+    @Test
+    public void testPerformance() {
+        int testCount = 100_000_000;
+        List<Inc> cases = Collections.synchronizedList(new ArrayList<>());
+        IntStream.range(0, Runtime.getRuntime().availableProcessors()).parallel().forEach(_ -> {
+            while (cases.size() < testCount) {
+                int m = 1 + ThreadLocalRandom.current().nextInt(6);
+                int n = 1 + ThreadLocalRandom.current().nextInt(6);
+                if (m == 6 && n == 6 && ThreadLocalRandom.current().nextInt(10) != 0) {
+                    continue;
+                }
+                double d = new double[]{0.1, 0.3, 0.5, 0.7, 0.9}[ThreadLocalRandom.current().nextInt(5)];
+                boolean[][] a = random(m, n, d);
+                cases.add(toInc(a));
+            }
+        });
+        System.out.println("Generated");
+        int cnt = 0;
+        long time = System.currentTimeMillis();
+        for (Inc inc : cases) {
+            if (inc.isMaxLex()) {
+                cnt++;
+            }
+        }
+        System.out.println((System.currentTimeMillis() - time) + " " + cnt);
+        List<LInc> lCases = cases.stream().map(Inc::toLinc).toList();
+        time = System.currentTimeMillis();
+        for (LInc inc : lCases) {
+            if (inc.isMaxLex()) {
+                cnt++;
+            }
+        }
+        System.out.println((System.currentTimeMillis() - time) + " " + cnt);
     }
 }
 
