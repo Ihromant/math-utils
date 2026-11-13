@@ -42,11 +42,15 @@ public record LInc(long[] lines, int v, int k) implements NautyGraph {
         return word == 0 ? -1 : Long.numberOfTrailingZeros(word);
     }
 
-    public Inc addLine(int[] line) {
-        FixBS[] next = new FixBS[lines.length + 1];
+    public LInc addLine(int[] line) {
+        long[] next = new long[lines.length + 1];
         System.arraycopy(lines, 0, next, 0, lines.length);
-        next[lines.length] = FixBS.of(v, line);
-        return new Inc(next, v, k);
+        long nl = 0;
+        for (int pt : line) {
+            nl = nl | (1L << pt);
+        }
+        next[lines.length] = nl;
+        return new LInc(next, v, k);
     }
 
     @Override
