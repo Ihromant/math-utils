@@ -14,7 +14,6 @@ public class MaxChecker {
     private final Inc a;
 
     // best leaf so far
-    private int[] bestRows;
     private int[][] bestMatrixRows;   // best value, row by row
     private final List<int[]> auts = new ArrayList<>();  // row parts of found automorphisms
     private static final int MAX_AUTS = 5000;
@@ -25,7 +24,6 @@ public class MaxChecker {
 
     public boolean isMaxLex() {
         auts.clear();
-        bestRows = identityPerm(m);
         bestMatrixRows = new int[m][n];
 
         int[] order = identityPerm(n);
@@ -82,7 +80,7 @@ public class MaxChecker {
         if (depth == m) {
             // Reached a leaf equal to bestMatrixRows -> record automorphism bestRows[i] (which is i) -> rows[i]
             int split = 0;
-            while (split < m && rows[split] == bestRows[split]) split++;
+            while (split < m && rows[split] == split) split++;
             if (split == m) {
                 return Integer.MAX_VALUE; // The identity path itself
             }
