@@ -145,8 +145,10 @@ public class Applicator7Test {
         int[] orbits = new int[]{441};
         int ctr = 0;
         for (GroupIter it = new GroupIter(gs); it.hasNext(); ) {
-            GapGroup gg = it.next();
+            List<List<List<Integer>>> cycles = it.next();
             System.out.println("Reading SmallGroup(" + gs + "," + ++ctr + ")");
+            int[][] gens = GroupIndex.toGens(cycles);
+            GapGroup gg = new GapGroup(GroupIndex.permGroup(gens).asTable(), cycles);
             Group group = gg.group();
             List<int[][]> configs = ApplicatorTest.configs(group, orbits);
             for (int[][] config : configs) {
@@ -1066,7 +1068,7 @@ public class Applicator7Test {
         System.out.println("Done");
     }
 
-    private static class GroupIter implements Iterator<GapGroup> {
+    private static class GroupIter implements Iterator<List<List<List<Integer>>>> {
         private final String str;
         private int left;
         private int right;
@@ -1090,13 +1092,12 @@ public class Applicator7Test {
         }
 
         @Override
-        public GapGroup next() {
+        public List<List<List<Integer>>> next() {
             String part = str.substring(left, right + 1).replace(" ", "")
                     .replace("\\", "").replace("\n", "");
             List<List<List<Integer>>> cycles = GapInteractor.parseCycles(part);
-            int[][] gens = GroupIndex.toGens(cycles);
             recalc();
-            return new GapGroup(GroupIndex.permGroup(gens).asTable(), cycles);
+            return cycles;
         }
     }
 }
