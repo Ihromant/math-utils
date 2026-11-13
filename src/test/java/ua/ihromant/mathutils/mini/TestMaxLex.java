@@ -35,23 +35,6 @@ public class TestMaxLex {
         return best;
     }
 
-    private static String brute(Inc a) {
-        int m = a.b();
-        int n = a.v();
-        List<int[]> rps = Combinatorics.permutations(IntStream.range(0, m).toArray()).toList();
-        List<int[]> cps = Combinatorics.permutations(IntStream.range(0, n).toArray()).toList();
-        String best = null;
-        for (int[] rp : rps) {
-            for (int[] cp : cps) {
-                String s = MaxLexMatrixAlt.apply(a, rp, cp);
-                if (best == null || s.compareTo(best) > 0) {
-                    best = s;
-                }
-            }
-        }
-        return best;
-    }
-
     private static boolean[][] random(int m, int n, double d) {
         boolean[][] a = new boolean[m][n];
         for (int i = 0; i < m; i++) {
@@ -226,8 +209,9 @@ public class TestMaxLex {
         time = System.currentTimeMillis();
         for (TestCase c : cases) {
             String val = MaxLexMatrixAlt.apply(c.inc, IntStream.range(0, c.inc.b()).toArray(), IntStream.range(0, c.inc.v()).toArray());
-            boolean min = val.equals(c.max);
-            assertEquals(min, new MaxChecker(c.inc).isMaxLex());
+            boolean max = val.equals(c.max);
+            assertEquals(max, new MaxChecker(c.inc).isMaxLex());
+            assertEquals(max, c.inc.isMaxLex());
         }
         System.out.println("IsMax took " + (System.currentTimeMillis() - time) + " ms");
     }
@@ -348,6 +332,7 @@ public class TestMaxLex {
                 Inc toTest = MaxLexMatrixAlt.parse(splitIntoChunks(permuted, 7));
                 assertEquals(permuted.equals(max), new MaxLexMatrixAlt(toTest).isMaxLex());
                 assertEquals(permuted.equals(max), new MaxChecker(toTest).isMaxLex());
+                assertEquals(permuted.equals(max), toTest.isMaxLex());
             }
         }
     }

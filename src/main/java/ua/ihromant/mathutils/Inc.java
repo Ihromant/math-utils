@@ -5,8 +5,13 @@ import ua.ihromant.mathutils.nauty.CanonicalConsumer;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.BitSet;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -221,4 +226,168 @@ public record Inc(FixBS[] lines, int v, int k) implements NautyGraph {
             return res;
         }
     }
+
+    public boolean isMaxLex() {
+        int[] order = identityPerm(v);
+        int[] cellEnd = new int[v];
+        Arrays.fill(cellEnd, v);
+
+        // 1. Fast O(m * n) check & initialization:
+        // Verify that under identity row/column order, columns are already maximally refined
+        // (1s precede 0s in every equivalence cell) and rows are non-increasing.
+        for (int r = 0; r < lines.length; r++) {
+            // If sorting columns within current cells produces a larger row, a column swap alone beats 'a'
+            FixBS maxForRow = rowString(r, order, cellEnd);
+            if (maxForRow.compareTo(line(r)) < 0) {
+                return false;
+            }
+            // Quick adjacent row check: in a lex-max matrix, row r cannot be strictly smaller than row r+1
+            if (r > 0 && line(r - 1).compareTo(line(r)) > 0) {
+                return false;
+            }
+            int[] o2 = new int[v];
+            int[] ce2 = new int[v];
+            refine(r, order, cellEnd, o2, ce2);
+            order = o2;
+            cellEnd = ce2;
+        }
+
+        List<int[]> auts = new ArrayList<>();
+
+        // 2. Seed identical row transpositions as automorphisms
+        Map<FixBS, Integer> firstCopy = new HashMap<>();
+        for (int r = 0; r < lines.length; r++) {
+            Integer f = firstCopy.putIfAbsent(line(r), r);
+            if (f != null) {
+                int[] g = identityPerm(lines.length);
+                g[f] = r;
+                g[r] = f;
+                auts.add(g);
+            }
+        }
+
+        // 3. Run bounded DFS (returns -1 immediately if a strictly larger row prefix is found)
+        order = identityPerm(v);
+        Arrays.fill(cellEnd, v);
+        return dfsCheck(0, auts, new int[lines.length], new boolean[lines.length], order, cellEnd) != -1;
+    }
+
+    private static final int MAX_AUTS = 5000;
+
+    /**
+     * @return -1 if a strictly larger matrix exists, depth to backjump to, or Integer.MAX_VALUE
+     */
+    private int dfsCheck(int depth, List<int[]> auts, int[] rows, boolean[] used, int[] order, int[] cellEnd) {
+        if (depth == lines.length) {
+            // Reached a leaf equal to bestMatrixRows -> record automorphism bestRows[i] (which is i) -> rows[i]
+            int split = 0;
+            while (split < lines.length && rows[split] == split) split++;
+            if (split == lines.length) {
+                return Integer.MAX_VALUE; // The identity path itself
+            }
+            if (auts.size() < MAX_AUTS) {
+                auts.add(rows.clone()); // Since bestRows[i] == i, g[bestRows[i]] = rows[i] is just rows.clone()
+            }
+            return split; // Backjump to the split point
+        }
+
+        // Find candidate rows and the maximal next row under current column partition
+        FixBS best = null;
+        List<Integer> cands = new ArrayList<>();
+        for (int r = 0; r < lines.length; r++) {
+            if (used[r]) continue;
+            FixBS row = rowString(r, order, cellEnd);
+            int c = best == null ? 1 : best.compareTo(row);
+            if (c > 0) {
+                best = row;
+                cands.clear();
+            }
+            if (c >= 0) cands.add(r);
+        }
+
+        // Compare against the original matrix's row at this depth
+        int c = line(depth).compareTo(best);
+        if (c > 0) return -1;                // Strictly larger row found! Exit immediately
+        if (c < 0) return Integer.MAX_VALUE; // This branch is strictly smaller; prune
+
+        List<Integer> done = new ArrayList<>();
+        for (int r : cands) {
+            if (!done.isEmpty() && sameOrbitAsDone(r, auts, done, rows, depth)) continue;
+            done.add(r);
+
+            int[] o2 = new int[v];
+            int[] ce2 = new int[v];
+            refine(r, order, cellEnd, o2, ce2);
+            rows[depth] = r;
+            used[r] = true;
+            int jump = dfsCheck(depth + 1, auts, rows, used, o2, ce2);
+            used[r] = false;
+            if (jump < depth) return jump; // Propagates -1 (early exit) or split backjump
+        }
+        return Integer.MAX_VALUE;
+    }
+
+    /** Is r in the orbit (under found automorphisms that fix rows[0..depth-1]) of an already explored child? */
+    private boolean sameOrbitAsDone(int r, List<int[]> auts, List<Integer> done, int[] rows, int depth) {
+        int[] parent = identityPerm(lines.length);
+        boolean any = false;
+        ex: for (int[] g : auts) {
+            for (int i = 0; i < depth; i++) {
+                if (g[rows[i]] != rows[i]) {
+                    continue ex;
+                }
+            }
+            any = true;
+            for (int x = 0; x < lines.length; x++) {
+                union(parent, x, g[x]);
+            }
+        }
+        if (!any) {
+            return false;
+        }
+        int root = find(parent, r);
+        for (int d : done) {
+            if (find(parent, d) == root) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private FixBS rowString(int r, int[] order, int[] cellEnd) {
+        FixBS out = new FixBS(v);
+        int p = 0;
+        while (p < v) {
+            int e = cellEnd[p];
+            int k = 0;
+            for (int q = p; q < e; q++) {
+                if (inc(r, order[q])) {
+                    k++;
+                }
+            }
+            for (int q = p; q < p + k; q++) {
+                out.set(q);
+            }
+            p = e;
+        }
+        return out;
+    }
+
+    private void refine(int r, int[] order, int[] cellEnd, int[] o2, int[] ce2) {
+        int p = 0;
+        while (p < v) {
+            int e = cellEnd[p], w = p;
+            for (int q = p; q < e; q++) if (inc(r, order[q])) o2[w++] = order[q];
+            int split = w;
+            for (int q = p; q < e; q++) if (!inc(r, order[q])) o2[w++] = order[q];
+            for (int q = p; q < split; q++) ce2[q] = split;
+            for (int q = split; q < e; q++) ce2[q] = e;
+            p = e;
+        }
+    }
+
+    // ---------- small utilities ----------
+    private static int[] identityPerm(int k) { int[] p = new int[k]; for (int i = 0; i < k; i++) p[i] = i; return p; }
+    private static int find(int[] p, int x) { while (p[x] != x) { p[x] = p[p[x]]; x = p[x]; } return x; }
+    private static void union(int[] p, int x, int y) { x = find(p, x); y = find(p, y); if (x != y) p[x] = y; }
 }
