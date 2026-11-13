@@ -36,6 +36,13 @@ public record Inc(FixBS[] lines, int v, int k) implements NautyGraph {
         return lines[l];
     }
 
+    public LInc toLinc() {
+        if (v > 64) {
+            throw new IllegalStateException();
+        }
+        return new LInc(Arrays.stream(lines).mapToLong(l -> l.words()[0]).toArray(), v, k);
+    }
+
     public Inc removeTwins() {
         int[] beamCounts = new int[v];
         for (FixBS line : lines) {

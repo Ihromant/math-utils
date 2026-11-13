@@ -212,6 +212,7 @@ public class TestMaxLex {
             boolean max = val.equals(c.max);
             assertEquals(max, new MaxChecker(c.inc).isMaxLex());
             assertEquals(max, c.inc.isMaxLex());
+            assertEquals(max, c.inc.toLinc().isMaxLex());
         }
         System.out.println("IsMax took " + (System.currentTimeMillis() - time) + " ms");
     }
@@ -333,6 +334,7 @@ public class TestMaxLex {
                 assertEquals(permuted.equals(max), new MaxLexMatrixAlt(toTest).isMaxLex());
                 assertEquals(permuted.equals(max), new MaxChecker(toTest).isMaxLex());
                 assertEquals(permuted.equals(max), toTest.isMaxLex());
+                assertEquals(permuted.equals(max), toTest.toLinc().isMaxLex());
             }
         }
     }
