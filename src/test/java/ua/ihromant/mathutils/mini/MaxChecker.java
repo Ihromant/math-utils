@@ -48,11 +48,9 @@ public class MaxChecker {
         }
 
         // 2. Seed identical row transpositions as automorphisms
-        Map<String, Integer> firstCopy = new HashMap<>();
+        Map<FixBS, Integer> firstCopy = new HashMap<>();
         for (int r = 0; r < m; r++) {
-            StringBuilder sb = new StringBuilder(n);
-            for (int c = 0; c < n; c++) sb.append(a.inc(r, c) ? '1' : '0');
-            Integer f = firstCopy.putIfAbsent(sb.toString(), r);
+            Integer f = firstCopy.putIfAbsent(a.line(r), r);
             if (f != null) {
                 int[] g = identityPerm(m);
                 g[f] = r;
