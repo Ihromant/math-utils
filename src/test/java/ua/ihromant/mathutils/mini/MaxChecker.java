@@ -13,7 +13,6 @@ public class MaxChecker {
     private final int m, n;
     private final Inc a;
 
-    private final List<int[]> auts = new ArrayList<>();  // row parts of found automorphisms
     private static final int MAX_AUTS = 5000;
 
     public MaxChecker(Inc a) {
@@ -21,8 +20,6 @@ public class MaxChecker {
     }
 
     public boolean isMaxLex() {
-        auts.clear();
-
         int[] order = identityPerm(n);
         int[] cellEnd = new int[n];
         Arrays.fill(cellEnd, n);
@@ -47,6 +44,8 @@ public class MaxChecker {
             cellEnd = ce2;
         }
 
+        List<int[]> auts = new ArrayList<>();
+
         // 2. Seed identical row transpositions as automorphisms
         Map<FixBS, Integer> firstCopy = new HashMap<>();
         for (int r = 0; r < m; r++) {
@@ -62,13 +61,13 @@ public class MaxChecker {
         // 3. Run bounded DFS (returns -1 immediately if a strictly larger row prefix is found)
         order = identityPerm(n);
         Arrays.fill(cellEnd, n);
-        return dfsCheck(0, new int[m], new boolean[m], order, cellEnd) != -1;
+        return dfsCheck(0, auts, new int[m], new boolean[m], order, cellEnd) != -1;
     }
 
     /**
      * @return -1 if a strictly larger matrix exists, depth to backjump to, or Integer.MAX_VALUE
      */
-    private int dfsCheck(int depth, int[] rows, boolean[] used, int[] order, int[] cellEnd) {
+    private int dfsCheck(int depth, List<int[]> auts, int[] rows, boolean[] used, int[] order, int[] cellEnd) {
         if (depth == m) {
             // Reached a leaf equal to bestMatrixRows -> record automorphism bestRows[i] (which is i) -> rows[i]
             int split = 0;
@@ -103,7 +102,7 @@ public class MaxChecker {
 
         List<Integer> done = new ArrayList<>();
         for (int r : cands) {
-            if (!done.isEmpty() && sameOrbitAsDone(r, done, rows, depth)) continue;
+            if (!done.isEmpty() && sameOrbitAsDone(r, auts, done, rows, depth)) continue;
             done.add(r);
 
             int[] o2 = new int[n];
@@ -111,7 +110,7 @@ public class MaxChecker {
             refine(r, order, cellEnd, o2, ce2);
             rows[depth] = r;
             used[r] = true;
-            int jump = dfsCheck(depth + 1, rows, used, o2, ce2);
+            int jump = dfsCheck(depth + 1, auts, rows, used, o2, ce2);
             used[r] = false;
             if (jump < depth) return jump; // Propagates -1 (early exit) or split backjump
         }
@@ -119,7 +118,7 @@ public class MaxChecker {
     }
 
     /** Is r in the orbit (under found automorphisms that fix rows[0..depth-1]) of an already explored child? */
-    private boolean sameOrbitAsDone(int r, List<Integer> done, int[] rows, int depth) {
+    private boolean sameOrbitAsDone(int r, List<int[]> auts, List<Integer> done, int[] rows, int depth) {
         int[] parent = identityPerm(m);
         boolean any = false;
         ex: for (int[] g : auts) {
