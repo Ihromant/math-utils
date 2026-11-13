@@ -27,6 +27,10 @@ public record Inc(FixBS[] lines, int v, int k) implements NautyGraph {
         lines[l].set(pt);
     }
 
+    public FixBS line(int l) {
+        return lines[l];
+    }
+
     public Inc removeTwins() {
         int[] beamCounts = new int[v];
         for (FixBS line : lines) {

@@ -340,6 +340,7 @@ public class TestMaxLex {
                 String permuted = MaxLexMatrixAlt.apply(fanoMax, rp, cp);
                 Inc toTest = MaxLexMatrixAlt.parse(splitIntoChunks(permuted, 7));
                 assertEquals(permuted.equals(max), new MaxLexMatrixAlt(toTest).isMaxLex());
+                assertEquals(permuted.equals(max), new MaxChecker(toTest).isMaxLex());
             }
         }
     }
