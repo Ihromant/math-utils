@@ -203,162 +203,165 @@ public record LInc(long[] lines, int v, int k) implements NautyGraph {
     }
 
     public boolean isMaxLex() {
-        int[] order = identityPerm(v);
-        int[] cellEnd = new int[v];
-        Arrays.fill(cellEnd, v);
+        int b = lines.length;
+        if (b == 0) return true;
 
-        // 1. Fast O(m * n) check & initialization:
-        // Verify that under identity row/column order, columns are already maximally refined
-        // (1s precede 0s in every equivalence cell) and rows are non-increasing.
-        for (int r = 0; r < lines.length; r++) {
-            // If sorting columns within current cells produces a larger row, a column swap alone beats 'a'
-            long maxForRow = rowString(r, order, cellEnd);
-            if (compare(maxForRow, line(r)) < 0) {
+        // Initial single cell containing all v points: bits 0 .. v-1
+        long allPts = v == 64 ? -1L : (1L << v) - 1L;
+        long[] cells = new long[]{allPts};
+
+        // 1. Fast check under identity permutation:
+        // At each step, cells are contiguous bit ranges. For identity to be optimal so far,
+        // line(r) must already have its 1-bits pushed to the low bits of each cell,
+        // and rows must be non-increasing.
+        for (int r = 0; r < b; r++) {
+            long line = lines[r];
+            if (r > 0 && compare(lines[r - 1], line) > 0) {
                 return false;
             }
-            // Quick adjacent row check: in a lex-max matrix, row r cannot be strictly smaller than row r+1
-            if (r > 0 && compare(line(r - 1), line(r)) > 0) {
+            if (maxRow(line, cells) != line) {
                 return false;
             }
-            int[] o2 = new int[v];
-            int[] ce2 = new int[v];
-            refine(r, order, cellEnd, o2, ce2);
-            order = o2;
-            cellEnd = ce2;
+            cells = refine(line, cells);
         }
 
-        List<int[]> auts = new ArrayList<>();
-
         // 2. Seed identical row transpositions as automorphisms
+        List<int[]> auts = new ArrayList<>();
         Map<Long, Integer> firstCopy = new HashMap<>();
-        for (int r = 0; r < lines.length; r++) {
-            Integer f = firstCopy.putIfAbsent(line(r), r);
+        for (int r = 0; r < b; r++) {
+            Integer f = firstCopy.putIfAbsent(lines[r], r);
             if (f != null) {
-                int[] g = identityPerm(lines.length);
+                int[] g = identityPerm(b);
                 g[f] = r;
                 g[r] = f;
                 auts.add(g);
             }
         }
 
-        // 3. Run bounded DFS (returns -1 immediately if a strictly larger row prefix is found)
-        order = identityPerm(v);
-        Arrays.fill(cellEnd, v);
-        return dfsCheck(0, auts, new int[lines.length], new boolean[lines.length], order, cellEnd) != -1;
+        // 3. Bounded DFS using bitmask cells
+        return dfsCheck(0, auts, new int[b], new boolean[b], new long[]{allPts}) != -1;
     }
 
     private static final int MAX_AUTS = 5000;
 
-    /**
-     * @return -1 if a strictly larger matrix exists, depth to backjump to, or Integer.MAX_VALUE
-     */
-    private int dfsCheck(int depth, List<int[]> auts, int[] rows, boolean[] used, int[] order, int[] cellEnd) {
-        if (depth == lines.length) {
-            // Reached a leaf equal to bestMatrixRows -> record automorphism bestRows[i] (which is i) -> rows[i]
+    private int dfsCheck(int depth, List<int[]> auts, int[] rows, boolean[] used, long[] cells) {
+        int b = lines.length;
+        if (depth == b) {
             int split = 0;
-            while (split < lines.length && rows[split] == split) split++;
-            if (split == lines.length) {
-                return Integer.MAX_VALUE; // The identity path itself
-            }
-            if (auts.size() < MAX_AUTS) {
-                auts.add(rows.clone()); // Since bestRows[i] == i, g[bestRows[i]] = rows[i] is just rows.clone()
-            }
-            return split; // Backjump to the split point
+            while (split < b && rows[split] == split) split++;
+            if (split == b) return Integer.MAX_VALUE;
+            if (auts.size() < MAX_AUTS) auts.add(rows.clone());
+            return split;
         }
 
-        // Find candidate rows and the maximal next row under current column partition
+        long target = lines[depth];
         long best = 0L;
-        List<Integer> cands = new ArrayList<>();
-        for (int r = 0; r < lines.length; r++) {
+        int[] cands = new int[b];
+        int candCount = 0;
+
+        for (int r = 0; r < b; r++) {
             if (used[r]) continue;
-            long row = rowString(r, order, cellEnd);
-            int c = best == 0 ? 1 : compare(best, row);
-            if (c > 0) {
+            long row = maxRow(lines[r], cells);
+            if (candCount == 0) {
                 best = row;
-                cands.clear();
+                cands[candCount++] = r;
+            } else {
+                int c = compare(best, row);
+                if (c > 0) {
+                    best = row;
+                    candCount = 0;
+                    cands[candCount++] = r;
+                } else if (c == 0) {
+                    cands[candCount++] = r;
+                }
             }
-            if (c >= 0) cands.add(r);
         }
 
-        // Compare against the original matrix's row at this depth
-        int c = compare(line(depth), best);
-        if (c > 0) return -1;                // Strictly larger row found! Exit immediately
-        if (c < 0) return Integer.MAX_VALUE; // This branch is strictly smaller; prune
+        int c = compare(target, best);
+        if (c > 0) return -1;                // Strictly larger row found
+        if (c < 0) return Integer.MAX_VALUE; // Strictly smaller branch, prune
 
-        List<Integer> done = new ArrayList<>();
-        for (int r : cands) {
-            if (!done.isEmpty() && sameOrbitAsDone(r, auts, done, rows, depth)) continue;
-            done.add(r);
+        int[] done = new int[candCount];
+        int doneCount = 0;
 
-            int[] o2 = new int[v];
-            int[] ce2 = new int[v];
-            refine(r, order, cellEnd, o2, ce2);
+        for (int i = 0; i < candCount; i++) {
+            int r = cands[i];
+            if (doneCount > 0 && sameOrbitAsDone(r, auts, done, doneCount, rows, depth)) continue;
+            done[doneCount++] = r;
+
+            long[] nextCells = refine(lines[r], cells);
             rows[depth] = r;
             used[r] = true;
-            int jump = dfsCheck(depth + 1, auts, rows, used, o2, ce2);
+            int jump = dfsCheck(depth + 1, auts, rows, used, nextCells);
             used[r] = false;
-            if (jump < depth) return jump; // Propagates -1 (early exit) or split backjump
+            if (jump < depth) return jump;
         }
         return Integer.MAX_VALUE;
     }
 
-    /** Is r in the orbit (under found automorphisms that fix rows[0..depth-1]) of an already explored child? */
-    private boolean sameOrbitAsDone(int r, List<int[]> auts, List<Integer> done, int[] rows, int depth) {
-        int[] parent = identityPerm(lines.length);
-        boolean any = false;
-        ex: for (int[] g : auts) {
-            for (int i = 0; i < depth; i++) {
-                if (g[rows[i]] != rows[i]) {
-                    continue ex;
-                }
+    /**
+     * Computes the lexicographically largest bitmask achievable by permuting columns
+     * within each cell of the current partition.
+     */
+    private static long maxRow(long line, long[] cells) {
+        long out = 0L;
+        int pos = 0;
+        for (long cell : cells) {
+            int ones = Long.bitCount(cell & line);
+            if (ones != 0) {
+                // Sets `ones` bits starting at `pos`: ((1L << ones) - 1) << pos
+                out |= (-1L >>> (64 - ones)) << pos;
             }
-            any = true;
-            for (int x = 0; x < lines.length; x++) {
-                union(parent, x, g[x]);
-            }
-        }
-        if (!any) {
-            return false;
-        }
-        int root = find(parent, r);
-        for (int d : done) {
-            if (find(parent, d) == root) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private long rowString(int r, int[] order, int[] cellEnd) {
-        long out = 0;
-        int p = 0;
-        while (p < v) {
-            int e = cellEnd[p];
-            int k = 0;
-            for (int q = p; q < e; q++) {
-                if (inc(r, order[q])) {
-                    k++;
-                }
-            }
-            for (int q = p; q < p + k; q++) {
-                out = out | (1L << q);
-            }
-            p = e;
+            pos += Long.bitCount(cell);
         }
         return out;
     }
 
-    private void refine(int r, int[] order, int[] cellEnd, int[] o2, int[] ce2) {
-        int p = 0;
-        while (p < v) {
-            int e = cellEnd[p], w = p;
-            for (int q = p; q < e; q++) if (inc(r, order[q])) o2[w++] = order[q];
-            int split = w;
-            for (int q = p; q < e; q++) if (!inc(r, order[q])) o2[w++] = order[q];
-            for (int q = p; q < split; q++) ce2[q] = split;
-            for (int q = split; q < e; q++) ce2[q] = e;
-            p = e;
+    /**
+     * Splits each cell `c` into (c & line) followed by (c & ~line),
+     * omitting empty halves.
+     */
+    private static long[] refine(long line, long[] cells) {
+        int newLen = 0;
+        for (long cell : cells) {
+            long ones = cell & line;
+            long zeros = cell & ~line;
+            if (ones != 0 && zeros != 0) newLen += 2;
+            else newLen += 1;
         }
+        if (newLen == cells.length) {
+            return cells; // Partition did not split any cell; reuse immutable array!
+        }
+        long[] next = new long[newLen];
+        int idx = 0;
+        for (long cell : cells) {
+            long ones = cell & line;
+            long zeros = cell & ~line;
+            if (ones != 0) next[idx++] = ones;
+            if (zeros != 0) next[idx++] = zeros;
+        }
+        return next;
+    }
+
+    private boolean sameOrbitAsDone(int r, List<int[]> auts, int[] done, int doneCount, int[] rows, int depth) {
+        int b = lines.length;
+        int[] parent = identityPerm(b);
+        boolean any = false;
+        ex: for (int[] g : auts) {
+            for (int i = 0; i < depth; i++) {
+                if (g[rows[i]] != rows[i]) continue ex;
+            }
+            any = true;
+            for (int x = 0; x < b; x++) {
+                union(parent, x, g[x]);
+            }
+        }
+        if (!any) return false;
+        int root = find(parent, r);
+        for (int i = 0; i < doneCount; i++) {
+            if (find(parent, done[i]) == root) return true;
+        }
+        return false;
     }
 
     // ---------- small utilities ----------
