@@ -21,7 +21,7 @@ public class MaxLexMatrixAlt {
     private static final int MAX_AUTS = 5000;
 
     public MaxLexMatrixAlt(Inc a) {
-        this.a = a; this.m = a.lines().length; this.n = a.v();
+        this.a = a; this.m = a.b(); this.n = a.v();
     }
 
     public boolean isMaxLex() {
