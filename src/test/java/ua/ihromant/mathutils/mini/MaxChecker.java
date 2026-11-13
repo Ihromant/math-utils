@@ -1,13 +1,10 @@
 package ua.ihromant.mathutils.mini;
 
 import ua.ihromant.mathutils.Inc;
-import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class MaxChecker {
     private final int m, n;
@@ -184,17 +181,5 @@ public class MaxChecker {
         StringBuilder sb = new StringBuilder();
         for (int r : rp) for (int c : cp) sb.append(a.inc(r, c) ? '1' : '0');
         return sb.toString();
-    }
-
-    public static Inc parse(String... rows) {
-        FixBS[] a = new FixBS[rows.length];
-        for (int i = 0; i < rows.length; i++) {
-            String s = rows[i].replaceAll("\\s", "");
-            a[i] = new FixBS(s.length());
-            for (int j = 0; j < s.length(); j++) {
-                a[i].set(j, s.charAt(j) == '1');
-            }
-        }
-        return new Inc(a, rows[0].length(), 0);
     }
 }
