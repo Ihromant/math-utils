@@ -223,6 +223,13 @@ public class TestMaxLex {
             assertEquals(MaxLexMatrixAlt.apply(c.inc, r.rowPerm, r.colPerm), r.value, "certificate");
         }
         System.out.println("New took " + (System.currentTimeMillis() - time) + " ms");
+        time = System.currentTimeMillis();
+        for (TestCase c : cases) {
+            String val = MaxLexMatrixAlt.apply(c.inc, IntStream.range(0, c.inc.b()).toArray(), IntStream.range(0, c.inc.v()).toArray());
+            boolean min = val.equals(c.max);
+            assertEquals(min, new MaxChecker(c.inc).isMaxLex());
+        }
+        System.out.println("IsMax took " + (System.currentTimeMillis() - time) + " ms");
     }
 
     @Test
