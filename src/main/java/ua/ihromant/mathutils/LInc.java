@@ -122,13 +122,17 @@ public record LInc(long[] lines, int v, int k) implements NautyGraph {
             this.inc = inc;
             this.v = inc.v();
             this.b = inc.b();
-            int ll = (int) IntStream.range(0, v).filter(pt -> inc.inc(0, pt)).count();
+            int ll = inc.k();
             this.block = new int[ll];
             int fst = -1;
-            for (int i = 0; i < v; i++) {
-                if (inc.inc(b - 1, i)) {
-                    fst = i;
-                    break;
+            if (b == 0) {
+                fst = 0;
+            } else {
+                for (int i = 0; i < v; i++) {
+                    if (inc.inc(b - 1, i)) {
+                        fst = i;
+                        break;
+                    }
                 }
             }
             int snd;
