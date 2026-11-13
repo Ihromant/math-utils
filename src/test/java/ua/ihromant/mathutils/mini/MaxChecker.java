@@ -1,6 +1,7 @@
 package ua.ihromant.mathutils.mini;
 
 import ua.ihromant.mathutils.Inc;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -12,7 +13,6 @@ public class MaxChecker {
     private final int m, n;
     private final Inc a;
 
-    private int[][] bestMatrixRows;   // best value, row by row
     private final List<int[]> auts = new ArrayList<>();  // row parts of found automorphisms
     private static final int MAX_AUTS = 5000;
 
@@ -22,7 +22,6 @@ public class MaxChecker {
 
     public boolean isMaxLex() {
         auts.clear();
-        bestMatrixRows = new int[m][n];
 
         int[] order = identityPerm(n);
         int[] cellEnd = new int[n];
@@ -32,16 +31,13 @@ public class MaxChecker {
         // Verify that under identity row/column order, columns are already maximally refined
         // (1s precede 0s in every equivalence cell) and rows are non-increasing.
         for (int r = 0; r < m; r++) {
-            for (int c = 0; c < n; c++) {
-                bestMatrixRows[r][c] = a.inc(r, c) ? 1 : 0;
-            }
             // If sorting columns within current cells produces a larger row, a column swap alone beats 'a'
-            int[] maxForRow = rowString(r, order, cellEnd);
-            if (compare(maxForRow, bestMatrixRows[r]) > 0) {
+            FixBS maxForRow = rowString(r, order, cellEnd);
+            if (maxForRow.compareTo(a.line(r)) < 0) {
                 return false;
             }
             // Quick adjacent row check: in a lex-max matrix, row r cannot be strictly smaller than row r+1
-            if (r > 0 && compare(bestMatrixRows[r - 1], bestMatrixRows[r]) < 0) {
+            if (r > 0 && a.line(r - 1).compareTo(a.line(r)) > 0) {
                 return false;
             }
             int[] o2 = new int[n];
@@ -89,12 +85,12 @@ public class MaxChecker {
         }
 
         // Find candidate rows and the maximal next row under current column partition
-        int[] best = null;
+        FixBS best = null;
         List<Integer> cands = new ArrayList<>();
         for (int r = 0; r < m; r++) {
             if (used[r]) continue;
-            int[] row = rowString(r, order, cellEnd);
-            int c = best == null ? 1 : compare(row, best);
+            FixBS row = rowString(r, order, cellEnd);
+            int c = best == null ? 1 : best.compareTo(row);
             if (c > 0) {
                 best = row;
                 cands.clear();
@@ -103,7 +99,7 @@ public class MaxChecker {
         }
 
         // Compare against the original matrix's row at this depth
-        int c = compare(best, bestMatrixRows[depth]);
+        int c = a.line(depth).compareTo(best);
         if (c > 0) return -1;                // Strictly larger row found! Exit immediately
         if (c < 0) return Integer.MAX_VALUE; // This branch is strictly smaller; prune
 
@@ -151,8 +147,8 @@ public class MaxChecker {
         return false;
     }
 
-    private int[] rowString(int r, int[] order, int[] cellEnd) {
-        int[] out = new int[n];
+    private FixBS rowString(int r, int[] order, int[] cellEnd) {
+        FixBS out = new FixBS(n);
         int p = 0;
         while (p < n) {
             int e = cellEnd[p];
@@ -163,7 +159,7 @@ public class MaxChecker {
                 }
             }
             for (int q = p; q < p + k; q++) {
-                out[q] = 1;
+                out.set(q);
             }
             p = e;
         }
@@ -184,10 +180,6 @@ public class MaxChecker {
     }
 
     // ---------- small utilities ----------
-    private static int compare(int[] x, int[] y) {
-        for (int i = 0; i < x.length; i++) if (x[i] != y[i]) return x[i] - y[i];
-        return 0;
-    }
     private static int[] identityPerm(int k) { int[] p = new int[k]; for (int i = 0; i < k; i++) p[i] = i; return p; }
     private static int find(int[] p, int x) { while (p[x] != x) { p[x] = p[p[x]]; x = p[x]; } return x; }
     private static void union(int[] p, int x, int y) { x = find(p, x); y = find(p, y); if (x != y) p[x] = y; }
