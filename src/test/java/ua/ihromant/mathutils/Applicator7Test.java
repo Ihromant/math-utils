@@ -892,7 +892,7 @@ public class Applicator7Test {
             ab.set(false);
         }
         Map<FixBS, State1> states = new ConcurrentHashMap<>();
-        Consumer<State1> cons = st -> states.putIfAbsent(st.block(), st);
+        Consumer<State1> cons = st -> states.putIfAbsent(st.minimizeBlock(sp).block(), st);
         sgs.parallelStream().forEach(sg -> {
             if (sg.order() == 1 || table.order() / sg.order() > b) {
                 return;
