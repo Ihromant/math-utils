@@ -5,10 +5,13 @@ import tools.jackson.core.json.JsonReadFeature;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import ua.ihromant.mathutils.auto.AutoAlgo;
+import ua.ihromant.mathutils.g.GSpace1;
 import ua.ihromant.mathutils.group.BurnsideGroup;
 import ua.ihromant.mathutils.group.CyclicGroup;
 import ua.ihromant.mathutils.group.CyclicProduct;
+import ua.ihromant.mathutils.group.GapGroup;
 import ua.ihromant.mathutils.group.Group;
+import ua.ihromant.mathutils.group.GroupIndex;
 import ua.ihromant.mathutils.group.GroupProduct;
 import ua.ihromant.mathutils.group.SemiDirectProduct;
 import ua.ihromant.mathutils.util.FixBS;
@@ -1028,6 +1031,19 @@ public class HyperbolicPlaneTest {
         BitSet bs = new BitSet();
         IntStream.of(values).forEach(bs::set);
         return bs;
+    }
+
+    @Test
+    public void test376_6() throws IOException {
+        int[][] base = new int[][]{{0, 5, 21, 48, 89, 146}, {1, 6, 118, 219, 238, 249}, {1, 18, 82, 123, 132, 269}, {1, 81, 191, 286, 288, 324}, {1, 9, 23, 65, 157, 254}, {1, 19, 44, 114, 197, 234}, {1, 7, 30, 47, 63, 91}, {1, 5, 108, 117, 220, 344}};
+        int k = 6;
+        GapGroup gg = GroupIndex.gapGroup(1500, 35);
+        Group group = gg.group();
+        int[] orbits = new int[]{1, 375};
+        List<int[][]> configs = ApplicatorTest.configs(group, orbits);
+        GSpace1 space = new GSpace1(k, group, false, configs.getFirst());
+        Liner l = new Liner(space.v(), Arrays.stream(base).flatMap(space::blocks).toArray(int[][]::new));
+        System.out.println(l.graphData().autCount() + " " + l.hyperbolicFreq() + " " + Arrays.deepToString(l.lines()));
     }
 
     @Test
