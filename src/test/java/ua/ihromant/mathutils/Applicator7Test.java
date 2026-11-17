@@ -71,9 +71,12 @@ public class Applicator7Test {
                 int v = space.v();
                 FixBS evenDiffs = space.evenDiffs();
                 State1[] stab = getStabilized(space);
+                FixBS notExcluded = evenDiffs.copy();
+                Arrays.stream(stab).forEach(st -> notExcluded.andNot(st.diffSet()));
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
                         + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
-                if (stab.length == 0) {
+                if (stab.length == 0 || !notExcluded.isEmpty()) {
+                    System.out.println("Excluded due to " + ((stab.length == 0) ? "stab empty" : "not covering"));
                     continue;
                 }
                 Graph g = Graph.by(stab, (a, b) -> !a.diffSet().intersects(b.diffSet()));
