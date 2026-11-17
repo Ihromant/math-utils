@@ -12,7 +12,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -491,5 +493,122 @@ public class GSpace1 {
             }
             return true;
         });
+    }
+
+    public State1[] getStabilized() {
+        int b = v * (v - 1) / k / (k - 1);
+        List<SubGroup> sgs = group.subGroups();
+
+        Map<FixBS, State1> states = new ConcurrentHashMap<>();
+        Consumer<FixBS> cons = fbs -> states.putIfAbsent(fbs, State1.fromBlock(this, fbs));
+        sgs.parallelStream().forEach(sg -> {
+            if (sg.order() == 1 || group.order() / sg.order() > b) {
+                return;
+            }
+            subStabilized(sg, cons);
+        });
+        return states.values().toArray(State1[]::new);
+    }
+
+    private List<int[]> cosets(SubGroup sg) {
+        List<int[]> cosets = new ArrayList<>();
+        ex: for (int x = 0; x < v; x++) {
+            FixBS coset = new FixBS(v);
+            for (int g : sg.arr()) {
+                int app = apply(g, x);
+                if (app < x) {
+                    continue ex;
+                }
+                coset.set(app);
+            }
+            if (coset.cardinality() <= k) {
+                cosets.add(coset.toArray());
+            }
+        }
+        return cosets;
+    }
+
+    private void subStabilized(SubGroup sg, Consumer<FixBS> cons) {
+        List<int[]> cosets = cosets(sg);
+        int[] initial = IntStream.range(0, cosets.size()).filter(i -> Arrays.stream(oBeg())
+                .anyMatch(ob -> Arrays.binarySearch(cosets.get(i), ob) >= 0)).toArray();
+        FixBS[] comp = comp(cosets, sg);
+        for (int i : initial) {
+            int[] fst = cosets.get(i);
+            FixBS fbs = FixBS.of(v, fst);
+            if (fst.length == k) {
+                if (checkCorrect(fbs)) {
+                    cons.accept(fbs);
+                }
+                continue;
+            }
+            findStab(cosets, comp, fbs, comp[i], cons);
+        }
+    }
+
+    private FixBS[] comp(List<int[]> cosets, SubGroup sg) {
+        return IntStream.range(0, cosets.size()).parallel().mapToObj(i -> {
+            int[] fst = cosets.get(i);
+            FixBS row = new FixBS(cosets.size());
+            State1 st = new State1(new FixBS(v), sg.elems(), new FixBS(diffLength()), new int[diffLength()][0], 0);
+            for (int el : fst) {
+                st = Objects.requireNonNull(st.acceptElemWithStab(this, el));
+            }
+            ex: for (int j = i + 1; j < cosets.size(); j++) {
+                int[] snd = cosets.get(j);
+                if (fst.length + snd.length > k) {
+                    continue;
+                }
+                State1 nextSt = st;
+                for (int el : snd) {
+                    nextSt = nextSt.acceptElemWithStab(this, el);
+                    if (nextSt == null) {
+                        continue ex;
+                    }
+                }
+                row.set(j);
+            }
+            return row;
+        }).toArray(FixBS[]::new);
+    }
+
+    private void findStab(List<int[]> cosets, FixBS[] comp, FixBS state, FixBS curr, Consumer<FixBS> cons) {
+        int card = state.cardinality();
+        if (card == k) {
+            if (checkCorrect(state)) {
+                cons.accept(state);
+            }
+            return;
+        }
+        for (int i = curr.nextSetBit(0); i >= 0; i = curr.nextSetBit(i + 1)) {
+            int[] cos = cosets.get(i);
+            if (card + cos.length > k) {
+                continue;
+            }
+            FixBS nextSt = state.copy();
+            for (int el : cos) {
+                nextSt.set(el);
+            }
+            findStab(cosets, comp, nextSt, curr.intersection(comp[i]), cons);
+        }
+    }
+
+    private boolean checkCorrect(FixBS block) {
+        Map<Integer, FixBS> coveredDiffs = new HashMap<>();
+        for (int g = 0; g < group.order(); g++) {
+            FixBS fbs = mapBlock(block, g);
+            if (fbs.compareTo(block) < 0) {
+                return false;
+            }
+            for (int i = fbs.nextSetBit(0); i >= 0; i = fbs.nextSetBit(i + 1)) {
+                for (int j = fbs.nextSetBit(i + 1); j >= 0; j = fbs.nextSetBit(j + 1)) {
+                    FixBS prev = coveredDiffs.put(i * v + j, fbs);
+                    if (prev != null && !prev.equals(fbs)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return true;
     }
 }
