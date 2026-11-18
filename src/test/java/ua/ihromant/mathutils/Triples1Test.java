@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
@@ -43,9 +44,20 @@ public class Triples1Test {
                 FixBS evenDiffs = space.evenDiffs();
                 StateTr[] stab = space.getStabilized();
                 FixBS notExcluded = evenDiffs.copy();
-                Arrays.stream(stab).forEach(st -> notExcluded.andNot(st.diffSet()));
+                int evenCard = evenDiffs.cardinality();
+                int sum = 0;
+                PriorityQueue<Integer> queue = new PriorityQueue<>();
+                for (StateTr st : stab) {
+                    int intCard = evenDiffs.intersection(st.diffSet()).cardinality();
+                    sum = sum + intCard;
+                    queue.offer(intCard);
+                    notExcluded.andNot(st.diffSet());
+                    while (!queue.isEmpty() && sum - queue.peek() >= evenCard) {
+                        sum = sum - queue.poll();
+                    }
+                }
                 System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
-                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenDiffs.cardinality());
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenCard + " min size: " + queue.size());
                 if (stab.length == 0 || !notExcluded.isEmpty()) {
                     System.out.println("Excluded due to " + ((stab.length == 0) ? "stab empty" : "not covering"));
                     continue;
@@ -58,7 +70,7 @@ public class Triples1Test {
                             + " " + Arrays.deepToString(Arrays.stream(nst).map(NSState::block).toArray(int[][]::new)));
                 };
                 List<List<StateTr>> init = new ArrayList<>();
-                JNauty.instance().cliques(g, 1, v, a -> {
+                JNauty.instance().cliques(g, queue.size(), v, a -> {
                     FixBS arr = new FixBS(a);
                     List<StateTr> states = new ArrayList<>();
                     FixBS diffSet = new FixBS(space.diffLength());
