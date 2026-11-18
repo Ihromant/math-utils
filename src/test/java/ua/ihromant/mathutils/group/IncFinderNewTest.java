@@ -6,12 +6,13 @@ import ua.ihromant.mathutils.LInc;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.LongPredicate;
 
 public class IncFinderNewTest {
     @Test
     public void testBfs() {
-        int v = 15;
-        int k = 3;
+        int v = 25;
+        int k = 4;
         int r = (v - 1) / (k - 1);
         int b = v * (v - 1) / k / (k - 1);
         LInc zero = new LInc(new long[0], v, k);
@@ -19,10 +20,10 @@ public class IncFinderNewTest {
         expand(zero, r, firstStage::add);
         List<LInc> secondStage = new ArrayList<>();
         for (LInc next : firstStage) {
-            expand(next, r - 1, secondStage::add);
+            expand(next, r + 2, secondStage::add);
         }
         System.out.println(secondStage.size());
-        secondStage.stream().parallel().forEach(next -> expand(next, b - 2 * r + 1, li -> System.out.println(li.toLines())));
+        //secondStage.stream().parallel().forEach(next -> expand(next, b - 2 * r + 1, li -> System.out.println(li.toLines())));
     }
 
     private static void expand(LInc base, int depth, Consumer<LInc> cons) {
@@ -30,12 +31,13 @@ public class IncFinderNewTest {
             cons.accept(base);
             return;
         }
+        LongPredicate canAdd = base.maxLexExtender();   // base's search tree is built once, reused per candidate
         for (int[] bl : base.blocks()) {
-            LInc next = base.addLine(bl);
-            if (!next.isMaxLex()) {
+            long line = LInc.toMask(bl);
+            if (!canAdd.test(line)) {
                 continue;
             }
-            expand(next, depth - 1, cons);
+            expand(base.addLine(line), depth - 1, cons);
         }
     }
 }
