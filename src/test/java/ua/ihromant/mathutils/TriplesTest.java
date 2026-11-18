@@ -243,7 +243,7 @@ public class TriplesTest {
         return Arrays.stream(from).reduce(1, (a, b) -> a * b / Combinatorics.gcd(a, b));
     }
 
-    private static int[][] splits(int from, int parts) {
+    public static int[][] splits(int from, int parts) {
         List<int[]> result = new ArrayList<>();
         int[] base = new int[parts];
         recur(base, from, 0, result::add);
