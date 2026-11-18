@@ -62,7 +62,7 @@ public class TriplesTest {
         System.out.println(c);
         for (int j = 1; j <= c; j++) {
             Group group = GroupIndex.group(gs, j);
-            Map<Integer, List<SubGroup>> subs = group.groupedSubGroups();
+            Map<Integer, List<SubGroup>> subs = group.subsByConjugation();
             for (int t = 0; t < subs.getOrDefault(mt, List.of()).size(); t++) {
                 //for (int u = 0; u < subs.getOrDefault(48, List.of()).size(); u++) {
                 GSpaceTr space;
@@ -209,7 +209,7 @@ public class TriplesTest {
         });
     }
 
-    private static void generateConfigs(int[][] splits, BiConsumer<Group, int[][]> cons) throws IOException {
+    public static void generateConfigs(int[][] splits, BiConsumer<Group, int[][]> cons) throws IOException {
         for (int[] split : splits) {
             int lcm = lcm(split);
             if (lcm % 16 == 0) {
@@ -231,7 +231,7 @@ public class TriplesTest {
         }
         int ol = split[idx];
         int gs = gr.order() / ol;
-        List<SubGroup> sgs = gr.groupedSubGroups().getOrDefault(gs, List.of());
+        List<SubGroup> sgs = gr.subsByConjugation().getOrDefault(gs, List.of());
         for (int i = 0; i < sgs.size(); i++) {
             int[][] nextCurr = curr.clone();
             nextCurr[idx] = new int[]{gs, i};
