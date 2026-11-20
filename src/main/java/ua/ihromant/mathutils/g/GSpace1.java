@@ -470,11 +470,16 @@ public class GSpace1 {
         List<SubGroup> sgs = group.subGroups();
 
         Map<FixBS, State1> states = new ConcurrentHashMap<>();
-        Consumer<FixBS> cons = fbs -> states.putIfAbsent(fbs, State1.fromBlock(this, fbs));
         sgs.parallelStream().forEach(sg -> {
             if (sg.order() == 1 || group.order() / sg.order() > b) {
                 return;
             }
+            Consumer<FixBS> cons = fbs -> {
+                State1 state = checkCorrect(fbs, sg.elems());
+                if (state != null) {
+                    states.putIfAbsent(fbs, state);
+                }
+            };
             subStabilized(sg, cons);
         });
         return states.values().toArray(State1[]::new);
@@ -507,9 +512,7 @@ public class GSpace1 {
             int[] fst = cosets.get(i);
             FixBS fbs = FixBS.of(v, fst);
             if (fst.length == k) {
-                if (checkCorrect(fbs)) {
-                    cons.accept(fbs);
-                }
+                cons.accept(fbs);
                 continue;
             }
             findStab(cosets, comp, fbs, comp[i], cons);
@@ -545,9 +548,7 @@ public class GSpace1 {
     private void findStab(List<int[]> cosets, FixBS[] comp, FixBS state, FixBS curr, Consumer<FixBS> cons) {
         int card = state.cardinality();
         if (card == k) {
-            if (checkCorrect(state)) {
-                cons.accept(state);
-            }
+            cons.accept(state);
             return;
         }
         for (int i = curr.nextSetBit(0); i >= 0; i = curr.nextSetBit(i + 1)) {
@@ -563,22 +564,33 @@ public class GSpace1 {
         }
     }
 
-    private boolean checkCorrect(FixBS block) {
+    private State1 checkCorrect(FixBS block, FixBS stab) {
         Map<Integer, FixBS> coveredDiffs = new HashMap<>();
+        FixBS diffSet = new FixBS(diffLength());
+        FixBS stabilizer = new FixBS(group.order());
         for (int g = 0; g < group.order(); g++) {
             FixBS fbs = mapBlock(block, g);
-            if (fbs.compareTo(block) < 0) {
-                return false;
+            int cmp = fbs.compareTo(block);
+            if (cmp < 0) {
+                return null;
+            }
+            if (cmp == 0) {
+                stabilizer.set(g);
             }
             for (int i = fbs.nextSetBit(0); i >= 0; i = fbs.nextSetBit(i + 1)) {
                 for (int j = fbs.nextSetBit(i + 1); j >= 0; j = fbs.nextSetBit(j + 1)) {
                     FixBS prev = coveredDiffs.put(i * v + j, fbs);
                     if (prev != null && !prev.equals(fbs)) {
-                        return false;
+                        return null;
                     }
+                    diffSet.set(diffIdx(i * v + j));
+                    diffSet.set(diffIdx(j * v + i));
                 }
             }
         }
-        return true;
+        if (!stab.equals(stabilizer)) {
+            return null;
+        }
+        return new State1(block, stabilizer, diffSet, new int[0][], block.cardinality());
     }
 }

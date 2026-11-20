@@ -635,16 +635,16 @@ public class GSpaceTr {
             for (int i = fbs.nextSetBit(0); i >= 0; i = fbs.nextSetBit(i + 1)) {
                 for (int j = fbs.nextSetBit(i + 1); j >= 0; j = fbs.nextSetBit(j + 1)) {
                     for (int k = fbs.nextSetBit(j + 1); k >= 0; k = fbs.nextSetBit(k + 1)) {
+                        FixBS prev = coveredDiffs.put(i * v * v + j * v + k, fbs);
+                        if (prev != null && !prev.equals(fbs)) {
+                            return null;
+                        }
                         diffSet.set(diffIdx(i, j, k));
                         diffSet.set(diffIdx(i, k, j));
                         diffSet.set(diffIdx(j, i, k));
                         diffSet.set(diffIdx(j, k, i));
                         diffSet.set(diffIdx(k, i, j));
                         diffSet.set(diffIdx(k, j, i));
-                        FixBS prev = coveredDiffs.put(i * v * v + j * v + k, fbs);
-                        if (prev != null && !prev.equals(fbs)) {
-                            return null;
-                        }
                     }
                 }
             }
