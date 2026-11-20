@@ -306,14 +306,15 @@ public class Triples1Test {
                         sum = sum - queue.poll();
                     }
                 }
-                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
-                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenCard + " min size: " + queue.size());
                 if (stab.length == 0 || !notExcluded.isEmpty()) {
                     System.out.println("Excluded due to " + ((stab.length == 0) ? "stab empty" : "not covering"));
                     continue;
                 }
                 Arrays.parallelSort(stab, Comparator.comparing(StateTr::block));
                 int[] idxes = IntStream.range(0, stab.length).filter(i -> space.minimal(stab[i].block())).toArray();
+                System.out.println(GroupIndex.identify(gg) + " " + v + " " + k + " configs: "
+                        + Arrays.deepToString(config) + " stab: " + stab.length + " diffs: " + evenCard + " min size: " + queue.size()
+                        + " auths: " + space.authLength() + " minimals: " + idxes.length);
                 BiConsumer<StateTr[], NSState[]> fCons = (sts, nst) -> {
                     InversivePlane pl = new InversivePlane(space.v(), Stream.concat(Arrays.stream(sts).flatMap(st -> space.blocks(st.block())),
                             Arrays.stream(nst).flatMap(st -> space.blocks(st.block()))).toArray(int[][]::new));
