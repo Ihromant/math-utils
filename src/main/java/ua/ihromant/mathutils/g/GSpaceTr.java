@@ -548,15 +548,20 @@ public class GSpaceTr {
     }
 
     public StateTr[] getStabilized() {
-        int b = v * (v - 1) / k / (k - 1);
+        int b = v * (v - 1) * (v - 2) / k / (k - 1) / (k - 2);
         List<SubGroup> sgs = group.subGroups();
 
         Map<FixBS, StateTr> states = new ConcurrentHashMap<>();
-        Consumer<FixBS> cons = fbs -> states.putIfAbsent(fbs, StateTr.fromBlock(this, fbs));
         sgs.parallelStream().forEach(sg -> {
             if (sg.order() == 1 || group.order() / sg.order() > b) {
                 return;
             }
+            Consumer<FixBS> cons = fbs -> {
+                StateTr state = checkCorrect(fbs, sg.elems());
+                if (state != null) {
+                    states.putIfAbsent(fbs, state);
+                }
+            };
             subStabilized(sg, cons);
         });
         return states.values().toArray(StateTr[]::new);
@@ -588,9 +593,7 @@ public class GSpaceTr {
             int[] fst = cosets.get(i);
             FixBS fbs = FixBS.of(v, fst);
             if (fst.length == k) {
-                if (checkCorrect(fbs)) {
-                    cons.accept(fbs);
-                }
+                cons.accept(fbs);
                 continue;
             }
             findStab(cosets, i, fbs, cons);
@@ -600,9 +603,7 @@ public class GSpaceTr {
     private void findStab(List<int[]> cosets, int idx, FixBS state, Consumer<FixBS> cons) {
         int card = state.cardinality();
         if (card == k) {
-            if (checkCorrect(state)) {
-                cons.accept(state);
-            }
+            cons.accept(state);
             return;
         }
         for (int i = idx + 1; i < cosets.size(); i++) {
@@ -618,24 +619,39 @@ public class GSpaceTr {
         }
     }
 
-    private boolean checkCorrect(FixBS block) {
+    private StateTr checkCorrect(FixBS block, FixBS stab) {
         Map<Integer, FixBS> coveredDiffs = new HashMap<>();
+        FixBS diffSet = new FixBS(diffLength());
+        FixBS stabilizer = new FixBS(group.order());
         for (int g = 0; g < group.order(); g++) {
             FixBS fbs = mapBlock(block, g);
-            if (fbs.compareTo(block) < 0) {
-                return false;
+            int cmp = fbs.compareTo(block);
+            if (cmp < 0) {
+                return null;
+            }
+            if (cmp == 0) {
+                stabilizer.set(g);
             }
             for (int i = fbs.nextSetBit(0); i >= 0; i = fbs.nextSetBit(i + 1)) {
                 for (int j = fbs.nextSetBit(i + 1); j >= 0; j = fbs.nextSetBit(j + 1)) {
                     for (int k = fbs.nextSetBit(j + 1); k >= 0; k = fbs.nextSetBit(k + 1)) {
+                        diffSet.set(diffIdx(i, j, k));
+                        diffSet.set(diffIdx(i, k, j));
+                        diffSet.set(diffIdx(j, i, k));
+                        diffSet.set(diffIdx(j, k, i));
+                        diffSet.set(diffIdx(k, i, j));
+                        diffSet.set(diffIdx(k, j, i));
                         FixBS prev = coveredDiffs.put(i * v * v + j * v + k, fbs);
                         if (prev != null && !prev.equals(fbs)) {
-                            return false;
+                            return null;
                         }
                     }
                 }
             }
         }
-        return true;
+        if (!stab.equals(stabilizer)) {
+            return null;
+        }
+        return new StateTr(block, stabilizer, diffSet, new int[0][], block.cardinality());
     }
 }
