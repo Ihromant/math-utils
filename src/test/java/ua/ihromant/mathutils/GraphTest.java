@@ -8,8 +8,11 @@ import tools.jackson.databind.ObjectMapper;
 import ua.ihromant.jnauty.GraphData;
 import ua.ihromant.mathutils.util.FixBS;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -593,5 +596,30 @@ public class GraphTest {
         }
         System.out.println(freq);
         System.out.println(thrMap);
+    }
+
+    @Test
+    public void testInversivePlanes() {
+        int v = 14;
+        int k = 4;
+        ObjectMapper om = new ObjectMapper();
+        try (var lines = new BufferedReader(new InputStreamReader(
+                Objects.requireNonNull(getClass().getResourceAsStream("/inv/" + v + "-" + k + ".txt")), StandardCharsets.UTF_8)).lines()) {
+            lines.forEach(line -> {
+                InversivePlane ip = new InversivePlane(om.readValue(line, int[][].class));
+                List<InversivePlane> para = ip.paraModifications();
+                Map<FixBS, InversivePlane> unique = new ConcurrentHashMap<>();
+                para.stream().parallel().forEach(l -> {
+                    GraphData gd = l.graphData();
+                    unique.putIfAbsent(new FixBS(gd.canonical()), l);
+                });
+                System.out.println(ip.graphData().autCount() + " " + ip.fingerprint() + " " + Arrays.deepToString(ip.lines()));
+                System.out.println("Paramodifications: ");
+                for (Map.Entry<FixBS, InversivePlane> e : unique.entrySet()) {
+                    System.out.println(e.getValue().graphData().autCount() + " " + e.getValue().fingerprint() + " " + Arrays.deepToString(e.getValue().lines()));
+                }
+                System.out.println();
+            });
+        }
     }
 }

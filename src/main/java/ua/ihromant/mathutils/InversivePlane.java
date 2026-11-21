@@ -8,6 +8,7 @@ import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumerNew;
 import ua.ihromant.mathutils.nauty.NautyAlgo;
 import ua.ihromant.mathutils.nauty.NautyAlgoNew;
+import ua.ihromant.mathutils.util.FixBS;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -22,7 +23,7 @@ import java.util.stream.IntStream;
 public class InversivePlane implements NautyGraph {
     private final int pointCount;
     private final int[][] lines;
-    private final boolean[][] flags;
+    private final FixBS[] flags;
     private final int[][][] lookup;
     private GraphData gd;
 
@@ -33,13 +34,34 @@ public class InversivePlane implements NautyGraph {
     public InversivePlane(int pointCount, int[][] lines) {
         this.pointCount = pointCount;
         this.lines = lines;
-        this.flags = new boolean[lines.length][pointCount];
+        this.flags = IntStream.range(0, lines.length).mapToObj(_ -> new FixBS(pointCount)).toArray(FixBS[]::new);
         for (int i = 0; i < lines.length; i++) {
             int[] line = lines[i];
             for (int pt : line) {
-                flags[i][pt] = true;
+                flags[i].set(pt);
             }
         }
+        this.lookup = generateLookup();
+    }
+
+    public InversivePlane(FixBS[] incidence) {
+        this.flags = incidence;
+        int pointCount = 0;
+        int lineCount = flags.length;
+        this.lines = new int[lineCount][];
+        for (int i = 0; i < lineCount; i++) {
+            FixBS ln = flags[i];
+            int sz = ln.cardinality();
+            int[] line = new int[sz];
+            int idx = 0;
+            for (int pt = ln.nextSetBit(0); pt >= 0; pt = ln.nextSetBit(pt + 1)) {
+                line[idx++] = pt;
+                pointCount = Math.max(pointCount, pt);
+            }
+            lines[i] = line;
+        }
+        pointCount = pointCount + 1;
+        this.pointCount = pointCount;
         this.lookup = generateLookup();
     }
 
@@ -80,11 +102,11 @@ public class InversivePlane implements NautyGraph {
         this.lines = new int[pll + 1][];
         System.arraycopy(prev.lines, 0, this.lines, 0, pll);
         this.lines[pll] = newLine;
-        this.flags = new boolean[pll + 1][];
+        this.flags = new FixBS[pll + 1];
         System.arraycopy(prev.flags, 0, this.flags, 0, pll);
-        this.flags[pll] = new boolean[pointCount];
+        this.flags[pll] = new FixBS(pointCount);
         for (int p : newLine) {
-            flags[pll][p] = true;
+            flags[pll].set(p);
         }
         this.lookup = generateLookup(); // TODO it can be more performant probably
     }
@@ -118,14 +140,18 @@ public class InversivePlane implements NautyGraph {
         int b = lines.length;
         Inc res = Inc.empty(pointCount, lines[0].length, b);
         for (int l = 0; l < b; l++) {
-            boolean[] row = flags[l];
+            FixBS row = flags[l];
             for (int pt = 0; pt < pointCount; pt++) {
-                if (row[pt]) {
+                if (row.get(pt)) {
                     res.set(l, pt);
                 }
             }
         }
         return res;
+    }
+
+    public int[][] lines() {
+        return lines;
     }
 
     private class BlocksIterator implements Iterator<int[]> {
@@ -270,7 +296,7 @@ public class InversivePlane implements NautyGraph {
     }
 
     public boolean flag(int line, int point) {
-        return flags[line][point];
+        return flags[line].get(point);
     }
 
     public long autCount() {
@@ -313,6 +339,268 @@ public class InversivePlane implements NautyGraph {
         return result;
     }
 
+    public List<InversivePlane> paraModifications() {
+        GraphData gd = graphData();
+        int b = blockCount();
+        int v = pointCount;
+        int k = lines[0].length;
+        int r1 = ((v - 1) * (v - 2)) / ((k - 1) * (k - 2));
+        int r2 = (v - 2) / (k - 2);
+        int c1 = r1 - 1 - (k - 1) * (r2 - 1);
+        int m = (v - k) / (k - 2);
+        int numEdges = k * (k - 1) / 2;
+        int n1 = k * c1;
+        int n2 = numEdges * m;
+
+        // Precompute edges of K_k
+        int[] edgeU = new int[numEdges];
+        int[] edgeV = new int[numEdges];
+        int eIdx = 0;
+        for (int u = 0; u < k; u++) {
+            for (int w = u + 1; w < k; w++) {
+                edgeU[eIdx] = u;
+                edgeV[eIdx] = w;
+                eIdx++;
+            }
+        }
+
+        FixBS orbBlocks = new FixBS(b);
+        for (int i = v; i < b + v; i++) {
+            orbBlocks.set(gd.orbits()[i] - v);
+        }
+
+        List<InversivePlane> result = new ArrayList<>();
+        Arrays.stream(orbBlocks.toArray()).parallel().forEach(bn -> {
+            int[] B = lines[bn];
+            FixBS bMask = flags[bn];
+
+            int[] b1Idx = new int[n1];
+            FixBS[] b1Trunc = new FixBS[n1];
+            int[] b2Idx = new int[n2];
+            FixBS[] b2Trunc = new FixBS[n2];
+
+            int cnt1 = 0;
+            int cnt2 = 0;
+            for (int i = 0; i < b; i++) {
+                if (i == bn) continue;
+                int inter = bMask.intersection(flags[i]).cardinality();
+                if (inter == 1) {
+                    b1Idx[cnt1] = i;
+                    FixBS trunc = flags[i].copy();
+                    trunc.andNot(bMask);
+                    b1Trunc[cnt1] = trunc;
+                    cnt1++;
+                } else if (inter == 2) {
+                    b2Idx[cnt2] = i;
+                    FixBS trunc = flags[i].copy();
+                    trunc.andNot(bMask);
+                    b2Trunc[cnt2] = trunc;
+                    cnt2++;
+                }
+            }
+
+            // Precompute B1 compatibility: |L_a' ∩ L_b'| <= 1
+            boolean[][] compat = new boolean[n1][n1];
+            for (int i = 0; i < n1; i++) {
+                for (int j = i + 1; j < n1; j++) {
+                    if (b1Trunc[i].intersection(b1Trunc[j]).cardinality() <= 1) {
+                        compat[i][j] = compat[j][i] = true;
+                    }
+                }
+            }
+
+            // --- STEP 1: Find all resolutions of B2' ---
+            Graph g2 = new Graph(n2);
+            for (int i = 0; i < n2; i++) {
+                for (int j = i + 1; j < n2; j++) {
+                    if (!b2Trunc[i].intersects(b2Trunc[j])) {
+                        g2.connect(i, j);
+                    }
+                }
+            }
+            List<FixBS> pClasses = new ArrayList<>();
+            JNauty.instance().maximalCliques(g2, m, a -> pClasses.add(new FixBS(a)));
+
+            int nPC = pClasses.size();
+            Graph gRes = new Graph(nPC);
+            for (int i = 0; i < nPC; i++) {
+                for (int j = i + 1; j < nPC; j++) {
+                    if (!pClasses.get(i).intersects(pClasses.get(j))) {
+                        gRes.connect(i, j);
+                    }
+                }
+            }
+            List<FixBS> resolutions = new ArrayList<>();
+            JNauty.instance().maximalCliques(gRes, numEdges, a -> resolutions.add(new FixBS(a)));
+
+            // --- STEP 2: Map parallel classes to edges of K_k ---
+            for (FixBS res : resolutions) {
+                int[] resClasses = res.toArray();
+
+                boolean[][] conflict = new boolean[numEdges][numEdges];
+                for (int i = 0; i < numEdges; i++) {
+                    int[] blocksI = pClasses.get(resClasses[i]).toArray();
+                    for (int j = i + 1; j < numEdges; j++) {
+                        int[] blocksJ = pClasses.get(resClasses[j]).toArray();
+                        outer: for (int a : blocksI) {
+                            for (int c : blocksJ) {
+                                if (b2Trunc[a].intersection(b2Trunc[c]).cardinality() >= 2) {
+                                    conflict[i][j] = conflict[j][i] = true;
+                                    break outer;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                int[] perm = new int[numEdges];
+                boolean[] used = new boolean[numEdges];
+                perm[0] = 0;
+                used[0] = true;
+
+                mapEdges(1, numEdges, edgeU, edgeV, conflict, perm, used, () -> {
+                    @SuppressWarnings("unchecked")
+                    List<FixBS>[] b2TruncByPt = IntStream.range(0, k)
+                            .mapToObj(_ -> new ArrayList<FixBS>()).toArray(List[]::new);
+
+                    for (int e = 0; e < numEdges; e++) {
+                        int u = edgeU[e], w = edgeV[e];
+                        for (int bi : pClasses.get(resClasses[perm[e]]).toArray()) {
+                            b2TruncByPt[u].add(b2Trunc[bi]);
+                            b2TruncByPt[w].add(b2Trunc[bi]);
+                        }
+                    }
+
+                    // --- STEP 3: Partition B1' ---
+                    solveB1(k, c1, n1, b1Trunc, compat, b2TruncByPt, chosen -> {
+                        FixBS[] altInc = Arrays.stream(flags).map(FixBS::copy).toArray(FixBS[]::new);
+                        for (int idx : b1Idx) altInc[idx].andNot(bMask);
+                        for (int idx : b2Idx) altInc[idx].andNot(bMask);
+
+                        for (int e = 0; e < numEdges; e++) {
+                            int ptU = B[edgeU[e]], ptV = B[edgeV[e]];
+                            for (int bi : pClasses.get(resClasses[perm[e]]).toArray()) {
+                                altInc[b2Idx[bi]].set(ptU);
+                                altInc[b2Idx[bi]].set(ptV);
+                            }
+                        }
+                        for (int p = 0; p < k; p++) {
+                            if (chosen[p] != null) {
+                                for (int idx : chosen[p].toArray()) {
+                                    altInc[b1Idx[idx]].set(B[p]);
+                                }
+                            }
+                        }
+
+                        InversivePlane altSys = new InversivePlane(altInc);
+                        synchronized (result) {
+                            result.add(altSys);
+                        }
+                    });
+                });
+            }
+        });
+        return result;
+    }
+
+    private void mapEdges(int pos, int numEdges, int[] edgeU, int[] edgeV,
+                          boolean[][] conflict, int[] perm, boolean[] used, Runnable onValid) {
+        if (pos == numEdges) {
+            onValid.run();
+            return;
+        }
+        int u = edgeU[pos], v = edgeV[pos];
+        for (int c = 0; c < numEdges; c++) {
+            if (used[c]) continue;
+            boolean ok = true;
+            for (int prev = 0; prev < pos; prev++) {
+                if (edgeU[prev] == u || edgeU[prev] == v || edgeV[prev] == u || edgeV[prev] == v) {
+                    if (conflict[perm[prev]][c]) {
+                        ok = false;
+                        break;
+                    }
+                }
+            }
+            if (ok) {
+                perm[pos] = c;
+                used[c] = true;
+                mapEdges(pos + 1, numEdges, edgeU, edgeV, conflict, perm, used, onValid);
+                used[c] = false;
+            }
+        }
+    }
+
+    private void solveB1(int k, int c1, int n1, FixBS[] b1Trunc, boolean[][] compat, List<FixBS>[] b2TruncByPt, Consumer<FixBS[]> onSolution) {
+        if (c1 == 0) {
+            onSolution.accept(new FixBS[k]);
+            return;
+        }
+
+        List<FixBS> allCliques = new ArrayList<>();
+        List<Integer> cliqueOwner = new ArrayList<>();
+
+        for (int p = 0; p < k; p++) {
+            List<Integer> adm = new ArrayList<>();
+            for (int i = 0; i < n1; i++) {
+                boolean ok = true;
+                for (FixBS mTrunc : b2TruncByPt[p]) {
+                    if (b1Trunc[i].intersection(mTrunc).cardinality() >= 2) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) adm.add(i);
+            }
+            if (adm.size() < c1) return;
+
+            Graph gp = new Graph(adm.size());
+            for (int i = 0; i < adm.size(); i++) {
+                for (int j = i + 1; j < adm.size(); j++) {
+                    if (compat[adm.get(i)][adm.get(j)]) {
+                        gp.connect(i, j);
+                    }
+                }
+            }
+
+            List<FixBS> pCliques = new ArrayList<>();
+            JNauty.instance().maximalCliques(gp, c1, a -> {
+                FixBS set = new FixBS(a);
+                FixBS mapped = new FixBS(n1);
+                for (int idx = set.nextSetBit(0); idx >= 0; idx = set.nextSetBit(idx + 1)) {
+                    mapped.set(adm.get(idx));
+                }
+                pCliques.add(mapped);
+            });
+            if (pCliques.isEmpty()) return;
+
+            for (FixBS cl : pCliques) {
+                allCliques.add(cl);
+                cliqueOwner.add(p);
+            }
+        }
+
+        int ncl = allCliques.size();
+        Graph gFinal = new Graph(ncl);
+        for (int i = 0; i < ncl; i++) {
+            for (int j = i + 1; j < ncl; j++) {
+                if (!cliqueOwner.get(i).equals(cliqueOwner.get(j)) && !allCliques.get(i).intersects(allCliques.get(j))) {
+                    gFinal.connect(i, j);
+                }
+            }
+        }
+
+        List<FixBS> pList = new ArrayList<>();
+        JNauty.instance().maximalCliques(gFinal, k, a -> pList.add(new FixBS(a)));
+
+        for (FixBS sol : pList) {
+            FixBS[] chosen = new FixBS[k];
+            for (int clIdx : sol.toArray()) {
+                chosen[cliqueOwner.get(clIdx)] = allCliques.get(clIdx);
+            }
+            onSolution.accept(chosen);
+        }
+    }
+
     @Override
     public int vCount() {
         return pointCount + lines.length;
@@ -326,9 +614,9 @@ public class InversivePlane implements NautyGraph {
     @Override
     public boolean edge(int a, int b) {
         if (a < pointCount) {
-            return b >= pointCount && flags[b - pointCount][a];
+            return b >= pointCount && flags[b - pointCount].get(a);
         } else {
-            return b < pointCount && flags[a - pointCount][b];
+            return b < pointCount && flags[a - pointCount].get(b);
         }
     }
 
