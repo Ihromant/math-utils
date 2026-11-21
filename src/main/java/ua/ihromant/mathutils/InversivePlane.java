@@ -1,5 +1,7 @@
 package ua.ihromant.mathutils;
 
+import ua.ihromant.jnauty.GraphData;
+import ua.ihromant.jnauty.JNauty;
 import ua.ihromant.jnauty.NautyGraph;
 import ua.ihromant.mathutils.group.PermutationGroup;
 import ua.ihromant.mathutils.nauty.AutomorphismConsumer;
@@ -22,6 +24,7 @@ public class InversivePlane implements NautyGraph {
     private final int[][] lines;
     private final boolean[][] flags;
     private final int[][][] lookup;
+    private GraphData gd;
 
     public InversivePlane(int[][] lines) {
         this(Arrays.stream(lines).mapToInt(arr -> arr[arr.length - 1]).max().orElseThrow() + 1, lines);
@@ -327,5 +330,12 @@ public class InversivePlane implements NautyGraph {
         } else {
             return b < pointCount && flags[a - pointCount][b];
         }
+    }
+
+    public GraphData graphData() {
+        if (gd == null) {
+            gd = JNauty.instance().traces(this);
+        }
+        return gd;
     }
 }
